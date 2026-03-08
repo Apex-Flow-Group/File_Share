@@ -1,0 +1,21 @@
+المشكلة: عندما تشغل flutter run بدون تحديد flavor، Gradle لا يعرف أي نسخة يبني (googlePlay أو fDroid).
+
+الحل:
+
+flutter run --flavor googlePlay
+
+Copy
+أو للنسخة F-Droid:
+
+flutter run --flavor fDroid
+
+Copy
+bash
+أو للبناء:
+
+flutter build apk --flavor googlePlay --release
+flutter build apk --flavor fDroid --release
+
+Copy
+bash
+

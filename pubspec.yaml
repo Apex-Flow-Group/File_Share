@@ -1,0 +1,39 @@
+name: file_share_app
+description: تطبيق إرسال ملفات بتصميم رائع
+publish_to: 'none'
+version: 2.0.1+2002
+
+environment:
+  sdk: '>=3.0.0 <4.0.0'
+
+dependencies:
+  flutter:
+    sdk: flutter
+  flutter_localizations:
+    sdk: flutter
+  
+  device_info_plus: ^10.0.0
+  file_picker: ^8.1.4
+  open_filex: ^4.5.0
+  package_info_plus: ^8.0.0
+  path_provider: ^2.1.0
+  permission_handler: ^11.0.0
+  shared_preferences: ^2.5.3
+  url_launcher: ^6.2.0
+
+dev_dependencies:
+  flutter_test:
+    sdk: flutter
+  build_runner: ^2.4.8
+  flutter_lints: ^3.0.0
+  mockito: ^5.4.4
+
+flutter:
+  uses-material-design: true
+  generate: true
+  fonts:
+    - family: Cairo
+      fonts:
+        - asset: fonts/Cairo-Regular.ttf
+        - asset: fonts/Cairo-Bold.ttf
+          weight: 700
