@@ -22,7 +22,7 @@
     native <methods>;
 }
 
-# Optimize but don't obfuscate (for debugging)
 -optimizations !code/simplification/arithmetic,!code/simplification/cast,!field/*,!class/merging/*
 -optimizationpasses 5
 -allowaccessmodification
+-repackageclasses ''
