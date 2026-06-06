@@ -1,51 +1,59 @@
-import '../core/apex_constants.dart';
-
 class Device {
   final String id;
   final String name;
-  final String ip;
   final String type;
+  // mDNS/HTTP transport (PC + Android fallback)
+  final String ip;
   final int port;
+  // Nearby Connections transport (Android)
+  final String? endpointId;
   final DateTime? lastSeen;
 
-  Device({
+  const Device({
     required this.id,
     required this.name,
-    required this.ip,
     required this.type,
-    this.port = ApexConstants.transferPort,
-    DateTime? lastSeen,
-  }) : lastSeen = lastSeen ?? DateTime.now();
+    this.ip = '',
+    this.port = 0,
+    this.endpointId,
+    this.lastSeen,
+  });
+
+  bool get isNearby => endpointId != null;
+  bool get isMdns => ip.isNotEmpty && port > 0;
 
   Device copyWith({
     String? id,
     String? name,
-    String? ip,
     String? type,
+    String? ip,
     int? port,
+    String? endpointId,
     DateTime? lastSeen,
-  }) => Device(
-    id: id ?? this.id,
-    name: name ?? this.name,
-    ip: ip ?? this.ip,
-    type: type ?? this.type,
-    port: port ?? this.port,
-    lastSeen: lastSeen ?? this.lastSeen,
-  );
+  }) =>
+      Device(
+        id: id ?? this.id,
+        name: name ?? this.name,
+        type: type ?? this.type,
+        ip: ip ?? this.ip,
+        port: port ?? this.port,
+        endpointId: endpointId ?? this.endpointId,
+        lastSeen: lastSeen ?? this.lastSeen,
+      );
 
   Map<String, dynamic> toJson() => {
-    'id': id,
-    'name': name,
-    'ip': ip,
-    'type': type,
-    'port': port,
-  };
+        'id': id,
+        'name': name,
+        'type': type,
+        'ip': ip,
+        'port': port,
+      };
 
   factory Device.fromJson(Map<String, dynamic> json) => Device(
-    id: json['id'],
-    name: json['name'],
-    ip: json['ip'],
-    type: json['type'],
-    port: json['port'] ?? ApexConstants.transferPort,
-  );
+        id: json['id'] ?? '',
+        name: json['name'] ?? '',
+        type: json['type'] ?? 'unknown',
+        ip: json['ip'] ?? '',
+        port: json['port'] ?? 0,
+      );
 }

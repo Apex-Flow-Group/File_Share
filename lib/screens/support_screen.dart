@@ -4,7 +4,7 @@ import 'package:flutter/material.dart';
 import 'package:package_info_plus/package_info_plus.dart';
 import 'package:url_launcher/url_launcher.dart';
 
-import '../l10n/app_localizations.dart';
+import '../l10n/generated/app_localizations.dart';
 import '../utils/snackbar_helper.dart';
 
 class SupportScreen extends StatefulWidget {

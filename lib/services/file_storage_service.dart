@@ -58,17 +58,23 @@ class FileStorageService {
   
   Future<void> _scanFile(String filePath) async {
     try {
+      // Use MediaScannerConnection via platform channel is better,
+      // but as a fallback we use the broadcast intent (works on older Android)
       await Process.run('am', [
         'broadcast',
-        '-a',
-        'android.intent.action.MEDIA_SCANNER_SCAN_FILE',
-        '-d',
-        'file://$filePath'
+        '-a', 'android.intent.action.MEDIA_SCANNER_SCAN_FILE',
+        '-d', 'file://$filePath'
       ]);
-      ApexLogger.instance.log('STORAGE', '🔄 تم تحديث MediaStore', LogLevel.debug);
-    } catch (e) {
-      // Ignore scan errors
-    }
+    } catch (_) {}
+    // Also try the new way for Android 13+
+    try {
+      await Process.run('content', [
+        'call',
+        '--uri', 'content://media/none/none',
+        '--method', 'scan_volume',
+        '--arg', 'external_primary'
+      ]);
+    } catch (_) {}
   }
   
   String _formatSize(int bytes) {

@@ -53,7 +53,7 @@ linter:
     
     # Imports
     - directives_ordering
-    - sort_pub_dependencies
+    # sort_pub_dependencies disabled: flutter sdk deps must stay grouped together
 
 analyzer:
   exclude:

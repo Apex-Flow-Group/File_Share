@@ -1,8 +1,8 @@
 import 'package:flutter/material.dart';
-import 'package:flutter_localizations/flutter_localizations.dart';
 
 import 'core/apex_core.dart';
-import 'l10n/app_localizations.dart';
+import 'l10n/generated/app_localizations.dart';
+import 'managers/permission_manager.dart';
 import 'screens/home_screen.dart';
 import 'screens/intro_screen.dart';
 import 'screens/tv_home_screen.dart';
@@ -50,12 +50,7 @@ class FileShareApp extends StatelessWidget {
             return supportedLocales.first;
           },
           supportedLocales: const [Locale('ar'), Locale('en')],
-          localizationsDelegates: const [
-            AppLocalizationsDelegate(),
-            GlobalMaterialLocalizations.delegate,
-            GlobalWidgetsLocalizations.delegate,
-            GlobalCupertinoLocalizations.delegate,
-          ],
+          localizationsDelegates: AppLocalizations.localizationsDelegates,
           theme: ThemeData(
             useMaterial3: true,
             colorScheme: const ColorScheme.light(
@@ -134,14 +129,49 @@ class FileShareApp extends StatelessWidget {
   }
 
   Widget _buildHome(SettingsService settings) {
-    // For TV, skip intro and use TV layout
     if (PlatformDetector.instance.isTV) {
       return TVHomeScreen(settings: settings);
     }
-    
-    // For mobile, use normal flow
-    return settings.hasSeenIntro 
-      ? HomeScreen(settings: settings)
-      : IntroScreen(settings: settings);
+    return settings.hasSeenIntro
+        ? _PermissionGate(child: HomeScreen(settings: settings))
+        : IntroScreen(settings: settings);
+  }
+}
+
+// ─── Permission Gate ──────────────────────────────────────────────────────────
+// Requests all required permissions before starting the system.
+
+class _PermissionGate extends StatefulWidget {
+  final Widget child;
+  const _PermissionGate({required this.child});
+
+  @override
+  State<_PermissionGate> createState() => _PermissionGateState();
+}
+
+class _PermissionGateState extends State<_PermissionGate> {
+  bool _done = false;
+
+  @override
+  void initState() {
+    super.initState();
+    _requestPermissions();
+  }
+
+  Future<void> _requestPermissions() async {
+    await PermissionManager.requestAll();
+    if (mounted) {
+      setState(() => _done = true);
+    }
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    if (!_done) {
+      return const Scaffold(
+        body: Center(child: CircularProgressIndicator()),
+      );
+    }
+    return widget.child;
   }
 }
