@@ -3,6 +3,7 @@ package com.apexflow.tools.transfer
 import android.content.Context
 import android.content.Intent
 import android.net.Uri
+import android.webkit.MimeTypeMap
 import androidx.core.content.FileProvider
 import io.flutter.embedding.engine.FlutterEngine
 import io.flutter.plugin.common.MethodChannel
@@ -18,19 +19,13 @@ class FileOperationsHandler(private val context: Context) {
             when (call.method) {
                 "openFile" -> {
                     val path = call.argument<String>("path")
-                    if (path != null) {
-                        openFile(path, result)
-                    } else {
-                        result.error("INVALID_ARGUMENT", "Path is required", null)
-                    }
+                    if (path != null) openFile(path, result)
+                    else result.error("INVALID_ARGUMENT", "Path is required", null)
                 }
                 "openFileLocation" -> {
                     val path = call.argument<String>("path")
-                    if (path != null) {
-                        openFileLocation(path, result)
-                    } else {
-                        result.error("INVALID_ARGUMENT", "Path is required", null)
-                    }
+                    if (path != null) openFileLocation(path, result)
+                    else result.error("INVALID_ARGUMENT", "Path is required", null)
                 }
                 else -> result.notImplemented()
             }
@@ -46,19 +41,21 @@ class FileOperationsHandler(private val context: Context) {
             }
 
             val uri = FileProvider.getUriForFile(
-                context,
-                "${context.packageName}.fileprovider",
-                file
+                context, "${context.packageName}.fileprovider", file
             )
 
-            val mimeType = getMimeType(file.extension)
+            // Let Android resolve the MIME type - falls back to "*/*" for unknown types
+            val ext = file.extension.lowercase()
+            val mimeType = MimeTypeMap.getSingleton()
+                .getMimeTypeFromExtension(ext) ?: "*/*"
+
             val intent = Intent(Intent.ACTION_VIEW).apply {
                 setDataAndType(uri, mimeType)
                 addFlags(Intent.FLAG_GRANT_READ_URI_PERMISSION)
                 addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
             }
 
-            context.startActivity(Intent.createChooser(intent, "Open with"))
+            context.startActivity(Intent.createChooser(intent, null))
             result.success(true)
         } catch (e: Exception) {
             result.error("OPEN_FAILED", e.message, null)
@@ -73,38 +70,70 @@ class FileOperationsHandler(private val context: Context) {
                 return
             }
 
-            val uri = FileProvider.getUriForFile(
-                context,
-                "${context.packageName}.fileprovider",
-                directory
-            )
-
-            val intent = Intent(Intent.ACTION_VIEW).apply {
-                setDataAndType(uri, "resource/folder")
-                addFlags(Intent.FLAG_GRANT_READ_URI_PERMISSION)
-                addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
+            // Try multiple approaches to open folder
+            val opened = tryOpenFolder(directory)
+            if (opened) {
+                result.success(true)
+            } else {
+                // Last resort: open the file itself
+                openFile(path, result)
             }
-
-            context.startActivity(intent)
-            result.success(true)
         } catch (e: Exception) {
             result.error("OPEN_FAILED", e.message, null)
         }
     }
 
-    private fun getMimeType(extension: String): String {
-        return when (extension.lowercase()) {
-            "jpg", "jpeg", "png", "gif", "webp", "bmp" -> "image/*"
-            "mp4", "mkv", "avi", "mov", "wmv" -> "video/*"
-            "mp3", "wav", "flac", "m4a", "aac" -> "audio/*"
-            "pdf" -> "application/pdf"
-            "doc", "docx" -> "application/msword"
-            "xls", "xlsx" -> "application/vnd.ms-excel"
-            "ppt", "pptx" -> "application/vnd.ms-powerpoint"
-            "txt" -> "text/plain"
-            "zip", "rar", "7z" -> "application/zip"
-            "apk" -> "application/vnd.android.package-archive"
-            else -> "*/*"
-        }
+    private fun tryOpenFolder(directory: File): Boolean {
+        // Approach 1: Android Files app via content URI
+        try {
+            val relativePath = directory.absolutePath
+                .removePrefix("/storage/emulated/0/")
+            val uri = Uri.parse(
+                "content://com.android.externalstorage.documents/document/primary:$relativePath"
+            )
+            val intent = Intent(Intent.ACTION_VIEW).apply {
+                setDataAndType(uri, "vnd.android.document/directory")
+                addFlags(Intent.FLAG_GRANT_READ_URI_PERMISSION)
+                addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
+            }
+            if (intent.resolveActivity(context.packageManager) != null) {
+                context.startActivity(intent)
+                return true
+            }
+        } catch (_: Exception) {}
+
+        // Approach 2: Files app via EXTRA_INITIAL_URI
+        try {
+            val relativePath = directory.absolutePath
+                .removePrefix("/storage/emulated/0/")
+            val uri = Uri.parse(
+                "content://com.android.externalstorage.documents/document/primary:$relativePath"
+            )
+            val intent = Intent(Intent.ACTION_GET_CONTENT).apply {
+                addCategory(Intent.CATEGORY_OPENABLE)
+                type = "*/*"
+                putExtra("android.provider.extra.INITIAL_URI", uri)
+                addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
+            }
+            if (intent.resolveActivity(context.packageManager) != null) {
+                context.startActivity(intent)
+                return true
+            }
+        } catch (_: Exception) {}
+
+        // Approach 3: Generic file manager via file:// URI
+        try {
+            val uri = Uri.fromFile(directory)
+            val intent = Intent(Intent.ACTION_VIEW).apply {
+                setDataAndType(uri, "resource/folder")
+                addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
+            }
+            if (intent.resolveActivity(context.packageManager) != null) {
+                context.startActivity(intent)
+                return true
+            }
+        } catch (_: Exception) {}
+
+        return false
     }
 }

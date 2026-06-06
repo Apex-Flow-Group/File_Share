@@ -2,6 +2,7 @@ import 'dart:io';
 import 'dart:ui';
 
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 
 import '../core/apex_core.dart';
 import '../l10n/generated/app_localizations.dart';
@@ -31,6 +32,7 @@ class _HomeScreenState extends State<HomeScreen> {
   bool _isRunning = false;
   final _fileOpsService = FileOperationsService();
   final _filesTabKey = GlobalKey();
+  String? _pendingSinanFilePath;
 
   // Files tab state
   bool _isSelectionMode = false;
@@ -46,6 +48,9 @@ class _HomeScreenState extends State<HomeScreen> {
   }
 
   Future<void> _initSystem() async {
+    // Check for incoming .sinan file from Sinan Note
+    _checkIncomingSinanFile();
+
     ApexCore.instance.devicesStream.listen((d) {
       if (mounted) {
         setState(() => _devices = d);
@@ -90,6 +95,73 @@ class _HomeScreenState extends State<HomeScreen> {
     await _stopSystem();
     await Future.delayed(const Duration(milliseconds: 400));
     await _startSystem();
+  }
+
+  void _checkIncomingSinanFile() async {
+    const channel = MethodChannel('com.apex.core/sinan');
+    channel.setMethodCallHandler((call) async {
+      if (call.method == 'onSinanFileReceived') {
+        final path = call.arguments as String?;
+        if (path != null && mounted) {
+          _handleSinanFile(path);
+        }
+      }
+    });
+    // Check for file that arrived before Flutter was ready
+    try {
+      final path = await channel.invokeMethod<String>('getPendingSinanFile');
+      if (path != null && mounted) {
+        _handleSinanFile(path);
+      }
+    } catch (_) {}
+  }
+
+  void _handleSinanFile(String filePath) {
+    final l10n = AppLocalizations.of(context);
+    final isAr = Localizations.localeOf(context).languageCode == 'ar';
+    showModalBottomSheet(
+      context: context,
+      backgroundColor: Colors.transparent,
+      builder: (_) => _FloatingSheet(
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            const Icon(Icons.note_add_rounded, size: 48, color: Colors.purple),
+            const SizedBox(height: 12),
+            Text(
+              isAr ? 'ملاحظة من سنان' : 'Note from Sinan',
+              style: const TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
+            ),
+            const SizedBox(height: 8),
+            Text(
+              isAr ? 'تم استلام ملاحظة - أرسلها لجهاز آخر' : 'Note received - send it to another device',
+              textAlign: TextAlign.center,
+              style: TextStyle(color: Colors.grey[600]),
+            ),
+            const SizedBox(height: 20),
+            SizedBox(
+              width: double.infinity,
+              child: FilledButton.icon(
+                onPressed: () {
+                  Navigator.pop(context);
+                  setState(() => _currentIndex = 0);
+                  // Store path for user to pick device and send
+                  _pendingSinanFilePath = filePath;
+                },
+                icon: const Icon(Icons.send_rounded),
+                label: Text(isAr ? 'اختر جهاز للإرسال' : 'Choose device to send'),
+                style: FilledButton.styleFrom(backgroundColor: Colors.purple),
+              ),
+            ),
+            const SizedBox(height: 8),
+            OutlinedButton(
+              onPressed: () => Navigator.pop(context),
+              child: Text(l10n.cancel),
+            ),
+          ],
+        ),
+      ),
+    );
   }
 
   // ─── Dialogs / Sheets ─────────────────────────────────────────────────────
@@ -578,7 +650,12 @@ class _HomeScreenState extends State<HomeScreen> {
   Widget _buildPage(int index) {
     switch (index) {
       case 0:
-        return SendTab(devices: _devices, isRunning: _isRunning);
+        return SendTab(
+          devices: _devices,
+          isRunning: _isRunning,
+          pendingFilePath: _pendingSinanFilePath,
+          onPendingFileSent: () => setState(() => _pendingSinanFilePath = null),
+        );
       case 1:
         return ReceiveTab(
             localDevice: ApexCore.instance.localDevice, isRunning: _isRunning);
@@ -1333,6 +1410,6 @@ class _FloatingSheet extends StatelessWidget {
             maxChildSize: 0.95,
             builder: (_, __) => sheet,
           )
-        : sheet;
+        : SingleChildScrollView(child: sheet);
   }
 }

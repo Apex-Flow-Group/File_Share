@@ -20,13 +20,12 @@ class ApexCore {
 
   Device? _localDevice;
   final Map<String, Device> _discoveredDevices = {};
-
-  // Nearby: track connected endpoints
   final Map<String, Completer<bool>> _nearbyConnectCompleters = {};
   final Set<String> _connectedEndpoints = {};
-
-  // HTTP: track pending accept/reject dialogs
   final Map<String, Completer<bool>> _pendingRequests = {};
+
+  // Receiving file state per endpoint
+  final Map<String, _ReceivingFile> _receivingFiles = {};
 
   HttpServer? _httpServer;
   DiscoveryService? _discoveryService;
@@ -35,18 +34,15 @@ class ApexCore {
   int _httpPort = 0;
 
   static const Duration _deviceTimeout = Duration(seconds: 60);
+  // Max size to send via bytes payload (50MB - above this use file payload)
 
   final _devicesController = StreamController<List<Device>>.broadcast();
-  final _fileReceivedController =
-      StreamController<FileReceivedEvent>.broadcast();
-  final _connectionRequestController =
-      StreamController<ConnectionRequest>.broadcast();
+  final _fileReceivedController = StreamController<FileReceivedEvent>.broadcast();
+  final _connectionRequestController = StreamController<ConnectionRequest>.broadcast();
 
   Stream<List<Device>> get devicesStream => _devicesController.stream;
-  Stream<FileReceivedEvent> get fileReceivedStream =>
-      _fileReceivedController.stream;
-  Stream<ConnectionRequest> get connectionRequestStream =>
-      _connectionRequestController.stream;
+  Stream<FileReceivedEvent> get fileReceivedStream => _fileReceivedController.stream;
+  Stream<ConnectionRequest> get connectionRequestStream => _connectionRequestController.stream;
   Device? get localDevice => _localDevice;
   List<Device> get devices => _discoveredDevices.values.toList();
   bool get isRunning => _isRunning;
@@ -64,9 +60,7 @@ class ApexCore {
     final ip = await _getLocalIp();
     _localDevice = Device(
       id: 'local-${DateTime.now().millisecondsSinceEpoch}',
-      name: name,
-      type: type,
-      ip: ip,
+      name: name, type: type, ip: ip,
     );
   }
 
@@ -92,7 +86,6 @@ class ApexCore {
     });
 
     await _discoveryService!.start(_localDevice!.copyWith(port: _httpPort));
-
     _startCleanup();
     _isRunning = true;
     ApexLogger.instance.log('CORE', '🚀 النظام يعمل', LogLevel.success);
@@ -151,32 +144,25 @@ class ApexCore {
     final fileName = req.uri.queryParameters['name'] ?? 'unknown';
     final fromDevice = req.uri.queryParameters['from'] ?? 'Unknown';
     final fromIp = req.uri.queryParameters['ip'] ?? '';
-    final fileSize =
-        int.tryParse(req.uri.queryParameters['size'] ?? '') ?? 0;
+    final fileSize = int.tryParse(req.uri.queryParameters['size'] ?? '') ?? 0;
     final requestId = '${fromIp}_${DateTime.now().millisecondsSinceEpoch}';
 
     final completer = Completer<bool>();
     _pendingRequests[requestId] = completer;
 
     _connectionRequestController.add(ConnectionRequest(
-      device: Device(
-          id: requestId, name: fromDevice, type: 'unknown', ip: fromIp),
-      fileName: fileName,
-      fileSize: fileSize,
-      onResponse: (v) {
-        if (!completer.isCompleted) {
-          completer.complete(v);
-        }
-      },
+      device: Device(id: requestId, name: fromDevice, type: 'unknown', ip: fromIp),
+      fileName: fileName, fileSize: fileSize,
+      onResponse: (v) { if (!completer.isCompleted) {
+        completer.complete(v);
+      } },
     ));
 
     final accepted = await completer.future
         .timeout(const Duration(seconds: 30), onTimeout: () => false);
     _pendingRequests.remove(requestId);
 
-    req.response
-      ..statusCode = HttpStatus.ok
-      ..write(jsonEncode({'accepted': accepted}));
+    req.response..statusCode = HttpStatus.ok..write(jsonEncode({'accepted': accepted}));
     await req.response.close();
   }
 
@@ -185,7 +171,6 @@ class ApexCore {
     final fromDevice = req.uri.queryParameters['from'] ?? 'Unknown';
 
     final dirPath = await PathUtils.getCategoryPath(fileName);
-    await Directory(dirPath).create(recursive: true);
     final filePath = '$dirPath/$fileName';
     final sink = File(filePath).openWrite();
 
@@ -197,26 +182,21 @@ class ApexCore {
     await sink.flush();
     await sink.close();
 
-    req.response
-      ..statusCode = HttpStatus.ok
-      ..write(jsonEncode({'success': true}));
+    req.response..statusCode = HttpStatus.ok..write(jsonEncode({'success': true}));
     await req.response.close();
 
     _fileReceivedController.add(FileReceivedEvent(
-      fileName: fileName,
-      fileSize: total,
-      fromDevice: fromDevice,
-      filePath: filePath,
+      fileName: fileName, fileSize: total,
+      fromDevice: fromDevice, filePath: filePath,
     ));
   }
 
-  // ─── Send File (public API) ────────────────────────────────────────────────
+  // ─── Send File ─────────────────────────────────────────────────────────────
 
   Future<bool> sendFile(String filePath, Device target) =>
       sendFileWithName(filePath, filePath.split('/').last, target);
 
-  Future<bool> sendFileWithName(
-      String filePath, String fileName, Device target) async {
+  Future<bool> sendFileWithName(String filePath, String fileName, Device target) async {
     if (_isAndroid && target.isNearby) {
       return _sendViaNearby(filePath, fileName, target);
     }
@@ -224,70 +204,93 @@ class ApexCore {
   }
 
   // ─── Nearby Send ───────────────────────────────────────────────────────────
-  //
-  // Official Nearby Connections flow:
-  //   1. Discoverer calls requestConnection()
-  //   2. Both sides receive onConnectionInitiated → call acceptConnection()
-  //   3. onConnectionResult fires with Status.CONNECTED
-  //   4. Now sendFilePayload() can be called
-  //   5. Receiver gets onPayLoadReceived with the file
 
-  Future<bool> _sendViaNearby(
-      String filePath, String fileName, Device target) async {
+  Future<bool> _sendViaNearby(String filePath, String fileName, Device target) async {
     final file = File(filePath);
     if (!await file.exists()) {
       return false;
     }
     final fileSize = await file.length();
     final endpointId = target.endpointId!;
-
     final progress = TransferProgressService();
 
-    // ── Step 1: connect if not already connected ──────────────────────────
+    // Step 1: connect
     if (!_connectedEndpoints.contains(endpointId)) {
-      final connected = await _connectNearby(endpointId, target.name);
-      if (!connected) {
-        ApexLogger.instance
-            .log('NEARBY', '❌ Connection failed to $endpointId', LogLevel.error);
+      final ok = await _connectNearby(endpointId, target.name);
+      if (!ok) {
+        ApexLogger.instance.log('NEARBY', '❌ Connection failed', LogLevel.error);
         return false;
       }
     }
 
-    // ── Step 2: show accept dialog on receiver side via Nearby bytes payload
-    //    We send a small JSON "request" first, wait for acceptance
-    final accepted = await _requestViaNearbyBytes(
-        endpointId, fileName, fileSize, target.name);
+    // Step 2: request permission via bytes
+    final accepted = await _requestViaNearbyBytes(endpointId, fileName, fileSize, target.name);
     if (!accepted) {
-      ApexLogger.instance.log('NEARBY', '❌ Transfer rejected', LogLevel.warning);
+      ApexLogger.instance.log('NEARBY', '❌ Rejected', LogLevel.warning);
       return false;
     }
 
-    // ── Step 3: send the file ──────────────────────────────────────────────
+    // Step 3: send file as chunked bytes payloads
+    // Format: first payload = header JSON, then raw file bytes chunks
     try {
+      final startTime = DateTime.now();
       progress.updateProgress(TransferProgress(
-        fileName: fileName,
-        totalBytes: fileSize,
-        transferredBytes: 0,
-        status: TransferStatus.transferring,
-        startTime: DateTime.now(),
+        fileName: fileName, totalBytes: fileSize,
+        transferredBytes: 0, status: TransferStatus.transferring,
+        startTime: startTime,
       ));
 
-      final payloadId =
-          await Nearby().sendFilePayload(endpointId, filePath);
-      ApexLogger.instance
-          .log('NEARBY', '✅ File payload sent: $payloadId', LogLevel.success);
+      // Send header
+      final header = jsonEncode({
+        'type': 'file_start',
+        'name': fileName,
+        'size': fileSize,
+      });
+      await Nearby().sendBytesPayload(
+          endpointId, Uint8List.fromList(utf8.encode(header)));
+
+      // Send file bytes in chunks
+      const chunkSize = 32 * 1024; // 32KB chunks
+      int transferred = 0;
+      final stream = file.openRead();
+
+      await for (final chunk in stream) {
+        if (progress.isCancelled) {
+          return false;
+        }
+
+        // Prefix each chunk with type marker
+        final payload = Uint8List(chunk.length + 1);
+        payload[0] = 0x01; // 0x01 = file data chunk
+        payload.setRange(1, payload.length, chunk);
+
+        await Nearby().sendBytesPayload(endpointId, payload);
+        transferred += chunk.length;
+
+        if (transferred % (chunkSize * 8) == 0 || transferred >= fileSize) {
+          progress.updateProgress(TransferProgress(
+            fileName: fileName, totalBytes: fileSize,
+            transferredBytes: transferred, status: TransferStatus.transferring,
+            startTime: startTime,
+          ));
+        }
+      }
+
+      // Send end marker
+      final endMarker = jsonEncode({'type': 'file_end', 'name': fileName});
+      await Nearby().sendBytesPayload(
+          endpointId, Uint8List.fromList(utf8.encode(endMarker)));
+
+      ApexLogger.instance.log('NEARBY', '✅ File sent: $fileName ($fileSize bytes)', LogLevel.success);
       return true;
     } catch (e) {
-      ApexLogger.instance
-          .log('NEARBY', '❌ sendFilePayload failed: $e', LogLevel.error);
+      ApexLogger.instance.log('NEARBY', '❌ Send error: $e', LogLevel.error);
       return false;
     } finally {
-      await Future.delayed(const Duration(seconds: 1));
       progress.clearProgress();
     }
   }
 
-  /// Initiates a Nearby connection from the discoverer side.
   Future<bool> _connectNearby(String endpointId, String remoteName) async {
     final completer = Completer<bool>();
     _nearbyConnectCompleters[endpointId] = completer;
@@ -297,18 +300,13 @@ class ApexCore {
         _localDevice?.name ?? 'Apex',
         endpointId,
         onConnectionInitiated: (eid, info) async {
-          ApexLogger.instance
-              .log('NEARBY', 'Connection initiated with $eid', LogLevel.info);
-          // Accept on our (sender) side
           await Nearby().acceptConnection(
             eid,
             onPayLoadRecieved: _onPayloadReceived,
-            onPayloadTransferUpdate: _onPayloadTransferUpdate,
+            onPayloadTransferUpdate: (_, __) {},
           );
         },
         onConnectionResult: (eid, status) {
-          ApexLogger.instance
-              .log('NEARBY', 'Connection result: $status', LogLevel.info);
           final c = _nearbyConnectCompleters.remove(eid);
           if (status == Status.CONNECTED) {
             _connectedEndpoints.add(eid);
@@ -319,172 +317,178 @@ class ApexCore {
         },
         onDisconnected: (eid) {
           _connectedEndpoints.remove(eid);
-          _deviceLostFromEndpoint(eid);
-          ApexLogger.instance
-              .log('NEARBY', 'Disconnected: $eid', LogLevel.warning);
+          _discoveredDevices.remove(eid);
+          _devicesController.add(devices);
         },
       );
     } catch (e) {
       _nearbyConnectCompleters.remove(endpointId)?.complete(false);
-      ApexLogger.instance
-          .log('NEARBY', '❌ requestConnection failed: $e', LogLevel.error);
       return false;
     }
 
-    return completer.future
-        .timeout(const Duration(seconds: 15), onTimeout: () {
-      _nearbyConnectCompleters.remove(endpointId);
-      return false;
-    });
+    return completer.future.timeout(
+      const Duration(seconds: 15),
+      onTimeout: () { _nearbyConnectCompleters.remove(endpointId); return false; },
+    );
   }
 
-  /// Send a small JSON bytes payload asking receiver to accept the file.
-  /// We reuse the _pendingRequests map with endpointId as key.
   Future<bool> _requestViaNearbyBytes(
       String endpointId, String fileName, int fileSize, String senderName) async {
     final completer = Completer<bool>();
     _pendingRequests[endpointId] = completer;
 
     final msg = jsonEncode({
-      'type': 'request',
-      'name': fileName,
-      'size': fileSize,
-      'from': senderName,
+      'type': 'request', 'name': fileName,
+      'size': fileSize, 'from': senderName,
     });
 
     try {
-      await Nearby()
-          .sendBytesPayload(endpointId, Uint8List.fromList(utf8.encode(msg)));
+      await Nearby().sendBytesPayload(endpointId, Uint8List.fromList(utf8.encode(msg)));
     } catch (e) {
       _pendingRequests.remove(endpointId);
       return false;
     }
 
-    return completer.future
-        .timeout(const Duration(seconds: 30), onTimeout: () {
-      _pendingRequests.remove(endpointId);
-      return false;
-    });
+    return completer.future.timeout(
+      const Duration(seconds: 30),
+      onTimeout: () { _pendingRequests.remove(endpointId); return false; },
+    );
   }
 
-  // ─── Nearby Payload Callbacks ──────────────────────────────────────────────
+  // ─── Nearby Receive ────────────────────────────────────────────────────────
 
   void _onPayloadReceived(String endpointId, Payload payload) async {
-    // Refresh lastSeen so device doesn't get cleaned up during transfer
     if (_discoveredDevices.containsKey(endpointId)) {
       _discoveredDevices[endpointId] =
           _discoveredDevices[endpointId]!.copyWith(lastSeen: DateTime.now());
     }
 
-    if (payload.type == PayloadType.BYTES) {
-      _handleNearbyBytes(endpointId, payload.bytes!);
-    } else if (payload.type == PayloadType.FILE) {
-      await _handleNearbyFile(endpointId, payload);
+    if (payload.type != PayloadType.BYTES) {
+      return;
     }
-  }
+    final bytes = payload.bytes!;
 
-  void _onPayloadTransferUpdate(
-      String endpointId, PayloadTransferUpdate update) {
-    final progress = TransferProgressService();
-    if (update.status == PayloadStatus.IN_PROGRESS) {
-      progress.updateProgress(TransferProgress(
-        fileName: 'receiving...',
-        totalBytes: update.totalBytes,
-        transferredBytes: update.bytesTransferred,
-        status: TransferStatus.transferring,
-        startTime: DateTime.now(),
-      ));
-    } else if (update.status == PayloadStatus.SUCCESS) {
-      progress.clearProgress();
-    } else if (update.status == PayloadStatus.FAILURE) {
-      progress.clearProgress();
+    // Check if it's a raw file chunk (first byte = 0x01)
+    if (bytes.isNotEmpty && bytes[0] == 0x01) {
+      _handleFileChunk(endpointId, bytes.sublist(1));
+      return;
     }
-  }
 
-  void _handleNearbyBytes(String endpointId, Uint8List bytes) {
+    // Otherwise it's a JSON control message
     try {
       final msg = jsonDecode(utf8.decode(bytes)) as Map<String, dynamic>;
+      final type = msg['type'] as String?;
 
-      if (msg['type'] == 'request') {
-        // Receiver side: show accept dialog
-        final fileName = msg['name'] as String? ?? 'unknown';
-        final fileSize = (msg['size'] as num?)?.toInt() ?? 0;
-        final fromName = msg['from'] as String? ?? 'Unknown';
-        final requestId = endpointId;
-
-        final completer = Completer<bool>();
-        _pendingRequests[requestId] = completer;
-
-        _connectionRequestController.add(ConnectionRequest(
-          device: _discoveredDevices[endpointId] ??
-              Device(
-                  id: endpointId,
-                  name: fromName,
-                  type: 'phone',
-                  endpointId: endpointId),
-          fileName: fileName,
-          fileSize: fileSize,
-          onResponse: (v) async {
-            if (!completer.isCompleted) {
-              completer.complete(v);
-            }
-            // Send response back
-            final resp = jsonEncode({'type': 'response', 'accepted': v});
-            await Nearby().sendBytesPayload(
-                endpointId, Uint8List.fromList(utf8.encode(resp)));
-          },
-        ));
-      } else if (msg['type'] == 'response') {
-        // Sender side: receive accept/reject
-        final accepted = msg['accepted'] as bool? ?? false;
-        _pendingRequests.remove(endpointId)?.complete(accepted);
+      switch (type) {
+        case 'request':
+          await _handleTransferRequest(endpointId, msg);
+        case 'response':
+          final accepted = msg['accepted'] as bool? ?? false;
+          _pendingRequests.remove(endpointId)?.complete(accepted);
+        case 'file_start':
+          _handleFileStart(endpointId, msg);
+        case 'file_end':
+          await _handleFileEnd(endpointId, msg);
       }
     } catch (e) {
-      ApexLogger.instance
-          .log('NEARBY', 'Bytes parse error: $e', LogLevel.error);
+      ApexLogger.instance.log('NEARBY', 'Parse error: $e', LogLevel.error);
     }
   }
 
-  Future<void> _handleNearbyFile(String endpointId, Payload payload) async {
-    try {
-      // The file lands in the app cache - move it to downloads
-      final cachedUri = payload.filePath;
-      if (cachedUri == null) {
-        return;
-      }
+  Future<void> _handleTransferRequest(String endpointId, Map msg) async {
+    final fileName = msg['name'] as String? ?? 'unknown';
+    final fileSize = (msg['size'] as num?)?.toInt() ?? 0;
+    final fromName = msg['from'] as String? ?? 'Unknown';
 
-      final cachedFile = File(cachedUri);
-      final fileName = cachedFile.path.split('/').last;
-      final dirPath = await PathUtils.getCategoryPath(fileName);
-      await Directory(dirPath).create(recursive: true);
-      final destPath = '$dirPath/$fileName';
-      await cachedFile.copy(destPath);
-      await cachedFile.delete();
+    final completer = Completer<bool>();
+    _pendingRequests[endpointId] = completer;
 
-      final device = _discoveredDevices[endpointId];
-      _fileReceivedController.add(FileReceivedEvent(
-        fileName: fileName,
-        fileSize: await File(destPath).length(),
-        fromDevice: device?.name ?? endpointId,
-        filePath: destPath,
-      ));
-      ApexLogger.instance
-          .log('NEARBY', '✅ File saved: $destPath', LogLevel.success);
-    } catch (e) {
-      ApexLogger.instance
-          .log('NEARBY', '❌ File handle error: $e', LogLevel.error);
+    _connectionRequestController.add(ConnectionRequest(
+      device: _discoveredDevices[endpointId] ??
+          Device(id: endpointId, name: fromName, type: 'phone', endpointId: endpointId),
+      fileName: fileName, fileSize: fileSize,
+      onResponse: (v) async {
+        if (!completer.isCompleted) {
+          completer.complete(v);
+        }
+        final resp = jsonEncode({'type': 'response', 'accepted': v});
+        await Nearby().sendBytesPayload(endpointId, Uint8List.fromList(utf8.encode(resp)));
+      },
+    ));
+  }
+
+  void _handleFileStart(String endpointId, Map msg) async {
+    final fileName = _sanitize(msg['name'] as String? ?? 'unknown');
+    final fileSize = (msg['size'] as num?)?.toInt() ?? 0;
+
+    final dirPath = await PathUtils.getCategoryPath(fileName);
+    final filePath = '$dirPath/$fileName';
+
+    final sink = File(filePath).openWrite();
+    _receivingFiles[endpointId] = _ReceivingFile(
+      fileName: fileName,
+      filePath: filePath,
+      totalBytes: fileSize,
+      sink: sink,
+      startTime: DateTime.now(),
+    );
+    ApexLogger.instance.log('NEARBY', '📥 Receiving: $fileName ($fileSize bytes)', LogLevel.info);
+  }
+
+  void _handleFileChunk(String endpointId, Uint8List chunk) {
+    final rf = _receivingFiles[endpointId];
+    if (rf == null) {
+      return;
     }
+
+    rf.sink.add(chunk);
+    rf.received += chunk.length;
+
+    TransferProgressService().updateProgress(TransferProgress(
+      fileName: rf.fileName,
+      totalBytes: rf.totalBytes,
+      transferredBytes: rf.received,
+      status: TransferStatus.transferring,
+      startTime: rf.startTime,
+    ));
   }
 
-  void _deviceLostFromEndpoint(String endpointId) {
-    _discoveredDevices.remove(endpointId);
-    _devicesController.add(devices);
+  Future<void> _handleFileEnd(String endpointId, Map msg) async {
+    final rf = _receivingFiles.remove(endpointId);
+    if (rf == null) {
+      return;
+    }
+
+    await rf.sink.flush();
+    await rf.sink.close();
+    TransferProgressService().clearProgress();
+
+    final fileSize = await File(rf.filePath).length();
+    final device = _discoveredDevices[endpointId];
+
+    _fileReceivedController.add(FileReceivedEvent(
+      fileName: rf.fileName,
+      fileSize: fileSize,
+      fromDevice: device?.name ?? endpointId,
+      filePath: rf.filePath,
+    ));
+    ApexLogger.instance.log(
+        'NEARBY', '✅ Saved: ${rf.filePath} ($fileSize bytes)', LogLevel.success);
   }
 
-  // ─── HTTP Send (mDNS / Desktop) ────────────────────────────────────────────
+  void handleIncomingConnectionInitiated(String endpointId) async {
+    await Nearby().acceptConnection(
+      endpointId,
+      onPayLoadRecieved: _onPayloadReceived,
+      onPayloadTransferUpdate: (_, __) {},
+    );
+    _connectedEndpoints.add(endpointId);
+    ApexLogger.instance.log('NEARBY', '✅ Accepted: $endpointId', LogLevel.success);
+  }
 
-  Future<bool> _sendViaHttp(
-      String filePath, String fileName, Device target) async {
+  // ─── HTTP Send ─────────────────────────────────────────────────────────────
+
+  Future<bool> _sendViaHttp(String filePath, String fileName, Device target) async {
     final progress = TransferProgressService();
     final startTime = DateTime.now();
     HttpClient? client;
@@ -504,17 +508,13 @@ class ApexCore {
       }
 
       progress.updateProgress(TransferProgress(
-        fileName: fileName,
-        totalBytes: fileSize,
-        transferredBytes: 0,
-        status: TransferStatus.transferring,
-        startTime: startTime,
+        fileName: fileName, totalBytes: fileSize,
+        transferredBytes: 0, status: TransferStatus.transferring, startTime: startTime,
       ));
 
       client = HttpClient()..connectionTimeout = const Duration(seconds: 30);
       final uri = Uri.http('${target.ip}:${target.port}', '/upload', {
-        'name': fileName,
-        'from': _localDevice?.name ?? 'Unknown',
+        'name': fileName, 'from': _localDevice?.name ?? 'Unknown',
       });
       final req = await client.postUrl(uri);
       req.headers.set('Content-Length', fileSize.toString());
@@ -529,10 +529,8 @@ class ApexCore {
         transferred += chunk.length;
         if (transferred % (65536 * 8) == 0 || transferred == fileSize) {
           progress.updateProgress(TransferProgress(
-            fileName: fileName,
-            totalBytes: fileSize,
-            transferredBytes: transferred,
-            status: TransferStatus.transferring,
+            fileName: fileName, totalBytes: fileSize,
+            transferredBytes: transferred, status: TransferStatus.transferring,
             startTime: startTime,
           ));
         }
@@ -541,7 +539,7 @@ class ApexCore {
       final body = jsonDecode(await res.transform(utf8.decoder).join());
       return body['success'] == true;
     } catch (e) {
-      ApexLogger.instance.log('HTTP', '❌ Send failed: $e', LogLevel.error);
+      ApexLogger.instance.log('HTTP', '❌ $e', LogLevel.error);
       return false;
     } finally {
       client?.close(force: true);
@@ -550,22 +548,17 @@ class ApexCore {
     }
   }
 
-  Future<bool> _requestViaHttp(
-      Device target, String fileName, int fileSize) async {
+  Future<bool> _requestViaHttp(Device target, String fileName, int fileSize) async {
     HttpClient? client;
     try {
       client = HttpClient()..connectionTimeout = const Duration(seconds: 5);
       final uri = Uri.http('${target.ip}:${target.port}', '/request', {
-        'name': fileName,
-        'from': _localDevice?.name ?? 'Unknown',
-        'ip': _localDevice?.ip ?? '',
-        'size': fileSize.toString(),
+        'name': fileName, 'from': _localDevice?.name ?? 'Unknown',
+        'ip': _localDevice?.ip ?? '', 'size': fileSize.toString(),
       });
       final req = await client.postUrl(uri);
       final res = await req.close();
-      final body = jsonDecode(await res
-          .transform(utf8.decoder)
-          .join()
+      final body = jsonDecode(await res.transform(utf8.decoder).join()
           .timeout(const Duration(seconds: 35)));
       return body['accepted'] == true;
     } catch (_) {
@@ -587,24 +580,6 @@ class ApexCore {
     } finally {
       client?.close(force: true);
     }
-  }
-
-  // ─── Nearby Advertiser Accept (incoming connections) ──────────────────────
-  //
-  // When another device requests connection TO us (we are advertising),
-  // the DiscoveryService.onConnectionInitiated fires → we accept there.
-  // But we need to register proper payload callbacks.
-  // We expose this so DiscoveryService can call it.
-
-  void handleIncomingConnectionInitiated(String endpointId) async {
-    await Nearby().acceptConnection(
-      endpointId,
-      onPayLoadRecieved: _onPayloadReceived,
-      onPayloadTransferUpdate: _onPayloadTransferUpdate,
-    );
-    _connectedEndpoints.add(endpointId);
-    ApexLogger.instance
-        .log('NEARBY', '✅ Accepted incoming from $endpointId', LogLevel.success);
   }
 
   // ─── Helpers ───────────────────────────────────────────────────────────────
@@ -654,7 +629,26 @@ class ApexCore {
   }
 }
 
-// ─── Events ───────────────────────────────────────────────────────────────────
+// ─── Internal state ───────────────────────────────────────────────────────────
+
+class _ReceivingFile {
+  final String fileName;
+  final String filePath;
+  final int totalBytes;
+  final IOSink sink;
+  final DateTime startTime;
+  int received = 0;
+
+  _ReceivingFile({
+    required this.fileName,
+    required this.filePath,
+    required this.totalBytes,
+    required this.sink,
+    required this.startTime,
+  });
+}
+
+// ─── Public events ────────────────────────────────────────────────────────────
 
 class FileReceivedEvent {
   final String fileName;
@@ -662,10 +656,8 @@ class FileReceivedEvent {
   final String fromDevice;
   final String filePath;
   FileReceivedEvent({
-    required this.fileName,
-    required this.fileSize,
-    required this.fromDevice,
-    required this.filePath,
+    required this.fileName, required this.fileSize,
+    required this.fromDevice, required this.filePath,
   });
 }
 
@@ -675,9 +667,7 @@ class ConnectionRequest {
   final int fileSize;
   final Function(bool) onResponse;
   ConnectionRequest({
-    required this.device,
-    required this.fileName,
-    required this.onResponse,
-    this.fileSize = 0,
+    required this.device, required this.fileName,
+    required this.onResponse, this.fileSize = 0,
   });
 }

@@ -11,7 +11,14 @@ enum _Status { idle, sending }
 
 class ConnectionWidget extends StatefulWidget {
   final Device device;
-  const ConnectionWidget({required this.device, super.key});
+  final String? pendingFilePath;
+  final VoidCallback? onPendingFileSent;
+  const ConnectionWidget({
+    required this.device,
+    this.pendingFilePath,
+    this.onPendingFileSent,
+    super.key,
+  });
 
   @override
   State<ConnectionWidget> createState() => _ConnectionWidgetState();
@@ -61,6 +68,8 @@ class _ConnectionWidgetState extends State<ConnectionWidget>
           children: [
             _buildHeader(isDark),
             const SizedBox(height: 14),
+            if (widget.pendingFilePath != null && _status == _Status.idle)
+              _buildPendingFileBanner(l10n),
             _status == _Status.sending
                 ? _buildSendingState()
                 : _buildActions(l10n, isDark),
@@ -132,6 +141,61 @@ class _ConnectionWidgetState extends State<ConnectionWidget>
         ),
       ],
     );
+  }
+
+  Widget _buildPendingFileBanner(AppLocalizations l10n) {
+    final isAr = l10n.localeName == 'ar';
+    final fileName = widget.pendingFilePath!.split('/').last;
+    return GestureDetector(
+      onTap: _sendPendingFile,
+      child: Container(
+        margin: const EdgeInsets.only(bottom: 10),
+        padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
+        decoration: BoxDecoration(
+          color: Colors.purple.withValues(alpha: 0.1),
+          borderRadius: BorderRadius.circular(12),
+          border: Border.all(color: Colors.purple.withValues(alpha: 0.3)),
+        ),
+        child: Row(children: [
+          const Icon(Icons.note_rounded, color: Colors.purple, size: 18),
+          const SizedBox(width: 8),
+          Expanded(
+            child: Text(
+              isAr ? 'إرسال: $fileName' : 'Send: $fileName',
+              style: const TextStyle(color: Colors.purple, fontWeight: FontWeight.w600, fontSize: 13),
+              overflow: TextOverflow.ellipsis,
+            ),
+          ),
+          const Icon(Icons.send_rounded, color: Colors.purple, size: 16),
+        ]),
+      ),
+    );
+  }
+
+  Future<void> _sendPendingFile() async {
+    final path = widget.pendingFilePath;
+    if (path == null) {
+      return;
+    }
+    setState(() => _status = _Status.sending);
+    try {
+      final ok = await ApexCore.instance.sendFile(path, widget.device);
+      if (mounted) {
+        _showSnack(
+          ok ? AppLocalizations.of(context).fileSentSuccess
+             : AppLocalizations.of(context).fileSendFailed,
+          ok,
+        );
+        if (ok) {
+          widget.onPendingFileSent?.call();
+        }
+      }
+    } finally {
+      TransferProgressService().clearProgress();
+      if (mounted) {
+        setState(() => _status = _Status.idle);
+      }
+    }
   }
 
   Widget _buildActions(AppLocalizations l10n, bool isDark) {

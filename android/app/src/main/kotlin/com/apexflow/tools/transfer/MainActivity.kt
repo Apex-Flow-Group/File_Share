@@ -1,5 +1,6 @@
 package com.apexflow.tools.transfer
 
+import android.content.Intent
 import android.content.pm.ApplicationInfo
 import android.graphics.Bitmap
 import android.graphics.Canvas
@@ -12,19 +13,25 @@ import io.flutter.embedding.android.FlutterActivity
 import io.flutter.embedding.engine.FlutterEngine
 import io.flutter.plugin.common.MethodChannel
 import java.io.ByteArrayOutputStream
+import java.io.File
 
 class MainActivity : FlutterActivity() {
 
     companion object {
         private const val TAG = "MainActivity"
         private const val APPS_CHANNEL = "com.apex.core/apps"
+        private const val SINAN_CHANNEL = "com.apex.core/sinan"
     }
+
+    private var pendingSinanPath: String? = null
+    private var sinanChannel: MethodChannel? = null
 
     override fun configureFlutterEngine(@NonNull flutterEngine: FlutterEngine) {
         super.configureFlutterEngine(flutterEngine)
 
         FileOperationsHandler(this).setupChannel(flutterEngine)
 
+        // Apps channel
         MethodChannel(flutterEngine.dartExecutor.binaryMessenger, APPS_CHANNEL)
             .setMethodCallHandler { call, result ->
                 if (call.method == "getInstalledApps") {
@@ -36,6 +43,55 @@ class MainActivity : FlutterActivity() {
                     result.notImplemented()
                 }
             }
+
+        // Sinan file channel
+        sinanChannel = MethodChannel(flutterEngine.dartExecutor.binaryMessenger, SINAN_CHANNEL)
+        sinanChannel!!.setMethodCallHandler { call, result ->
+            when (call.method) {
+                "getPendingSinanFile" -> {
+                    result.success(pendingSinanPath)
+                    pendingSinanPath = null
+                }
+                else -> result.notImplemented()
+            }
+        }
+
+        // Deliver any pending .sinan file from launch intent
+        handleSinanIntent(intent)
+    }
+
+    override fun onNewIntent(intent: Intent) {
+        super.onNewIntent(intent)
+        handleSinanIntent(intent)
+    }
+
+    private fun handleSinanIntent(intent: Intent?) {
+        if (intent?.action != Intent.ACTION_VIEW) return
+        // Path passed as extra (preferred)
+        val extraPath = intent.getStringExtra("sinan_file_path")
+        if (extraPath != null && File(extraPath).exists()) {
+            deliverOrStore(extraPath)
+            return
+        }
+        // Fallback: read from content URI
+        val uri = intent.data ?: return
+        try {
+            val stream = contentResolver.openInputStream(uri) ?: return
+            val tmpFile = File(cacheDir, "received.sinan")
+            tmpFile.outputStream().use { stream.copyTo(it) }
+            deliverOrStore(tmpFile.absolutePath)
+        } catch (e: Exception) {
+            Log.e(TAG, "Failed to read .sinan from URI: ${e.message}")
+        }
+    }
+
+    private fun deliverOrStore(path: String) {
+        val ch = sinanChannel
+        if (ch != null) {
+            runOnUiThread { ch.invokeMethod("onSinanFileReceived", path) }
+        } else {
+            pendingSinanPath = path
+        }
     }
 
     private fun getInstalledApps(): List<Map<String, Any>> {

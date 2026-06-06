@@ -9,7 +9,15 @@ import '../connection_widget.dart';
 class SendTab extends StatefulWidget {
   final List<Device> devices;
   final bool isRunning;
-  const SendTab({required this.devices, required this.isRunning, super.key});
+  final String? pendingFilePath;
+  final VoidCallback? onPendingFileSent;
+  const SendTab({
+    required this.devices,
+    required this.isRunning,
+    this.pendingFilePath,
+    this.onPendingFileSent,
+    super.key,
+  });
 
   @override
   State<SendTab> createState() => _SendTabState();
@@ -166,7 +174,11 @@ class _SendTabState extends State<SendTab> with TickerProviderStateMixin {
           child: ListView.builder(
             padding: const EdgeInsets.fromLTRB(16, 8, 16, 100),
             itemCount: widget.devices.length,
-            itemBuilder: (context, i) => ConnectionWidget(device: widget.devices[i]),
+            itemBuilder: (context, i) => ConnectionWidget(
+              device: widget.devices[i],
+              pendingFilePath: widget.pendingFilePath,
+              onPendingFileSent: widget.onPendingFileSent,
+            ),
           ),
         ),
       ],
