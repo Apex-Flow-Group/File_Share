@@ -1,5 +1,3 @@
-import 'dart:io';
-
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 
@@ -16,7 +14,6 @@ import '../widgets/transfer_progress_overlay.dart';
 
 class TVHomeScreen extends StatefulWidget {
   final SettingsService settings;
-
   const TVHomeScreen({required this.settings, super.key});
 
   @override
@@ -36,23 +33,13 @@ class _TVHomeScreenState extends State<TVHomeScreen> {
   void initState() {
     super.initState();
     _initializeSystem();
-    WidgetsBinding.instance.addPostFrameCallback((_) {
-      _sendFocus.requestFocus();
-    });
+    WidgetsBinding.instance
+        .addPostFrameCallback((_) => _sendFocus.requestFocus());
   }
 
   Future<void> _initializeSystem() async {
     final core = ApexCore.instance;
-    
-    // Check WiFi connection
-    if (!await _checkWiFiConnection()) {
-      if (mounted) {
-        _showWiFiDialog();
-      }
-      return;
-    }
-    
-    // Listen to devices
+
     core.devicesStream.listen((devices) {
       if (mounted) {
         setState(() {
@@ -63,101 +50,21 @@ class _TVHomeScreenState extends State<TVHomeScreen> {
     });
 
     core.fileReceivedStream.listen((e) {
-      DesktopNotificationService.instance.showFileReceived(e.fileName, e.fromDevice);
+      DesktopNotificationService.instance
+          .showFileReceived(e.fileName, e.fromDevice);
       if (mounted) {
         setState(() => _selectedIndex = 2);
       }
     });
-    
-    // Update local device
+
     setState(() {
       _localDevice = core.localDevice;
       _isRunning = core.isRunning;
     });
-    
-    // Start the system
+
     await core.start();
-    
-    // Update running status after start
     if (mounted) {
       setState(() => _isRunning = core.isRunning);
-    }
-  }
-
-  Future<bool> _checkWiFiConnection() async {
-    try {
-      final localDevice = ApexCore.instance.localDevice;
-      return localDevice != null && localDevice.ip != '192.168.1.100';
-    } catch (e) {
-      return false;
-    }
-  }
-
-  void _showWiFiDialog() {
-    final l10n = AppLocalizations.of(context);
-    
-    showDialog(
-      context: context,
-      barrierDismissible: false,
-      builder: (context) => AlertDialog(
-        icon: Icon(
-          Icons.wifi_off,
-          size: 64,
-          color: Theme.of(context).colorScheme.error,
-        ),
-        title: Text(
-          l10n.notConnectedToWiFi,
-          textAlign: TextAlign.center,
-        ),
-        content: Text(
-          l10n.mustConnectToWiFi,
-          textAlign: TextAlign.center,
-        ),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.pop(context),
-            child: Text(l10n.cancel),
-          ),
-          ElevatedButton.icon(
-            onPressed: () async {
-              Navigator.pop(context);
-              await _openWiFiSettings();
-            },
-            icon: const Icon(Icons.wifi),
-            label: Text(l10n.openWiFiSettings),
-          ),
-          ElevatedButton.icon(
-            onPressed: () async {
-              Navigator.pop(context);
-              await _openHotspotSettings();
-            },
-            icon: const Icon(Icons.router),
-            label: Text(l10n.createHotspot),
-          ),
-        ],
-      ),
-    );
-  }
-
-  Future<void> _openWiFiSettings() async {
-    try {
-      await Process.run('am', [
-        'start',
-        '-a', 'android.settings.WIFI_SETTINGS',
-      ]);
-    } catch (e) {
-      // Ignore
-    }
-  }
-
-  Future<void> _openHotspotSettings() async {
-    try {
-      await Process.run('am', [
-        'start',
-        '-a', 'android.settings.TETHER_SETTINGS',
-      ]);
-    } catch (e) {
-      // Ignore
     }
   }
 
@@ -172,24 +79,26 @@ class _TVHomeScreenState extends State<TVHomeScreen> {
   @override
   Widget build(BuildContext context) {
     final l10n = AppLocalizations.of(context);
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+    final color = Theme.of(context).colorScheme.primary;
 
     return PopScope(
       canPop: false,
-      onPopInvokedWithResult: (didPop, result) async {
+      onPopInvokedWithResult: (didPop, _) async {
         if (!didPop) {
           final shouldExit = await showDialog<bool>(
             context: context,
-            builder: (context) => AlertDialog(
-              title: Text(l10n.exitApp, style: const TextStyle(fontSize: 20)),
-              content: Text(l10n.exitConfirmation, style: const TextStyle(fontSize: 18)),
+            builder: (_) => AlertDialog(
+              title: Text(l10n.exitApp),
+              content: Text(l10n.exitConfirmation),
               actions: [
                 TextButton(
-                  onPressed: () => Navigator.pop(context, false),
-                  child: Text(l10n.cancel, style: const TextStyle(fontSize: 18)),
-                ),
+                    onPressed: () => Navigator.pop(context, false),
+                    child: Text(l10n.cancel)),
                 TextButton(
                   onPressed: () => Navigator.pop(context, true),
-                  child: Text(l10n.exit, style: const TextStyle(fontSize: 18, color: Colors.red)),
+                  child: Text(l10n.exit,
+                      style: const TextStyle(color: Colors.red)),
                 ),
               ],
             ),
@@ -202,163 +111,243 @@ class _TVHomeScreenState extends State<TVHomeScreen> {
       child: Scaffold(
         body: TransferProgressOverlay(
           child: Row(
-          children: [
-            // Sidebar Navigation
-            Container(
-              width: 280,
-              color: Theme.of(context).colorScheme.surfaceContainerHighest,
-              child: Column(
-                children: [
-                  const SizedBox(height: 40),
-                  // Logo
-                  Icon(
-                    Icons.swap_horiz_rounded,
-                    size: 80,
-                    color: Theme.of(context).colorScheme.primary,
-                  ),
-                  const SizedBox(height: 16),
-                  Text(
-                    'Apex Transfer',
-                    style: Theme.of(context).textTheme.headlineSmall?.copyWith(
-                      fontWeight: FontWeight.bold,
+            children: [
+              // ─── Sidebar ───────────────────────────────────────────────
+              Container(
+                width: 260,
+                decoration: BoxDecoration(
+                  color: isDark
+                      ? const Color(0xFF1C1C1E)
+                      : const Color(0xFFF5F5F7),
+                  border: Border(
+                    right: BorderSide(
+                      color: isDark
+                          ? Colors.white.withValues(alpha: 0.06)
+                          : Colors.black.withValues(alpha: 0.06),
                     ),
                   ),
-                  const SizedBox(height: 40),
-                  // Navigation Items
-                  _buildNavItem(
-                    icon: Icons.send_rounded,
-                    label: l10n.send,
-                    index: 0,
-                    focusNode: _sendFocus,
+                ),
+                child: SafeArea(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.stretch,
+                    children: [
+                      // App name
+                      Padding(
+                        padding: const EdgeInsets.fromLTRB(20, 28, 20, 20),
+                        child: Row(children: [
+                          Container(
+                            width: 40,
+                            height: 40,
+                            decoration: BoxDecoration(
+                              color: color.withValues(alpha: 0.15),
+                              borderRadius: BorderRadius.circular(12),
+                            ),
+                            child: Icon(Icons.share_rounded,
+                                color: color, size: 22),
+                          ),
+                          const SizedBox(width: 12),
+                          Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              Text('Apex Transfer',
+                                  style: TextStyle(
+                                    fontWeight: FontWeight.bold,
+                                    fontSize: 17,
+                                    color: isDark ? Colors.white : Colors.black,
+                                  )),
+                              Text('TV Mode',
+                                  style: TextStyle(fontSize: 11, color: color)),
+                            ],
+                          ),
+                        ]),
+                      ),
+                      // Status
+                      Padding(
+                        padding: const EdgeInsets.symmetric(horizontal: 16),
+                        child: Container(
+                          padding: const EdgeInsets.symmetric(
+                              horizontal: 10, vertical: 6),
+                          decoration: BoxDecoration(
+                            color: _isRunning
+                                ? Colors.green.withValues(alpha: 0.12)
+                                : Colors.grey.withValues(alpha: 0.12),
+                            borderRadius: BorderRadius.circular(10),
+                          ),
+                          child: Row(mainAxisSize: MainAxisSize.min, children: [
+                            Container(
+                              width: 7,
+                              height: 7,
+                              decoration: BoxDecoration(
+                                color: _isRunning ? Colors.green : Colors.grey,
+                                shape: BoxShape.circle,
+                              ),
+                            ),
+                            const SizedBox(width: 6),
+                            Text(
+                              _isRunning ? 'Online' : 'Offline',
+                              style: TextStyle(
+                                fontSize: 12,
+                                fontWeight: FontWeight.w600,
+                                color: _isRunning ? Colors.green : Colors.grey,
+                              ),
+                            ),
+                          ]),
+                        ),
+                      ),
+                      const SizedBox(height: 20),
+                      // Nav items
+                      _TVNavItem(
+                          icon: Icons.send_rounded,
+                          label: l10n.send,
+                          selected: _selectedIndex == 0,
+                          focusNode: _sendFocus,
+                          onSelect: () => setState(() => _selectedIndex = 0),
+                          nextFocus: _receiveFocus,
+                          prevFocus: null),
+                      _TVNavItem(
+                          icon: Icons.download_rounded,
+                          label: l10n.receive,
+                          selected: _selectedIndex == 1,
+                          focusNode: _receiveFocus,
+                          onSelect: () => setState(() => _selectedIndex = 1),
+                          nextFocus: _filesFocus,
+                          prevFocus: _sendFocus),
+                      _TVNavItem(
+                          icon: Icons.folder_rounded,
+                          label: l10n.files,
+                          selected: _selectedIndex == 2,
+                          focusNode: _filesFocus,
+                          onSelect: () => setState(() => _selectedIndex = 2),
+                          nextFocus: null,
+                          prevFocus: _receiveFocus),
+                      const Spacer(),
+                      Padding(
+                        padding: const EdgeInsets.fromLTRB(16, 0, 16, 24),
+                        child: Text(
+                          l10n.pressMenuForSettings,
+                          style: TextStyle(
+                              fontSize: 11,
+                              color: isDark ? Colors.white38 : Colors.black38),
+                          textAlign: TextAlign.center,
+                        ),
+                      ),
+                    ],
                   ),
-                  const SizedBox(height: 8),
-                  _buildNavItem(
-                    icon: Icons.download_rounded,
-                    label: l10n.receive,
-                    index: 1,
-                    focusNode: _receiveFocus,
-                  ),
-                  const SizedBox(height: 8),
-                  _buildNavItem(
-                    icon: Icons.folder_rounded,
-                    label: l10n.files,
-                    index: 2,
-                    focusNode: _filesFocus,
-                  ),
-                  const Spacer(),
-                  // Settings hint
-                  Padding(
-                    padding: const EdgeInsets.all(16),
-                    child: Text(
-                      l10n.pressMenuForSettings,
-                      style: Theme.of(context).textTheme.bodySmall,
-                      textAlign: TextAlign.center,
-                    ),
-                  ),
-                ],
-              ),
-            ),
-            // Content Area
-            Expanded(
-              child: _buildContent(),
-            ),
-          ],
-        ),
-        ),
-      ),
-    );
-  }
-
-  Widget _buildNavItem({
-    required IconData icon,
-    required String label,
-    required int index,
-    required FocusNode focusNode,
-  }) {
-    final isSelected = _selectedIndex == index;
-    
-    return Focus(
-      focusNode: focusNode,
-      onKeyEvent: (node, event) {
-        if (event is KeyDownEvent) {
-          if (event.logicalKey == LogicalKeyboardKey.arrowDown ||
-              event.logicalKey == LogicalKeyboardKey.gameButtonA) {
-            if (index == 0) {
-              _receiveFocus.requestFocus();
-            }
-            if (index == 1) {
-              _filesFocus.requestFocus();
-            }
-            return KeyEventResult.handled;
-          } else if (event.logicalKey == LogicalKeyboardKey.arrowUp) {
-            if (index == 1) {
-              _sendFocus.requestFocus();
-            }
-            if (index == 2) {
-              _receiveFocus.requestFocus();
-            }
-            return KeyEventResult.handled;
-          } else if (event.logicalKey == LogicalKeyboardKey.select ||
-                     event.logicalKey == LogicalKeyboardKey.enter ||
-                     event.logicalKey == LogicalKeyboardKey.space) {
-            setState(() => _selectedIndex = index);
-            return KeyEventResult.handled;
-          }
-        }
-        return KeyEventResult.ignored;
-      },
-      child: Builder(
-        builder: (context) {
-          final hasFocus = Focus.of(context).hasFocus;
-          return Container(
-            margin: const EdgeInsets.symmetric(horizontal: 16),
-            decoration: BoxDecoration(
-              color: isSelected 
-                ? Theme.of(context).colorScheme.primary.withValues(alpha: 0.1)
-                : null,
-              border: hasFocus 
-                ? Border.all(
-                    color: Theme.of(context).colorScheme.primary,
-                    width: 3,
-                  )
-                : null,
-              borderRadius: BorderRadius.circular(12),
-            ),
-            child: ListTile(
-              leading: Icon(
-                icon,
-                color: isSelected 
-                  ? Theme.of(context).colorScheme.primary
-                  : Theme.of(context).colorScheme.onSurfaceVariant,
-                size: 32,
-              ),
-              title: Text(
-                label,
-                style: TextStyle(
-                  color: isSelected 
-                    ? Theme.of(context).colorScheme.primary
-                    : Theme.of(context).colorScheme.onSurfaceVariant,
-                  fontWeight: isSelected ? FontWeight.bold : FontWeight.normal,
-                  fontSize: 18,
                 ),
               ),
-              onTap: () => setState(() => _selectedIndex = index),
-            ),
-          );
-        },
+              // ─── Content ────────────────────────────────────────────────
+              Expanded(child: _buildContent()),
+            ],
+          ),
+        ),
       ),
     );
   }
 
   Widget _buildContent() {
-    if (_selectedIndex == 0) {
-      return TVSendTab(devices: _devices, isRunning: _isRunning);
-    } else if (_selectedIndex == 1) {
-      return ReceiveTab(localDevice: _localDevice, isRunning: _isRunning);
-    } else {
-      return TVFilesTab(
-        getReceivedFiles: () => FileStorageService().getReceivedFiles(),
-      );
+    switch (_selectedIndex) {
+      case 0:
+        return TVSendTab(devices: _devices, isRunning: _isRunning);
+      case 1:
+        return ReceiveTab(localDevice: _localDevice, isRunning: _isRunning);
+      default:
+        return TVFilesTab(
+            getReceivedFiles: () => FileStorageService().getReceivedFiles());
     }
+  }
+}
+
+// ─── TV Nav Item ──────────────────────────────────────────────────────────────
+
+class _TVNavItem extends StatelessWidget {
+  final IconData icon;
+  final String label;
+  final bool selected;
+  final FocusNode focusNode;
+  final VoidCallback onSelect;
+  final FocusNode? nextFocus;
+  final FocusNode? prevFocus;
+
+  const _TVNavItem({
+    required this.icon,
+    required this.label,
+    required this.selected,
+    required this.focusNode,
+    required this.onSelect,
+    required this.nextFocus,
+    required this.prevFocus,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    final color = Theme.of(context).colorScheme.primary;
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+
+    return Focus(
+      focusNode: focusNode,
+      onKeyEvent: (_, event) {
+        if (event is! KeyDownEvent) {
+          return KeyEventResult.ignored;
+        }
+        if (event.logicalKey == LogicalKeyboardKey.arrowDown &&
+            nextFocus != null) {
+          nextFocus!.requestFocus();
+          return KeyEventResult.handled;
+        }
+        if (event.logicalKey == LogicalKeyboardKey.arrowUp &&
+            prevFocus != null) {
+          prevFocus!.requestFocus();
+          return KeyEventResult.handled;
+        }
+        if (event.logicalKey == LogicalKeyboardKey.select ||
+            event.logicalKey == LogicalKeyboardKey.enter) {
+          onSelect();
+          return KeyEventResult.handled;
+        }
+        return KeyEventResult.ignored;
+      },
+      child: Builder(builder: (ctx) {
+        final hasFocus = Focus.of(ctx).hasFocus;
+        return Padding(
+          padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 3),
+          child: InkWell(
+            onTap: onSelect,
+            borderRadius: BorderRadius.circular(12),
+            child: AnimatedContainer(
+              duration: const Duration(milliseconds: 180),
+              padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
+              decoration: BoxDecoration(
+                color: selected
+                    ? color.withValues(alpha: isDark ? 0.2 : 0.12)
+                    : hasFocus
+                        ? color.withValues(alpha: 0.08)
+                        : Colors.transparent,
+                borderRadius: BorderRadius.circular(12),
+                border: hasFocus && !selected
+                    ? Border.all(color: color.withValues(alpha: 0.5), width: 2)
+                    : null,
+              ),
+              child: Row(children: [
+                Icon(icon,
+                    size: 22,
+                    color: selected || hasFocus
+                        ? color
+                        : (isDark ? Colors.white54 : Colors.black45)),
+                const SizedBox(width: 12),
+                Text(label,
+                    style: TextStyle(
+                      fontSize: 15,
+                      fontWeight:
+                          selected ? FontWeight.w600 : FontWeight.normal,
+                      color: selected || hasFocus
+                          ? color
+                          : (isDark ? Colors.white70 : Colors.black54),
+                    )),
+              ]),
+            ),
+          ),
+        );
+      }),
+    );
   }
 }

@@ -1,235 +1,275 @@
-import 'package:file_picker/file_picker.dart';
+import 'dart:math';
+
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 
-import '../../core/apex_core.dart';
 import '../../l10n/generated/app_localizations.dart';
 import '../../models/device.dart';
+import '../connection_widget.dart';
 
 class TVSendTab extends StatefulWidget {
   final List<Device> devices;
   final bool isRunning;
-
   const TVSendTab({required this.devices, required this.isRunning, super.key});
 
   @override
   State<TVSendTab> createState() => _TVSendTabState();
 }
 
-class _TVSendTabState extends State<TVSendTab> {
-  int _selectedDeviceIndex = 0;
-  final FocusNode _pickFileFocus = FocusNode();
-  final List<FocusNode> _deviceFocusNodes = [];
+class _TVSendTabState extends State<TVSendTab> with TickerProviderStateMixin {
+  late AnimationController _radarSpin;
+  late AnimationController _pulseFast;
+  late AnimationController _pulseSlow;
 
   @override
   void initState() {
     super.initState();
-    WidgetsBinding.instance.addPostFrameCallback((_) {
-      _pickFileFocus.requestFocus();
-    });
-  }
-
-  @override
-  void didUpdateWidget(TVSendTab oldWidget) {
-    super.didUpdateWidget(oldWidget);
-    if (widget.devices.length != oldWidget.devices.length) {
-      _updateFocusNodes();
-    }
-  }
-
-  void _updateFocusNodes() {
-    for (var node in _deviceFocusNodes) {
-      node.dispose();
-    }
-    _deviceFocusNodes.clear();
-    for (int i = 0; i < widget.devices.length; i++) {
-      _deviceFocusNodes.add(FocusNode());
-    }
+    _radarSpin = AnimationController(vsync: this, duration: const Duration(seconds: 3))..repeat();
+    _pulseFast = AnimationController(vsync: this, duration: const Duration(milliseconds: 1200))..repeat(reverse: true);
+    _pulseSlow = AnimationController(vsync: this, duration: const Duration(milliseconds: 1800))..repeat(reverse: true);
   }
 
   @override
   void dispose() {
-    _pickFileFocus.dispose();
-    for (var node in _deviceFocusNodes) {
-      node.dispose();
-    }
+    _radarSpin.dispose();
+    _pulseFast.dispose();
+    _pulseSlow.dispose();
     super.dispose();
   }
 
   @override
   Widget build(BuildContext context) {
-    final l10n = AppLocalizations.of(context);
-
-    return Padding(
-      padding: const EdgeInsets.all(32),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Text(l10n.send, style: Theme.of(context).textTheme.headlineMedium),
-          const SizedBox(height: 24),
-          _buildPickFileButton(l10n),
-          const SizedBox(height: 32),
-          Text(l10n.availableDevices, style: Theme.of(context).textTheme.titleLarge),
-          const SizedBox(height: 16),
-          Expanded(child: _buildDevicesList(l10n)),
-        ],
-      ),
+    return SafeArea(
+      bottom: false,
+      child: widget.devices.isEmpty ? _buildScanning() : _buildDeviceList(),
     );
   }
 
-  Widget _buildPickFileButton(AppLocalizations l10n) {
-    return Focus(
-      focusNode: _pickFileFocus,
-      onKeyEvent: (node, event) {
-        if (event is KeyDownEvent) {
-          if (event.logicalKey == LogicalKeyboardKey.arrowDown && widget.devices.isNotEmpty) {
-            _deviceFocusNodes[0].requestFocus();
-            return KeyEventResult.handled;
-          } else if (event.logicalKey == LogicalKeyboardKey.select ||
-                     event.logicalKey == LogicalKeyboardKey.enter ||
-                     event.logicalKey == LogicalKeyboardKey.space) {
-            _pickFile();
-            return KeyEventResult.handled;
-          }
-        }
-        return KeyEventResult.ignored;
-      },
-      child: Builder(
-        builder: (context) {
-          final hasFocus = Focus.of(context).hasFocus;
-          return Container(
-            decoration: BoxDecoration(
-              border: hasFocus ? Border.all(color: Theme.of(context).colorScheme.primary, width: 3) : null,
-              borderRadius: BorderRadius.circular(12),
+  Widget _buildScanning() {
+    final l10n = AppLocalizations.of(context);
+    final color = Theme.of(context).colorScheme.primary;
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+
+    return Column(children: [
+      _buildHeader(l10n),
+      Expanded(
+        child: Center(
+          child: Column(mainAxisAlignment: MainAxisAlignment.center, children: [
+            SizedBox(
+              width: 220, height: 220,
+              child: Stack(alignment: Alignment.center, children: [
+                AnimatedBuilder(
+                  animation: _pulseSlow,
+                  builder: (_, __) => Container(
+                    width: 180 + _pulseSlow.value * 40,
+                    height: 180 + _pulseSlow.value * 40,
+                    decoration: BoxDecoration(
+                      shape: BoxShape.circle,
+                      border: Border.all(
+                        color: color.withValues(alpha: 0.15 - _pulseSlow.value * 0.12),
+                        width: 1.5,
+                      ),
+                    ),
+                  ),
+                ),
+                AnimatedBuilder(
+                  animation: _pulseFast,
+                  builder: (_, __) => Container(
+                    width: 130 + _pulseFast.value * 30,
+                    height: 130 + _pulseFast.value * 30,
+                    decoration: BoxDecoration(
+                      shape: BoxShape.circle,
+                      border: Border.all(
+                        color: color.withValues(alpha: 0.25 - _pulseFast.value * 0.2),
+                        width: 1.5,
+                      ),
+                    ),
+                  ),
+                ),
+                Container(
+                  width: 100, height: 100,
+                  decoration: BoxDecoration(
+                    shape: BoxShape.circle,
+                    color: color.withValues(alpha: isDark ? 0.15 : 0.08),
+                  ),
+                ),
+                if (widget.isRunning)
+                  AnimatedBuilder(
+                    animation: _radarSpin,
+                    builder: (_, __) => Transform.rotate(
+                      angle: _radarSpin.value * 2 * pi,
+                      child: CustomPaint(
+                        size: const Size(100, 100),
+                        painter: _RadarSweepPainter(color),
+                      ),
+                    ),
+                  ),
+                Icon(
+                  widget.isRunning ? Icons.wifi_tethering_rounded : Icons.wifi_tethering_off_rounded,
+                  size: 42, color: color,
+                ),
+              ]),
             ),
-            child: ElevatedButton.icon(
-              onPressed: _pickFile,
-              icon: const Icon(Icons.file_upload, size: 32),
-              label: Text(l10n.pickFile, style: const TextStyle(fontSize: 20)),
-              style: ElevatedButton.styleFrom(
-                padding: const EdgeInsets.symmetric(horizontal: 32, vertical: 24),
-                backgroundColor: Theme.of(context).colorScheme.primary,
-                foregroundColor: Theme.of(context).colorScheme.onPrimary,
+            const SizedBox(height: 28),
+            Text(
+              widget.isRunning ? l10n.discovering : l10n.noDevicesFound,
+              style: Theme.of(context).textTheme.titleLarge?.copyWith(fontWeight: FontWeight.bold),
+            ),
+            const SizedBox(height: 8),
+            Text(
+              l10n.makeSureDevicesOnSameNetwork,
+              textAlign: TextAlign.center,
+              style: Theme.of(context).textTheme.bodyMedium?.copyWith(
+                color: Theme.of(context).colorScheme.onSurfaceVariant,
               ),
             ),
-          );
-        },
+          ]),
+        ),
       ),
-    );
+    ]);
   }
 
-  Widget _buildDevicesList(AppLocalizations l10n) {
-    if (!widget.isRunning) {
-      return Center(child: Text(l10n.systemNotRunning, style: const TextStyle(fontSize: 18)));
-    }
-
-    if (widget.devices.isEmpty) {
-      return Center(child: Text(l10n.noDevicesFound, style: const TextStyle(fontSize: 18)));
-    }
-
-    _updateFocusNodes();
-
-    return ListView.builder(
-      itemCount: widget.devices.length,
-      itemBuilder: (context, index) {
-        final device = widget.devices[index];
-        return Padding(
-          padding: const EdgeInsets.only(bottom: 12),
-          child: _buildDeviceCard(device, index, l10n),
-        );
-      },
-    );
+  Widget _buildDeviceList() {
+    final l10n = AppLocalizations.of(context);
+    return Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+      _buildHeader(l10n),
+      Expanded(
+        child: ListView.builder(
+          padding: const EdgeInsets.fromLTRB(16, 8, 16, 40),
+          itemCount: widget.devices.length,
+          itemBuilder: (context, i) => _TVDeviceCard(device: widget.devices[i]),
+        ),
+      ),
+    ]);
   }
 
-  Widget _buildDeviceCard(Device device, int index, AppLocalizations l10n) {
+  Widget _buildHeader(AppLocalizations l10n) {
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+    final color = Theme.of(context).colorScheme.primary;
+
+    return Container(
+      padding: const EdgeInsets.fromLTRB(20, 16, 20, 20),
+      decoration: BoxDecoration(
+        gradient: LinearGradient(
+          begin: Alignment.topLeft, end: Alignment.bottomRight,
+          colors: isDark
+              ? [color.withValues(alpha: 0.2), color.withValues(alpha: 0.05)]
+              : [color.withValues(alpha: 0.12), color.withValues(alpha: 0.03)],
+        ),
+        borderRadius: const BorderRadius.vertical(bottom: Radius.circular(28)),
+      ),
+      child: Row(children: [
+        Container(
+          padding: const EdgeInsets.all(10),
+          decoration: BoxDecoration(
+            color: color.withValues(alpha: 0.15),
+            borderRadius: BorderRadius.circular(14),
+          ),
+          child: Icon(Icons.send_rounded, color: color, size: 22),
+        ),
+        const SizedBox(width: 12),
+        Expanded(
+          child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+            Text(l10n.send,
+                style: Theme.of(context).textTheme.titleLarge?.copyWith(fontWeight: FontWeight.bold)),
+            Text(
+              '${widget.devices.length} ${l10n.availableDevices}',
+              style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                color: Theme.of(context).colorScheme.onSurfaceVariant,
+              ),
+            ),
+          ]),
+        ),
+        if (widget.isRunning)
+          Container(
+            padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
+            decoration: BoxDecoration(
+              color: Colors.green.withValues(alpha: 0.15),
+              borderRadius: BorderRadius.circular(20),
+            ),
+            child: Row(mainAxisSize: MainAxisSize.min, children: [
+              Container(width: 6, height: 6,
+                  decoration: const BoxDecoration(color: Colors.green, shape: BoxShape.circle)),
+              const SizedBox(width: 5),
+              const Text('Live', style: TextStyle(color: Colors.green, fontSize: 12, fontWeight: FontWeight.w600)),
+            ]),
+          ),
+      ]),
+    );
+  }
+}
+
+// ─── TV Device Card ───────────────────────────────────────────────────────────
+// Same as ConnectionWidget but with TV-friendly focus border
+
+class _TVDeviceCard extends StatefulWidget {
+  final Device device;
+  const _TVDeviceCard({required this.device});
+
+  @override
+  State<_TVDeviceCard> createState() => _TVDeviceCardState();
+}
+
+class _TVDeviceCardState extends State<_TVDeviceCard> {
+  final _focusNode = FocusNode();
+
+  @override
+  void dispose() {
+    _focusNode.dispose();
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final color = Theme.of(context).colorScheme.primary;
     return Focus(
-      focusNode: _deviceFocusNodes[index],
-      onKeyEvent: (node, event) {
-        if (event is KeyDownEvent) {
-          if (event.logicalKey == LogicalKeyboardKey.arrowUp) {
-            if (index == 0) {
-              _pickFileFocus.requestFocus();
-            } else {
-              _deviceFocusNodes[index - 1].requestFocus();
-            }
-            return KeyEventResult.handled;
-          } else if (event.logicalKey == LogicalKeyboardKey.arrowDown) {
-            if (index < widget.devices.length - 1) {
-              _deviceFocusNodes[index + 1].requestFocus();
-            }
-            return KeyEventResult.handled;
-          } else if (event.logicalKey == LogicalKeyboardKey.select ||
-                     event.logicalKey == LogicalKeyboardKey.enter ||
-                     event.logicalKey == LogicalKeyboardKey.space) {
-            setState(() => _selectedDeviceIndex = index);
-            return KeyEventResult.handled;
-          }
+      focusNode: _focusNode,
+      onKeyEvent: (_, event) {
+        if (event is KeyDownEvent &&
+            (event.logicalKey == LogicalKeyboardKey.select ||
+             event.logicalKey == LogicalKeyboardKey.enter)) {
+          _focusNode.requestFocus();
+          return KeyEventResult.handled;
         }
         return KeyEventResult.ignored;
       },
-      child: Builder(
-        builder: (context) {
-          final hasFocus = Focus.of(context).hasFocus;
-          final isSelected = _selectedDeviceIndex == index;
-          return Container(
-            decoration: BoxDecoration(
-              color: isSelected ? Theme.of(context).colorScheme.primaryContainer : null,
-              border: hasFocus 
-                ? Border.all(color: Theme.of(context).colorScheme.primary, width: 3)
-                : Border.all(color: Theme.of(context).colorScheme.outline),
-              borderRadius: BorderRadius.circular(12),
-            ),
-            child: ListTile(
-              contentPadding: const EdgeInsets.all(16),
-              leading: Icon(Icons.devices, size: 40, color: Theme.of(context).colorScheme.primary),
-              title: Text(device.name, style: const TextStyle(fontSize: 20, fontWeight: FontWeight.bold)),
-              subtitle: Text('${device.ip}:${device.port}', style: const TextStyle(fontSize: 16)),
-              trailing: isSelected ? const Icon(Icons.check_circle, color: Colors.green, size: 32) : null,
-              onTap: () => setState(() => _selectedDeviceIndex = index),
-            ),
-          );
-        },
-      ),
+      child: Builder(builder: (ctx) {
+        final hasFocus = Focus.of(ctx).hasFocus;
+        return AnimatedContainer(
+          duration: const Duration(milliseconds: 180),
+          margin: const EdgeInsets.only(bottom: 12),
+          decoration: hasFocus
+              ? BoxDecoration(
+                  borderRadius: BorderRadius.circular(22),
+                  border: Border.all(color: color, width: 2.5),
+                  boxShadow: [BoxShadow(color: color.withValues(alpha: 0.2), blurRadius: 12)],
+                )
+              : null,
+          child: ConnectionWidget(device: widget.device),
+        );
+      }),
     );
   }
+}
 
-  Future<void> _pickFile() async {
-    final l10n = AppLocalizations.of(context);
-    
-    if (widget.devices.isEmpty) {
-      _showMessage(l10n.noDevicesFound);
-      return;
-    }
+// ─── Radar Sweep Painter ─────────────────────────────────────────────────────
 
-    final result = await FilePicker.platform.pickFiles();
-    if (result == null || result.files.isEmpty) {
-      return;
-    }
+class _RadarSweepPainter extends CustomPainter {
+  final Color color;
+  _RadarSweepPainter(this.color);
 
-    final file = result.files.first;
-    if (file.path == null) {
-      return;
-    }
-
-    final targetDevice = widget.devices[_selectedDeviceIndex];
-    
-    if (!mounted) {
-      return;
-    }
-    _showMessage('${l10n.sending} ${file.name}...');
-
-    final success = await ApexCore.instance.sendFile(file.path!, targetDevice);
-    
-    if (mounted) {
-      _showMessage(success 
-        ? '✅ ${l10n.fileSentSuccessfully}'
-        : '❌ ${l10n.sendFailed}');
-    }
+  @override
+  void paint(Canvas canvas, Size size) {
+    final center = Offset(size.width / 2, size.height / 2);
+    final radius = size.width / 2;
+    final paint = Paint()
+      ..shader = SweepGradient(
+        colors: [color.withValues(alpha: 0.0), color.withValues(alpha: 0.5)],
+        stops: const [0.7, 1.0],
+      ).createShader(Rect.fromCircle(center: center, radius: radius));
+    canvas.drawCircle(center, radius, paint);
   }
 
-  void _showMessage(String message) {
-    ScaffoldMessenger.of(context).showSnackBar(
-      SnackBar(content: Text(message, style: const TextStyle(fontSize: 18))),
-    );
-  }
+  @override
+  bool shouldRepaint(_) => false;
 }
