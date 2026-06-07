@@ -6,11 +6,13 @@ import 'package:flutter/services.dart';
 import '../core/apex_core.dart';
 import '../l10n/generated/app_localizations.dart';
 import '../models/device.dart';
+import '../services/desktop_notification_service.dart';
 import '../services/file_storage_service.dart';
 import '../services/settings_service.dart';
 import '../widgets/tabs/receive_tab.dart';
 import '../widgets/tabs/tv_files_tab.dart';
 import '../widgets/tabs/tv_send_tab.dart';
+import '../widgets/transfer_progress_overlay.dart';
 
 class TVHomeScreen extends StatefulWidget {
   final SettingsService settings;
@@ -57,6 +59,13 @@ class _TVHomeScreenState extends State<TVHomeScreen> {
           _devices.clear();
           _devices.addAll(devices);
         });
+      }
+    });
+
+    core.fileReceivedStream.listen((e) {
+      DesktopNotificationService.instance.showFileReceived(e.fileName, e.fromDevice);
+      if (mounted) {
+        setState(() => _selectedIndex = 2);
       }
     });
     
@@ -191,7 +200,8 @@ class _TVHomeScreenState extends State<TVHomeScreen> {
         }
       },
       child: Scaffold(
-        body: Row(
+        body: TransferProgressOverlay(
+          child: Row(
           children: [
             // Sidebar Navigation
             Container(
@@ -253,6 +263,7 @@ class _TVHomeScreenState extends State<TVHomeScreen> {
               child: _buildContent(),
             ),
           ],
+        ),
         ),
       ),
     );

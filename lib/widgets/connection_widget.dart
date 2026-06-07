@@ -5,6 +5,7 @@ import '../core/apex_core.dart';
 import '../l10n/generated/app_localizations.dart';
 import '../models/device.dart';
 import '../screens/apps_selection_screen.dart';
+import '../services/desktop_notification_service.dart';
 import '../services/transfer_progress_service.dart';
 
 enum _Status { idle, sending }
@@ -33,7 +34,8 @@ class _ConnectionWidgetState extends State<ConnectionWidget>
   void initState() {
     super.initState();
     _sendAnim = AnimationController(
-      vsync: this, duration: const Duration(milliseconds: 600),
+      vsync: this,
+      duration: const Duration(milliseconds: 600),
     );
   }
 
@@ -110,7 +112,8 @@ class _ConnectionWidgetState extends State<ConnectionWidget>
             children: [
               Text(
                 widget.device.name,
-                style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 16),
+                style:
+                    const TextStyle(fontWeight: FontWeight.bold, fontSize: 16),
                 maxLines: 1,
                 overflow: TextOverflow.ellipsis,
               ),
@@ -162,7 +165,10 @@ class _ConnectionWidgetState extends State<ConnectionWidget>
           Expanded(
             child: Text(
               isAr ? 'إرسال: $fileName' : 'Send: $fileName',
-              style: const TextStyle(color: Colors.purple, fontWeight: FontWeight.w600, fontSize: 13),
+              style: const TextStyle(
+                  color: Colors.purple,
+                  fontWeight: FontWeight.w600,
+                  fontSize: 13),
               overflow: TextOverflow.ellipsis,
             ),
           ),
@@ -182,8 +188,9 @@ class _ConnectionWidgetState extends State<ConnectionWidget>
       final ok = await ApexCore.instance.sendFile(path, widget.device);
       if (mounted) {
         _showSnack(
-          ok ? AppLocalizations.of(context).fileSentSuccess
-             : AppLocalizations.of(context).fileSendFailed,
+          ok
+              ? AppLocalizations.of(context).fileSentSuccess
+              : AppLocalizations.of(context).fileSendFailed,
           ok,
         );
         if (ok) {
@@ -201,7 +208,8 @@ class _ConnectionWidgetState extends State<ConnectionWidget>
   Widget _buildActions(AppLocalizations l10n, bool isDark) {
     return Row(
       children: [
-        Expanded(child: _ActionButton(
+        Expanded(
+            child: _ActionButton(
           icon: Icons.folder_open_rounded,
           label: l10n.sendFile,
           color: Theme.of(context).colorScheme.primary,
@@ -209,7 +217,8 @@ class _ConnectionWidgetState extends State<ConnectionWidget>
           onTap: _sendFile,
         )),
         const SizedBox(width: 10),
-        Expanded(child: _ActionButton(
+        Expanded(
+            child: _ActionButton(
           icon: Icons.android_rounded,
           label: l10n.sendApp,
           color: const Color(0xFF34C759),
@@ -233,7 +242,8 @@ class _ConnectionWidgetState extends State<ConnectionWidget>
           children: [
             Row(children: [
               const SizedBox(
-                width: 18, height: 18,
+                width: 18,
+                height: 18,
                 child: CircularProgressIndicator(strokeWidth: 2),
               ),
               const SizedBox(width: 10),
@@ -253,7 +263,8 @@ class _ConnectionWidgetState extends State<ConnectionWidget>
               child: LinearProgressIndicator(
                 value: pct > 0 ? pct / 100 : null,
                 minHeight: 6,
-                backgroundColor: Theme.of(context).colorScheme.surfaceContainerHighest,
+                backgroundColor:
+                    Theme.of(context).colorScheme.surfaceContainerHighest,
               ),
             ),
             if (pct > 0) ...[
@@ -273,27 +284,40 @@ class _ConnectionWidgetState extends State<ConnectionWidget>
       return;
     }
 
+    final files = result.files.where((f) => f.path != null).toList();
     setState(() => _status = _Status.sending);
+    final progress = TransferProgressService();
+    progress.startBatch(files.length);
     int success = 0;
     try {
-      for (final f in result.files) {
-        if (f.path == null) {
-          continue;
+      for (final f in files) {
+        if (progress.isCancelled) {
+          break;
         }
         if (await ApexCore.instance.sendFile(f.path!, widget.device)) {
           success++;
         }
+        progress.nextFile();
       }
       if (mounted) {
         _showSnack(
-          success == result.files.length
+          success == files.length
               ? AppLocalizations.of(context).fileSentSuccess
               : AppLocalizations.of(context).fileSendFailed,
           success > 0,
         );
       }
+      if (success > 0) {
+        await DesktopNotificationService.instance.showFileSent(
+          files.length == 1 ? files.first.name : '${files.length} files',
+        );
+      } else {
+        await DesktopNotificationService.instance.showSendFailed(
+          files.length == 1 ? files.first.name : '${files.length} files',
+        );
+      }
     } finally {
-      TransferProgressService().clearProgress();
+      progress.clearProgress();
       if (mounted) {
         setState(() => _status = _Status.idle);
       }
@@ -314,14 +338,15 @@ class _ConnectionWidgetState extends State<ConnectionWidget>
             }
             setState(() => _status = _Status.sending);
             try {
-              final ok = await ApexCore.instance
-                  .sendFileWithName(apkFile.path, '$appName.apk', widget.device);
+              final ok = await ApexCore.instance.sendFileWithName(
+                  apkFile.path, '$appName.apk', widget.device);
               if (!mounted) {
                 return;
               }
               _showSnack(
-                ok ? AppLocalizations.of(context).appSent
-                   : AppLocalizations.of(context).sendFailed,
+                ok
+                    ? AppLocalizations.of(context).appSent
+                    : AppLocalizations.of(context).sendFailed,
                 ok,
               );
             } finally {
@@ -350,19 +375,27 @@ class _ConnectionWidgetState extends State<ConnectionWidget>
 
   IconData get _deviceIcon {
     switch (widget.device.type.toLowerCase()) {
-      case 'tv': return Icons.tv_rounded;
-      case 'desktop': return Icons.computer_rounded;
-      case 'tablet': return Icons.tablet_rounded;
-      default: return Icons.smartphone_rounded;
+      case 'tv':
+        return Icons.tv_rounded;
+      case 'desktop':
+        return Icons.computer_rounded;
+      case 'tablet':
+        return Icons.tablet_rounded;
+      default:
+        return Icons.smartphone_rounded;
     }
   }
 
   Color get _deviceColor {
     switch (widget.device.type.toLowerCase()) {
-      case 'tv': return const Color(0xFF5856D6);
-      case 'desktop': return const Color(0xFF007AFF);
-      case 'tablet': return const Color(0xFFFF9500);
-      default: return const Color(0xFF34C759);
+      case 'tv':
+        return const Color(0xFF5856D6);
+      case 'desktop':
+        return const Color(0xFF007AFF);
+      case 'tablet':
+        return const Color(0xFFFF9500);
+      default:
+        return const Color(0xFF34C759);
     }
   }
 }

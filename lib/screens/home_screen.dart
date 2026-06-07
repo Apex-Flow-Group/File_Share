@@ -7,6 +7,7 @@ import 'package:flutter/services.dart';
 import '../core/apex_core.dart';
 import '../l10n/generated/app_localizations.dart';
 import '../models/device.dart';
+import '../services/desktop_notification_service.dart';
 import '../services/file_operations_service.dart';
 import '../services/file_storage_service.dart';
 import '../services/settings_service.dart';
@@ -59,9 +60,9 @@ class _HomeScreenState extends State<HomeScreen> {
     ApexCore.instance.fileReceivedStream.listen((e) {
       if (mounted) {
         _showFileReceivedSheet(e);
-        // Switch to files tab and force refresh
         setState(() => _currentIndex = 2);
       }
+      DesktopNotificationService.instance.showFileReceived(e.fileName, e.fromDevice);
     });
     ApexCore.instance.connectionRequestStream.listen((r) {
       if (mounted) {

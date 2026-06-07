@@ -8,6 +8,7 @@ import 'managers/permission_manager.dart';
 import 'screens/home_screen.dart';
 import 'screens/intro_screen.dart';
 import 'screens/tv_home_screen.dart';
+import 'services/desktop_notification_service.dart';
 import 'services/settings_service.dart';
 import 'utils/platform_detector.dart';
 import 'widgets/transfer_progress_overlay.dart';
@@ -34,6 +35,9 @@ void main() async {
 
   // Initialize ApexCore
   await ApexCore.instance.initialize();
+
+  // Initialize desktop notifications
+  await DesktopNotificationService.instance.initialize();
   
   final settings = SettingsService();
   await settings.loadSettings();

@@ -13,6 +13,22 @@ class TransferProgressService {
   TransferProgress? get currentProgress => _currentProgress;
   bool _isCancelled = false;
 
+  // Multi-file tracking
+  int _totalFiles = 1;
+  int _currentFileIndex = 0;
+  int get totalFiles => _totalFiles;
+  int get currentFileIndex => _currentFileIndex;
+
+  void startBatch(int total) {
+    _totalFiles = total;
+    _currentFileIndex = 0;
+    _isCancelled = false;
+  }
+
+  void nextFile() {
+    _currentFileIndex++;
+  }
+
   void updateProgress(TransferProgress progress) {
     _currentProgress = progress;
     _progressController.add(progress);
@@ -21,6 +37,8 @@ class TransferProgressService {
   void clearProgress() {
     _currentProgress = null;
     _isCancelled = false;
+    _totalFiles = 1;
+    _currentFileIndex = 0;
     _progressController.add(null);
   }
 
