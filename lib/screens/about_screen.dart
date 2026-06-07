@@ -9,7 +9,6 @@ import 'package:url_launcher/url_launcher.dart';
 import '../l10n/generated/app_localizations.dart';
 
 const _kPlayStoreUrl = 'https://play.google.com/store/apps/dev?id=5409981776310932919';
-const _kWebsiteUrl = 'https://apexflow.now';
 
 class AboutScreen extends StatefulWidget {
   final bool embedded;
