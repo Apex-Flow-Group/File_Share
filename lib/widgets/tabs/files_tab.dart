@@ -492,6 +492,7 @@ class _FileTile extends StatelessWidget {
                     color: Theme.of(context).colorScheme.onSurfaceVariant),
                 shape: RoundedRectangleBorder(
                     borderRadius: BorderRadius.circular(14)),
+                position: PopupMenuPosition.over,
                 itemBuilder: (_) => [
                   PopupMenuItem(
                     onTap: onOpenFile,
@@ -589,16 +590,19 @@ class _SortChip extends StatelessWidget {
       onTap: () => showModalBottomSheet(
         context: context,
         backgroundColor: Colors.transparent,
-        builder: (_) => _SortSheet(
+        builder: (_) => SafeArea(
+        top: false,
+        child: _SortSheet(
           current: value,
           options: options,
           onChanged: onChanged,
         ),
       ),
+      ),
       child: Container(
         padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
         decoration: BoxDecoration(
-          color: Theme.of(context).colorScheme.primaryContainer,
+          color: Theme.of(context).colorScheme.surfaceContainerHighest,
           borderRadius: BorderRadius.circular(8),
         ),
         child: Row(mainAxisSize: MainAxisSize.min, children: [
@@ -606,11 +610,11 @@ class _SortChip extends StatelessWidget {
               style: TextStyle(
                 fontSize: 12,
                 fontWeight: FontWeight.w600,
-                color: Theme.of(context).colorScheme.primary,
+                color: Theme.of(context).colorScheme.onSurface,
               )),
           const SizedBox(width: 4),
           Icon(Icons.expand_more_rounded, size: 14,
-              color: Theme.of(context).colorScheme.primary),
+              color: Theme.of(context).colorScheme.onSurface),
         ]),
       ),
     );
@@ -664,7 +668,7 @@ class _SortSheet extends StatelessWidget {
             shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
           )),
           const SizedBox(height: 8),
-          SizedBox(height: MediaQuery.of(context).padding.bottom),
+          SafeArea(top: false, child: SizedBox(height: MediaQuery.of(context).padding.bottom > 0 ? 0 : 8)),
         ],
       ),
     );

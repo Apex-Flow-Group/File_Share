@@ -1,10 +1,15 @@
+import 'dart:io';
+
+import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:package_info_plus/package_info_plus.dart';
+import 'package:qr_flutter/qr_flutter.dart';
 import 'package:url_launcher/url_launcher.dart';
 
 import '../l10n/generated/app_localizations.dart';
 
-
+const _kPlayStoreUrl = 'https://play.google.com/store/apps/dev?id=5409981776310932919';
+const _kWebsiteUrl = 'https://apexflow.now';
 
 class AboutScreen extends StatefulWidget {
   final bool embedded;
@@ -70,6 +75,12 @@ class _AboutScreenState extends State<AboutScreen> {
             textAlign: TextAlign.center,
             style: TextStyle(color: Colors.grey[600])),
         const SizedBox(height: 28),
+        // ── Android QR (Desktop only) ──────────────────────────
+        if (!kIsWeb && (Platform.isWindows || Platform.isLinux))
+          _buildAndroidCard(context),
+        if (!kIsWeb && (Platform.isWindows || Platform.isLinux))
+          const SizedBox(height: 20),
+        // ──────────────────────────────────────────────────────
         _buildSection(l10n.importantLinks, [
           _buildLink(context, l10n.privacyPolicy, 'https://apexflow.dev/privacy'),
           _buildLink(context, l10n.termsOfService, 'https://apexflow.dev/terms'),
@@ -86,6 +97,106 @@ class _AboutScreenState extends State<AboutScreen> {
         const Text('contact.apex.flow@gmail.com',
             style: TextStyle(fontSize: 12, color: Colors.blue)),
       ],
+    );
+  }
+
+  Widget _buildAndroidCard(BuildContext context) {
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+    final isAr = Localizations.localeOf(context).languageCode == 'ar';
+    const color = Color(0xFF34C759);
+
+    return Container(
+      padding: const EdgeInsets.all(20),
+      decoration: BoxDecoration(
+        color: isDark ? const Color(0xFF1E1E1E) : Colors.white,
+        borderRadius: BorderRadius.circular(20),
+        border: Border.all(color: color.withValues(alpha: 0.3)),
+        boxShadow: [
+          BoxShadow(
+            color: Colors.black.withValues(alpha: isDark ? 0.3 : 0.06),
+            blurRadius: 16, offset: const Offset(0, 4),
+          ),
+        ],
+      ),
+      child: Column(
+        children: [
+          Row(children: [
+            Container(
+              padding: const EdgeInsets.all(8),
+              decoration: BoxDecoration(
+                color: color.withValues(alpha: 0.12),
+                borderRadius: BorderRadius.circular(12),
+              ),
+              child: const Icon(Icons.android_rounded, color: color, size: 22),
+            ),
+            const SizedBox(width: 12),
+            Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(
+                    isAr ? 'حمّل على أندرويد' : 'Get on Android',
+                    style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 15),
+                  ),
+                  Text(
+                    isAr ? 'امسح الباركود بهاتفك' : 'Scan with your phone',
+                    style: TextStyle(fontSize: 12, color: Colors.grey[600]),
+                  ),
+                ],
+              ),
+            ),
+          ]),
+          const SizedBox(height: 16),
+          Row(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              // QR Code
+              Container(
+                decoration: BoxDecoration(
+                  color: Colors.white,
+                  borderRadius: BorderRadius.circular(12),
+                  border: Border.all(color: color.withValues(alpha: 0.3)),
+                ),
+                padding: const EdgeInsets.all(8),
+                child: QrImageView(
+                  data: _kPlayStoreUrl,
+                  version: QrVersions.auto,
+                  size: 120,
+                  backgroundColor: Colors.white,
+                ),
+              ),
+              const SizedBox(width: 16),
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      isAr ? 'أو اضغط على الزر' : 'Or tap the button',
+                      style: TextStyle(fontSize: 12, color: Colors.grey[600]),
+                    ),
+                    const SizedBox(height: 10),
+                    SizedBox(
+                      width: double.infinity,
+                      child: FilledButton.icon(
+                        onPressed: () => _launchUrl(_kPlayStoreUrl),
+                        icon: const Icon(Icons.shop_rounded, size: 18),
+                        label: Text(
+                          isAr ? 'Google Play' : 'Google Play',
+                          style: const TextStyle(fontSize: 13),
+                        ),
+                        style: FilledButton.styleFrom(
+                          backgroundColor: color,
+                          padding: const EdgeInsets.symmetric(vertical: 10),
+                        ),
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+            ],
+          ),
+        ],
+      ),
     );
   }
 

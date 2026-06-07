@@ -9,6 +9,7 @@ import '../managers/device_manager.dart';
 import '../models/device.dart';
 import '../models/transfer_progress.dart';
 import '../services/discovery_service.dart';
+import '../services/settings_service.dart';
 import '../services/transfer_progress_service.dart';
 import '../utils/apex_logger.dart';
 import '../utils/path_utils.dart';
@@ -37,15 +38,25 @@ class ApexCore {
   // Max size to send via bytes payload (50MB - above this use file payload)
 
   final _devicesController = StreamController<List<Device>>.broadcast();
-  final _fileReceivedController = StreamController<FileReceivedEvent>.broadcast();
-  final _connectionRequestController = StreamController<ConnectionRequest>.broadcast();
+  final _fileReceivedController =
+      StreamController<FileReceivedEvent>.broadcast();
+  final _connectionRequestController =
+      StreamController<ConnectionRequest>.broadcast();
 
   Stream<List<Device>> get devicesStream => _devicesController.stream;
-  Stream<FileReceivedEvent> get fileReceivedStream => _fileReceivedController.stream;
-  Stream<ConnectionRequest> get connectionRequestStream => _connectionRequestController.stream;
+  Stream<FileReceivedEvent> get fileReceivedStream =>
+      _fileReceivedController.stream;
+  Stream<ConnectionRequest> get connectionRequestStream =>
+      _connectionRequestController.stream;
   Device? get localDevice => _localDevice;
   List<Device> get devices => _discoveredDevices.values.toList();
   bool get isRunning => _isRunning;
+
+  NetworkMode _networkMode = NetworkMode.wifi;
+
+  void setNetworkMode(NetworkMode mode) {
+    _networkMode = mode;
+  }
 
   bool get _isAndroid => !kIsWeb && Platform.isAndroid;
 
@@ -60,7 +71,9 @@ class ApexCore {
     final ip = await _getLocalIp();
     _localDevice = Device(
       id: 'local-${DateTime.now().millisecondsSinceEpoch}',
-      name: name, type: type, ip: ip,
+      name: name,
+      type: type,
+      ip: ip,
     );
   }
 
@@ -124,7 +137,9 @@ class ApexCore {
     try {
       final path = req.uri.path;
       if (req.method == 'GET' && path == '/ping') {
-        req.response..statusCode = HttpStatus.ok..write('pong');
+        req.response
+          ..statusCode = HttpStatus.ok
+          ..write('pong');
         await req.response.close();
       } else if (req.method == 'POST' && path == '/request') {
         await _handlePermissionRequest(req);
@@ -151,18 +166,24 @@ class ApexCore {
     _pendingRequests[requestId] = completer;
 
     _connectionRequestController.add(ConnectionRequest(
-      device: Device(id: requestId, name: fromDevice, type: 'unknown', ip: fromIp),
-      fileName: fileName, fileSize: fileSize,
-      onResponse: (v) { if (!completer.isCompleted) {
-        completer.complete(v);
-      } },
+      device:
+          Device(id: requestId, name: fromDevice, type: 'unknown', ip: fromIp),
+      fileName: fileName,
+      fileSize: fileSize,
+      onResponse: (v) {
+        if (!completer.isCompleted) {
+          completer.complete(v);
+        }
+      },
     ));
 
     final accepted = await completer.future
         .timeout(const Duration(seconds: 30), onTimeout: () => false);
     _pendingRequests.remove(requestId);
 
-    req.response..statusCode = HttpStatus.ok..write(jsonEncode({'accepted': accepted}));
+    req.response
+      ..statusCode = HttpStatus.ok
+      ..write(jsonEncode({'accepted': accepted}));
     await req.response.close();
   }
 
@@ -182,12 +203,16 @@ class ApexCore {
     await sink.flush();
     await sink.close();
 
-    req.response..statusCode = HttpStatus.ok..write(jsonEncode({'success': true}));
+    req.response
+      ..statusCode = HttpStatus.ok
+      ..write(jsonEncode({'success': true}));
     await req.response.close();
 
     _fileReceivedController.add(FileReceivedEvent(
-      fileName: fileName, fileSize: total,
-      fromDevice: fromDevice, filePath: filePath,
+      fileName: fileName,
+      fileSize: total,
+      fromDevice: fromDevice,
+      filePath: filePath,
     ));
   }
 
@@ -196,7 +221,8 @@ class ApexCore {
   Future<bool> sendFile(String filePath, Device target) =>
       sendFileWithName(filePath, filePath.split('/').last, target);
 
-  Future<bool> sendFileWithName(String filePath, String fileName, Device target) async {
+  Future<bool> sendFileWithName(
+      String filePath, String fileName, Device target) async {
     if (_isAndroid && target.isNearby) {
       return _sendViaNearby(filePath, fileName, target);
     }
@@ -205,7 +231,8 @@ class ApexCore {
 
   // ─── Nearby Send ───────────────────────────────────────────────────────────
 
-  Future<bool> _sendViaNearby(String filePath, String fileName, Device target) async {
+  Future<bool> _sendViaNearby(
+      String filePath, String fileName, Device target) async {
     final file = File(filePath);
     if (!await file.exists()) {
       return false;
@@ -218,13 +245,15 @@ class ApexCore {
     if (!_connectedEndpoints.contains(endpointId)) {
       final ok = await _connectNearby(endpointId, target.name);
       if (!ok) {
-        ApexLogger.instance.log('NEARBY', '❌ Connection failed', LogLevel.error);
+        ApexLogger.instance
+            .log('NEARBY', '❌ Connection failed', LogLevel.error);
         return false;
       }
     }
 
     // Step 2: request permission via bytes
-    final accepted = await _requestViaNearbyBytes(endpointId, fileName, fileSize, target.name);
+    final accepted = await _requestViaNearbyBytes(
+        endpointId, fileName, fileSize, target.name);
     if (!accepted) {
       ApexLogger.instance.log('NEARBY', '❌ Rejected', LogLevel.warning);
       return false;
@@ -235,8 +264,10 @@ class ApexCore {
     try {
       final startTime = DateTime.now();
       progress.updateProgress(TransferProgress(
-        fileName: fileName, totalBytes: fileSize,
-        transferredBytes: 0, status: TransferStatus.transferring,
+        fileName: fileName,
+        totalBytes: fileSize,
+        transferredBytes: 0,
+        status: TransferStatus.transferring,
         startTime: startTime,
       ));
 
@@ -269,8 +300,10 @@ class ApexCore {
 
         if (transferred % (chunkSize * 8) == 0 || transferred >= fileSize) {
           progress.updateProgress(TransferProgress(
-            fileName: fileName, totalBytes: fileSize,
-            transferredBytes: transferred, status: TransferStatus.transferring,
+            fileName: fileName,
+            totalBytes: fileSize,
+            transferredBytes: transferred,
+            status: TransferStatus.transferring,
             startTime: startTime,
           ));
         }
@@ -281,7 +314,8 @@ class ApexCore {
       await Nearby().sendBytesPayload(
           endpointId, Uint8List.fromList(utf8.encode(endMarker)));
 
-      ApexLogger.instance.log('NEARBY', '✅ File sent: $fileName ($fileSize bytes)', LogLevel.success);
+      ApexLogger.instance.log('NEARBY',
+          '✅ File sent: $fileName ($fileSize bytes)', LogLevel.success);
       return true;
     } catch (e) {
       ApexLogger.instance.log('NEARBY', '❌ Send error: $e', LogLevel.error);
@@ -328,22 +362,28 @@ class ApexCore {
 
     return completer.future.timeout(
       const Duration(seconds: 15),
-      onTimeout: () { _nearbyConnectCompleters.remove(endpointId); return false; },
+      onTimeout: () {
+        _nearbyConnectCompleters.remove(endpointId);
+        return false;
+      },
     );
   }
 
-  Future<bool> _requestViaNearbyBytes(
-      String endpointId, String fileName, int fileSize, String senderName) async {
+  Future<bool> _requestViaNearbyBytes(String endpointId, String fileName,
+      int fileSize, String senderName) async {
     final completer = Completer<bool>();
     _pendingRequests[endpointId] = completer;
 
     final msg = jsonEncode({
-      'type': 'request', 'name': fileName,
-      'size': fileSize, 'from': senderName,
+      'type': 'request',
+      'name': fileName,
+      'size': fileSize,
+      'from': senderName,
     });
 
     try {
-      await Nearby().sendBytesPayload(endpointId, Uint8List.fromList(utf8.encode(msg)));
+      await Nearby()
+          .sendBytesPayload(endpointId, Uint8List.fromList(utf8.encode(msg)));
     } catch (e) {
       _pendingRequests.remove(endpointId);
       return false;
@@ -351,7 +391,10 @@ class ApexCore {
 
     return completer.future.timeout(
       const Duration(seconds: 30),
-      onTimeout: () { _pendingRequests.remove(endpointId); return false; },
+      onTimeout: () {
+        _pendingRequests.remove(endpointId);
+        return false;
+      },
     );
   }
 
@@ -405,14 +448,20 @@ class ApexCore {
 
     _connectionRequestController.add(ConnectionRequest(
       device: _discoveredDevices[endpointId] ??
-          Device(id: endpointId, name: fromName, type: 'phone', endpointId: endpointId),
-      fileName: fileName, fileSize: fileSize,
+          Device(
+              id: endpointId,
+              name: fromName,
+              type: 'phone',
+              endpointId: endpointId),
+      fileName: fileName,
+      fileSize: fileSize,
       onResponse: (v) async {
         if (!completer.isCompleted) {
           completer.complete(v);
         }
         final resp = jsonEncode({'type': 'response', 'accepted': v});
-        await Nearby().sendBytesPayload(endpointId, Uint8List.fromList(utf8.encode(resp)));
+        await Nearby().sendBytesPayload(
+            endpointId, Uint8List.fromList(utf8.encode(resp)));
       },
     ));
   }
@@ -432,7 +481,8 @@ class ApexCore {
       sink: sink,
       startTime: DateTime.now(),
     );
-    ApexLogger.instance.log('NEARBY', '📥 Receiving: $fileName ($fileSize bytes)', LogLevel.info);
+    ApexLogger.instance.log(
+        'NEARBY', '📥 Receiving: $fileName ($fileSize bytes)', LogLevel.info);
   }
 
   void _handleFileChunk(String endpointId, Uint8List chunk) {
@@ -472,8 +522,8 @@ class ApexCore {
       fromDevice: device?.name ?? endpointId,
       filePath: rf.filePath,
     ));
-    ApexLogger.instance.log(
-        'NEARBY', '✅ Saved: ${rf.filePath} ($fileSize bytes)', LogLevel.success);
+    ApexLogger.instance.log('NEARBY',
+        '✅ Saved: ${rf.filePath} ($fileSize bytes)', LogLevel.success);
   }
 
   void handleIncomingConnectionInitiated(String endpointId) async {
@@ -483,12 +533,14 @@ class ApexCore {
       onPayloadTransferUpdate: (_, __) {},
     );
     _connectedEndpoints.add(endpointId);
-    ApexLogger.instance.log('NEARBY', '✅ Accepted: $endpointId', LogLevel.success);
+    ApexLogger.instance
+        .log('NEARBY', '✅ Accepted: $endpointId', LogLevel.success);
   }
 
   // ─── HTTP Send ─────────────────────────────────────────────────────────────
 
-  Future<bool> _sendViaHttp(String filePath, String fileName, Device target) async {
+  Future<bool> _sendViaHttp(
+      String filePath, String fileName, Device target) async {
     final progress = TransferProgressService();
     final startTime = DateTime.now();
     HttpClient? client;
@@ -508,13 +560,17 @@ class ApexCore {
       }
 
       progress.updateProgress(TransferProgress(
-        fileName: fileName, totalBytes: fileSize,
-        transferredBytes: 0, status: TransferStatus.transferring, startTime: startTime,
+        fileName: fileName,
+        totalBytes: fileSize,
+        transferredBytes: 0,
+        status: TransferStatus.transferring,
+        startTime: startTime,
       ));
 
       client = HttpClient()..connectionTimeout = const Duration(seconds: 30);
       final uri = Uri.http('${target.ip}:${target.port}', '/upload', {
-        'name': fileName, 'from': _localDevice?.name ?? 'Unknown',
+        'name': fileName,
+        'from': _localDevice?.name ?? 'Unknown',
       });
       final req = await client.postUrl(uri);
       req.headers.set('Content-Length', fileSize.toString());
@@ -529,8 +585,10 @@ class ApexCore {
         transferred += chunk.length;
         if (transferred % (65536 * 8) == 0 || transferred == fileSize) {
           progress.updateProgress(TransferProgress(
-            fileName: fileName, totalBytes: fileSize,
-            transferredBytes: transferred, status: TransferStatus.transferring,
+            fileName: fileName,
+            totalBytes: fileSize,
+            transferredBytes: transferred,
+            status: TransferStatus.transferring,
             startTime: startTime,
           ));
         }
@@ -548,17 +606,22 @@ class ApexCore {
     }
   }
 
-  Future<bool> _requestViaHttp(Device target, String fileName, int fileSize) async {
+  Future<bool> _requestViaHttp(
+      Device target, String fileName, int fileSize) async {
     HttpClient? client;
     try {
       client = HttpClient()..connectionTimeout = const Duration(seconds: 5);
       final uri = Uri.http('${target.ip}:${target.port}', '/request', {
-        'name': fileName, 'from': _localDevice?.name ?? 'Unknown',
-        'ip': _localDevice?.ip ?? '', 'size': fileSize.toString(),
+        'name': fileName,
+        'from': _localDevice?.name ?? 'Unknown',
+        'ip': _localDevice?.ip ?? '',
+        'size': fileSize.toString(),
       });
       final req = await client.postUrl(uri);
       final res = await req.close();
-      final body = jsonDecode(await res.transform(utf8.decoder).join()
+      final body = jsonDecode(await res
+          .transform(utf8.decoder)
+          .join()
           .timeout(const Duration(seconds: 35)));
       return body['accepted'] == true;
     } catch (_) {
@@ -596,20 +659,63 @@ class ApexCore {
 
   Future<String> _getLocalIp() async {
     try {
-      for (final iface in await NetworkInterface.list()) {
-        if (iface.name.toLowerCase().contains('wlan') ||
-            iface.name.toLowerCase().contains('wifi') ||
-            iface.name.toLowerCase().contains('eth')) {
+      // Try UDP trick: connect to external address to get the right local IP
+      final socket = await RawDatagramSocket.bind(InternetAddress.anyIPv4, 0);
+      socket.close();
+
+      // Filter by network mode on desktop
+      if (!kIsWeb &&
+          (Platform.isWindows || Platform.isLinux || Platform.isMacOS)) {
+        final interfaces = await NetworkInterface.list(
+          includeLinkLocal: false,
+          type: InternetAddressType.IPv4,
+        );
+        final isWifi = _networkMode == NetworkMode.wifi;
+        // Keywords for wifi vs ethernet interfaces
+        final wifiKeywords = ['wi-fi', 'wifi', 'wlan', 'wireless', 'wlp'];
+        final lanKeywords = ['ethernet', 'eth', 'local area', 'enp', 'eno'];
+        final keywords = isWifi ? wifiKeywords : lanKeywords;
+
+        for (final iface in interfaces) {
+          final name = iface.name.toLowerCase();
+          if (keywords.any((k) => name.contains(k))) {
+            for (final addr in iface.addresses) {
+              if (!addr.isLoopback) {
+                ApexLogger.instance.log(
+                    'NET',
+                    '${isWifi ? 'WiFi' : 'LAN'} iface: ${iface.name} -> ${addr.address}',
+                    LogLevel.info);
+                return addr.address;
+              }
+            }
+          }
+        }
+        // Fallback: any non-loopback
+        for (final iface in interfaces) {
           for (final addr in iface.addresses) {
-            if (addr.type == InternetAddressType.IPv4 && !addr.isLoopback) {
+            if (!addr.isLoopback) {
               return addr.address;
             }
           }
         }
       }
-      for (final iface in await NetworkInterface.list()) {
+
+      // Non-desktop: use socket trick
+      try {
+        final s = await Socket.connect('8.8.8.8', 53,
+            timeout: const Duration(seconds: 2));
+        final ip = s.address.address;
+        s.destroy();
+        if (!ip.startsWith('127.')) {
+          return ip;
+        }
+      } catch (_) {}
+
+      // Last fallback: scan all
+      for (final iface in await NetworkInterface.list(
+          includeLinkLocal: false, type: InternetAddressType.IPv4)) {
         for (final addr in iface.addresses) {
-          if (addr.type == InternetAddressType.IPv4 && !addr.isLoopback) {
+          if (!addr.isLoopback && addr.type == InternetAddressType.IPv4) {
             return addr.address;
           }
         }
@@ -656,8 +762,10 @@ class FileReceivedEvent {
   final String fromDevice;
   final String filePath;
   FileReceivedEvent({
-    required this.fileName, required this.fileSize,
-    required this.fromDevice, required this.filePath,
+    required this.fileName,
+    required this.fileSize,
+    required this.fromDevice,
+    required this.filePath,
   });
 }
 
@@ -667,7 +775,9 @@ class ConnectionRequest {
   final int fileSize;
   final Function(bool) onResponse;
   ConnectionRequest({
-    required this.device, required this.fileName,
-    required this.onResponse, this.fileSize = 0,
+    required this.device,
+    required this.fileName,
+    required this.onResponse,
+    this.fileSize = 0,
   });
 }

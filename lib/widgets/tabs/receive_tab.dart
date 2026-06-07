@@ -1,5 +1,9 @@
+import 'dart:io';
+
+import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
+import 'package:url_launcher/url_launcher.dart';
 
 import '../../l10n/generated/app_localizations.dart';
 import '../../models/device.dart';
@@ -197,6 +201,11 @@ class _ReceiveTabState extends State<ReceiveTab>
           _buildDeviceCard(device, l10n),
           const SizedBox(height: 14),
           _buildTipsCard(l10n),
+          // PC download banner (Android only)
+          if (!kIsWeb && Platform.isAndroid) ...[
+            const SizedBox(height: 14),
+            _buildPcBanner(),
+          ],
         ],
       ),
     );
@@ -424,6 +433,59 @@ class _ReceiveTabState extends State<ReceiveTab>
             },
           ),
       ],
+    );
+  }
+
+  Widget _buildPcBanner() {
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+    final isAr = Localizations.localeOf(context).languageCode == 'ar';
+    const color = Color(0xFF007AFF);
+
+    return GestureDetector(
+      onTap: () async {
+        final uri = Uri.parse('https://apexflow.now');
+        if (await canLaunchUrl(uri)) {
+          await launchUrl(uri, mode: LaunchMode.externalApplication);
+        }
+      },
+      child: Container(
+        padding: const EdgeInsets.all(16),
+        decoration: BoxDecoration(
+          color: color.withValues(alpha: isDark ? 0.12 : 0.07),
+          borderRadius: BorderRadius.circular(18),
+          border: Border.all(color: color.withValues(alpha: 0.25)),
+        ),
+        child: Row(children: [
+          Container(
+            padding: const EdgeInsets.all(10),
+            decoration: BoxDecoration(
+              color: color.withValues(alpha: 0.15),
+              borderRadius: BorderRadius.circular(12),
+            ),
+            child: const Icon(Icons.computer_rounded, color: color, size: 22),
+          ),
+          const SizedBox(width: 14),
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  isAr ? 'حمّل نسخة الكمبيوتر' : 'Get PC Version',
+                  style: const TextStyle(
+                    fontWeight: FontWeight.bold, fontSize: 14, color: color,
+                  ),
+                ),
+                const SizedBox(height: 2),
+                Text(
+                  isAr ? 'Windows و Linux • apexflow.now' : 'Windows & Linux • apexflow.now',
+                  style: TextStyle(fontSize: 12, color: Colors.grey[600]),
+                ),
+              ],
+            ),
+          ),
+          const Icon(Icons.arrow_outward_rounded, size: 18, color: color),
+        ]),
+      ),
     );
   }
 

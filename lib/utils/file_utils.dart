@@ -1,9 +1,12 @@
 import 'dart:io';
 
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:open_filex/open_filex.dart';
 
 class FileUtils {
+
+  static const _channel = MethodChannel('com.apex.core/file_ops');
 
   static String formatSize(int bytes) {
     if (bytes < 1024) {
@@ -84,22 +87,36 @@ class FileUtils {
   }
   
   static Future<void> openFile(String filePath) async {
+    if (Platform.isAndroid) {
+      try {
+        // Use native FileProvider to get content:// URI - works on all Android versions
+        await _channel.invokeMethod('openFile', {'path': filePath});
+        return;
+      } catch (_) {
+        // fallback to open_filex
+      }
+    }
     final result = await OpenFilex.open(filePath);
     if (result.type != ResultType.done && result.type != ResultType.noAppToOpen) {
       throw Exception(result.message);
     }
   }
-  
+
   static Future<void> openFileLocation(String filePath) async {
+    if (Platform.isAndroid) {
+      try {
+        await _channel.invokeMethod('openFileLocation', {'path': filePath});
+        return;
+      } catch (_) {
+        // fallback
+      }
+    }
     final dir = File(filePath).parent;
     if (!await dir.exists()) {
       throw Exception('المجلد غير موجود');
     }
-    
-    // فتح المجلد نفسه كملف - سيفتح مدير الملفات
     final result = await OpenFilex.open(dir.path);
     if (result.type == ResultType.noAppToOpen || result.type == ResultType.error) {
-      // محاولة بديلة: فتح أي ملف في المجلد لعرض المجلد
       final files = await dir.list().toList();
       if (files.isNotEmpty) {
         await OpenFilex.open(files.first.path);

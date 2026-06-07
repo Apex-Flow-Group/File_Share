@@ -1,6 +1,6 @@
 import 'dart:io';
 
-import 'package:file_share_app/services/file_operations_service.dart';
+import 'package:apex_file_share/services/file_operations_service.dart';
 import 'package:flutter_test/flutter_test.dart';
 
 void main() {

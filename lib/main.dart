@@ -1,3 +1,5 @@
+import 'dart:io';
+
 import 'package:flutter/material.dart';
 
 import 'core/apex_core.dart';
@@ -12,10 +14,24 @@ import 'widgets/transfer_progress_overlay.dart';
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
-  
+
+  // Add Windows Firewall rule silently (requires admin or will silently fail)
+  if (Platform.isWindows) {
+    try {
+      final exe = Platform.resolvedExecutable;
+      await Process.run('netsh', [
+        'advfirewall', 'firewall', 'add', 'rule',
+        'name=ApexFileShare',
+        'dir=in', 'action=allow',
+        'program=$exe',
+        'enable=yes', 'profile=private,domain',
+      ]);
+    } catch (_) {}
+  }
+
   // Initialize Platform Detector
   await PlatformDetector.instance.initialize();
-  
+
   // Initialize ApexCore
   await ApexCore.instance.initialize();
   
@@ -35,7 +51,7 @@ class FileShareApp extends StatelessWidget {
       animation: settings,
       builder: (context, _) {
         return MaterialApp(
-          title: 'Apex Sender',
+          title: 'Apex File Share',
           debugShowCheckedModeBanner: false,
           locale: settings.locale,
           localeResolutionCallback: (locale, supportedLocales) {

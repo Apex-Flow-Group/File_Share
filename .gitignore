@@ -56,3 +56,24 @@ app.*.map.json
 **/*.apk
 **/*.aab
 /outputs/
+
+# Installer output
+/installer/
+
+# Temp files in root
+STATS.md
+TV_COMPLETION_SUMMARY.md
+TV_GUIDE.md
+TV_TEST_CHECKLIST.md
+TV_UPDATE_SUMMARY.md
+CLEANUP_INSTRUCTIONS.md
+cleanup_unused_files.sh
+build_apk.sh
+install_linux.sh
+install_to_phone.sh
+launch_linux.sh
+uninstall_linux.sh
+ico.png
+
+# Old docs folder
+/docs/

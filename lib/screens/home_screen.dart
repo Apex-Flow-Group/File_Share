@@ -73,6 +73,7 @@ class _HomeScreenState extends State<HomeScreen> {
 
   Future<void> _startSystem() async {
     try {
+      ApexCore.instance.setNetworkMode(widget.settings.networkMode);
       await ApexCore.instance.start();
       if (mounted) {
         setState(() => _isRunning = true);
@@ -92,6 +93,7 @@ class _HomeScreenState extends State<HomeScreen> {
   }
 
   Future<void> _restartSystem() async {
+    ApexCore.instance.setNetworkMode(widget.settings.networkMode);
     await _stopSystem();
     await Future.delayed(const Duration(milliseconds: 400));
     await _startSystem();
@@ -193,6 +195,8 @@ class _HomeScreenState extends State<HomeScreen> {
               child: Column(children: [
                 Text(event.fileName,
                     textAlign: TextAlign.center,
+                    maxLines: 2,
+                    overflow: TextOverflow.ellipsis,
                     style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 16)),
                 const SizedBox(height: 4),
                 Text(_formatSize(event.fileSize),
@@ -201,24 +205,34 @@ class _HomeScreenState extends State<HomeScreen> {
             ),
             const SizedBox(height: 8),
             Text('${l10n.from}: ${event.fromDevice}',
+                maxLines: 1, overflow: TextOverflow.ellipsis,
                 style: TextStyle(color: Colors.grey[600])),
             Text('${l10n.savedIn}: $displayPath',
+                maxLines: 1, overflow: TextOverflow.ellipsis,
                 style: TextStyle(fontSize: 12, color: Colors.grey[500])),
             const SizedBox(height: 20),
             Row(children: [
               Expanded(
                 child: FilledButton.icon(
                   onPressed: () { Navigator.pop(context); setState(() => _currentIndex = 2); },
-                  icon: const Icon(Icons.folder_open_rounded),
-                  label: Text(l10n.openFiles),
-                  style: FilledButton.styleFrom(backgroundColor: Colors.green),
+                  icon: const Icon(Icons.folder_open_rounded, size: 18),
+                  label: Text(l10n.openFiles,
+                      maxLines: 1, overflow: TextOverflow.ellipsis),
+                  style: FilledButton.styleFrom(
+                    backgroundColor: Colors.green,
+                    padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 12),
+                  ),
                 ),
               ),
-              const SizedBox(width: 12),
+              const SizedBox(width: 8),
               Expanded(
                 child: OutlinedButton(
                   onPressed: () => Navigator.pop(context),
-                  child: Text(l10n.close),
+                  style: OutlinedButton.styleFrom(
+                    padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 12),
+                  ),
+                  child: Text(l10n.close,
+                      maxLines: 1, overflow: TextOverflow.ellipsis),
                 ),
               ),
             ]),
@@ -605,6 +619,15 @@ class _HomeScreenState extends State<HomeScreen> {
                     onTap: () => setState(() => _currentIndex = 2),
                   ),
                   const Spacer(),
+                  // Network mode toggle (Desktop only - Windows/Linux)
+                  if (!Platform.isMacOS)
+                    Padding(
+                      padding: const EdgeInsets.fromLTRB(12, 0, 12, 4),
+                      child: _NetworkModeTile(
+                        settings: widget.settings,
+                        onChanged: _restartSystem,
+                      ),
+                    ),
                   // Bottom actions
                   Padding(
                     padding: const EdgeInsets.fromLTRB(12, 0, 12, 8),
@@ -1348,6 +1371,140 @@ class _MenuOverlay extends StatelessWidget {
           ),
         ),
       ],
+    );
+  }
+}
+
+// ─── Network Mode Tile (Desktop only) ───────────────────────────────────────
+
+class _NetworkModeTile extends StatelessWidget {
+  final SettingsService settings;
+  final VoidCallback onChanged;
+  const _NetworkModeTile({required this.settings, required this.onChanged});
+
+  @override
+  Widget build(BuildContext context) {
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+    final isAr = Localizations.localeOf(context).languageCode == 'ar';
+
+    return AnimatedBuilder(
+      animation: settings,
+      builder: (context, _) {
+        final isWifi = settings.networkMode == NetworkMode.wifi;
+        return Container(
+          decoration: BoxDecoration(
+            color: isDark
+                ? Colors.white.withValues(alpha: 0.05)
+                : Colors.black.withValues(alpha: 0.04),
+            borderRadius: BorderRadius.circular(12),
+          ),
+          padding: const EdgeInsets.all(10),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Row(children: [
+                Icon(
+                  isWifi ? Icons.wifi_rounded : Icons.cable_rounded,
+                  size: 15,
+                  color: isDark ? Colors.white54 : Colors.black45,
+                ),
+                const SizedBox(width: 6),
+                Text(
+                  isAr ? 'نوع الشبكة' : 'Network',
+                  style: TextStyle(
+                    fontSize: 11,
+                    fontWeight: FontWeight.w600,
+                    color: isDark ? Colors.white54 : Colors.black45,
+                  ),
+                ),
+              ]),
+              const SizedBox(height: 8),
+              Row(
+                children: [
+                  Expanded(
+                    child: _ModeBtn(
+                      icon: Icons.wifi_rounded,
+                      label: isAr ? 'واي فاي' : 'WiFi',
+                      selected: isWifi,
+                      onTap: () {
+                        settings.setNetworkMode(NetworkMode.wifi);
+                        onChanged();
+                      },
+                      isDark: isDark,
+                    ),
+                  ),
+                  const SizedBox(width: 6),
+                  Expanded(
+                    child: _ModeBtn(
+                      icon: Icons.cable_rounded,
+                      label: isAr ? 'شبكة' : 'LAN',
+                      selected: !isWifi,
+                      onTap: () {
+                        settings.setNetworkMode(NetworkMode.ethernet);
+                        onChanged();
+                      },
+                      isDark: isDark,
+                    ),
+                  ),
+                ],
+              ),
+            ],
+          ),
+        );
+      },
+    );
+  }
+}
+
+class _ModeBtn extends StatelessWidget {
+  final IconData icon;
+  final String label;
+  final bool selected;
+  final VoidCallback onTap;
+  final bool isDark;
+
+  const _ModeBtn({
+    required this.icon,
+    required this.label,
+    required this.selected,
+    required this.onTap,
+    required this.isDark,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    final color = Theme.of(context).colorScheme.primary;
+    return GestureDetector(
+      onTap: onTap,
+      child: AnimatedContainer(
+        duration: const Duration(milliseconds: 180),
+        padding: const EdgeInsets.symmetric(vertical: 6),
+        decoration: BoxDecoration(
+          color: selected
+              ? color.withValues(alpha: isDark ? 0.25 : 0.14)
+              : Colors.transparent,
+          borderRadius: BorderRadius.circular(8),
+          border: Border.all(
+            color: selected
+                ? color.withValues(alpha: 0.5)
+                : (isDark
+                    ? Colors.white.withValues(alpha: 0.1)
+                    : Colors.black.withValues(alpha: 0.1)),
+          ),
+        ),
+        child: Column(mainAxisSize: MainAxisSize.min, children: [
+          Icon(icon, size: 16, color: selected ? color : (isDark ? Colors.white54 : Colors.black45)),
+          const SizedBox(height: 2),
+          Text(
+            label,
+            style: TextStyle(
+              fontSize: 10,
+              fontWeight: selected ? FontWeight.w700 : FontWeight.normal,
+              color: selected ? color : (isDark ? Colors.white54 : Colors.black45),
+            ),
+          ),
+        ]),
+      ),
     );
   }
 }

@@ -1,5 +1,5 @@
-import 'package:file_share_app/main.dart';
-import 'package:file_share_app/services/settings_service.dart';
+import 'package:apex_file_share/main.dart';
+import 'package:apex_file_share/services/settings_service.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 

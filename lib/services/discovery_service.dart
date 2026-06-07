@@ -48,6 +48,7 @@ class DiscoveryService {
           InternetAddress.anyIPv4, _udpPort,
           reuseAddress: true, reusePort: false);
       _udpSocket!.broadcastEnabled = true;
+      _udpSocket!.multicastHops = 128;
 
       _udpSocket!.listen((event) {
         if (event != RawSocketEvent.read) return;
@@ -87,17 +88,34 @@ class DiscoveryService {
   void _broadcast() {
     final d = _localDevice;
     if (d == null || _udpSocket == null) return;
+    final msg = '$_magic${jsonEncode({
+      'id': d.id,
+      'name': d.name,
+      'type': d.type,
+      'port': d.port,
+    })}';
+    final data = utf8.encode(msg);
+    // Send to both general broadcast and subnet broadcast
+    for (final addr in _getBroadcastAddresses()) {
+      try {
+        _udpSocket!.send(data, InternetAddress(addr), _udpPort);
+      } catch (_) {}
+    }
+  }
+
+  List<String> _getBroadcastAddresses() {
+    final addrs = <String>['255.255.255.255'];
     try {
-      final msg = '$_magic${jsonEncode({
-        'id': d.id,
-        'name': d.name,
-        'type': d.type,
-        'port': d.port,
-      })}';
-      final data = utf8.encode(msg);
-      _udpSocket!.send(
-          data, InternetAddress('255.255.255.255'), _udpPort);
+      // Try to get subnet broadcast from local IP
+      final ip = _localDevice?.ip;
+      if (ip != null && ip != '127.0.0.1') {
+        final parts = ip.split('.');
+        if (parts.length == 4) {
+          addrs.add('${parts[0]}.${parts[1]}.${parts[2]}.255');
+        }
+      }
     } catch (_) {}
+    return addrs;
   }
 
   // ─── Nearby Connections (Android phone ↔ phone) ───────────────────────────
