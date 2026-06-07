@@ -89,10 +89,18 @@ class ApexCore {
 
     _discoveryService = DiscoveryService();
     _discoveryService!.onDeviceFound.listen((device) {
+      // Don't update device list during active transfer
+      if (TransferProgressService().isTransferring) {
+        return;
+      }
       _discoveredDevices[device.id] = device;
       _devicesController.add(devices);
     });
     _discoveryService!.onDeviceLost.listen((id) {
+      // Don't remove devices during active transfer
+      if (TransferProgressService().isTransferring) {
+        return;
+      }
       _discoveredDevices.remove(id);
       _connectedEndpoints.remove(id);
       _devicesController.add(devices);
@@ -649,6 +657,10 @@ class ApexCore {
 
   void _startCleanup() {
     _cleanupTimer = Timer.periodic(_deviceTimeout, (_) {
+      // Don't cleanup during active transfer
+      if (TransferProgressService().isTransferring) {
+        return;
+      }
       final now = DateTime.now();
       _discoveredDevices.removeWhere((_, d) =>
           d.lastSeen != null &&

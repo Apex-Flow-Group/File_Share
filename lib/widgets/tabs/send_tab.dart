@@ -4,6 +4,7 @@ import 'package:flutter/material.dart';
 
 import '../../l10n/generated/app_localizations.dart';
 import '../../models/device.dart';
+import '../../services/transfer_progress_service.dart';
 import '../connection_widget.dart';
 
 class SendTab extends StatefulWidget {
@@ -171,14 +172,24 @@ class _SendTabState extends State<SendTab> with TickerProviderStateMixin {
       children: [
         _buildHeader(l10n),
         Expanded(
-          child: ListView.builder(
-            padding: const EdgeInsets.fromLTRB(16, 8, 16, 100),
-            itemCount: widget.devices.length,
-            itemBuilder: (context, i) => ConnectionWidget(
-              device: widget.devices[i],
-              pendingFilePath: widget.pendingFilePath,
-              onPendingFileSent: widget.onPendingFileSent,
-            ),
+          child: StreamBuilder<dynamic>(
+            stream: TransferProgressService().progressStream,
+            builder: (context, snapshot) {
+              final isTransferring = snapshot.data != null;
+              return ListView.builder(
+                // Disable scroll physics during transfer to prevent accidental pull-to-refresh
+                physics: isTransferring
+                    ? const NeverScrollableScrollPhysics()
+                    : const AlwaysScrollableScrollPhysics(),
+                padding: const EdgeInsets.fromLTRB(16, 8, 16, 100),
+                itemCount: widget.devices.length,
+                itemBuilder: (context, i) => ConnectionWidget(
+                  device: widget.devices[i],
+                  pendingFilePath: widget.pendingFilePath,
+                  onPendingFileSent: widget.onPendingFileSent,
+                ),
+              );
+            },
           ),
         ),
       ],

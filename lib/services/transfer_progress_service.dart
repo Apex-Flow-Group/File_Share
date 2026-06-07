@@ -42,6 +42,8 @@ class TransferProgressService {
     _progressController.add(null);
   }
 
+  bool get isTransferring => _currentProgress != null;
+
   void cancelTransfer() {
     _isCancelled = true;
   }
