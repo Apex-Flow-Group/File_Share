@@ -81,8 +81,10 @@ class _AboutScreenState extends State<AboutScreen> {
           const SizedBox(height: 20),
         // ──────────────────────────────────────────────────────
         _buildSection(l10n.importantLinks, [
-          _buildLink(context, l10n.privacyPolicy, 'https://apexflow.dev/privacy'),
-          _buildLink(context, l10n.termsOfService, 'https://apexflow.dev/terms'),
+          _buildLink(context, l10n.privacyPolicy,
+              'https://apexflow.now/en/projects/apex-file-share/privacy'),
+          _buildLink(context, 'GitHub',
+              'https://github.com/Apex-Flow-Group/File_Share'),
         ]),
         const SizedBox(height: 20),
         _buildSection(l10n.legalInfo, [
