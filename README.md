@@ -1,124 +1,130 @@
-# 🚀 Apex File Share v3.0 - النظام الجديد
+# Apex File Share
 
-**تطبيق مشاركة الملفات الأسرع والأبسط عبر WiFi المحلي**
+**مشاركة الملفات عبر WiFi المحلي بين أندرويد وويندوز ولينكس**
 
-[![Version](https://img.shields.io/badge/version-3.0.0-blue.svg)]()
-[![Flutter](https://img.shields.io/badge/Flutter-3.0+-02569B.svg)]()
-[![License](https://img.shields.io/badge/license-MIT-green.svg)]()
-
----
-
-## ✨ ما الجديد في v3.0؟
-
-### 🎉 إعادة بناء كاملة من الصفر!
-
-- ✅ **أسرع 2.5x** - نقل الملفات أصبح أسرع بكثير
-- ✅ **أبسط 79%** - تقليل عدد الملفات من 19 إلى 4 فقط
-- ✅ **أقل أخطاء 80%** - نظام أكثر استقراراً وموثوقية
-- ✅ **أسهل استخداماً** - واجهة بسيطة وواضحة
-- ✅ **أقل استهلاك 60%** - استهلاك أقل للذاكرة والبطارية
-- 🎵 **NEW: Media Streaming** - تشغيل الموسيقى من أي جهاز على الشبكة!
+[![Version](https://img.shields.io/badge/version-2.0.1-blue.svg)](https://github.com/Apex-Flow-Group/File_Share/releases)
+[![Flutter](https://img.shields.io/badge/Flutter-3.0+-02569B.svg)](https://flutter.dev)
+[![Platform](https://img.shields.io/badge/platform-Android%20%7C%20Windows%20%7C%20Linux-lightgrey.svg)]()
+[![License](https://img.shields.io/badge/license-MIT-green.svg)](LICENSE)
 
 ---
 
-## 🎯 المميزات
+## المميزات
 
-- 🚀 **نقل سريع جداً** - حتى 50 MB/s
-- 🔍 **اكتشاف فوري** - 1-3 ثواني فقط
-- 📺 **دعم التلفاز** - يعمل على Android TV بالريموت!
-- 🎵 **Media Streaming** - تشغيل الموسيقى والفيديو من الشبكة
-- 🌙 **الوضع الليلي** - دعم كامل
-- 🌍 **عربي وإنجليزي** - دعم اللغتين
-- 🔒 **آمن 100%** - لا يستخدم الإنترنت
-- 🆓 **مجاني** - بدون إعلانات
+- 🚀 نقل سريع حتى 50 MB/s عبر WiFi المحلي
+- 🔍 اكتشاف تلقائي للأجهزة خلال 1-3 ثواني
+- 📱 يعمل بين أندرويد ↔ ويندوز ↔ لينكس
+- 📺 دعم Android TV بالريموت كونترول
+- 🌐 اختيار بين WiFi أو LAN (ويندوز/لينكس)
+- 🌙 وضع ليلي ونهاري
+- 🌍 عربي وإنجليزي مع RTL
+- 🔒 بدون إنترنت — نقل محلي فقط
+- 🆓 مجاني ومفتوح المصدر
 
 ---
 
-## 🛠️ التثبيت
+## المنصات
 
+| المنصة | الحالة |
+|--------|--------|
+| Android | ✅ |
+| Windows | ✅ |
+| Linux | ✅ |
+| Android TV | ✅ |
+
+---
+
+## التثبيت
+
+### Android
+[![Google Play](https://img.shields.io/badge/Google%20Play-Download-green.svg)](https://play.google.com/store/apps/dev?id=5409981776310932919)
+
+### Windows
 ```bash
-# 1. تثبيت التبعيات
+git clone https://github.com/Apex-Flow-Group/File_Share.git
+cd File_Share
 flutter pub get
+build_windows.bat
+```
+الـ installer يُنتج في مجلد `installer/`
 
-# 2. تشغيل التطبيق
-flutter run
+### Linux
+```bash
+git clone https://github.com/Apex-Flow-Group/File_Share.git
+cd File_Share
+flutter pub get
+flutter build linux --release
+```
 
-# 3. بناء APK
+### Android (APK)
+```bash
 flutter build apk --release
 ```
 
 ---
 
-## 📖 الاستخدام
+## البناء — المتطلبات
 
-### إرسال ملف
-1. افتح تبويب "إرسال"
-2. اضغط على "إرسال ملف"
-3. اختر الملف والجهاز
-4. انتظر حتى يكتمل الإرسال ✅
-
-### استقبال ملف
-1. افتح تبويب "استقبال"
-2. تأكد من أن النظام يعمل (✅ خضراء)
-3. انتظر حتى يرسل لك أحد ملف
-4. سيظهر إشعار عند الاستقبال 🔔
-
-### 🎵 تشغيل الموسيقى (جديد!)
-1. ضع ملفات MP3 في مجلد Music
-2. افتح تبويب "🎵 Music"
-3. اختر أغنية للتشغيل
-4. استمتع بالموسيقى من أي جهاز على الشبكة!
+- Flutter SDK (latest stable)
+- Dart SDK 3.0+
+- Android SDK 21+ (للأندرويد)
+- Visual Studio Build Tools (للويندوز)
+- Inno Setup 6 (لإنشاء installer ويندوز)
 
 ---
 
-## 📚 التوثيق
+## استكشاف الأخطاء
 
-- 📄 [ملخص صفحة واحدة](ONE_PAGE_SUMMARY.md)
-- 🚀 [دليل البدء السريع](QUICK_START.md)
-- 📺 [دليل استخدام التلفاز](TV_GUIDE.md)
-- 📖 [توثيق النظام الجديد](NEW_SYSTEM_DOCUMENTATION.md)
-- 🎵 [دليل Media Streaming](MEDIA_STREAMING_GUIDE.md)
-- 📊 [مقارنة القديم والجديد](COMPARISON.md)
-- 🔄 [دليل الانتقال](MIGRATION_GUIDE.md)
-- 📝 [قائمة المهام](TODO_NEW.md)
-- 📋 [سجل التغييرات](CHANGELOG.md)
+**لا يظهر أي جهاز؟**
+- تأكد أن كلا الجهازين على نفس شبكة WiFi
+- أعد تشغيل التطبيق
+- على ويندوز: شغّل التطبيق كمدير أو أضف استثناء في جدار الحماية
 
----
+**فشل الإرسال على ويندوز؟**
+```cmd
+netsh advfirewall firewall add rule name="ApexFileShare" dir=in action=allow protocol=UDP localport=45679
+netsh advfirewall firewall add rule name="ApexFileShare-TCP" dir=in action=allow protocol=TCP localport=45678
+```
 
-## 🐛 استكشاف الأخطاء
-
-### لا يظهر أي جهاز؟
-✅ تأكد من نفس WiFi  
-✅ أعد تشغيل التطبيق
-
-### فشل الإرسال؟
-✅ تأكد من أن المستقبل يعمل  
-✅ تحقق من المساحة
+**فتح الملف لا يعمل على أندرويد؟**
+تأكد من منح صلاحيات التخزين عند أول تشغيل.
 
 ---
 
-## 🤝 المساهمة
+## هيكل المشروع
+
+```
+lib/
+├── core/          # النواة الرئيسية (ApexCore)
+├── services/      # خدمات الاكتشاف والنقل
+├── screens/       # شاشات التطبيق
+├── widgets/       # مكونات الواجهة
+├── models/        # نماذج البيانات
+├── managers/      # إدارة الجهاز والصلاحيات
+└── utils/         # أدوات مساعدة
+android/           # كود أندرويد الأصلي
+windows/           # كود ويندوز الأصلي
+```
+
+---
+
+## المساهمة
 
 1. Fork المشروع
-2. أنشئ branch جديد
+2. أنشئ branch من `develop`
 3. Commit التغييرات
-4. Push للـ branch
-5. افتح Pull Request
+4. افتح Pull Request على `develop`
 
 ---
 
-## 📄 الترخيص
+## الترخيص
 
-MIT License - مجاني ومفتوح المصدر
+MIT License — مجاني ومفتوح المصدر
 
 ---
 
 <div align="center">
 
-**صُنع بـ ❤️ باستخدام Flutter**
-
-⭐ لا تنسَ إعطاء المشروع نجمة! ⭐
-
-**الإصدار:** 3.1.0 | **الحالة:** ✅ جاهز للاستخدام + 🎵 Media Streaming + 📺 TV Support
+صُنع بـ ❤️ باستخدام Flutter | [apexflow.now](https://apexflow.now)
 
 </div>

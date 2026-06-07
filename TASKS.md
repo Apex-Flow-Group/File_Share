@@ -1,27 +1,35 @@
-# 📋 قائمة المهام - TASKS.md
+# Roadmap & Changelog
 
-## 1. الموقع (ApexFlow.now) — تصحيح وتنظيف
-- [x] تصحيح `githubUrl` لـ Apex File Share
-- [x] تغيير `status` إلى `active`
-- [x] تصحيح `version` إلى `2.0.1`
-- [x] إضافة `playStoreUrl`
-- [x] إضافة `features` كاملة
-- [x] إضافة `buildPrerequisites` و `buildSteps` و `repoStructure`
-- [x] إضافة `troubleshooting`
+## v2.0.1 — الإصدار الحالي ✅
 
----
+### إصلاحات
+- إصلاح اكتشاف الأجهزة على ويندوز (UDP broadcast + IP detection)
+- إصلاح فتح الملفات على أندرويد عبر FileProvider
+- إصلاح تباين زر الترتيب في تبويب الملفات
 
-## 2. Apex File Share (Windows/Linux) — باركود أندرويد
-- [x] بطاقة في `about_screen` تظهر فقط على Windows/Linux
-- [x] باركود QR لـ Play Store
-- [x] زر فتح Google Play
+### ميزات جديدة
+- اختيار نوع الشبكة (WiFi / LAN) في القائمة الجانبية لويندوز ولينكس
+- حفظ موضع وحجم النافذة تلقائياً على ويندوز
+- باركود QR لتحميل نسخة أندرويد (يظهر في ويندوز/لينكس)
+- بنر تحميل نسخة الكمبيوتر (يظهر في أندرويد)
+- سكريبت بناء ويندوز `build_windows.bat` + Inno Setup installer
 
----
-
-## 3. Apex File Share (Android) — رابط نسخة PC
-- [x] بنر في `receive_tab` يظهر فقط على Android
-- [x] رابط `apexflow.now` لتحميل نسخة Windows/Linux
+### تحسينات
+- تحديث اسم التطبيق وأيقونته على ويندوز ولينكس
+- تحسين SafeArea في bottom sheets
+- تحسين أزرار "فتح الملف" و"إغلاق" في شيت الاستقبال
 
 ---
 
-## ✅ جميع المهام مكتملة
+## المخطط المستقبلي
+
+- [ ] إضافة progress bar مرئي أثناء الإرسال
+- [ ] دعم إرسال أكثر من ملف في نفس الوقت
+- [ ] إشعارات سطح المكتب على ويندوز/لينكس
+- [ ] تحسين واجهة TV
+
+---
+
+## كيفية المساهمة
+
+راجع [README.md](README.md) لتعليمات البناء والمساهمة.
