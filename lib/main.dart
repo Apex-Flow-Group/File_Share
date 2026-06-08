@@ -11,7 +11,6 @@ import 'screens/tv_home_screen.dart';
 import 'services/desktop_notification_service.dart';
 import 'services/settings_service.dart';
 import 'utils/platform_detector.dart';
-import 'widgets/transfer_progress_overlay.dart';
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
@@ -145,9 +144,7 @@ class FileShareApp extends StatelessWidget {
             ),
           ),
           themeMode: settings.themeMode,
-          home: TransferProgressOverlay(
-            child: _buildHome(settings),
-          ),
+          home: _buildHome(settings),
         );
       },
     );

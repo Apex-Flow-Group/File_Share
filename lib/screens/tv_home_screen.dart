@@ -10,7 +10,6 @@ import '../services/settings_service.dart';
 import '../widgets/tabs/receive_tab.dart';
 import '../widgets/tabs/tv_files_tab.dart';
 import '../widgets/tabs/tv_send_tab.dart';
-import '../widgets/transfer_progress_overlay.dart';
 
 class TVHomeScreen extends StatefulWidget {
   final SettingsService settings;
@@ -109,136 +108,133 @@ class _TVHomeScreenState extends State<TVHomeScreen> {
         }
       },
       child: Scaffold(
-        body: TransferProgressOverlay(
-          child: Row(
-            children: [
-              // ─── Sidebar ───────────────────────────────────────────────
-              Container(
-                width: 260,
-                decoration: BoxDecoration(
-                  color: isDark
-                      ? const Color(0xFF1C1C1E)
-                      : const Color(0xFFF5F5F7),
-                  border: Border(
-                    right: BorderSide(
-                      color: isDark
-                          ? Colors.white.withValues(alpha: 0.06)
-                          : Colors.black.withValues(alpha: 0.06),
-                    ),
-                  ),
-                ),
-                child: SafeArea(
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.stretch,
-                    children: [
-                      // App name
-                      Padding(
-                        padding: const EdgeInsets.fromLTRB(20, 28, 20, 20),
-                        child: Row(children: [
-                          Container(
-                            width: 40,
-                            height: 40,
-                            decoration: BoxDecoration(
-                              color: color.withValues(alpha: 0.15),
-                              borderRadius: BorderRadius.circular(12),
-                            ),
-                            child: Icon(Icons.share_rounded,
-                                color: color, size: 22),
-                          ),
-                          const SizedBox(width: 12),
-                          Column(
-                            crossAxisAlignment: CrossAxisAlignment.start,
-                            children: [
-                              Text('Apex Transfer',
-                                  style: TextStyle(
-                                    fontWeight: FontWeight.bold,
-                                    fontSize: 17,
-                                    color: isDark ? Colors.white : Colors.black,
-                                  )),
-                              Text('TV Mode',
-                                  style: TextStyle(fontSize: 11, color: color)),
-                            ],
-                          ),
-                        ]),
-                      ),
-                      // Status
-                      Padding(
-                        padding: const EdgeInsets.symmetric(horizontal: 16),
-                        child: Container(
-                          padding: const EdgeInsets.symmetric(
-                              horizontal: 10, vertical: 6),
-                          decoration: BoxDecoration(
-                            color: _isRunning
-                                ? Colors.green.withValues(alpha: 0.12)
-                                : Colors.grey.withValues(alpha: 0.12),
-                            borderRadius: BorderRadius.circular(10),
-                          ),
-                          child: Row(mainAxisSize: MainAxisSize.min, children: [
-                            Container(
-                              width: 7,
-                              height: 7,
-                              decoration: BoxDecoration(
-                                color: _isRunning ? Colors.green : Colors.grey,
-                                shape: BoxShape.circle,
-                              ),
-                            ),
-                            const SizedBox(width: 6),
-                            Text(
-                              _isRunning ? 'Online' : 'Offline',
-                              style: TextStyle(
-                                fontSize: 12,
-                                fontWeight: FontWeight.w600,
-                                color: _isRunning ? Colors.green : Colors.grey,
-                              ),
-                            ),
-                          ]),
-                        ),
-                      ),
-                      const SizedBox(height: 20),
-                      // Nav items
-                      _TVNavItem(
-                          icon: Icons.send_rounded,
-                          label: l10n.send,
-                          selected: _selectedIndex == 0,
-                          focusNode: _sendFocus,
-                          onSelect: () => setState(() => _selectedIndex = 0),
-                          nextFocus: _receiveFocus,
-                          prevFocus: null),
-                      _TVNavItem(
-                          icon: Icons.smartphone_rounded,
-                          label: l10n.receive,
-                          selected: _selectedIndex == 1,
-                          focusNode: _receiveFocus,
-                          onSelect: () => setState(() => _selectedIndex = 1),
-                          nextFocus: _filesFocus,
-                          prevFocus: _sendFocus),
-                      _TVNavItem(
-                          icon: Icons.folder_rounded,
-                          label: l10n.files,
-                          selected: _selectedIndex == 2,
-                          focusNode: _filesFocus,
-                          onSelect: () => setState(() => _selectedIndex = 2),
-                          nextFocus: null,
-                          prevFocus: _receiveFocus),
-                      const Spacer(),
-                      Padding(
-                        padding: const EdgeInsets.fromLTRB(16, 0, 16, 24),
-                        child: Text(
-                          l10n.pressMenuForSettings,
-                          style: TextStyle(
-                              fontSize: 11,
-                              color: isDark ? Colors.white38 : Colors.black38),
-                          textAlign: TextAlign.center,
-                        ),
-                      ),
-                    ],
+        body: Row(
+          children: [
+            // Sidebar
+            Container(
+              width: 260,
+              decoration: BoxDecoration(
+                color:
+                    isDark ? const Color(0xFF1C1C1E) : const Color(0xFFF5F5F7),
+                border: Border(
+                  right: BorderSide(
+                    color: isDark
+                        ? Colors.white.withValues(alpha: 0.06)
+                        : Colors.black.withValues(alpha: 0.06),
                   ),
                 ),
               ),
-              // ─── Content ────────────────────────────────────────────────
-              Expanded(child: _buildContent()),
-            ],
-          ),
+              child: SafeArea(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.stretch,
+                  children: [
+                    // App name
+                    Padding(
+                      padding: const EdgeInsets.fromLTRB(20, 28, 20, 20),
+                      child: Row(children: [
+                        Container(
+                          width: 40,
+                          height: 40,
+                          decoration: BoxDecoration(
+                            color: color.withValues(alpha: 0.15),
+                            borderRadius: BorderRadius.circular(12),
+                          ),
+                          child:
+                              Icon(Icons.share_rounded, color: color, size: 22),
+                        ),
+                        const SizedBox(width: 12),
+                        Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Text('Apex Transfer',
+                                style: TextStyle(
+                                  fontWeight: FontWeight.bold,
+                                  fontSize: 17,
+                                  color: isDark ? Colors.white : Colors.black,
+                                )),
+                            Text('TV Mode',
+                                style: TextStyle(fontSize: 11, color: color)),
+                          ],
+                        ),
+                      ]),
+                    ),
+                    // Status
+                    Padding(
+                      padding: const EdgeInsets.symmetric(horizontal: 16),
+                      child: Container(
+                        padding: const EdgeInsets.symmetric(
+                            horizontal: 10, vertical: 6),
+                        decoration: BoxDecoration(
+                          color: _isRunning
+                              ? Colors.green.withValues(alpha: 0.12)
+                              : Colors.grey.withValues(alpha: 0.12),
+                          borderRadius: BorderRadius.circular(10),
+                        ),
+                        child: Row(mainAxisSize: MainAxisSize.min, children: [
+                          Container(
+                            width: 7,
+                            height: 7,
+                            decoration: BoxDecoration(
+                              color: _isRunning ? Colors.green : Colors.grey,
+                              shape: BoxShape.circle,
+                            ),
+                          ),
+                          const SizedBox(width: 6),
+                          Text(
+                            _isRunning ? 'Online' : 'Offline',
+                            style: TextStyle(
+                              fontSize: 12,
+                              fontWeight: FontWeight.w600,
+                              color: _isRunning ? Colors.green : Colors.grey,
+                            ),
+                          ),
+                        ]),
+                      ),
+                    ),
+                    const SizedBox(height: 20),
+                    // Nav items
+                    _TVNavItem(
+                        icon: Icons.send_rounded,
+                        label: l10n.send,
+                        selected: _selectedIndex == 0,
+                        focusNode: _sendFocus,
+                        onSelect: () => setState(() => _selectedIndex = 0),
+                        nextFocus: _receiveFocus,
+                        prevFocus: null),
+                    _TVNavItem(
+                        icon: Icons.smartphone_rounded,
+                        label: l10n.receive,
+                        selected: _selectedIndex == 1,
+                        focusNode: _receiveFocus,
+                        onSelect: () => setState(() => _selectedIndex = 1),
+                        nextFocus: _filesFocus,
+                        prevFocus: _sendFocus),
+                    _TVNavItem(
+                        icon: Icons.folder_rounded,
+                        label: l10n.files,
+                        selected: _selectedIndex == 2,
+                        focusNode: _filesFocus,
+                        onSelect: () => setState(() => _selectedIndex = 2),
+                        nextFocus: null,
+                        prevFocus: _receiveFocus),
+                    const Spacer(),
+                    Padding(
+                      padding: const EdgeInsets.fromLTRB(16, 0, 16, 24),
+                      child: Text(
+                        l10n.pressMenuForSettings,
+                        style: TextStyle(
+                            fontSize: 11,
+                            color: isDark ? Colors.white38 : Colors.black38),
+                        textAlign: TextAlign.center,
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+            ),
+            // Content
+            Expanded(child: _buildContent()),
+          ],
         ),
       ),
     );
@@ -257,7 +253,7 @@ class _TVHomeScreenState extends State<TVHomeScreen> {
   }
 }
 
-// ─── TV Nav Item ──────────────────────────────────────────────────────────────
+// TV Nav Item
 
 class _TVNavItem extends StatelessWidget {
   final IconData icon;

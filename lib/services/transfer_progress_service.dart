@@ -28,12 +28,33 @@ class TransferProgressService {
   bool _isSending = false;
   bool get isSending => _isSending;
 
-  void startBatch(int total) {
+  /// معرّف الجهاز المُرسَل إليه (في حالة الإرسال)
+  String? _targetDeviceId;
+  String? get targetDeviceId => _targetDeviceId;
+
+  /// اسم الجهاز المُرسِل (في حالة الاستقبال)
+  String? _senderDeviceName;
+  String? get senderDeviceName => _senderDeviceName;
+
+  /// تهيئة دفعة إرسال مع تحديد الجهاز المستهدف
+  void startBatch(int total, {String? targetDeviceId}) {
     _totalFiles = total;
     _currentFileIndex = 0;
     _isCancelled = false;
     _isBatchActive = true;
     _isSending = true;
+    _targetDeviceId = targetDeviceId;
+    _senderDeviceName = null;
+  }
+
+  /// تهيئة استقبال مع تحديد اسم الجهاز المُرسِل
+  void startReceive({String? senderDeviceName}) {
+    _isCancelled = false;
+    _isCancelledReceive = false; // أعد تصفير الإلغاء السابق
+    _isBatchActive = true;
+    _isSending = false;
+    _senderDeviceName = senderDeviceName;
+    _targetDeviceId = null;
   }
 
   void nextFile() {
@@ -51,6 +72,8 @@ class TransferProgressService {
     _isCancelledReceive = false;
     _isBatchActive = false;
     _isSending = false;
+    _targetDeviceId = null;
+    _senderDeviceName = null;
     _totalFiles = 1;
     _currentFileIndex = 0;
     _progressController.add(null);
