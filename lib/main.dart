@@ -21,11 +21,16 @@ void main() async {
     try {
       final exe = Platform.resolvedExecutable;
       await Process.run('netsh', [
-        'advfirewall', 'firewall', 'add', 'rule',
+        'advfirewall',
+        'firewall',
+        'add',
+        'rule',
         'name=ApexFileShare',
-        'dir=in', 'action=allow',
+        'dir=in',
+        'action=allow',
         'program=$exe',
-        'enable=yes', 'profile=private,domain',
+        'enable=yes',
+        'profile=private,domain',
       ]);
     } catch (_) {}
   }
@@ -38,7 +43,7 @@ void main() async {
 
   // Initialize desktop notifications
   await DesktopNotificationService.instance.initialize();
-  
+
   final settings = SettingsService();
   await settings.loadSettings();
   runApp(FileShareApp(settings: settings));
@@ -84,7 +89,7 @@ class FileShareApp extends StatelessWidget {
               surfaceContainerHighest: Color(0xFFE7E0EC),
               onSurfaceVariant: Color(0xFF49454F),
             ),
-            fontFamily: 'Cairo',
+            fontFamily: 'Roboto',
             cardTheme: CardThemeData(
               elevation: 0,
               shape: RoundedRectangleBorder(
@@ -118,7 +123,7 @@ class FileShareApp extends StatelessWidget {
               surfaceContainerHighest: Color(0xFF49454F),
               onSurfaceVariant: Color(0xFFCAC4D0),
             ),
-            fontFamily: 'Cairo',
+            fontFamily: 'Roboto',
             cardTheme: CardThemeData(
               elevation: 0,
               shape: RoundedRectangleBorder(

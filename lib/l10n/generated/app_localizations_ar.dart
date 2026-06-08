@@ -15,7 +15,7 @@ class AppLocalizationsAr extends AppLocalizations {
   String get send => 'إرسال';
 
   @override
-  String get receive => 'استقبال';
+  String get receive => 'جهازي';
 
   @override
   String get files => 'ملفات';

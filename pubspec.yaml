@@ -1,7 +1,7 @@
 name: apex_file_share
 description: تطبيق إرسال ملفات بتصميم رائع
 publish_to: 'none'
-version: 2.0.1+2003
+version: 2.0.3+2008
 
 environment:
   sdk: '>=3.0.0 <4.0.0'
@@ -24,6 +24,7 @@ dependencies:
   url_launcher: ^6.2.0
   qr_flutter: ^4.1.0
   local_notifier: ^0.1.6
+  in_app_update: ^4.2.3
 
 dev_dependencies:
   flutter_test:
@@ -35,9 +36,5 @@ dev_dependencies:
 flutter:
   uses-material-design: true
   generate: true
-  fonts:
-    - family: Cairo
-      fonts:
-        - asset: fonts/Cairo-Regular.ttf
-        - asset: fonts/Cairo-Bold.ttf
-          weight: 700
+  assets:
+    - assets/images/

@@ -205,7 +205,7 @@ class _TVHomeScreenState extends State<TVHomeScreen> {
                           nextFocus: _receiveFocus,
                           prevFocus: null),
                       _TVNavItem(
-                          icon: Icons.download_rounded,
+                          icon: Icons.smartphone_rounded,
                           label: l10n.receive,
                           selected: _selectedIndex == 1,
                           focusNode: _receiveFocus,

@@ -5,7 +5,7 @@
   "@appTitle": { "description": "App name" },
 
   "send": "Send",
-  "receive": "Receive",
+  "receive": "My Device",
   "files": "Files",
   "settings": "Settings",
   "about": "About",
