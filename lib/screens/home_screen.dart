@@ -799,7 +799,14 @@ class _HomeScreenState extends State<HomeScreen> with WidgetsBindingObserver {
       backgroundColor: Colors.transparent,
       builder: (_) => _FloatingSheet(
         scrollable: true,
-        child: SettingsScreen(settings: widget.settings, embedded: true),
+        child: SettingsScreen(
+          settings: widget.settings,
+          embedded: true,
+          onDebugUpdateTap: () {
+            Navigator.pop(context); // أغلق الإعدادات
+            _showUpdateAvailableBar();
+          },
+        ),
       ),
     );
   }
@@ -976,39 +983,65 @@ class _HomeScreenState extends State<HomeScreen> with WidgetsBindingObserver {
 
   void _showUpdateAvailableBar() {
     final isAr = AppLocalizations.of(context).localeName == 'ar';
-    ScaffoldMessenger.of(context).showMaterialBanner(
-      MaterialBanner(
-        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
-        backgroundColor: Theme.of(context).colorScheme.primaryContainer,
-        content: Text(
-          isAr ? 'يوجد تحديث جديد متاح' : 'A new update is available',
-          style: TextStyle(
-            color: Theme.of(context).colorScheme.onPrimaryContainer,
-            fontWeight: FontWeight.w600,
-          ),
-        ),
-        leading: Icon(
-          Icons.system_update_rounded,
-          color: Theme.of(context).colorScheme.primary,
-        ),
-        actions: [
-          TextButton(
-            onPressed: () {
-              ScaffoldMessenger.of(context).hideCurrentMaterialBanner();
-              UpdateService.instance.startFlexibleDownload();
-            },
-            child: Text(isAr ? 'تحديث' : 'Update'),
-          ),
-          TextButton(
-            onPressed: () =>
-                ScaffoldMessenger.of(context).hideCurrentMaterialBanner(),
-            child: Text(
-              isAr ? 'لاحقاً' : 'Later',
-              style: TextStyle(
-                  color: Theme.of(context).colorScheme.onSurfaceVariant),
+    final color = Theme.of(context).colorScheme.primary;
+
+    showModalBottomSheet(
+      context: context,
+      backgroundColor: Colors.transparent,
+      useSafeArea: true,
+      builder: (_) => _FloatingSheet(
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Container(
+              padding: const EdgeInsets.all(14),
+              decoration: BoxDecoration(
+                color: color.withValues(alpha: 0.12),
+                borderRadius: BorderRadius.circular(18),
+              ),
+              child: Icon(Icons.system_update_rounded, size: 36, color: color),
             ),
-          ),
-        ],
+            const SizedBox(height: 14),
+            Text(
+              isAr ? 'تحديث جديد متاح' : 'New Update Available',
+              style: const TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
+            ),
+            const SizedBox(height: 6),
+            Text(
+              isAr
+                  ? 'يوجد إصدار جديد من Apex File Share'
+                  : 'A new version of Apex File Share is ready',
+              textAlign: TextAlign.center,
+              style: TextStyle(fontSize: 13, color: Colors.grey[600]),
+            ),
+            const SizedBox(height: 22),
+            Row(children: [
+              Expanded(
+                child: FilledButton.icon(
+                  onPressed: () {
+                    Navigator.pop(context);
+                    UpdateService.instance.startFlexibleDownload();
+                  },
+                  icon: const Icon(Icons.download_rounded, size: 18),
+                  label: Text(isAr ? 'تحديث الآن' : 'Update Now'),
+                  style: FilledButton.styleFrom(
+                    padding: const EdgeInsets.symmetric(vertical: 14),
+                  ),
+                ),
+              ),
+              const SizedBox(width: 10),
+              Expanded(
+                child: OutlinedButton(
+                  onPressed: () => Navigator.pop(context),
+                  style: OutlinedButton.styleFrom(
+                    padding: const EdgeInsets.symmetric(vertical: 14),
+                  ),
+                  child: Text(isAr ? 'لاحقاً' : 'Later'),
+                ),
+              ),
+            ]),
+          ],
+        ),
       ),
     );
   }
@@ -1020,40 +1053,81 @@ class _HomeScreenState extends State<HomeScreen> with WidgetsBindingObserver {
     final isAr = AppLocalizations.of(context).localeName == 'ar';
     final isBusy = TransferProgressService().isTransferring;
 
-    ScaffoldMessenger.of(context).showSnackBar(
-      SnackBar(
-        duration: const Duration(days: 1), // لا يختفي تلقائياً
-        behavior: SnackBarBehavior.floating,
-        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(14)),
-        backgroundColor: Theme.of(context).colorScheme.inverseSurface,
-        content: Row(children: [
-          const Icon(Icons.download_done_rounded,
-              color: Colors.greenAccent, size: 20),
-          const SizedBox(width: 10),
-          Expanded(
-            child: Text(
+    showModalBottomSheet(
+      context: context,
+      backgroundColor: Colors.transparent,
+      useSafeArea: true,
+      builder: (_) => _FloatingSheet(
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Container(
+              padding: const EdgeInsets.all(14),
+              decoration: BoxDecoration(
+                color: Colors.green.withValues(alpha: 0.12),
+                borderRadius: BorderRadius.circular(18),
+              ),
+              child: const Icon(Icons.download_done_rounded,
+                  size: 36, color: Colors.green),
+            ),
+            const SizedBox(height: 14),
+            Text(
+              isAr ? 'التحديث جاهز' : 'Update Ready',
+              style: const TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
+            ),
+            const SizedBox(height: 6),
+            Text(
               isBusy
                   ? (isAr
-                      ? 'التحديث جاهز — سيُثبَّت بعد انتهاء الإرسال'
-                      : 'Update ready — will install after transfer')
-                  : (isAr ? 'التحديث جاهز للتثبيت' : 'Update ready to install'),
-              style: TextStyle(
-                color: Theme.of(context).colorScheme.onInverseSurface,
-                fontSize: 13,
-              ),
+                      ? 'سيُثبَّت التحديث تلقائياً بعد انتهاء الإرسال'
+                      : 'Update will install automatically after the transfer finishes')
+                  : (isAr
+                      ? 'التحديث محمّل وجاهز للتثبيت'
+                      : 'The update is downloaded and ready to install'),
+              textAlign: TextAlign.center,
+              style: TextStyle(fontSize: 13, color: Colors.grey[600]),
             ),
-          ),
-        ]),
-        action: isBusy
-            ? null
-            : SnackBarAction(
-                label: isAr ? 'تثبيت' : 'Install',
-                textColor: Colors.greenAccent,
-                onPressed: () {
-                  ScaffoldMessenger.of(context).hideCurrentSnackBar();
-                  UpdateService.instance.completeUpdate();
-                },
+            const SizedBox(height: 22),
+            if (!isBusy) ...[
+              SizedBox(
+                width: double.infinity,
+                child: FilledButton.icon(
+                  onPressed: () {
+                    Navigator.pop(context);
+                    UpdateService.instance.completeUpdate();
+                  },
+                  icon: const Icon(Icons.install_mobile_rounded, size: 18),
+                  label: Text(isAr ? 'تثبيت الآن' : 'Install Now'),
+                  style: FilledButton.styleFrom(
+                    backgroundColor: Colors.green,
+                    padding: const EdgeInsets.symmetric(vertical: 14),
+                  ),
+                ),
               ),
+              const SizedBox(height: 8),
+              SizedBox(
+                width: double.infinity,
+                child: OutlinedButton(
+                  onPressed: () => Navigator.pop(context),
+                  style: OutlinedButton.styleFrom(
+                    padding: const EdgeInsets.symmetric(vertical: 14),
+                  ),
+                  child: Text(isAr ? 'لاحقاً' : 'Later'),
+                ),
+              ),
+            ] else
+              SizedBox(
+                width: double.infinity,
+                child: OutlinedButton(
+                  onPressed: () => Navigator.pop(context),
+                  style: OutlinedButton.styleFrom(
+                    padding: const EdgeInsets.symmetric(vertical: 14),
+                  ),
+                  child: Text(isAr ? 'حسناً' : 'OK'),
+                ),
+              ),
+          ],
+        ),
       ),
     );
   }

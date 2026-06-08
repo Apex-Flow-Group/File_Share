@@ -4,6 +4,31 @@ All notable changes to this project will be documented in this file.
 
 ---
 
+## [2.0.4] — 2026-06-08
+
+### Fixed
+- **شريط التقدم يظهر على كل الأجهزة (Progress bar appearing on all devices):** `ConnectionWidget.initState()` كان يضع كل الأجهزة في حالة `sending` عند إعادة البناء بسبب التحقق من `isSending` فقط بدون تمييز الجهاز المستهدف؛ الإصلاح يتحقق الآن من `targetDeviceId == device.id` قبل استعادة الحالة
+- **كل الأجهزة تصبح مرسِلة عند تغيير الصفحة والرجوع (All devices show sending state after tab switch):** نفس السبب — عند إعادة بناء القائمة كل `ConnectionWidget` كان يقرأ `isSending=true` ويضع نفسه كـ sending؛ الآن فقط الجهاز صاحب `targetDeviceId` يستعيد حالة الإرسال
+- **المستقبل يظهر كمرسِل (Receiver shown as sender):** `isGloballyBusy` كان يُرسَل `true` لجميع الأجهزة بما فيها الجهاز المستهدف نفسه؛ الآن `isGloballyBusy=false` للجهاز المستهدف و`true` لباقي الأجهزة فقط
+- **شريط التقدم لا يظهر على الجهاز المُرسِل (Progress bar missing on sender device card):** كان `isGloballyBusy` يتسبب في إخفاء الشريط على الجهاز الصحيح وإظهار `_buildBusyBar` بدلاً منه
+- **نفس المشاكل في واجهة TV:** `TVSendTab._buildDeviceList()` كان يمرر `isGloballyBusy=true` لكل الأجهزة دون تمييز؛ صُحِّح بنفس منطق `targetDeviceId`
+
+### Added
+- **`TransferProgressService.targetDeviceId`** — معرّف الجهاز المُرسَل إليه، يُعيَّن في `startBatch()` ويُمسح في `clearProgress()`؛ يستخدمه `ConnectionWidget` للتمييز بين الجهاز المستهدف وبقية الأجهزة
+- **`TransferProgressService.senderDeviceName`** — اسم الجهاز المُرسِل، يُعيَّن عند بدء الاستقبال سواء عبر HTTP أو Nearby
+- **`TransferProgressService.startReceive({senderDeviceName})`** — دالة جديدة لتهيئة حالة الاستقبال بشكل صريح مع تسجيل اسم الجهاز المُرسِل
+- **اسم الجهاز المُرسِل في صفحة "جهازي" (Sender name in My Device tab):** شريط الاستقبال يعرض الآن "من: [اسم الجهاز]" أسفل عنوان "جاري الاستقبال"
+- **اسم الجهاز المُرسِل في الـ overlay العائم:** يعرض `← [اسم الجهاز]` أسفل اسم الملف في بطاقة التقدم العائمة
+
+### Changed
+- `startBatch(int total)` → `startBatch(int total, {String? targetDeviceId})` — يقبل الآن معرّف الجهاز المستهدف اختيارياً
+- `http_transfer.sendFiles()` يمرر `target.id` إلى `startBatch`
+- `nearby_transfer.sendFile()` و `sendBatchFiles()` يمرران `target.id` إلى `startBatch`
+- `http_transfer.handleUpload()` يستدعي `startReceive()` بدلاً من عدم تهيئة حالة الاستقبال
+- `nearby_transfer.onPayloadReceived()` يستدعي `startReceive(senderDeviceName: device.name)` عند بدء استقبال ملف
+
+---
+
 ## [2.0.3] — 2026-06-08
 
 ### Fixed

@@ -184,19 +184,27 @@ class _SendTabState extends State<SendTab> with TickerProviderStateMixin {
           child: StreamBuilder<dynamic>(
             stream: TransferProgressService().progressStream,
             builder: (context, snapshot) {
-              final isTransferring = snapshot.data != null;
+              final svc = TransferProgressService();
+              final isTransferring = svc.isTransferring;
               return ListView.builder(
                 physics: isTransferring
                     ? const NeverScrollableScrollPhysics()
                     : const AlwaysScrollableScrollPhysics(),
                 padding: EdgeInsets.fromLTRB(16, 8, 16, bottomPadding),
                 itemCount: widget.devices.length,
-                itemBuilder: (context, i) => ConnectionWidget(
-                  device: widget.devices[i],
-                  pendingFilePath: widget.pendingFilePath,
-                  onPendingFileSent: widget.onPendingFileSent,
-                  isGloballyBusy: isTransferring,
-                ),
+                itemBuilder: (context, i) {
+                  final device = widget.devices[i];
+                  // هذا الجهاز هو المستهدف بالإرسال الحالي؟
+                  final isTarget =
+                      isTransferring && svc.targetDeviceId == device.id;
+                  return ConnectionWidget(
+                    device: device,
+                    pendingFilePath: widget.pendingFilePath,
+                    onPendingFileSent: widget.onPendingFileSent,
+                    // مشغول عالمياً فقط إذا كان هناك إرسال لجهاز آخر
+                    isGloballyBusy: isTransferring && !isTarget,
+                  );
+                },
               );
             },
           ),

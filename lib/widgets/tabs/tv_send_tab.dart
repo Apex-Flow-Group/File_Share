@@ -5,6 +5,7 @@ import 'package:flutter/services.dart';
 
 import '../../l10n/generated/app_localizations.dart';
 import '../../models/device.dart';
+import '../../services/transfer_progress_service.dart';
 import '../connection_widget.dart';
 
 class TVSendTab extends StatefulWidget {
@@ -24,9 +25,15 @@ class _TVSendTabState extends State<TVSendTab> with TickerProviderStateMixin {
   @override
   void initState() {
     super.initState();
-    _radarSpin = AnimationController(vsync: this, duration: const Duration(seconds: 3))..repeat();
-    _pulseFast = AnimationController(vsync: this, duration: const Duration(milliseconds: 1200))..repeat(reverse: true);
-    _pulseSlow = AnimationController(vsync: this, duration: const Duration(milliseconds: 1800))..repeat(reverse: true);
+    _radarSpin =
+        AnimationController(vsync: this, duration: const Duration(seconds: 3))
+          ..repeat();
+    _pulseFast = AnimationController(
+        vsync: this, duration: const Duration(milliseconds: 1200))
+      ..repeat(reverse: true);
+    _pulseSlow = AnimationController(
+        vsync: this, duration: const Duration(milliseconds: 1800))
+      ..repeat(reverse: true);
   }
 
   @override
@@ -56,7 +63,8 @@ class _TVSendTabState extends State<TVSendTab> with TickerProviderStateMixin {
         child: Center(
           child: Column(mainAxisAlignment: MainAxisAlignment.center, children: [
             SizedBox(
-              width: 220, height: 220,
+              width: 220,
+              height: 220,
               child: Stack(alignment: Alignment.center, children: [
                 AnimatedBuilder(
                   animation: _pulseSlow,
@@ -66,7 +74,8 @@ class _TVSendTabState extends State<TVSendTab> with TickerProviderStateMixin {
                     decoration: BoxDecoration(
                       shape: BoxShape.circle,
                       border: Border.all(
-                        color: color.withValues(alpha: 0.15 - _pulseSlow.value * 0.12),
+                        color: color.withValues(
+                            alpha: 0.15 - _pulseSlow.value * 0.12),
                         width: 1.5,
                       ),
                     ),
@@ -80,14 +89,16 @@ class _TVSendTabState extends State<TVSendTab> with TickerProviderStateMixin {
                     decoration: BoxDecoration(
                       shape: BoxShape.circle,
                       border: Border.all(
-                        color: color.withValues(alpha: 0.25 - _pulseFast.value * 0.2),
+                        color: color.withValues(
+                            alpha: 0.25 - _pulseFast.value * 0.2),
                         width: 1.5,
                       ),
                     ),
                   ),
                 ),
                 Container(
-                  width: 100, height: 100,
+                  width: 100,
+                  height: 100,
                   decoration: BoxDecoration(
                     shape: BoxShape.circle,
                     color: color.withValues(alpha: isDark ? 0.15 : 0.08),
@@ -105,23 +116,29 @@ class _TVSendTabState extends State<TVSendTab> with TickerProviderStateMixin {
                     ),
                   ),
                 Icon(
-                  widget.isRunning ? Icons.wifi_tethering_rounded : Icons.wifi_tethering_off_rounded,
-                  size: 42, color: color,
+                  widget.isRunning
+                      ? Icons.wifi_tethering_rounded
+                      : Icons.wifi_tethering_off_rounded,
+                  size: 42,
+                  color: color,
                 ),
               ]),
             ),
             const SizedBox(height: 28),
             Text(
               widget.isRunning ? l10n.discovering : l10n.noDevicesFound,
-              style: Theme.of(context).textTheme.titleLarge?.copyWith(fontWeight: FontWeight.bold),
+              style: Theme.of(context)
+                  .textTheme
+                  .titleLarge
+                  ?.copyWith(fontWeight: FontWeight.bold),
             ),
             const SizedBox(height: 8),
             Text(
               l10n.makeSureDevicesOnSameNetwork,
               textAlign: TextAlign.center,
               style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                color: Theme.of(context).colorScheme.onSurfaceVariant,
-              ),
+                    color: Theme.of(context).colorScheme.onSurfaceVariant,
+                  ),
             ),
           ]),
         ),
@@ -134,10 +151,25 @@ class _TVSendTabState extends State<TVSendTab> with TickerProviderStateMixin {
     return Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
       _buildHeader(l10n),
       Expanded(
-        child: ListView.builder(
-          padding: const EdgeInsets.fromLTRB(16, 8, 16, 40),
-          itemCount: widget.devices.length,
-          itemBuilder: (context, i) => _TVDeviceCard(device: widget.devices[i]),
+        child: StreamBuilder<dynamic>(
+          stream: TransferProgressService().progressStream,
+          builder: (context, snapshot) {
+            final svc = TransferProgressService();
+            final isTransferring = svc.isTransferring;
+            return ListView.builder(
+              padding: const EdgeInsets.fromLTRB(16, 8, 16, 40),
+              itemCount: widget.devices.length,
+              itemBuilder: (context, i) {
+                final device = widget.devices[i];
+                final isTarget =
+                    isTransferring && svc.targetDeviceId == device.id;
+                return _TVDeviceCard(
+                  device: device,
+                  isGloballyBusy: isTransferring && !isTarget,
+                );
+              },
+            );
+          },
         ),
       ),
     ]);
@@ -151,7 +183,8 @@ class _TVSendTabState extends State<TVSendTab> with TickerProviderStateMixin {
       padding: const EdgeInsets.fromLTRB(20, 16, 20, 20),
       decoration: BoxDecoration(
         gradient: LinearGradient(
-          begin: Alignment.topLeft, end: Alignment.bottomRight,
+          begin: Alignment.topLeft,
+          end: Alignment.bottomRight,
           colors: isDark
               ? [color.withValues(alpha: 0.2), color.withValues(alpha: 0.05)]
               : [color.withValues(alpha: 0.12), color.withValues(alpha: 0.03)],
@@ -169,14 +202,18 @@ class _TVSendTabState extends State<TVSendTab> with TickerProviderStateMixin {
         ),
         const SizedBox(width: 12),
         Expanded(
-          child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+          child:
+              Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
             Text(l10n.send,
-                style: Theme.of(context).textTheme.titleLarge?.copyWith(fontWeight: FontWeight.bold)),
+                style: Theme.of(context)
+                    .textTheme
+                    .titleLarge
+                    ?.copyWith(fontWeight: FontWeight.bold)),
             Text(
               '${widget.devices.length} ${l10n.availableDevices}',
               style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                color: Theme.of(context).colorScheme.onSurfaceVariant,
-              ),
+                    color: Theme.of(context).colorScheme.onSurfaceVariant,
+                  ),
             ),
           ]),
         ),
@@ -188,10 +225,17 @@ class _TVSendTabState extends State<TVSendTab> with TickerProviderStateMixin {
               borderRadius: BorderRadius.circular(20),
             ),
             child: Row(mainAxisSize: MainAxisSize.min, children: [
-              Container(width: 6, height: 6,
-                  decoration: const BoxDecoration(color: Colors.green, shape: BoxShape.circle)),
+              Container(
+                  width: 6,
+                  height: 6,
+                  decoration: const BoxDecoration(
+                      color: Colors.green, shape: BoxShape.circle)),
               const SizedBox(width: 5),
-              const Text('Live', style: TextStyle(color: Colors.green, fontSize: 12, fontWeight: FontWeight.w600)),
+              const Text('Live',
+                  style: TextStyle(
+                      color: Colors.green,
+                      fontSize: 12,
+                      fontWeight: FontWeight.w600)),
             ]),
           ),
       ]),
@@ -204,7 +248,8 @@ class _TVSendTabState extends State<TVSendTab> with TickerProviderStateMixin {
 
 class _TVDeviceCard extends StatefulWidget {
   final Device device;
-  const _TVDeviceCard({required this.device});
+  final bool isGloballyBusy;
+  const _TVDeviceCard({required this.device, this.isGloballyBusy = false});
 
   @override
   State<_TVDeviceCard> createState() => _TVDeviceCardState();
@@ -227,7 +272,7 @@ class _TVDeviceCardState extends State<_TVDeviceCard> {
       onKeyEvent: (_, event) {
         if (event is KeyDownEvent &&
             (event.logicalKey == LogicalKeyboardKey.select ||
-             event.logicalKey == LogicalKeyboardKey.enter)) {
+                event.logicalKey == LogicalKeyboardKey.enter)) {
           _focusNode.requestFocus();
           return KeyEventResult.handled;
         }
@@ -242,10 +287,16 @@ class _TVDeviceCardState extends State<_TVDeviceCard> {
               ? BoxDecoration(
                   borderRadius: BorderRadius.circular(22),
                   border: Border.all(color: color, width: 2.5),
-                  boxShadow: [BoxShadow(color: color.withValues(alpha: 0.2), blurRadius: 12)],
+                  boxShadow: [
+                    BoxShadow(
+                        color: color.withValues(alpha: 0.2), blurRadius: 12)
+                  ],
                 )
               : null,
-          child: ConnectionWidget(device: widget.device),
+          child: ConnectionWidget(
+            device: widget.device,
+            isGloballyBusy: widget.isGloballyBusy,
+          ),
         );
       }),
     );

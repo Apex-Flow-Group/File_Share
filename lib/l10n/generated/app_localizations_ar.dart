@@ -280,7 +280,7 @@ class AppLocalizationsAr extends AppLocalizations {
   String get reconnectFailed => 'فشل إعادة الاتصال';
 
   @override
-  String get restartingSystem => 'إعادة تشغيل النظام';
+  String get restartingSystem => 'تحديث';
 
   @override
   String get sendApp => 'إرسال تطبيق';

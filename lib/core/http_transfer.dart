@@ -92,6 +92,9 @@ class HttpTransfer {
       final startTime = DateTime.now();
       const updateInterval = 256 * 1024;
 
+      // أبلغ عن بدء الاستقبال مع اسم الجهاز المُرسِل
+      TransferProgressService().startReceive(senderDeviceName: fromDevice);
+
       await for (final chunk in req) {
         if (TransferProgressService().isCancelledReceive) {
           throw const _CancelException();
@@ -167,7 +170,7 @@ class HttpTransfer {
     Device target,
   ) async {
     final progress = TransferProgressService();
-    progress.startBatch(files.length);
+    progress.startBatch(files.length, targetDeviceId: target.id);
     try {
       if (!await ping(target)) {
         return false;

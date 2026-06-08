@@ -4,6 +4,8 @@ import 'dart:io';
 import 'package:flutter/foundation.dart';
 import 'package:nearby_connections/nearby_connections.dart';
 
+import 'package:shared_preferences/shared_preferences.dart';
+
 import '../managers/device_manager.dart';
 import '../models/device.dart';
 import '../services/discovery_service.dart';
@@ -74,8 +76,14 @@ class ApexCore {
     final name = await DeviceManager.getDeviceName('Apex Device');
     final type = DeviceManager.getDeviceType();
     final ip = await _getLocalIp();
+    final prefs = await SharedPreferences.getInstance();
+    var deviceId = prefs.getString('device_id');
+    if (deviceId == null) {
+      deviceId = 'local-${DateTime.now().millisecondsSinceEpoch}';
+      await prefs.setString('device_id', deviceId);
+    }
     _localDevice = Device(
-      id: 'local-${DateTime.now().millisecondsSinceEpoch}',
+      id: deviceId,
       name: name,
       type: type,
       ip: ip,
@@ -96,7 +104,34 @@ class ApexCore {
       if (TransferProgressService().isTransferring) {
         return;
       }
-      _discoveredDevices[device.id] = device;
+      // deduplication بالاسم — ادمج Nearby + WiFi في سجل واحد
+      final existingEntry = _discoveredDevices.entries
+          .where((e) => e.value.name.toLowerCase() == device.name.toLowerCase())
+          .firstOrNull;
+
+      if (existingEntry != null) {
+        final existing = existingEntry.value;
+        if (device.isNearby && !existing.isNearby) {
+          // جاء Nearby لجهاز WiFi موجود → ادمج: احتفظ بـ id الحالي وأضف endpointId
+          _discoveredDevices[existingEntry.key] = existing.copyWith(
+            endpointId: device.endpointId,
+            lastSeen: DateTime.now(),
+          );
+        } else if (!device.isNearby && existing.isNearby) {
+          // جاء WiFi لجهاز Nearby موجود → أضف IP/port للموجود
+          _discoveredDevices[existingEntry.key] = existing.copyWith(
+            ip: device.ip,
+            port: device.port,
+            lastSeen: DateTime.now(),
+          );
+        } else {
+          // نفس النوع → حدّث lastSeen فقط
+          _discoveredDevices[existingEntry.key] =
+              existing.copyWith(lastSeen: DateTime.now());
+        }
+      } else {
+        _discoveredDevices[device.id] = device;
+      }
       _devicesController.add(devices);
     });
     _discoveryService!.onDeviceLost.listen((id) {

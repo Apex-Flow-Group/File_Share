@@ -29,6 +29,7 @@ class Device {
     String? ip,
     int? port,
     String? endpointId,
+    bool clearEndpointId = false,
     DateTime? lastSeen,
   }) =>
       Device(
@@ -37,7 +38,7 @@ class Device {
         type: type ?? this.type,
         ip: ip ?? this.ip,
         port: port ?? this.port,
-        endpointId: endpointId ?? this.endpointId,
+        endpointId: clearEndpointId ? null : (endpointId ?? this.endpointId),
         lastSeen: lastSeen ?? this.lastSeen,
       );
 

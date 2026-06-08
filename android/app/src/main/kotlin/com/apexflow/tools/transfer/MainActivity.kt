@@ -6,6 +6,7 @@ import android.graphics.Bitmap
 import android.graphics.Canvas
 import android.graphics.drawable.BitmapDrawable
 import android.graphics.drawable.Drawable
+import android.net.Uri
 import android.os.Build
 import android.util.Log
 import androidx.annotation.NonNull
@@ -21,6 +22,7 @@ class MainActivity : FlutterActivity() {
         private const val TAG = "MainActivity"
         private const val APPS_CHANNEL = "com.apex.core/apps"
         private const val SINAN_CHANNEL = "com.apex.core/sinan"
+        private const val NEARBY_CHANNEL = "com.apex.core/nearby"
     }
 
     private var pendingSinanPath: String? = null
@@ -55,6 +57,36 @@ class MainActivity : FlutterActivity() {
                 else -> result.notImplemented()
             }
         }
+
+        // Nearby content URI resolver channel
+        // يقرأ content:// URI من Google Play Services ويكتبه إلى ملف مؤقت
+        MethodChannel(flutterEngine.dartExecutor.binaryMessenger, NEARBY_CHANNEL)
+            .setMethodCallHandler { call, result ->
+                if (call.method == "copyContentUri") {
+                    val uriStr = call.argument<String>("uri")
+                    val destPath = call.argument<String>("destPath")
+                    if (uriStr == null || destPath == null) {
+                        result.error("INVALID_ARGS", "uri and destPath required", null)
+                        return@setMethodCallHandler
+                    }
+                    Thread {
+                        try {
+                            val uri = Uri.parse(uriStr)
+                            val input = contentResolver.openInputStream(uri)
+                                ?: throw Exception("openInputStream returned null")
+                            val dest = File(destPath)
+                            dest.parentFile?.mkdirs()
+                            dest.outputStream().use { input.copyTo(it) }
+                            runOnUiThread { result.success(destPath) }
+                        } catch (e: Exception) {
+                            Log.e(TAG, "copyContentUri failed: ${e.message}")
+                            runOnUiThread { result.error("COPY_FAILED", e.message, null) }
+                        }
+                    }.start()
+                } else {
+                    result.notImplemented()
+                }
+            }
 
         // Deliver any pending .sinan file from launch intent
         handleSinanIntent(intent)

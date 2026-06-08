@@ -1,9 +1,10 @@
 import 'dart:async';
 import 'dart:convert';
 import 'dart:io';
-import 'dart:typed_data';
 
+import 'package:flutter/services.dart';
 import 'package:nearby_connections/nearby_connections.dart';
+import 'package:path_provider/path_provider.dart';
 
 import '../models/device.dart';
 import '../models/transfer_progress.dart';
@@ -24,6 +25,8 @@ class NearbyTransfer {
   final Set<String> connectedEndpoints = {};
   final Map<String, Device> discoveredDevices;
 
+  static const _nearbyChannel = MethodChannel('com.apex.core/nearby');
+
   NearbyTransfer({
     required this.getLocalName,
     required this.onFileReceived,
@@ -42,7 +45,7 @@ class NearbyTransfer {
     final fileSize = await file.length();
     final endpointId = target.endpointId!;
     final progress = TransferProgressService();
-    progress.startBatch(1);
+    progress.startBatch(1, targetDeviceId: target.id);
 
     if (!connectedEndpoints.contains(endpointId)) {
       if (!await connect(endpointId, target.name)) {
@@ -69,7 +72,6 @@ class NearbyTransfer {
     }
   }
 
-  /// إرسال ملفات متعددة مع طلب إذن واحد فقط
   Future<bool> sendBatchFiles(
     List<({String path, String name, int size})> files,
     Device target,
@@ -80,9 +82,8 @@ class NearbyTransfer {
 
     final endpointId = target.endpointId!;
     final progress = TransferProgressService();
-    progress.startBatch(files.length);
+    progress.startBatch(files.length, targetDeviceId: target.id);
 
-    // 1. الاتصال إذا لم يكن متصلاً
     if (!connectedEndpoints.contains(endpointId)) {
       if (!await connect(endpointId, target.name)) {
         ApexLogger.instance
@@ -92,19 +93,14 @@ class NearbyTransfer {
       }
     }
 
-    // 2. طلب إذن واحد لجميع الملفات
-    final accepted = await _requestBatchPermission(
-      endpointId,
-      files,
-      target.name,
-    );
+    final accepted =
+        await _requestBatchPermission(endpointId, files, target.name);
     if (!accepted) {
       ApexLogger.instance.log('NEARBY', '❌ Batch rejected', LogLevel.warning);
       progress.clearProgress();
       return false;
     }
 
-    // 3. إرسال الملفات واحداً تلو الآخر بدون طلب إذن إضافي
     try {
       int success = 0;
       for (final f in files) {
@@ -123,7 +119,6 @@ class NearbyTransfer {
     }
   }
 
-  /// إرسال ملف واحد (الـ payload الفعلي) بدون طلب إذن
   Future<bool> _sendFilePayload(
     String endpointId,
     String filePath,
@@ -144,7 +139,6 @@ class NearbyTransfer {
       final completer = Completer<bool>();
       final payloadId = await Nearby().sendFilePayload(endpointId, filePath);
 
-      // أرسل اسم الملف وحجمه ليعرف المستقبل ما يحفظه ويعرض التقدم
       await Nearby().sendBytesPayload(
         endpointId,
         Uint8List.fromList(utf8.encode(jsonEncode({
@@ -191,7 +185,6 @@ class NearbyTransfer {
     }
   }
 
-  /// طلب إذن لمجموعة ملفات دفعة واحدة
   Future<bool> _requestBatchPermission(
     String endpointId,
     List<({String path, String name, int size})> files,
@@ -199,7 +192,6 @@ class NearbyTransfer {
   ) async {
     final completer = Completer<bool>();
     _pendingRequests[endpointId] = completer;
-
     try {
       await Nearby().sendBytesPayload(
         endpointId,
@@ -216,20 +208,15 @@ class NearbyTransfer {
       _pendingRequests.remove(endpointId);
       return false;
     }
-
-    return completer.future.timeout(
-      const Duration(seconds: 30),
-      onTimeout: () {
-        _pendingRequests.remove(endpointId);
-        return false;
-      },
-    );
+    return completer.future.timeout(const Duration(seconds: 30), onTimeout: () {
+      _pendingRequests.remove(endpointId);
+      return false;
+    });
   }
 
   Future<bool> connect(String endpointId, String remoteName) async {
     final completer = Completer<bool>();
     _connectCompleters[endpointId] = completer;
-
     try {
       await Nearby().requestConnection(
         getLocalName() ?? 'Apex',
@@ -254,7 +241,6 @@ class NearbyTransfer {
         },
         onDisconnected: (eid) {
           connectedEndpoints.remove(eid);
-          // إكمال أي عملية معلقة فوراً عند انقطاع الاتصال
           _pendingRequests.remove(eid)?.complete(false);
           _connectCompleters.remove(eid)?.complete(false);
         },
@@ -263,21 +249,16 @@ class NearbyTransfer {
       _connectCompleters.remove(endpointId)?.complete(false);
       return false;
     }
-
-    return completer.future.timeout(
-      const Duration(seconds: 15),
-      onTimeout: () {
-        _connectCompleters.remove(endpointId);
-        return false;
-      },
-    );
+    return completer.future.timeout(const Duration(seconds: 15), onTimeout: () {
+      _connectCompleters.remove(endpointId);
+      return false;
+    });
   }
 
   Future<bool> _requestPermission(String endpointId, String fileName,
       int fileSize, String senderName) async {
     final completer = Completer<bool>();
     _pendingRequests[endpointId] = completer;
-
     try {
       await Nearby().sendBytesPayload(
         endpointId,
@@ -292,38 +273,39 @@ class NearbyTransfer {
       _pendingRequests.remove(endpointId);
       return false;
     }
-
-    return completer.future.timeout(
-      const Duration(seconds: 30),
-      onTimeout: () {
-        _pendingRequests.remove(endpointId);
-        return false;
-      },
-    );
+    return completer.future.timeout(const Duration(seconds: 30), onTimeout: () {
+      _pendingRequests.remove(endpointId);
+      return false;
+    });
   }
 
   // ─── Receive ───────────────────────────────────────────────────────────────
 
-  // تتبع معلومات الملفات المعلّقة على المستقبل قبل استلام payload الملف
   final Map<int, String> _pendingReceiveNames = {};
   final Map<int, int> _pendingReceiveSizes = {};
 
   void onPayloadReceived(String endpointId, Payload payload) async {
     if (payload.type == PayloadType.FILE) {
       final device = discoveredDevices[endpointId];
+      ApexLogger.instance.log(
+          'NEARBY',
+          '📥 FILE payload | id=${payload.id} | endpoint=$endpointId | device=${device?.name ?? "unknown"}',
+          LogLevel.info);
 
-      // اسم وحجم الملف: قد يكون وصل مسبقاً أو سيصل لاحقاً
       final pendingName = _pendingFileNames.remove(payload.id) ??
           _pendingReceiveNames.remove(payload.id);
       final pendingSize = _pendingReceiveSizes.remove(payload.id) ?? 0;
       final fileName = _sanitize(pendingName ?? 'file_${payload.id}');
+      ApexLogger.instance.log(
+          'NEARBY',
+          '📄 fileName=$fileName | pendingName=$pendingName | pendingSize=$pendingSize',
+          LogLevel.info);
 
       final progress = TransferProgressService();
       final startTime = DateTime.now();
 
-      // إذا وصل الحجم، ابدأ تتبع التقدم على المستقبل
       if (pendingSize > 0) {
-        progress.startBatch(1);
+        progress.startReceive(senderDeviceName: device?.name ?? endpointId);
         progress.updateProgress(TransferProgress(
           fileName: fileName,
           totalBytes: pendingSize,
@@ -334,7 +316,6 @@ class NearbyTransfer {
       }
 
       _transferCallbacks[payload.id] = (update) async {
-        // تحديث شريط التقدم على المستقبل
         if (update.status != PayloadStatus.SUCCESS &&
             update.status != PayloadStatus.FAILURE &&
             update.status != PayloadStatus.CANCELED) {
@@ -351,6 +332,10 @@ class NearbyTransfer {
         }
 
         _transferCallbacks.remove(payload.id);
+        ApexLogger.instance.log(
+            'NEARBY',
+            '🏁 Transfer done | status=${update.status} | fileName=$fileName | bytes=${update.bytesTransferred}',
+            LogLevel.info);
 
         if (update.status != PayloadStatus.SUCCESS) {
           progress.clearProgress();
@@ -360,16 +345,87 @@ class NearbyTransfer {
         }
 
         // ignore: deprecated_member_use
-        final tmpPath = payload.filePath;
+        final rawUri = payload.uri;
+        // ignore: deprecated_member_use
+        final rawPath = payload.filePath;
+        ApexLogger.instance.log(
+            'NEARBY',
+            '📂 payload.uri=$rawUri | payload.filePath=$rawPath',
+            LogLevel.info);
+
+        String? tmpPath;
+
+        if (rawUri != null) {
+          final uri = Uri.tryParse(rawUri);
+          if (uri != null && uri.scheme == 'file') {
+            // file:// مباشر — نادر لكن ندعمه
+            tmpPath = uri.toFilePath();
+          } else if (uri != null && uri.scheme == 'content') {
+            // content:// من Google Play Services FileProvider
+            // نستخدم ContentResolver عبر MethodChannel لنسخه لملف مؤقت
+            try {
+              final cacheDir = await getTemporaryDirectory();
+              final tmpFile = '${cacheDir.path}/nearby_tmp_${payload.id}';
+              ApexLogger.instance.log(
+                  'NEARBY',
+                  '📋 Copying via ContentResolver: $rawUri → $tmpFile',
+                  LogLevel.info);
+              final result = await _nearbyChannel.invokeMethod<String>(
+                'copyContentUri',
+                {'uri': rawUri, 'destPath': tmpFile},
+              );
+              if (result != null && await File(result).exists()) {
+                tmpPath = result;
+                ApexLogger.instance.log('NEARBY',
+                    '✅ ContentResolver copy OK: $tmpPath', LogLevel.success);
+              } else {
+                ApexLogger.instance.log(
+                    'NEARBY',
+                    '❌ ContentResolver returned null or file missing',
+                    LogLevel.error);
+              }
+            } catch (e) {
+              ApexLogger.instance.log(
+                  'NEARBY', '❌ ContentResolver failed: $e', LogLevel.error);
+            }
+          }
+        }
+
+        // Fallback for Android <10
+        tmpPath ??= rawPath;
+
+        ApexLogger.instance.log('NEARBY', '📂 tmpPath=$tmpPath', LogLevel.info);
+
         if (tmpPath == null) {
           progress.clearProgress();
+          ApexLogger.instance
+              .log('NEARBY', '❌ tmpPath is null!', LogLevel.error);
           return;
         }
+
         try {
           final destDir = await PathUtils.getCategoryPath(fileName);
           final destPath = '$destDir/$fileName';
-          await File(tmpPath).rename(destPath);
+          ApexLogger.instance
+              .log('NEARBY', '🚚 Moving: $tmpPath → $destPath', LogLevel.info);
+          try {
+            await File(tmpPath).rename(destPath);
+            ApexLogger.instance
+                .log('NEARBY', '✅ rename() OK', LogLevel.success);
+          } catch (renameErr) {
+            ApexLogger.instance.log(
+                'NEARBY',
+                '⚠️ rename() failed: $renameErr → trying copy()',
+                LogLevel.warning);
+            await File(tmpPath).copy(destPath);
+            try {
+              await File(tmpPath).delete();
+            } catch (_) {}
+            ApexLogger.instance.log('NEARBY', '✅ copy() OK', LogLevel.success);
+          }
           final fileSize = await File(destPath).length();
+          ApexLogger.instance.log('NEARBY',
+              '✅ Saved: $destPath | size=$fileSize bytes', LogLevel.success);
           progress.clearProgress();
           onFileReceived(FileReceivedEvent(
             fileName: fileName,
@@ -377,11 +433,10 @@ class NearbyTransfer {
             fromDevice: device?.name ?? endpointId,
             filePath: destPath,
           ));
-          ApexLogger.instance
-              .log('NEARBY', '✅ Saved: $destPath', LogLevel.success);
         } catch (e) {
           progress.clearProgress();
-          ApexLogger.instance.log('NEARBY', '❌ Move error: $e', LogLevel.error);
+          ApexLogger.instance
+              .log('NEARBY', '❌ Move/save error: $e', LogLevel.error);
         }
       };
       return;
@@ -408,8 +463,6 @@ class NearbyTransfer {
           final name = msg['name'] as String?;
           final size = (msg['size'] as num?)?.toInt() ?? 0;
           if (pid != null && name != null) {
-            // إذا كان الـ FILE payload وصل مسبقاً، لا يمكن تحديث الاسم
-            // لذلك نخزّن في _pendingReceiveNames أيضاً للمزامنة
             _pendingFileNames[pid] = name;
             _pendingReceiveNames[pid] = name;
             if (size > 0) {

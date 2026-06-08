@@ -30,6 +30,8 @@ class ConnectionWidget extends StatefulWidget {
 class _ConnectionWidgetState extends State<ConnectionWidget>
     with SingleTickerProviderStateMixin {
   _Status _status = _Status.idle;
+  bool _cancelledByUser =
+      false; // منع الـ listener من إعادة التشغيل بعد الإلغاء
   late AnimationController _sendAnim;
 
   @override
@@ -39,14 +41,24 @@ class _ConnectionWidgetState extends State<ConnectionWidget>
       vsync: this,
       duration: const Duration(milliseconds: 600),
     );
-    // استعادة الحالة عند إعادة بناء الـ widget أثناء الإرسال
+    // استعادة الحالة فقط إذا كان هذا الجهاز تحديداً هو المستهدف بالإرسال
     final svc = TransferProgressService();
-    if (svc.isSending && svc.isTransferring) {
+    if (svc.isSending &&
+        svc.isTransferring &&
+        svc.targetDeviceId == widget.device.id) {
       _status = _Status.sending;
     }
     // تابع انتهاء الإرسال لتحديث الحالة
     svc.progressStream.listen((p) {
       if (!mounted) {
+        return;
+      }
+      // إذا ألغى المستخدم — لا نعيد التشغيل مهما جاء من الـ stream
+      if (_cancelledByUser) {
+        if (p == null) {
+          // الإرسال انتهى فعلاً — أعد ضبط الـ flag
+          _cancelledByUser = false;
+        }
         return;
       }
       if (p == null && _status == _Status.sending) {
@@ -137,7 +149,10 @@ class _ConnectionWidgetState extends State<ConnectionWidget>
               ),
               const SizedBox(height: 4),
               Row(children: [
-                _TransportBadge(isNearby: widget.device.isNearby),
+                _TransportBadge(
+                  isNearby: widget.device.isNearby,
+                  isWifi: widget.device.isMdns,
+                ),
                 if (!widget.device.isNearby && widget.device.ip.isNotEmpty) ...[
                   const SizedBox(width: 6),
                   Text(
@@ -224,8 +239,12 @@ class _ConnectionWidgetState extends State<ConnectionWidget>
   }
 
   Widget _buildActions(AppLocalizations l10n, bool isDark) {
-    // أثناء إرسال جارٍ من جهاز آخر — أظهر حالة انتظار
-    if (widget.isGloballyBusy && _status == _Status.idle) {
+    // أثناء إرسال جارٍ لجهاز آخر — أظهر حالة انتظار لهذا الجهاز فقط
+    final svc = TransferProgressService();
+    final isThisDeviceTarget = svc.targetDeviceId == widget.device.id;
+    if (widget.isGloballyBusy &&
+        _status == _Status.idle &&
+        !isThisDeviceTarget) {
       return _buildBusyBar(l10n);
     }
     return Row(
@@ -323,7 +342,12 @@ class _ConnectionWidgetState extends State<ConnectionWidget>
                     style: const TextStyle(fontSize: 11, color: Colors.grey)),
               const SizedBox(width: 8),
               GestureDetector(
-                onTap: () => TransferProgressService().cancelTransfer(),
+                onTap: () {
+                  _cancelledByUser = true;
+                  TransferProgressService().cancelTransfer();
+                  // أخفِ الشريط فوراً من الـ UI
+                  setState(() => _status = _Status.idle);
+                },
                 child: Container(
                   padding:
                       const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
@@ -455,6 +479,7 @@ class _ConnectionWidgetState extends State<ConnectionWidget>
         await DesktopNotificationService.instance.showSendFailed(label);
       }
     } finally {
+      TransferProgressService().clearProgress();
       if (mounted) {
         setState(() => _status = _Status.idle);
       }
@@ -589,14 +614,29 @@ class _ActionButton extends StatelessWidget {
 
 class _TransportBadge extends StatelessWidget {
   final bool isNearby;
-  const _TransportBadge({required this.isNearby});
+  final bool isWifi;
+  const _TransportBadge({required this.isNearby, required this.isWifi});
 
   @override
   Widget build(BuildContext context) {
-    final color = isNearby ? const Color(0xFF34C759) : const Color(0xFF007AFF);
-    final label = isNearby ? 'Nearby' : 'WiFi';
-    final icon = isNearby ? Icons.sensors_rounded : Icons.wifi_rounded;
+    // كلاهما متاح
+    if (isNearby && isWifi) {
+      return Row(mainAxisSize: MainAxisSize.min, children: [
+        _badge(
+            context, const Color(0xFF34C759), Icons.sensors_rounded, 'Nearby'),
+        const SizedBox(width: 4),
+        _badge(context, const Color(0xFF007AFF), Icons.wifi_rounded, 'WiFi'),
+      ]);
+    }
+    if (isNearby) {
+      return _badge(
+          context, const Color(0xFF34C759), Icons.sensors_rounded, 'Nearby');
+    }
+    return _badge(context, const Color(0xFF007AFF), Icons.wifi_rounded, 'WiFi');
+  }
 
+  Widget _badge(
+      BuildContext context, Color color, IconData icon, String label) {
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 7, vertical: 2),
       decoration: BoxDecoration(

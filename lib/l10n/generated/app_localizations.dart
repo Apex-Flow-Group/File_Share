@@ -641,7 +641,7 @@ abstract class AppLocalizations {
   /// No description provided for @restartingSystem.
   ///
   /// In en, this message translates to:
-  /// **'Restart System'**
+  /// **'Refresh'**
   String get restartingSystem;
 
   /// No description provided for @sendApp.

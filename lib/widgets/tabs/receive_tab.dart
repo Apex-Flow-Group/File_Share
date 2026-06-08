@@ -23,6 +23,8 @@ class ReceiveTab extends StatefulWidget {
 class _ReceiveTabState extends State<ReceiveTab>
     with SingleTickerProviderStateMixin {
   bool _isReceiving = false;
+  bool _cancelledByUser =
+      false; // منع الـ listener من إعادة التشغيل بعد الإلغاء
   late AnimationController _pulseAnim;
 
   @override
@@ -37,10 +39,17 @@ class _ReceiveTabState extends State<ReceiveTab>
       if (!mounted) {
         return;
       }
-      // أظهر حالة الاستقبال فقط إذا لم يكن الجهاز مرسلاً
-      final isSending = TransferProgressService().isSending;
+      // إذا ألغى المستخدم — لا نعيد إظهار الشريط مهما جاء من الـ stream
+      if (_cancelledByUser) {
+        if (p == null) {
+          // الاستقبال انتهى فعلاً — أعد ضبط الـ flag
+          _cancelledByUser = false;
+        }
+        return;
+      }
+      final svc = TransferProgressService();
       setState(() => _isReceiving =
-          !isSending && p?.status == TransferStatus.transferring);
+          !svc.isSending && p?.status == TransferStatus.transferring);
     });
   }
 
@@ -301,10 +310,12 @@ class _ReceiveTabState extends State<ReceiveTab>
       stream: TransferProgressService().progressStream,
       builder: (context, snapshot) {
         final p = snapshot.data;
+        final svc = TransferProgressService();
         // تأكد أن هذا تقدم استقبال وليس إرسال
-        if (TransferProgressService().isSending) {
+        if (svc.isSending) {
           return _buildReadyContent(isAr, AppLocalizations.of(context));
         }
+        final senderName = svc.senderDeviceName;
         return Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
@@ -318,21 +329,41 @@ class _ReceiveTabState extends State<ReceiveTab>
                 ),
               ),
               const SizedBox(width: 12),
-              Text(
-                isAr ? 'جاري الاستقبال...' : 'Receiving...',
-                style: const TextStyle(
-                  fontWeight: FontWeight.bold,
-                  fontSize: 16,
-                  color: Colors.purple,
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      isAr ? 'جاري الاستقبال...' : 'Receiving...',
+                      style: const TextStyle(
+                        fontWeight: FontWeight.bold,
+                        fontSize: 16,
+                        color: Colors.purple,
+                      ),
+                    ),
+                    if (senderName != null && senderName.isNotEmpty)
+                      Text(
+                        isAr ? 'من: $senderName' : 'From: $senderName',
+                        style: const TextStyle(
+                          fontSize: 12,
+                          color: Colors.purple,
+                          fontWeight: FontWeight.w500,
+                        ),
+                      ),
+                  ],
                 ),
               ),
-              const Spacer(),
               if (p != null)
                 Text(p.speedFormatted,
                     style: const TextStyle(fontSize: 12, color: Colors.purple)),
               const SizedBox(width: 8),
               GestureDetector(
-                onTap: () => TransferProgressService().cancelReceive(),
+                onTap: () {
+                  _cancelledByUser = true;
+                  TransferProgressService().cancelReceive();
+                  // أخفِ الشريط فوراً
+                  setState(() => _isReceiving = false);
+                },
                 child: Container(
                   padding:
                       const EdgeInsets.symmetric(horizontal: 10, vertical: 5),

@@ -8,7 +8,8 @@ import 'package:url_launcher/url_launcher.dart';
 
 import '../l10n/generated/app_localizations.dart';
 
-const _kPlayStoreUrl = 'https://play.google.com/store/apps/dev?id=5409981776310932919';
+const _kPlayStoreUrl =
+    'https://play.google.com/store/apps/dev?id=5409981776310932919';
 
 class AboutScreen extends StatefulWidget {
   final bool embedded;
@@ -52,7 +53,8 @@ class _AboutScreenState extends State<AboutScreen> {
     }
     return Scaffold(
       appBar: AppBar(title: Text(l10n.aboutApp)),
-      body: Center(child: SingleChildScrollView(
+      body: Center(
+          child: SingleChildScrollView(
         padding: const EdgeInsets.all(16),
         child: content,
       )),
@@ -60,11 +62,21 @@ class _AboutScreenState extends State<AboutScreen> {
   }
 
   Widget _buildContent(BuildContext context, AppLocalizations l10n) {
+    final isAr = Localizations.localeOf(context).languageCode == 'ar';
     return Column(
       crossAxisAlignment: CrossAxisAlignment.center,
       mainAxisSize: MainAxisSize.min,
       children: [
-        const Icon(Icons.share, size: 72, color: Colors.blue),
+        // أيقونة التطبيق
+        ClipRRect(
+          borderRadius: BorderRadius.circular(22),
+          child: Image.asset(
+            'assets/images/ico.png',
+            width: 88,
+            height: 88,
+            fit: BoxFit.cover,
+          ),
+        ),
         const SizedBox(height: 12),
         const Text('Apex Transfer',
             style: TextStyle(fontSize: 22, fontWeight: FontWeight.bold)),
@@ -81,10 +93,25 @@ class _AboutScreenState extends State<AboutScreen> {
           const SizedBox(height: 20),
         // ──────────────────────────────────────────────────────
         _buildSection(l10n.importantLinks, [
-          _buildLink(context, l10n.privacyPolicy,
-              'https://apexflow.now/en/projects/apex-file-share/privacy'),
-          _buildLink(context, 'GitHub',
-              'https://github.com/Apex-Flow-Group/File_Share'),
+          _buildLink(
+            context,
+            isAr ? 'الموقع الرسمي' : 'Official Website',
+            'https://apexflow.now/en',
+            icon: Icons.language_rounded,
+            color: Theme.of(context).colorScheme.primary,
+          ),
+          _buildLink(
+            context,
+            l10n.privacyPolicy,
+            'https://apexflow.now/en/projects/apex-file-share/privacy',
+          ),
+          _buildLink(
+            context,
+            'GitHub',
+            'https://github.com/Apex-Flow-Group/File_Share',
+            icon: Icons.code_rounded,
+            color: Colors.grey[700]!,
+          ),
         ]),
         const SizedBox(height: 20),
         _buildSection(l10n.legalInfo, [
@@ -115,7 +142,8 @@ class _AboutScreenState extends State<AboutScreen> {
         boxShadow: [
           BoxShadow(
             color: Colors.black.withValues(alpha: isDark ? 0.3 : 0.06),
-            blurRadius: 16, offset: const Offset(0, 4),
+            blurRadius: 16,
+            offset: const Offset(0, 4),
           ),
         ],
       ),
@@ -137,7 +165,8 @@ class _AboutScreenState extends State<AboutScreen> {
                 children: [
                   Text(
                     isAr ? 'حمّل على أندرويد' : 'Get on Android',
-                    style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 15),
+                    style: const TextStyle(
+                        fontWeight: FontWeight.bold, fontSize: 15),
                   ),
                   Text(
                     isAr ? 'امسح الباركود بهاتفك' : 'Scan with your phone',
@@ -206,27 +235,32 @@ class _AboutScreenState extends State<AboutScreen> {
       crossAxisAlignment: CrossAxisAlignment.start,
       mainAxisSize: MainAxisSize.min,
       children: [
-        Text(title, style: const TextStyle(fontSize: 15, fontWeight: FontWeight.bold)),
+        Text(title,
+            style: const TextStyle(fontSize: 15, fontWeight: FontWeight.bold)),
         const SizedBox(height: 10),
         ...children,
       ],
     );
   }
 
-  Widget _buildLink(BuildContext context, String title, String url) {
+  Widget _buildLink(BuildContext context, String title, String url,
+      {IconData icon = Icons.link, Color? color}) {
+    final linkColor = color ?? Colors.blue;
     return Padding(
       padding: const EdgeInsets.symmetric(vertical: 6),
       child: GestureDetector(
         onTap: () => _launchUrl(url),
         child: Row(children: [
-          const Icon(Icons.link, size: 16, color: Colors.blue),
+          Icon(icon, size: 16, color: linkColor),
           const SizedBox(width: 10),
           Expanded(
             child: Text(title,
-                style: const TextStyle(
-                    color: Colors.blue, decoration: TextDecoration.underline)),
+                style: TextStyle(
+                    color: linkColor,
+                    decoration: TextDecoration.underline,
+                    decorationColor: linkColor)),
           ),
-          const Icon(Icons.arrow_outward, size: 14, color: Colors.blue),
+          Icon(Icons.arrow_outward, size: 14, color: linkColor),
         ]),
       ),
     );
@@ -239,7 +273,8 @@ class _AboutScreenState extends State<AboutScreen> {
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           Text(title,
-              style: const TextStyle(fontWeight: FontWeight.w600, fontSize: 13)),
+              style:
+                  const TextStyle(fontWeight: FontWeight.w600, fontSize: 13)),
           const SizedBox(height: 4),
           Text(content,
               style: const TextStyle(fontSize: 12, color: Colors.grey)),

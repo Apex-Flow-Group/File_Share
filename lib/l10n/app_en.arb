@@ -93,7 +93,7 @@
   "acceptConnection": "Do you want to accept the connection?",
   "ok": "OK",
   "reconnectFailed": "Reconnect failed",
-  "restartingSystem": "Restart System",
+  "restartingSystem": "Refresh",
   "sendApp": "Send App",
   "installedApps": "Installed Apps",
   "noApps": "No apps",
