@@ -5,198 +5,246 @@ import 'package:flutter/material.dart';
 import '../models/transfer_progress.dart';
 import '../services/transfer_progress_service.dart';
 
+/// يعرض شريط تقدم الاستقبال عائماً فوق كل شيء
+/// يُستدعى مرة واحدة في main.dart كـ wrapper
 class TransferProgressOverlay extends StatefulWidget {
   final Widget child;
   const TransferProgressOverlay({required this.child, super.key});
 
   @override
-  State<TransferProgressOverlay> createState() => _TransferProgressOverlayState();
+  State<TransferProgressOverlay> createState() =>
+      _TransferProgressOverlayState();
 }
 
-class _TransferProgressOverlayState extends State<TransferProgressOverlay>
-    with SingleTickerProviderStateMixin {
-  final _progressService = TransferProgressService();
-  late AnimationController _slideController;
-  late Animation<Offset> _slideAnimation;
-
-  @override
-  void initState() {
-    super.initState();
-    _slideController = AnimationController(
-      vsync: this,
-      duration: const Duration(milliseconds: 400),
-    );
-    _slideAnimation = Tween<Offset>(
-      begin: const Offset(0, 1),
-      end: Offset.zero,
-    ).animate(CurvedAnimation(parent: _slideController, curve: Curves.easeOutCubic));
-  }
-
-  @override
-  void dispose() {
-    _slideController.dispose();
-    super.dispose();
-  }
-
+class _TransferProgressOverlayState extends State<TransferProgressOverlay> {
   @override
   Widget build(BuildContext context) {
     return Stack(
       children: [
         widget.child,
-        StreamBuilder<TransferProgress?>(
-          stream: _progressService.progressStream,
-          builder: (context, snapshot) {
-            final progress = snapshot.data;
-            if (progress == null) {
-              _slideController.reverse();
-              return const SizedBox.shrink();
-            }
-            _slideController.forward();
-            final svc = _progressService;
-            final isMulti = svc.totalFiles > 1;
-            return Positioned(
-              left: 16, right: 16, bottom: 80,
-              child: SlideTransition(
-                position: _slideAnimation,
-                child: _buildProgressCard(progress, isMulti, svc),
-              ),
-            );
-          },
-        ),
+        const _ReceiveProgressFloating(),
       ],
     );
   }
+}
 
-  Widget _buildProgressCard(TransferProgress progress, bool isMulti, TransferProgressService svc) {
-    final color = Theme.of(context).colorScheme.primary;
-    final overallPct = isMulti
-        ? ((svc.currentFileIndex + progress.percentage / 100) / svc.totalFiles * 100).clamp(0.0, 100.0)
-        : progress.percentage;
+// ─── الـ Widget العائم الفعلي ──────────────────────────────────────────────────
+
+class _ReceiveProgressFloating extends StatefulWidget {
+  const _ReceiveProgressFloating();
+
+  @override
+  State<_ReceiveProgressFloating> createState() =>
+      _ReceiveProgressFloatingState();
+}
+
+class _ReceiveProgressFloatingState extends State<_ReceiveProgressFloating>
+    with SingleTickerProviderStateMixin {
+  final _svc = TransferProgressService();
+  late AnimationController _anim;
+  late Animation<double> _fadeAnim;
+  late Animation<Offset> _slideAnim;
+
+  TransferProgress? _progress;
+
+  @override
+  void initState() {
+    super.initState();
+    _anim = AnimationController(
+      vsync: this,
+      duration: const Duration(milliseconds: 350),
+    );
+    _fadeAnim = CurvedAnimation(parent: _anim, curve: Curves.easeOut);
+    _slideAnim = Tween<Offset>(
+      begin: const Offset(0, 0.3),
+      end: Offset.zero,
+    ).animate(CurvedAnimation(parent: _anim, curve: Curves.easeOutCubic));
+
+    _svc.progressStream.listen((p) {
+      if (!mounted) {
+        return;
+      }
+      // أظهر فقط عند الاستقبال (ليس الإرسال)
+      final show = p != null && !_svc.isSending;
+      setState(() => _progress = show ? p : null);
+      if (show) {
+        _anim.forward();
+      } else {
+        _anim.reverse();
+      }
+    });
+  }
+
+  @override
+  void dispose() {
+    _anim.dispose();
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    if (_progress == null && !_anim.isAnimating) {
+      return const SizedBox.shrink();
+    }
+
+    final safeBottom = MediaQuery.of(context).padding.bottom;
+    const navbarHeight = kBottomNavigationBarHeight;
+
+    return Positioned(
+      left: 12,
+      right: 12,
+      bottom: safeBottom + navbarHeight + 8,
+      child: FadeTransition(
+        opacity: _fadeAnim,
+        child: SlideTransition(
+          position: _slideAnim,
+          child: _buildCard(context),
+        ),
+      ),
+    );
+  }
+
+  Widget _buildCard(BuildContext context) {
+    final p = _progress;
+    if (p == null) {
+      return const SizedBox.shrink();
+    }
+
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+    final pct = p.percentage;
 
     return ClipRRect(
-      borderRadius: BorderRadius.circular(16),
+      borderRadius: BorderRadius.circular(18),
       child: BackdropFilter(
-        filter: ImageFilter.blur(sigmaX: 10, sigmaY: 10),
+        filter: ImageFilter.blur(sigmaX: 12, sigmaY: 12),
         child: Container(
           decoration: BoxDecoration(
-            color: Theme.of(context).colorScheme.surface.withValues(alpha: 0.92),
-            borderRadius: BorderRadius.circular(16),
-            border: Border.all(color: Theme.of(context).colorScheme.outline.withValues(alpha: 0.3)),
-            boxShadow: [BoxShadow(color: Colors.black.withValues(alpha: 0.12), blurRadius: 20, offset: const Offset(0, 4))],
+            color: (isDark ? const Color(0xFF2C2C2E) : Colors.white)
+                .withValues(alpha: 0.93),
+            borderRadius: BorderRadius.circular(18),
+            border: Border.all(
+              color: Colors.purple.withValues(alpha: isDark ? 0.35 : 0.2),
+            ),
+            boxShadow: [
+              BoxShadow(
+                color: Colors.black.withValues(alpha: isDark ? 0.4 : 0.12),
+                blurRadius: 24,
+                offset: const Offset(0, 6),
+              ),
+            ],
           ),
-          padding: const EdgeInsets.all(16),
+          padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             mainAxisSize: MainAxisSize.min,
             children: [
-              // ─── Header ───────────────────────────────────────────────
-              Row(children: [
-                Container(
-                  padding: const EdgeInsets.all(8),
-                  decoration: BoxDecoration(
-                    color: color.withValues(alpha: 0.12),
-                    borderRadius: BorderRadius.circular(8),
+              // ─── صف العنوان ────────────────────────────────────────
+              Row(
+                children: [
+                  // أيقونة
+                  Container(
+                    width: 34,
+                    height: 34,
+                    decoration: BoxDecoration(
+                      color: Colors.purple.withValues(alpha: 0.12),
+                      borderRadius: BorderRadius.circular(10),
+                    ),
+                    child: const Icon(
+                      Icons.download_rounded,
+                      size: 18,
+                      color: Colors.purple,
+                    ),
                   ),
-                  child: Icon(Icons.upload_rounded, size: 18, color: color),
-                ),
-                const SizedBox(width: 10),
-                Expanded(
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      Row(children: [
-                        if (isMulti) ...[
-                          Container(
-                            padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
-                            decoration: BoxDecoration(
-                              color: color.withValues(alpha: 0.12),
-                              borderRadius: BorderRadius.circular(6),
-                            ),
-                            child: Text(
-                              '${svc.currentFileIndex + 1}/${svc.totalFiles}',
-                              style: TextStyle(fontSize: 10, fontWeight: FontWeight.bold, color: color),
-                            ),
-                          ),
-                          const SizedBox(width: 6),
-                        ],
-                        Expanded(
-                          child: Text(
-                            progress.fileName,
-                            style: Theme.of(context).textTheme.bodyMedium?.copyWith(fontWeight: FontWeight.w600),
-                            maxLines: 1,
-                            overflow: TextOverflow.ellipsis,
+                  const SizedBox(width: 10),
+                  // اسم الملف
+                  Expanded(
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Text(
+                          p.fileName,
+                          maxLines: 1,
+                          overflow: TextOverflow.ellipsis,
+                          style: TextStyle(
+                            fontSize: 13,
+                            fontWeight: FontWeight.w600,
+                            color:
+                                isDark ? Colors.white : const Color(0xFF1C1C1E),
                           ),
                         ),
-                      ]),
-                      const SizedBox(height: 2),
-                      Text(
-                        '${(progress.transferredBytes / 1024 / 1024).toStringAsFixed(1)} / ${(progress.totalBytes / 1024 / 1024).toStringAsFixed(1)} MB  •  ${progress.speedFormatted}',
-                        style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                          color: Theme.of(context).colorScheme.onSurface.withValues(alpha: 0.55),
+                        const SizedBox(height: 2),
+                        Text(
+                          '${_formatSize(p.transferredBytes)} / ${_formatSize(p.totalBytes)}  •  ${p.speedFormatted}',
+                          style: TextStyle(
+                            fontSize: 11,
+                            color: Colors.purple.withValues(alpha: 0.75),
+                          ),
                         ),
+                      ],
+                    ),
+                  ),
+                  const SizedBox(width: 8),
+                  // النسبة
+                  Text(
+                    '${pct.toStringAsFixed(0)}%',
+                    style: const TextStyle(
+                      fontSize: 15,
+                      fontWeight: FontWeight.bold,
+                      color: Colors.purple,
+                    ),
+                  ),
+                  const SizedBox(width: 6),
+                  // زر الإلغاء
+                  GestureDetector(
+                    onTap: () => _svc.cancelReceive(),
+                    child: Container(
+                      width: 28,
+                      height: 28,
+                      decoration: BoxDecoration(
+                        color: Colors.red.withValues(alpha: 0.1),
+                        borderRadius: BorderRadius.circular(8),
                       ),
-                    ],
+                      child: const Icon(
+                        Icons.close_rounded,
+                        size: 16,
+                        color: Colors.red,
+                      ),
+                    ),
                   ),
-                ),
-                Text(
-                  '${progress.percentage.toStringAsFixed(0)}%',
-                  style: TextStyle(fontWeight: FontWeight.bold, color: color, fontSize: 16),
-                ),
-                const SizedBox(width: 4),
-                IconButton(
-                  icon: const Icon(Icons.close_rounded, size: 18),
-                  onPressed: () => _progressService.cancelTransfer(),
-                  padding: EdgeInsets.zero,
-                  constraints: const BoxConstraints(),
-                  color: Theme.of(context).colorScheme.onSurface.withValues(alpha: 0.4),
-                ),
-              ]),
+                ],
+              ),
               const SizedBox(height: 10),
-              // ─── Current file bar ──────────────────────────────────────
+              // ─── شريط التقدم ───────────────────────────────────────
               ClipRRect(
-                borderRadius: BorderRadius.circular(4),
+                borderRadius: BorderRadius.circular(6),
                 child: LinearProgressIndicator(
-                  value: progress.percentage / 100,
+                  value: pct / 100,
                   minHeight: 5,
-                  backgroundColor: Theme.of(context).colorScheme.surfaceContainerHighest,
-                  valueColor: AlwaysStoppedAnimation(color),
+                  backgroundColor: Colors.purple.withValues(alpha: 0.12),
+                  valueColor: const AlwaysStoppedAnimation(Colors.purple),
                 ),
               ),
-              // ─── Overall bar (multi only) ──────────────────────────────
-              if (isMulti) ...[
-                const SizedBox(height: 5),
-                ClipRRect(
-                  borderRadius: BorderRadius.circular(4),
-                  child: LinearProgressIndicator(
-                    value: overallPct / 100,
-                    minHeight: 3,
-                    backgroundColor: Theme.of(context).colorScheme.surfaceContainerHighest,
-                    valueColor: AlwaysStoppedAnimation(color.withValues(alpha: 0.4)),
-                  ),
+              const SizedBox(height: 5),
+              // ─── الوقت المتبقي ─────────────────────────────────────
+              Text(
+                p.remainingTimeFormatted,
+                style: TextStyle(
+                  fontSize: 10,
+                  color: (isDark ? Colors.white : Colors.black)
+                      .withValues(alpha: 0.4),
                 ),
-              ],
-              const SizedBox(height: 6),
-              Row(
-                mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                children: [
-                  if (isMulti)
-                    Text('الكل: ${overallPct.toStringAsFixed(0)}%',
-                        style: TextStyle(fontSize: 11, color: color.withValues(alpha: 0.7)))
-                  else
-                    Text(progress.speedFormatted,
-                        style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                          color: Theme.of(context).colorScheme.onSurface.withValues(alpha: 0.5),
-                        )),
-                  Text('متبقي ${progress.remainingTimeFormatted}',
-                      style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                        color: Theme.of(context).colorScheme.onSurface.withValues(alpha: 0.5),
-                      )),
-                ],
               ),
             ],
           ),
         ),
       ),
     );
+  }
+
+  String _formatSize(int bytes) {
+    if (bytes < 1024 * 1024) {
+      return '${(bytes / 1024).toStringAsFixed(0)} KB';
+    }
+    return '${(bytes / 1024 / 1024).toStringAsFixed(1)} MB';
   }
 }

@@ -15,7 +15,7 @@ class AppLocalizationsEn extends AppLocalizations {
   String get send => 'Send';
 
   @override
-  String get receive => 'Receive';
+  String get receive => 'My Device';
 
   @override
   String get files => 'Files';

@@ -14,10 +14,12 @@ class ConnectionWidget extends StatefulWidget {
   final Device device;
   final String? pendingFilePath;
   final VoidCallback? onPendingFileSent;
+  final bool isGloballyBusy;
   const ConnectionWidget({
     required this.device,
     this.pendingFilePath,
     this.onPendingFileSent,
+    this.isGloballyBusy = false,
     super.key,
   });
 
@@ -37,6 +39,20 @@ class _ConnectionWidgetState extends State<ConnectionWidget>
       vsync: this,
       duration: const Duration(milliseconds: 600),
     );
+    // استعادة الحالة عند إعادة بناء الـ widget أثناء الإرسال
+    final svc = TransferProgressService();
+    if (svc.isSending && svc.isTransferring) {
+      _status = _Status.sending;
+    }
+    // تابع انتهاء الإرسال لتحديث الحالة
+    svc.progressStream.listen((p) {
+      if (!mounted) {
+        return;
+      }
+      if (p == null && _status == _Status.sending) {
+        setState(() => _status = _Status.idle);
+      }
+    });
   }
 
   @override
@@ -70,7 +86,9 @@ class _ConnectionWidgetState extends State<ConnectionWidget>
           children: [
             _buildHeader(isDark),
             const SizedBox(height: 14),
-            if (widget.pendingFilePath != null && _status == _Status.idle)
+            if (widget.pendingFilePath != null &&
+                _status == _Status.idle &&
+                !widget.isGloballyBusy)
               _buildPendingFileBanner(l10n),
             _status == _Status.sending
                 ? _buildSendingState()
@@ -206,6 +224,10 @@ class _ConnectionWidgetState extends State<ConnectionWidget>
   }
 
   Widget _buildActions(AppLocalizations l10n, bool isDark) {
+    // أثناء إرسال جارٍ من جهاز آخر — أظهر حالة انتظار
+    if (widget.isGloballyBusy && _status == _Status.idle) {
+      return _buildBusyBar(l10n);
+    }
     return Row(
       children: [
         Expanded(
@@ -229,48 +251,174 @@ class _ConnectionWidgetState extends State<ConnectionWidget>
     );
   }
 
+  Widget _buildBusyBar(AppLocalizations l10n) {
+    final isAr = l10n.localeName == 'ar';
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
+      decoration: BoxDecoration(
+        color: Colors.orange.withValues(alpha: 0.08),
+        borderRadius: BorderRadius.circular(12),
+        border: Border.all(color: Colors.orange.withValues(alpha: 0.25)),
+      ),
+      child: Row(children: [
+        const Icon(Icons.hourglass_top_rounded, size: 16, color: Colors.orange),
+        const SizedBox(width: 8),
+        Text(
+          isAr ? 'يوجد إرسال جارٍ...' : 'Transfer in progress...',
+          style: const TextStyle(
+            fontSize: 12,
+            color: Colors.orange,
+            fontWeight: FontWeight.w500,
+          ),
+        ),
+      ]),
+    );
+  }
+
   Widget _buildSendingState() {
+    final isAr = AppLocalizations.of(context).localeName == 'ar';
+    final svc = TransferProgressService();
+
     return StreamBuilder<dynamic>(
-      stream: TransferProgressService().progressStream,
+      stream: svc.progressStream,
       builder: (context, snapshot) {
         final p = snapshot.data;
         final pct = p?.percentage ?? 0.0;
         final speed = p?.speedFormatted ?? '';
+        final total = svc.totalFiles;
+        final current = svc.currentFileIndex + 1;
+        final isBatch = total > 1;
+        final batchPct = isBatch
+            ? ((svc.currentFileIndex + (pct / 100)) / total * 100)
+                .clamp(0.0, 100.0)
+            : pct;
 
         return Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
+            // صف العنوان: الحالة + السرعة + زر إلغاء
             Row(children: [
               const SizedBox(
-                width: 18,
-                height: 18,
+                width: 16,
+                height: 16,
                 child: CircularProgressIndicator(strokeWidth: 2),
               ),
-              const SizedBox(width: 10),
-              Text('جاري الإرسال...',
+              const SizedBox(width: 8),
+              Expanded(
+                child: Text(
+                  isBatch
+                      ? (isAr
+                          ? 'ملف $current من $total'
+                          : 'File $current of $total')
+                      : (isAr ? 'جاري الإرسال...' : 'Sending...'),
                   style: TextStyle(
                     fontWeight: FontWeight.w600,
+                    fontSize: 13,
                     color: Theme.of(context).colorScheme.primary,
-                  )),
-              const Spacer(),
+                  ),
+                ),
+              ),
               if (speed.isNotEmpty)
                 Text(speed,
-                    style: const TextStyle(fontSize: 12, color: Colors.grey)),
+                    style: const TextStyle(fontSize: 11, color: Colors.grey)),
+              const SizedBox(width: 8),
+              GestureDetector(
+                onTap: () => TransferProgressService().cancelTransfer(),
+                child: Container(
+                  padding:
+                      const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+                  decoration: BoxDecoration(
+                    color: Colors.red.withValues(alpha: 0.1),
+                    borderRadius: BorderRadius.circular(8),
+                    border:
+                        Border.all(color: Colors.red.withValues(alpha: 0.3)),
+                  ),
+                  child: Text(
+                    isAr ? 'إلغاء' : 'Cancel',
+                    style: const TextStyle(
+                      fontSize: 11,
+                      color: Colors.red,
+                      fontWeight: FontWeight.w600,
+                    ),
+                  ),
+                ),
+              ),
             ]),
-            const SizedBox(height: 10),
+
+            // اسم الملف الحالي
+            if (p?.fileName != null) ...[
+              const SizedBox(height: 8),
+              Text(
+                p!.fileName,
+                maxLines: 1,
+                overflow: TextOverflow.ellipsis,
+                style: TextStyle(
+                  fontSize: 12,
+                  color: Theme.of(context).colorScheme.onSurfaceVariant,
+                ),
+              ),
+            ],
+
+            const SizedBox(height: 8),
+
+            // شريط الملف الحالي
             ClipRRect(
-              borderRadius: BorderRadius.circular(8),
+              borderRadius: BorderRadius.circular(6),
               child: LinearProgressIndicator(
                 value: pct > 0 ? pct / 100 : null,
-                minHeight: 6,
+                minHeight: 5,
                 backgroundColor:
                     Theme.of(context).colorScheme.surfaceContainerHighest,
               ),
             ),
-            if (pct > 0) ...[
-              const SizedBox(height: 4),
-              Text('${pct.toStringAsFixed(0)}%',
-                  style: const TextStyle(fontSize: 11, color: Colors.grey)),
+            const SizedBox(height: 3),
+            Row(
+              mainAxisAlignment: MainAxisAlignment.spaceBetween,
+              children: [
+                Text(
+                  pct > 0 ? '${pct.toStringAsFixed(0)}%' : '',
+                  style: const TextStyle(fontSize: 10, color: Colors.grey),
+                ),
+                if (p != null)
+                  Text(
+                    p.remainingTimeFormatted,
+                    style: const TextStyle(fontSize: 10, color: Colors.grey),
+                  ),
+              ],
+            ),
+
+            // شريط الدفعة الكلي — يظهر فقط عند إرسال متعدد
+            if (isBatch) ...[
+              const SizedBox(height: 8),
+              Row(
+                children: [
+                  Expanded(
+                    child: ClipRRect(
+                      borderRadius: BorderRadius.circular(4),
+                      child: LinearProgressIndicator(
+                        value: batchPct / 100,
+                        minHeight: 3,
+                        backgroundColor: Theme.of(context)
+                            .colorScheme
+                            .primary
+                            .withValues(alpha: 0.15),
+                        valueColor: AlwaysStoppedAnimation(
+                          Theme.of(context).colorScheme.primary,
+                        ),
+                      ),
+                    ),
+                  ),
+                  const SizedBox(width: 8),
+                  Text(
+                    '${batchPct.toStringAsFixed(0)}%',
+                    style: TextStyle(
+                      fontSize: 10,
+                      fontWeight: FontWeight.w600,
+                      color: Theme.of(context).colorScheme.primary,
+                    ),
+                  ),
+                ],
+              ),
             ],
           ],
         );
@@ -284,40 +432,29 @@ class _ConnectionWidgetState extends State<ConnectionWidget>
       return;
     }
 
-    final files = result.files.where((f) => f.path != null).toList();
+    final paths =
+        result.files.where((f) => f.path != null).map((f) => f.path!).toList();
+
     setState(() => _status = _Status.sending);
-    final progress = TransferProgressService();
-    progress.startBatch(files.length);
-    int success = 0;
     try {
-      for (final f in files) {
-        if (progress.isCancelled) {
-          break;
-        }
-        if (await ApexCore.instance.sendFile(f.path!, widget.device)) {
-          success++;
-        }
-        progress.nextFile();
-      }
+      final ok = await ApexCore.instance.sendFiles(paths, widget.device);
       if (mounted) {
         _showSnack(
-          success == files.length
+          ok
               ? AppLocalizations.of(context).fileSentSuccess
               : AppLocalizations.of(context).fileSendFailed,
-          success > 0,
+          ok,
         );
       }
-      if (success > 0) {
-        await DesktopNotificationService.instance.showFileSent(
-          files.length == 1 ? files.first.name : '${files.length} files',
-        );
+      final label = paths.length == 1
+          ? paths.first.split('/').last
+          : '${paths.length} files';
+      if (ok) {
+        await DesktopNotificationService.instance.showFileSent(label);
       } else {
-        await DesktopNotificationService.instance.showSendFailed(
-          files.length == 1 ? files.first.name : '${files.length} files',
-        );
+        await DesktopNotificationService.instance.showSendFailed(label);
       }
     } finally {
-      progress.clearProgress();
       if (mounted) {
         setState(() => _status = _Status.idle);
       }

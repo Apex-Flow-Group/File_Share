@@ -13,7 +13,8 @@ import '../../services/transfer_progress_service.dart';
 class ReceiveTab extends StatefulWidget {
   final Device? localDevice;
   final bool isRunning;
-  const ReceiveTab({required this.localDevice, required this.isRunning, super.key});
+  const ReceiveTab(
+      {required this.localDevice, required this.isRunning, super.key});
 
   @override
   State<ReceiveTab> createState() => _ReceiveTabState();
@@ -28,14 +29,18 @@ class _ReceiveTabState extends State<ReceiveTab>
   void initState() {
     super.initState();
     _pulseAnim = AnimationController(
-      vsync: this, duration: const Duration(milliseconds: 1400),
+      vsync: this,
+      duration: const Duration(milliseconds: 1400),
     )..repeat(reverse: true);
 
     TransferProgressService().progressStream.listen((p) {
       if (!mounted) {
         return;
       }
-      setState(() => _isReceiving = p?.status == TransferStatus.transferring);
+      // أظهر حالة الاستقبال فقط إذا لم يكن الجهاز مرسلاً
+      final isSending = TransferProgressService().isSending;
+      setState(() => _isReceiving =
+          !isSending && p?.status == TransferStatus.transferring);
     });
   }
 
@@ -90,7 +95,7 @@ class _ReceiveTabState extends State<ReceiveTab>
               color: color.withValues(alpha: 0.15),
               borderRadius: BorderRadius.circular(14),
             ),
-            child: const Icon(Icons.download_rounded, color: color, size: 22),
+            child: const Icon(Icons.smartphone_rounded, color: color, size: 22),
           ),
           const SizedBox(width: 12),
           Expanded(
@@ -99,13 +104,13 @@ class _ReceiveTabState extends State<ReceiveTab>
               children: [
                 Text(l10n.receive,
                     style: Theme.of(context).textTheme.titleLarge?.copyWith(
-                      fontWeight: FontWeight.bold,
-                    )),
+                          fontWeight: FontWeight.bold,
+                        )),
                 Text(
                   _isReceiving ? l10n.receiving : l10n.instruction4,
                   style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                    color: Theme.of(context).colorScheme.onSurfaceVariant,
-                  ),
+                        color: Theme.of(context).colorScheme.onSurfaceVariant,
+                      ),
                   maxLines: 1,
                   overflow: TextOverflow.ellipsis,
                 ),
@@ -123,7 +128,8 @@ class _ReceiveTabState extends State<ReceiveTab>
               ),
               child: Row(mainAxisSize: MainAxisSize.min, children: [
                 Container(
-                  width: 6, height: 6,
+                  width: 6,
+                  height: 6,
                   decoration: BoxDecoration(
                     color: _isReceiving ? Colors.purple : Colors.green,
                     shape: BoxShape.circle,
@@ -162,21 +168,22 @@ class _ReceiveTabState extends State<ReceiveTab>
                 color: Colors.orange.withValues(alpha: 0.1),
                 borderRadius: BorderRadius.circular(28),
               ),
-              child: const Icon(Icons.wifi_off_rounded, size: 64, color: Colors.orange),
+              child: const Icon(Icons.wifi_off_rounded,
+                  size: 64, color: Colors.orange),
             ),
             const SizedBox(height: 24),
             Text(
               isAr ? 'النظام غير جاهز' : 'System not ready',
               style: Theme.of(context).textTheme.titleLarge?.copyWith(
-                fontWeight: FontWeight.bold,
-              ),
+                    fontWeight: FontWeight.bold,
+                  ),
             ),
             const SizedBox(height: 8),
             Text(
               isAr ? 'تأكد من تشغيل النظام' : 'Make sure the system is running',
               style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                color: Theme.of(context).colorScheme.onSurfaceVariant,
-              ),
+                    color: Theme.of(context).colorScheme.onSurfaceVariant,
+                  ),
               textAlign: TextAlign.center,
             ),
           ],
@@ -190,9 +197,11 @@ class _ReceiveTabState extends State<ReceiveTab>
   Widget _buildReady() {
     final l10n = AppLocalizations.of(context);
     final device = widget.localDevice!;
+    final bottomPadding =
+        MediaQuery.of(context).padding.bottom + kBottomNavigationBarHeight + 16;
 
     return SingleChildScrollView(
-      padding: const EdgeInsets.fromLTRB(16, 16, 16, 100),
+      padding: EdgeInsets.fromLTRB(16, 16, 16, bottomPadding),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.stretch,
         children: [
@@ -225,7 +234,8 @@ class _ReceiveTabState extends State<ReceiveTab>
             end: Alignment.bottomRight,
             colors: _isReceiving
                 ? [
-                    Colors.purple.withValues(alpha: 0.15 + _pulseAnim.value * 0.05),
+                    Colors.purple
+                        .withValues(alpha: 0.15 + _pulseAnim.value * 0.05),
                     Colors.purple.withValues(alpha: 0.05),
                   ]
                 : [
@@ -240,7 +250,9 @@ class _ReceiveTabState extends State<ReceiveTab>
                 : Colors.green.withValues(alpha: 0.2),
           ),
         ),
-        child: _isReceiving ? _buildReceivingContent() : _buildReadyContent(isAr, l10n),
+        child: _isReceiving
+            ? _buildReceivingContent()
+            : _buildReadyContent(isAr, l10n),
       ),
     );
   }
@@ -254,7 +266,8 @@ class _ReceiveTabState extends State<ReceiveTab>
             color: Colors.green.withValues(alpha: 0.15),
             borderRadius: BorderRadius.circular(18),
           ),
-          child: const Icon(Icons.check_circle_rounded, size: 36, color: Colors.green),
+          child: const Icon(Icons.check_circle_rounded,
+              size: 36, color: Colors.green),
         ),
         const SizedBox(width: 16),
         Expanded(
@@ -264,13 +277,16 @@ class _ReceiveTabState extends State<ReceiveTab>
               Text(
                 isAr ? 'جاهز للاستقبال' : 'Ready to Receive',
                 style: const TextStyle(
-                  fontWeight: FontWeight.bold, fontSize: 17, color: Colors.green,
+                  fontWeight: FontWeight.bold,
+                  fontSize: 17,
+                  color: Colors.green,
                 ),
               ),
               const SizedBox(height: 4),
               Text(
                 l10n.instruction4,
-                style: TextStyle(fontSize: 13, color: Colors.green.withValues(alpha: 0.8)),
+                style: TextStyle(
+                    fontSize: 13, color: Colors.green.withValues(alpha: 0.8)),
               ),
             ],
           ),
@@ -280,36 +296,70 @@ class _ReceiveTabState extends State<ReceiveTab>
   }
 
   Widget _buildReceivingContent() {
+    final isAr = Localizations.localeOf(context).languageCode == 'ar';
     return StreamBuilder<TransferProgress?>(
       stream: TransferProgressService().progressStream,
       builder: (context, snapshot) {
         final p = snapshot.data;
+        // تأكد أن هذا تقدم استقبال وليس إرسال
+        if (TransferProgressService().isSending) {
+          return _buildReadyContent(isAr, AppLocalizations.of(context));
+        }
         return Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
             Row(children: [
               const SizedBox(
-                width: 20, height: 20,
+                width: 20,
+                height: 20,
                 child: CircularProgressIndicator(
-                  strokeWidth: 2.5, color: Colors.purple,
+                  strokeWidth: 2.5,
+                  color: Colors.purple,
                 ),
               ),
               const SizedBox(width: 12),
-              const Text('جاري الاستقبال...',
-                  style: TextStyle(
-                    fontWeight: FontWeight.bold, fontSize: 16, color: Colors.purple,
-                  )),
+              Text(
+                isAr ? 'جاري الاستقبال...' : 'Receiving...',
+                style: const TextStyle(
+                  fontWeight: FontWeight.bold,
+                  fontSize: 16,
+                  color: Colors.purple,
+                ),
+              ),
               const Spacer(),
               if (p != null)
                 Text(p.speedFormatted,
                     style: const TextStyle(fontSize: 12, color: Colors.purple)),
+              const SizedBox(width: 8),
+              GestureDetector(
+                onTap: () => TransferProgressService().cancelReceive(),
+                child: Container(
+                  padding:
+                      const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
+                  decoration: BoxDecoration(
+                    color: Colors.red.withValues(alpha: 0.1),
+                    borderRadius: BorderRadius.circular(8),
+                    border:
+                        Border.all(color: Colors.red.withValues(alpha: 0.3)),
+                  ),
+                  child: Text(
+                    isAr ? 'إلغاء' : 'Cancel',
+                    style: const TextStyle(
+                      fontSize: 12,
+                      color: Colors.red,
+                      fontWeight: FontWeight.w600,
+                    ),
+                  ),
+                ),
+              ),
             ]),
             if (p != null) ...[
               const SizedBox(height: 14),
               Text(p.fileName,
                   maxLines: 1,
                   overflow: TextOverflow.ellipsis,
-                  style: const TextStyle(fontSize: 13, fontWeight: FontWeight.w500)),
+                  style: const TextStyle(
+                      fontSize: 13, fontWeight: FontWeight.w500)),
               const SizedBox(height: 8),
               ClipRRect(
                 borderRadius: BorderRadius.circular(8),
@@ -325,7 +375,10 @@ class _ReceiveTabState extends State<ReceiveTab>
                 mainAxisAlignment: MainAxisAlignment.spaceBetween,
                 children: [
                   Text('${p.percentage.toStringAsFixed(0)}%',
-                      style: const TextStyle(fontSize: 12, color: Colors.purple, fontWeight: FontWeight.w600)),
+                      style: const TextStyle(
+                          fontSize: 12,
+                          color: Colors.purple,
+                          fontWeight: FontWeight.w600)),
                   Text(p.remainingTimeFormatted,
                       style: const TextStyle(fontSize: 12, color: Colors.grey)),
                 ],
@@ -347,7 +400,8 @@ class _ReceiveTabState extends State<ReceiveTab>
         boxShadow: [
           BoxShadow(
             color: Colors.black.withValues(alpha: isDark ? 0.3 : 0.06),
-            blurRadius: 16, offset: const Offset(0, 4),
+            blurRadius: 16,
+            offset: const Offset(0, 4),
           ),
         ],
       ),
@@ -355,11 +409,14 @@ class _ReceiveTabState extends State<ReceiveTab>
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           Row(children: [
-            const Icon(Icons.phone_android_rounded, size: 16, color: Colors.grey),
+            const Icon(Icons.phone_android_rounded,
+                size: 16, color: Colors.grey),
             const SizedBox(width: 6),
             Text(l10n.thisDevice,
                 style: const TextStyle(
-                  fontWeight: FontWeight.bold, fontSize: 13, color: Colors.grey,
+                  fontWeight: FontWeight.bold,
+                  fontSize: 13,
+                  color: Colors.grey,
                 )),
           ]),
           const SizedBox(height: 14),
@@ -414,13 +471,15 @@ class _ReceiveTabState extends State<ReceiveTab>
                     color: Theme.of(context).colorScheme.onSurfaceVariant,
                   )),
               Text(value,
-                  style: const TextStyle(fontWeight: FontWeight.w600, fontSize: 14)),
+                  style: const TextStyle(
+                      fontWeight: FontWeight.w600, fontSize: 14)),
             ],
           ),
         ),
         if (copyable)
           IconButton(
-            icon: Icon(Icons.copy_rounded, size: 18,
+            icon: Icon(Icons.copy_rounded,
+                size: 18,
                 color: Theme.of(context).colorScheme.onSurfaceVariant),
             onPressed: () {
               Clipboard.setData(ClipboardData(text: value));
@@ -428,7 +487,8 @@ class _ReceiveTabState extends State<ReceiveTab>
                 content: Text(AppLocalizations.of(context).textCopied),
                 duration: const Duration(seconds: 2),
                 behavior: SnackBarBehavior.floating,
-                shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(12)),
               ));
             },
           ),
@@ -472,12 +532,16 @@ class _ReceiveTabState extends State<ReceiveTab>
                 Text(
                   isAr ? 'حمّل نسخة الكمبيوتر' : 'Get PC Version',
                   style: const TextStyle(
-                    fontWeight: FontWeight.bold, fontSize: 14, color: color,
+                    fontWeight: FontWeight.bold,
+                    fontSize: 14,
+                    color: color,
                   ),
                 ),
                 const SizedBox(height: 2),
                 Text(
-                  isAr ? 'Windows و Linux • apexflow.now' : 'Windows & Linux • apexflow.now',
+                  isAr
+                      ? 'Windows و Linux • apexflow.now'
+                      : 'Windows & Linux • apexflow.now',
                   style: TextStyle(fontSize: 12, color: Colors.grey[600]),
                 ),
               ],
@@ -507,7 +571,9 @@ class _ReceiveTabState extends State<ReceiveTab>
             const SizedBox(width: 6),
             Text(l10n.howToReceive,
                 style: const TextStyle(
-                  fontWeight: FontWeight.bold, fontSize: 13, color: color,
+                  fontWeight: FontWeight.bold,
+                  fontSize: 13,
+                  color: color,
                 )),
           ]),
           const SizedBox(height: 10),
@@ -526,7 +592,8 @@ class _ReceiveTabState extends State<ReceiveTab>
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           Container(
-            width: 20, height: 20,
+            width: 20,
+            height: 20,
             decoration: BoxDecoration(
               color: const Color(0xFF5856D6).withValues(alpha: 0.15),
               borderRadius: BorderRadius.circular(6),
@@ -534,7 +601,9 @@ class _ReceiveTabState extends State<ReceiveTab>
             child: Center(
               child: Text(num,
                   style: const TextStyle(
-                    fontSize: 11, fontWeight: FontWeight.bold, color: Color(0xFF5856D6),
+                    fontSize: 11,
+                    fontWeight: FontWeight.bold,
+                    color: Color(0xFF5856D6),
                   )),
             ),
           ),
