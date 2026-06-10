@@ -12,11 +12,15 @@ class SendTab extends StatefulWidget {
   final bool isRunning;
   final String? pendingFilePath;
   final VoidCallback? onPendingFileSent;
+  final List<String>? pendingSharedFiles;
+  final VoidCallback? onSharedFilesSent;
   const SendTab({
     required this.devices,
     required this.isRunning,
     this.pendingFilePath,
     this.onPendingFileSent,
+    this.pendingSharedFiles,
+    this.onSharedFilesSent,
     super.key,
   });
 
@@ -201,6 +205,8 @@ class _SendTabState extends State<SendTab> with TickerProviderStateMixin {
                     device: device,
                     pendingFilePath: widget.pendingFilePath,
                     onPendingFileSent: widget.onPendingFileSent,
+                    pendingSharedFiles: widget.pendingSharedFiles,
+                    onSharedFilesSent: widget.onSharedFilesSent,
                     // مشغول عالمياً فقط إذا كان هناك إرسال لجهاز آخر
                     isGloballyBusy: isTransferring && !isTarget,
                   );

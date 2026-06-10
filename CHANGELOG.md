@@ -7,25 +7,27 @@ All notable changes to this project will be documented in this file.
 ## [2.0.4] — 2026-06-08
 
 ### Fixed
-- **شريط التقدم يظهر على كل الأجهزة (Progress bar appearing on all devices):** `ConnectionWidget.initState()` كان يضع كل الأجهزة في حالة `sending` عند إعادة البناء بسبب التحقق من `isSending` فقط بدون تمييز الجهاز المستهدف؛ الإصلاح يتحقق الآن من `targetDeviceId == device.id` قبل استعادة الحالة
-- **كل الأجهزة تصبح مرسِلة عند تغيير الصفحة والرجوع (All devices show sending state after tab switch):** نفس السبب — عند إعادة بناء القائمة كل `ConnectionWidget` كان يقرأ `isSending=true` ويضع نفسه كـ sending؛ الآن فقط الجهاز صاحب `targetDeviceId` يستعيد حالة الإرسال
-- **المستقبل يظهر كمرسِل (Receiver shown as sender):** `isGloballyBusy` كان يُرسَل `true` لجميع الأجهزة بما فيها الجهاز المستهدف نفسه؛ الآن `isGloballyBusy=false` للجهاز المستهدف و`true` لباقي الأجهزة فقط
-- **شريط التقدم لا يظهر على الجهاز المُرسِل (Progress bar missing on sender device card):** كان `isGloballyBusy` يتسبب في إخفاء الشريط على الجهاز الصحيح وإظهار `_buildBusyBar` بدلاً منه
-- **نفس المشاكل في واجهة TV:** `TVSendTab._buildDeviceList()` كان يمرر `isGloballyBusy=true` لكل الأجهزة دون تمييز؛ صُحِّح بنفس منطق `targetDeviceId`
+- **Progress bar appearing on all devices:** `ConnectionWidget.initState()` was setting all devices to `sending` state on rebuild because it only checked `isSending` without identifying the target device; now validates `targetDeviceId == device.id` before restoring state
+- **All devices show sending state after tab switch:** same root cause — on list rebuild every `ConnectionWidget` read `isSending=true` and set itself as sending; now only the device matching `targetDeviceId` restores the sending state
+- **Receiver shown as sender:** `isGloballyBusy` was passed as `true` to all devices including the target device itself; now `isGloballyBusy=false` for the target device and `true` for all others
+- **Progress bar missing on sender device card:** `isGloballyBusy` was hiding the progress bar on the correct device and showing `_buildBusyBar` instead
+- **Same issues on TV UI:** `TVSendTab._buildDeviceList()` was passing `isGloballyBusy=true` to all devices without distinction; fixed with the same `targetDeviceId` logic
 
 ### Added
-- **`TransferProgressService.targetDeviceId`** — معرّف الجهاز المُرسَل إليه، يُعيَّن في `startBatch()` ويُمسح في `clearProgress()`؛ يستخدمه `ConnectionWidget` للتمييز بين الجهاز المستهدف وبقية الأجهزة
-- **`TransferProgressService.senderDeviceName`** — اسم الجهاز المُرسِل، يُعيَّن عند بدء الاستقبال سواء عبر HTTP أو Nearby
-- **`TransferProgressService.startReceive({senderDeviceName})`** — دالة جديدة لتهيئة حالة الاستقبال بشكل صريح مع تسجيل اسم الجهاز المُرسِل
-- **اسم الجهاز المُرسِل في صفحة "جهازي" (Sender name in My Device tab):** شريط الاستقبال يعرض الآن "من: [اسم الجهاز]" أسفل عنوان "جاري الاستقبال"
-- **اسم الجهاز المُرسِل في الـ overlay العائم:** يعرض `← [اسم الجهاز]` أسفل اسم الملف في بطاقة التقدم العائمة
+- **`TransferProgressService.targetDeviceId`** — identifier of the target device, set in `startBatch()` and cleared in `clearProgress()`; used by `ConnectionWidget` to distinguish the target device from others
+- **`TransferProgressService.senderDeviceName`** — name of the sending device, set when a receive begins via HTTP or Nearby
+- **`TransferProgressService.startReceive({senderDeviceName})`** — new method to explicitly initialize receive state with the sender device name
+- **Sender name in My Device tab:** the receiving progress bar now shows "From: [device name]" below the "Receiving" title
+- **Sender name in floating overlay:** shows `← [device name]` below the file name in the floating progress card
+- **Android Share Sheet integration:** the app now appears in the Android share menu for all file types; sharing one or multiple files opens Apex Transfer directly and prompts the user to select a device; files are copied from `content://` URIs to a temporary cache directory before sending
+- **Theme default changed to System:** the color/theme bottom sheet in Settings now lists System first, matching the Language picker order
 
 ### Changed
-- `startBatch(int total)` → `startBatch(int total, {String? targetDeviceId})` — يقبل الآن معرّف الجهاز المستهدف اختيارياً
-- `http_transfer.sendFiles()` يمرر `target.id` إلى `startBatch`
-- `nearby_transfer.sendFile()` و `sendBatchFiles()` يمرران `target.id` إلى `startBatch`
-- `http_transfer.handleUpload()` يستدعي `startReceive()` بدلاً من عدم تهيئة حالة الاستقبال
-- `nearby_transfer.onPayloadReceived()` يستدعي `startReceive(senderDeviceName: device.name)` عند بدء استقبال ملف
+- `startBatch(int total)` → `startBatch(int total, {String? targetDeviceId})` — now optionally accepts the target device ID
+- `http_transfer.sendFiles()` passes `target.id` to `startBatch`
+- `nearby_transfer.sendFile()` and `sendBatchFiles()` pass `target.id` to `startBatch`
+- `http_transfer.handleUpload()` now calls `startReceive()` instead of leaving receive state uninitialized
+- `nearby_transfer.onPayloadReceived()` calls `startReceive(senderDeviceName: device.name)` when a file receive begins
 
 ---
 
