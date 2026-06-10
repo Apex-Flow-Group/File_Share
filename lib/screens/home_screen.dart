@@ -38,6 +38,9 @@ class _HomeScreenState extends State<HomeScreen> with WidgetsBindingObserver {
   final _filesTabKey = GlobalKey();
   final _filesRefreshNotifier = ValueNotifier<int>(0);
   String? _pendingSinanFilePath;
+  List<String>? _pendingSharedFiles;
+
+  static const _shareChannel = MethodChannel('com.apex.core/share');
 
   // Files tab state
   bool _isSelectionMode = false;
@@ -60,6 +63,8 @@ class _HomeScreenState extends State<HomeScreen> with WidgetsBindingObserver {
   Future<void> _initSystem() async {
     // Check for incoming .sinan file from Sinan Note
     _checkIncomingSinanFile();
+    // Check for shared files from Android share sheet
+    _checkIncomingSharedFiles();
 
     ApexCore.instance.devicesStream.listen((d) {
       if (mounted) {
@@ -132,6 +137,90 @@ class _HomeScreenState extends State<HomeScreen> with WidgetsBindingObserver {
         _handleSinanFile(path);
       }
     } catch (_) {}
+  }
+
+  void _checkIncomingSharedFiles() async {
+    // الاستماع للملفات القادمة أثناء تشغيل التطبيق
+    _shareChannel.setMethodCallHandler((call) async {
+      if (call.method == 'onSharedFilesReceived') {
+        final paths = (call.arguments as List?)?.cast<String>();
+        if (paths != null && paths.isNotEmpty && mounted) {
+          _handleSharedFiles(paths);
+        }
+      }
+    });
+    // الملفات التي وصلت قبل اكتمال تهيئة Flutter
+    try {
+      final paths =
+          await _shareChannel.invokeMethod<List>('getPendingSharedFiles');
+      final list = paths?.cast<String>();
+      if (list != null && list.isNotEmpty && mounted) {
+        _handleSharedFiles(list);
+      }
+    } catch (_) {}
+  }
+
+  void _handleSharedFiles(List<String> filePaths) {
+    final isAr = Localizations.localeOf(context).languageCode == 'ar';
+    final count = filePaths.length;
+    final title = isAr
+        ? (count == 1 ? 'ملف جاهز للإرسال' : '$count ملفات جاهزة للإرسال')
+        : (count == 1 ? 'File ready to send' : '$count files ready to send');
+    final subtitle = count == 1
+        ? filePaths.first.split('/').last
+        : filePaths.map((p) => p.split('/').last).take(3).join(', ') +
+            (count > 3 ? (isAr ? ' وأكثر...' : ' and more...') : '');
+
+    showModalBottomSheet(
+      context: context,
+      backgroundColor: Colors.transparent,
+      useSafeArea: true,
+      builder: (_) => _FloatingSheet(
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            const Icon(Icons.share_rounded, size: 48, color: Color(0xFF6750A4)),
+            const SizedBox(height: 12),
+            Text(
+              title,
+              style: const TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
+            ),
+            const SizedBox(height: 8),
+            Text(
+              subtitle,
+              textAlign: TextAlign.center,
+              maxLines: 3,
+              overflow: TextOverflow.ellipsis,
+              style: TextStyle(color: Colors.grey[600], fontSize: 13),
+            ),
+            const SizedBox(height: 20),
+            SizedBox(
+              width: double.infinity,
+              child: FilledButton.icon(
+                onPressed: () {
+                  Navigator.pop(context);
+                  setState(() {
+                    _currentIndex = 0;
+                    _pendingSharedFiles = filePaths;
+                  });
+                },
+                icon: const Icon(Icons.send_rounded),
+                label:
+                    Text(isAr ? 'اختر جهاز للإرسال' : 'Choose device to send'),
+              ),
+            ),
+            const SizedBox(height: 8),
+            SizedBox(
+              width: double.infinity,
+              child: OutlinedButton(
+                onPressed: () => Navigator.pop(context),
+                child: Text(isAr ? 'إلغاء' : 'Cancel'),
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
   }
 
   void _handleSinanFile(String filePath) {
@@ -762,6 +851,8 @@ class _HomeScreenState extends State<HomeScreen> with WidgetsBindingObserver {
           isRunning: _isRunning,
           pendingFilePath: _pendingSinanFilePath,
           onPendingFileSent: () => setState(() => _pendingSinanFilePath = null),
+          pendingSharedFiles: _pendingSharedFiles,
+          onSharedFilesSent: () => setState(() => _pendingSharedFiles = null),
         );
       case 1:
         return ReceiveTab(

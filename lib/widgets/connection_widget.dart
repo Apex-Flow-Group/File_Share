@@ -14,11 +14,15 @@ class ConnectionWidget extends StatefulWidget {
   final Device device;
   final String? pendingFilePath;
   final VoidCallback? onPendingFileSent;
+  final List<String>? pendingSharedFiles;
+  final VoidCallback? onSharedFilesSent;
   final bool isGloballyBusy;
   const ConnectionWidget({
     required this.device,
     this.pendingFilePath,
     this.onPendingFileSent,
+    this.pendingSharedFiles,
+    this.onSharedFilesSent,
     this.isGloballyBusy = false,
     super.key,
   });
@@ -98,6 +102,11 @@ class _ConnectionWidgetState extends State<ConnectionWidget>
           children: [
             _buildHeader(isDark),
             const SizedBox(height: 14),
+            if (widget.pendingSharedFiles != null &&
+                widget.pendingSharedFiles!.isNotEmpty &&
+                _status == _Status.idle &&
+                !widget.isGloballyBusy)
+              _buildSharedFilesBanner(l10n),
             if (widget.pendingFilePath != null &&
                 _status == _Status.idle &&
                 !widget.isGloballyBusy)
@@ -211,6 +220,44 @@ class _ConnectionWidgetState extends State<ConnectionWidget>
     );
   }
 
+  Widget _buildSharedFilesBanner(AppLocalizations l10n) {
+    final isAr = l10n.localeName == 'ar';
+    final files = widget.pendingSharedFiles!;
+    final count = files.length;
+    final label = count == 1
+        ? files.first.split('/').last
+        : (isAr ? '$count ملفات مشاركة' : '$count shared files');
+
+    return GestureDetector(
+      onTap: _sendSharedFiles,
+      child: Container(
+        margin: const EdgeInsets.only(bottom: 10),
+        padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
+        decoration: BoxDecoration(
+          color: const Color(0xFF6750A4).withValues(alpha: 0.1),
+          borderRadius: BorderRadius.circular(12),
+          border:
+              Border.all(color: const Color(0xFF6750A4).withValues(alpha: 0.3)),
+        ),
+        child: Row(children: [
+          const Icon(Icons.share_rounded, color: Color(0xFF6750A4), size: 18),
+          const SizedBox(width: 8),
+          Expanded(
+            child: Text(
+              isAr ? 'إرسال: $label' : 'Send: $label',
+              style: const TextStyle(
+                  color: Color(0xFF6750A4),
+                  fontWeight: FontWeight.w600,
+                  fontSize: 13),
+              overflow: TextOverflow.ellipsis,
+            ),
+          ),
+          const Icon(Icons.send_rounded, color: Color(0xFF6750A4), size: 16),
+        ]),
+      ),
+    );
+  }
+
   Future<void> _sendPendingFile() async {
     final path = widget.pendingFilePath;
     if (path == null) {
@@ -229,6 +276,41 @@ class _ConnectionWidgetState extends State<ConnectionWidget>
         if (ok) {
           widget.onPendingFileSent?.call();
         }
+      }
+    } finally {
+      TransferProgressService().clearProgress();
+      if (mounted) {
+        setState(() => _status = _Status.idle);
+      }
+    }
+  }
+
+  Future<void> _sendSharedFiles() async {
+    final paths = widget.pendingSharedFiles;
+    if (paths == null || paths.isEmpty) {
+      return;
+    }
+    setState(() => _status = _Status.sending);
+    try {
+      final ok = await ApexCore.instance.sendFiles(paths, widget.device);
+      if (mounted) {
+        _showSnack(
+          ok
+              ? AppLocalizations.of(context).fileSentSuccess
+              : AppLocalizations.of(context).fileSendFailed,
+          ok,
+        );
+        if (ok) {
+          widget.onSharedFilesSent?.call();
+        }
+      }
+      final label = paths.length == 1
+          ? paths.first.split('/').last
+          : '${paths.length} files';
+      if (ok) {
+        await DesktopNotificationService.instance.showFileSent(label);
+      } else {
+        await DesktopNotificationService.instance.showSendFailed(label);
       }
     } finally {
       TransferProgressService().clearProgress();

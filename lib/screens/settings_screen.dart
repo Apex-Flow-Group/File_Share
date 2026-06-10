@@ -319,13 +319,13 @@ class SettingsScreen extends StatelessWidget {
       title: l10n.selectTheme,
       items: [
         _PickerItem(
-            label: l10n.light, value: 'light', icon: Icons.light_mode_rounded),
-        _PickerItem(
-            label: l10n.dark, value: 'dark', icon: Icons.dark_mode_rounded),
-        _PickerItem(
             label: l10n.system,
             value: 'system',
             icon: Icons.brightness_auto_rounded),
+        _PickerItem(
+            label: l10n.light, value: 'light', icon: Icons.light_mode_rounded),
+        _PickerItem(
+            label: l10n.dark, value: 'dark', icon: Icons.dark_mode_rounded),
       ],
       currentValue: current == ThemeMode.light
           ? 'light'
