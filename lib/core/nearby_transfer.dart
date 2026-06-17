@@ -423,15 +423,26 @@ class NearbyTransfer {
             } catch (_) {}
             ApexLogger.instance.log('NEARBY', '✅ copy() OK', LogLevel.success);
           }
-          final fileSize = await File(destPath).length();
+
+          // Move to public Downloads via MediaStore (Android 10+)
+          final finalPath =
+              await PathUtils.saveToPublicDownloads(fileName, destPath) ??
+                  destPath;
+          if (finalPath != destPath) {
+            try {
+              await File(destPath).delete();
+            } catch (_) {}
+          }
+
+          final fileSize = await File(finalPath).length();
           ApexLogger.instance.log('NEARBY',
-              '✅ Saved: $destPath | size=$fileSize bytes', LogLevel.success);
+              '✅ Saved: $finalPath | size=$fileSize bytes', LogLevel.success);
           progress.clearProgress();
           onFileReceived(FileReceivedEvent(
             fileName: fileName,
             fileSize: fileSize,
             fromDevice: device?.name ?? endpointId,
-            filePath: destPath,
+            filePath: finalPath,
           ));
         } catch (e) {
           progress.clearProgress();

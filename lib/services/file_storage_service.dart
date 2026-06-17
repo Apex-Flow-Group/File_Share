@@ -5,6 +5,7 @@ import '../utils/path_utils.dart';
 class FileStorageService {
   Future<String?> saveFile(String fileName, List<int> data) async {
     try {
+      // Step 1: Write to a temporary file first
       final dirPath = await PathUtils.getCategoryPath(fileName);
       final dir = Directory(dirPath);
 
@@ -12,25 +13,37 @@ class FileStorageService {
         await dir.create(recursive: true);
       }
 
-      final filePath = '$dirPath/$fileName';
-      final file = File(filePath);
+      final tempPath = '$dirPath/$fileName';
+      final tempFile = File(tempPath);
 
       ApexLogger.instance.log(
           'STORAGE',
-          '💾 حفظ ${_formatSize(data.length)} إلى: $filePath',
+          '💾 حفظ ${_formatSize(data.length)} إلى: $tempPath',
           LogLevel.warning);
-      await file.writeAsBytes(data);
+      await tempFile.writeAsBytes(data);
 
-      final savedSize = await file.length();
-      ApexLogger.instance.log('STORAGE',
-          '✅ تم حفظ الملف: ${_formatSize(savedSize)}', LogLevel.success);
+      // Step 2: On Android 10+, copy to public Downloads via MediaStore
+      String? finalPath;
+      if (Platform.isAndroid) {
+        finalPath = await PathUtils.saveToPublicDownloads(fileName, tempPath);
+        if (finalPath != null && finalPath != tempPath) {
+          // Delete the temp file since it's now in Downloads
+          try {
+            await tempFile.delete();
+          } catch (_) {}
+        }
+      }
+
+      final savedPath = finalPath ?? tempPath;
+      ApexLogger.instance
+          .log('STORAGE', '✅ تم حفظ الملف: $savedPath', LogLevel.success);
 
       // Scan file for Android
       if (Platform.isAndroid) {
-        await _scanFile(filePath);
+        await _scanFile(savedPath);
       }
 
-      return filePath;
+      return savedPath;
     } catch (e) {
       ApexLogger.instance.log('STORAGE', '❌ فشل حفظ الملف: $e', LogLevel.error);
       return null;
