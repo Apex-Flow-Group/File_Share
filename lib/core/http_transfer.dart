@@ -82,12 +82,13 @@ class HttpTransfer {
     final expectedSize =
         int.tryParse(req.headers.value('content-length') ?? '') ?? 0;
 
-    final dirPath = await PathUtils.getCategoryPath(fileName);
-    final filePath = '$dirPath/$fileName';
+    // Write to temp cache first, then move to public Downloads via MediaStore
+    final tempDir = await PathUtils.getCategoryPath(fileName);
+    final tempPath = '$tempDir/$fileName';
     IOSink? sink;
 
     try {
-      sink = File(filePath).openWrite(mode: FileMode.write);
+      sink = File(tempPath).openWrite(mode: FileMode.write);
       int received = 0;
       final startTime = DateTime.now();
       const updateInterval = 256 * 1024;
@@ -119,6 +120,16 @@ class HttpTransfer {
       sink = null;
       TransferProgressService().clearProgress();
 
+      // Move to public Downloads via MediaStore (Android 10+)
+      final finalPath =
+          await PathUtils.saveToPublicDownloads(fileName, tempPath) ?? tempPath;
+      // Clean up temp if moved successfully
+      if (finalPath != tempPath) {
+        try {
+          await File(tempPath).delete();
+        } catch (_) {}
+      }
+
       req.response
         ..statusCode = HttpStatus.ok
         ..write(jsonEncode({'success': true}));
@@ -128,14 +139,14 @@ class HttpTransfer {
         fileName: fileName,
         fileSize: received,
         fromDevice: fromDevice,
-        filePath: filePath,
+        filePath: finalPath,
       ));
     } on _CancelException {
       try {
         await sink?.close();
       } catch (_) {}
       try {
-        final partial = File(filePath);
+        final partial = File(tempPath);
         if (await partial.exists()) {
           await partial.delete();
         }
@@ -151,7 +162,7 @@ class HttpTransfer {
         await sink?.close();
       } catch (_) {}
       try {
-        final partial = File(filePath);
+        final partial = File(tempPath);
         if (await partial.exists()) {
           await partial.delete();
         }
