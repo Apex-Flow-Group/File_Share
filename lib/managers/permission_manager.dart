@@ -49,8 +49,7 @@ class PermissionManager {
       Permission.bluetoothScan: isArabic ? 'بلوتوث (مسح)' : 'Bluetooth Scan',
       Permission.nearbyWifiDevices:
           isArabic ? 'الأجهزة القريبة (WiFi)' : 'Nearby WiFi Devices',
-      Permission.locationWhenInUse:
-          isArabic ? 'الموقع' : 'Location',
+      Permission.locationWhenInUse: isArabic ? 'الموقع' : 'Location',
     };
 
     for (final entry in checks.entries) {

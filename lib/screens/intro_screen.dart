@@ -115,51 +115,77 @@ class _IntroScreenState extends State<IntroScreen> with SingleTickerProviderStat
             return Stack(
               children: [
                 _AnimatedBackground(progress: _backgroundAnimation.value),
-                Center(
-                  child: ConstrainedBox(
-                    constraints: BoxConstraints(maxWidth: isWideScreen ? 900 : 600),
-                    child: SafeArea(
-                      child: Padding(
-                        padding: EdgeInsets.all(isWideScreen ? 48 : 32),
-                        child: Column(
-                          mainAxisAlignment: MainAxisAlignment.center,
-                          children: [
-                            const Spacer(),
-                            Transform.translate(
-                              offset: Offset(isArabic ? _titleSlide.value : -_titleSlide.value, 0),
-                              child: Opacity(
-                                opacity: _titleFade.value,
-                                child: _ShinyText(
-                                  text: l10n.appTitle,
-                                  fontSize: titleFontSize,
-                                  shimmerProgress: _shimmerAnimation.value,
+
+                // المحتوى المتحرك (العنوان والوصف)
+                Positioned.fill(
+                  child: SafeArea(
+                    bottom: false,
+                    child: Center(
+                      child: ConstrainedBox(
+                        constraints: BoxConstraints(maxWidth: isWideScreen ? 900 : 600),
+                        child: Padding(
+                          padding: EdgeInsets.fromLTRB(
+                            isWideScreen ? 48 : 32,
+                            isWideScreen ? 48 : 32,
+                            isWideScreen ? 48 : 32,
+                            0,
+                          ),
+                          child: Column(
+                            mainAxisAlignment: MainAxisAlignment.center,
+                            children: [
+                              const Spacer(),
+                              Transform.translate(
+                                offset: Offset(isArabic ? _titleSlide.value : -_titleSlide.value, 0),
+                                child: Opacity(
+                                  opacity: _titleFade.value,
+                                  child: _ShinyText(
+                                    text: l10n.appTitle,
+                                    fontSize: titleFontSize,
+                                    shimmerProgress: _shimmerAnimation.value,
+                                  ),
                                 ),
                               ),
-                            ),
-                            SizedBox(height: isWideScreen ? 24 : 16),
-                            Transform.translate(
-                              offset: Offset(isArabic ? _subtitleSlide.value : -_subtitleSlide.value, 0),
-                              child: Opacity(
-                                opacity: _subtitleFade.value,
-                                child: _ShinyText(
-                                  text: l10n.fastAndSecure,
-                                  fontSize: subtitleFontSize,
-                                  shimmerProgress: _shimmerAnimation.value,
+                              SizedBox(height: isWideScreen ? 24 : 16),
+                              Transform.translate(
+                                offset: Offset(isArabic ? _subtitleSlide.value : -_subtitleSlide.value, 0),
+                                child: Opacity(
+                                  opacity: _subtitleFade.value,
+                                  child: _ShinyText(
+                                    text: l10n.fastAndSecure,
+                                    fontSize: subtitleFontSize,
+                                    shimmerProgress: _shimmerAnimation.value,
+                                  ),
                                 ),
                               ),
-                            ),
-                            const Spacer(),
-                            _ComplexButton(
-                              text: l10n.startTour,
-                              drawProgress: _buttonDraw.value,
-                              fillProgress: _buttonFill.value,
-                              textOpacity: _buttonTextFade.value,
-                              onPressed: _startApp,
-                              width: buttonWidth,
-                              height: buttonHeight,
-                            ),
-                            SizedBox(height: isWideScreen ? 48 : 32),
-                          ],
+                              const Spacer(),
+                            ],
+                          ),
+                        ),
+                      ),
+                    ),
+                  ),
+                ),
+
+                // الزر الثابت في الأسفل
+                Positioned(
+                  left: 0,
+                  right: 0,
+                  bottom: 0,
+                  child: SafeArea(
+                    top: false,
+                    child: Padding(
+                      padding: EdgeInsets.fromLTRB(
+                        32, 16, 32, isWideScreen ? 48 : 32,
+                      ),
+                      child: Center(
+                        child: _ComplexButton(
+                          text: l10n.startTour,
+                          drawProgress: _buttonDraw.value,
+                          fillProgress: _buttonFill.value,
+                          textOpacity: _buttonTextFade.value,
+                          onPressed: _startApp,
+                          width: buttonWidth,
+                          height: buttonHeight,
                         ),
                       ),
                     ),

@@ -33,6 +33,10 @@ android {
         targetSdk = 35
         versionCode = flutter.versionCode
         versionName = flutter.versionName
+        // استهداف الأجهزة الحقيقية فقط — حذف x86_64 (محاكيات)
+        ndk {
+            abiFilters += listOf("arm64-v8a", "armeabi-v7a")
+        }
     }
 
     signingConfigs {

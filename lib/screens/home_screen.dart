@@ -1,15 +1,19 @@
 import 'dart:io';
 import 'dart:ui';
 
+import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 
 import '../core/apex_core.dart';
 import '../l10n/generated/app_localizations.dart';
 import '../models/device.dart';
+import '../services/desktop_notification_service.dart';
 import '../services/file_operations_service.dart';
 import '../services/file_storage_service.dart';
 import '../services/settings_service.dart';
+import '../services/transfer_progress_service.dart';
+import '../services/update_service.dart';
 import '../widgets/tabs/files_tab.dart';
 import '../widgets/tabs/receive_tab.dart';
 import '../widgets/tabs/send_tab.dart';
@@ -26,13 +30,17 @@ class HomeScreen extends StatefulWidget {
   State<HomeScreen> createState() => _HomeScreenState();
 }
 
-class _HomeScreenState extends State<HomeScreen> {
+class _HomeScreenState extends State<HomeScreen> with WidgetsBindingObserver {
   int _currentIndex = 0;
   List<Device> _devices = [];
   bool _isRunning = false;
   final _fileOpsService = FileOperationsService();
   final _filesTabKey = GlobalKey();
+  final _filesRefreshNotifier = ValueNotifier<int>(0);
   String? _pendingSinanFilePath;
+  List<String>? _pendingSharedFiles;
+
+  static const _shareChannel = MethodChannel('com.apex.core/share');
 
   // Files tab state
   bool _isSelectionMode = false;
@@ -43,13 +51,20 @@ class _HomeScreenState extends State<HomeScreen> {
   @override
   void initState() {
     super.initState();
+    WidgetsBinding.instance.addObserver(this);
     _initSystem();
     _loadSortPreference();
+    // تحقق من التحديث بعد لحظة من فتح التطبيق
+    if (!kIsWeb && Platform.isAndroid) {
+      Future.delayed(const Duration(seconds: 3), _initUpdateService);
+    }
   }
 
   Future<void> _initSystem() async {
     // Check for incoming .sinan file from Sinan Note
     _checkIncomingSinanFile();
+    // Check for shared files from Android share sheet
+    _checkIncomingSharedFiles();
 
     ApexCore.instance.devicesStream.listen((d) {
       if (mounted) {
@@ -59,9 +74,12 @@ class _HomeScreenState extends State<HomeScreen> {
     ApexCore.instance.fileReceivedStream.listen((e) {
       if (mounted) {
         _showFileReceivedSheet(e);
-        // Switch to files tab and force refresh
         setState(() => _currentIndex = 2);
+        // تحديث قائمة الملفات تلقائياً
+        _filesRefreshNotifier.value++;
       }
+      DesktopNotificationService.instance
+          .showFileReceived(e.fileName, e.fromDevice);
     });
     ApexCore.instance.connectionRequestStream.listen((r) {
       if (mounted) {
@@ -88,7 +106,10 @@ class _HomeScreenState extends State<HomeScreen> {
   Future<void> _stopSystem() async {
     await ApexCore.instance.stop();
     if (mounted) {
-      setState(() { _isRunning = false; _devices.clear(); });
+      setState(() {
+        _isRunning = false;
+        _devices.clear();
+      });
     }
   }
 
@@ -118,12 +139,97 @@ class _HomeScreenState extends State<HomeScreen> {
     } catch (_) {}
   }
 
+  void _checkIncomingSharedFiles() async {
+    // الاستماع للملفات القادمة أثناء تشغيل التطبيق
+    _shareChannel.setMethodCallHandler((call) async {
+      if (call.method == 'onSharedFilesReceived') {
+        final paths = (call.arguments as List?)?.cast<String>();
+        if (paths != null && paths.isNotEmpty && mounted) {
+          _handleSharedFiles(paths);
+        }
+      }
+    });
+    // الملفات التي وصلت قبل اكتمال تهيئة Flutter
+    try {
+      final paths =
+          await _shareChannel.invokeMethod<List>('getPendingSharedFiles');
+      final list = paths?.cast<String>();
+      if (list != null && list.isNotEmpty && mounted) {
+        _handleSharedFiles(list);
+      }
+    } catch (_) {}
+  }
+
+  void _handleSharedFiles(List<String> filePaths) {
+    final isAr = Localizations.localeOf(context).languageCode == 'ar';
+    final count = filePaths.length;
+    final title = isAr
+        ? (count == 1 ? 'ملف جاهز للإرسال' : '$count ملفات جاهزة للإرسال')
+        : (count == 1 ? 'File ready to send' : '$count files ready to send');
+    final subtitle = count == 1
+        ? filePaths.first.split('/').last
+        : filePaths.map((p) => p.split('/').last).take(3).join(', ') +
+            (count > 3 ? (isAr ? ' وأكثر...' : ' and more...') : '');
+
+    showModalBottomSheet(
+      context: context,
+      backgroundColor: Colors.transparent,
+      useSafeArea: true,
+      builder: (_) => _FloatingSheet(
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            const Icon(Icons.share_rounded, size: 48, color: Color(0xFF6750A4)),
+            const SizedBox(height: 12),
+            Text(
+              title,
+              style: const TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
+            ),
+            const SizedBox(height: 8),
+            Text(
+              subtitle,
+              textAlign: TextAlign.center,
+              maxLines: 3,
+              overflow: TextOverflow.ellipsis,
+              style: TextStyle(color: Colors.grey[600], fontSize: 13),
+            ),
+            const SizedBox(height: 20),
+            SizedBox(
+              width: double.infinity,
+              child: FilledButton.icon(
+                onPressed: () {
+                  Navigator.pop(context);
+                  setState(() {
+                    _currentIndex = 0;
+                    _pendingSharedFiles = filePaths;
+                  });
+                },
+                icon: const Icon(Icons.send_rounded),
+                label:
+                    Text(isAr ? 'اختر جهاز للإرسال' : 'Choose device to send'),
+              ),
+            ),
+            const SizedBox(height: 8),
+            SizedBox(
+              width: double.infinity,
+              child: OutlinedButton(
+                onPressed: () => Navigator.pop(context),
+                child: Text(isAr ? 'إلغاء' : 'Cancel'),
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
   void _handleSinanFile(String filePath) {
     final l10n = AppLocalizations.of(context);
     final isAr = Localizations.localeOf(context).languageCode == 'ar';
     showModalBottomSheet(
       context: context,
       backgroundColor: Colors.transparent,
+      useSafeArea: true,
       builder: (_) => _FloatingSheet(
         child: Column(
           mainAxisSize: MainAxisSize.min,
@@ -136,7 +242,9 @@ class _HomeScreenState extends State<HomeScreen> {
             ),
             const SizedBox(height: 8),
             Text(
-              isAr ? 'تم استلام ملاحظة - أرسلها لجهاز آخر' : 'Note received - send it to another device',
+              isAr
+                  ? 'تم استلام ملاحظة - أرسلها لجهاز آخر'
+                  : 'Note received - send it to another device',
               textAlign: TextAlign.center,
               style: TextStyle(color: Colors.grey[600]),
             ),
@@ -151,7 +259,8 @@ class _HomeScreenState extends State<HomeScreen> {
                   _pendingSinanFilePath = filePath;
                 },
                 icon: const Icon(Icons.send_rounded),
-                label: Text(isAr ? 'اختر جهاز للإرسال' : 'Choose device to send'),
+                label:
+                    Text(isAr ? 'اختر جهاز للإرسال' : 'Choose device to send'),
                 style: FilledButton.styleFrom(backgroundColor: Colors.purple),
               ),
             ),
@@ -177,14 +286,19 @@ class _HomeScreenState extends State<HomeScreen> {
     showModalBottomSheet(
       context: context,
       backgroundColor: Colors.transparent,
+      useSafeArea: true,
       builder: (_) => _FloatingSheet(
         child: Column(
           mainAxisSize: MainAxisSize.min,
           children: [
-            const Icon(Icons.check_circle_rounded, size: 56, color: Colors.green),
+            const Icon(Icons.check_circle_rounded,
+                size: 56, color: Colors.green),
             const SizedBox(height: 12),
             Text(l10n.fileReceived,
-                style: const TextStyle(fontSize: 20, fontWeight: FontWeight.bold, color: Colors.green)),
+                style: const TextStyle(
+                    fontSize: 20,
+                    fontWeight: FontWeight.bold,
+                    color: Colors.green)),
             const SizedBox(height: 16),
             Container(
               padding: const EdgeInsets.all(16),
@@ -197,30 +311,38 @@ class _HomeScreenState extends State<HomeScreen> {
                     textAlign: TextAlign.center,
                     maxLines: 2,
                     overflow: TextOverflow.ellipsis,
-                    style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 16)),
+                    style: const TextStyle(
+                        fontWeight: FontWeight.bold, fontSize: 16)),
                 const SizedBox(height: 4),
                 Text(_formatSize(event.fileSize),
-                    style: const TextStyle(color: Colors.green, fontWeight: FontWeight.w600)),
+                    style: const TextStyle(
+                        color: Colors.green, fontWeight: FontWeight.w600)),
               ]),
             ),
             const SizedBox(height: 8),
             Text('${l10n.from}: ${event.fromDevice}',
-                maxLines: 1, overflow: TextOverflow.ellipsis,
+                maxLines: 1,
+                overflow: TextOverflow.ellipsis,
                 style: TextStyle(color: Colors.grey[600])),
             Text('${l10n.savedIn}: $displayPath',
-                maxLines: 1, overflow: TextOverflow.ellipsis,
+                maxLines: 1,
+                overflow: TextOverflow.ellipsis,
                 style: TextStyle(fontSize: 12, color: Colors.grey[500])),
             const SizedBox(height: 20),
             Row(children: [
               Expanded(
                 child: FilledButton.icon(
-                  onPressed: () { Navigator.pop(context); setState(() => _currentIndex = 2); },
+                  onPressed: () {
+                    Navigator.pop(context);
+                    setState(() => _currentIndex = 2);
+                  },
                   icon: const Icon(Icons.folder_open_rounded, size: 18),
                   label: Text(l10n.openFiles,
                       maxLines: 1, overflow: TextOverflow.ellipsis),
                   style: FilledButton.styleFrom(
                     backgroundColor: Colors.green,
-                    padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 12),
+                    padding: const EdgeInsets.symmetric(
+                        horizontal: 12, vertical: 12),
                   ),
                 ),
               ),
@@ -229,7 +351,8 @@ class _HomeScreenState extends State<HomeScreen> {
                 child: OutlinedButton(
                   onPressed: () => Navigator.pop(context),
                   style: OutlinedButton.styleFrom(
-                    padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 12),
+                    padding: const EdgeInsets.symmetric(
+                        horizontal: 12, vertical: 12),
                   ),
                   child: Text(l10n.close,
                       maxLines: 1, overflow: TextOverflow.ellipsis),
@@ -245,62 +368,109 @@ class _HomeScreenState extends State<HomeScreen> {
   void _showConnectionRequestDialog(ConnectionRequest request) {
     final l10n = AppLocalizations.of(context);
     final sizeStr = request.fileSize > 0 ? _formatSize(request.fileSize) : '';
+    final isBatch = request.fileCount > 1;
 
     showModalBottomSheet(
       context: context,
       backgroundColor: Colors.transparent,
       isDismissible: false,
       enableDrag: false,
-      builder: (_) => SafeArea(
-        child: _FloatingSheet(
-          child: Column(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              Container(
-                padding: const EdgeInsets.all(14),
-                decoration: BoxDecoration(
-                  color: Colors.blue.withValues(alpha: 0.1),
-                  borderRadius: BorderRadius.circular(18),
-                ),
-                child: const Icon(Icons.file_download_rounded,
-                    size: 36, color: Colors.blue),
+      useSafeArea: true,
+      builder: (_) => _FloatingSheet(
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Container(
+              padding: const EdgeInsets.all(14),
+              decoration: BoxDecoration(
+                color: Colors.blue.withValues(alpha: 0.1),
+                borderRadius: BorderRadius.circular(18),
               ),
-              const SizedBox(height: 12),
-              Text(l10n.connectionRequest,
-                  style: const TextStyle(
-                      fontSize: 18, fontWeight: FontWeight.bold)),
-              const SizedBox(height: 4),
-              Text(l10n.acceptConnection,
-                  style: TextStyle(
-                      fontSize: 13,
-                      color: Theme.of(context).colorScheme.onSurfaceVariant)),
-              const SizedBox(height: 16),
-              Container(
-                width: double.infinity,
-                padding: const EdgeInsets.all(14),
-                decoration: BoxDecoration(
-                  color: Colors.blue.withValues(alpha: 0.06),
-                  borderRadius: BorderRadius.circular(14),
-                  border: Border.all(
-                      color: Colors.blue.withValues(alpha: 0.2)),
-                ),
-                child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
+              child: const Icon(Icons.file_download_rounded,
+                  size: 36, color: Colors.blue),
+            ),
+            const SizedBox(height: 12),
+            Text(l10n.connectionRequest,
+                style:
+                    const TextStyle(fontSize: 18, fontWeight: FontWeight.bold)),
+            const SizedBox(height: 4),
+            Text(l10n.acceptConnection,
+                style: TextStyle(
+                    fontSize: 13,
+                    color: Theme.of(context).colorScheme.onSurfaceVariant)),
+            const SizedBox(height: 16),
+            Container(
+              width: double.infinity,
+              padding: const EdgeInsets.all(14),
+              decoration: BoxDecoration(
+                color: Colors.blue.withValues(alpha: 0.06),
+                borderRadius: BorderRadius.circular(14),
+                border: Border.all(color: Colors.blue.withValues(alpha: 0.2)),
+              ),
+              child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Row(children: [
+                      CircleAvatar(
+                        radius: 16,
+                        backgroundColor: Colors.blue.withValues(alpha: 0.15),
+                        child: const Icon(Icons.smartphone_rounded,
+                            color: Colors.blue, size: 16),
+                      ),
+                      const SizedBox(width: 10),
+                      Text(request.device.name,
+                          style: const TextStyle(fontWeight: FontWeight.bold)),
+                    ]),
+                    const SizedBox(height: 10),
+                    if (isBatch) ...[
                       Row(children: [
-                        CircleAvatar(
-                          radius: 16,
-                          backgroundColor:
-                              Colors.blue.withValues(alpha: 0.15),
-                          child: const Icon(Icons.smartphone_rounded,
-                              color: Colors.blue, size: 16),
-                        ),
-                        const SizedBox(width: 10),
-                        Text(request.device.name,
+                        const Icon(Icons.folder_rounded,
+                            size: 15, color: Colors.blue),
+                        const SizedBox(width: 6),
+                        Text(
+                            '${request.fileCount} ${l10n.localeName == 'ar' ? 'ملفات' : 'files'}',
                             style: const TextStyle(
-                                fontWeight: FontWeight.bold)),
+                                fontSize: 13, fontWeight: FontWeight.w600)),
                       ]),
-                      const SizedBox(height: 10),
+                      if (request.fileNames.isNotEmpty) ...[
+                        const SizedBox(height: 6),
+                        ConstrainedBox(
+                          constraints: const BoxConstraints(maxHeight: 80),
+                          child: SingleChildScrollView(
+                            child: Column(
+                              crossAxisAlignment: CrossAxisAlignment.start,
+                              children: request.fileNames
+                                  .take(5)
+                                  .map(
+                                    (name) => Padding(
+                                      padding: const EdgeInsets.only(
+                                          left: 21, bottom: 2),
+                                      child: Text(name.trim(),
+                                          overflow: TextOverflow.ellipsis,
+                                          style: TextStyle(
+                                              fontSize: 12,
+                                              color: Colors.grey[600])),
+                                    ),
+                                  )
+                                  .toList()
+                                ..addAll(request.fileNames.length > 5
+                                    ? [
+                                        Padding(
+                                          padding:
+                                              const EdgeInsets.only(left: 21),
+                                          child: Text(
+                                              '+${request.fileNames.length - 5} ...',
+                                              style: TextStyle(
+                                                  fontSize: 12,
+                                                  color: Colors.grey[500])),
+                                        )
+                                      ]
+                                    : []),
+                            ),
+                          ),
+                        ),
+                      ],
+                    ] else ...[
                       Row(children: [
                         const Icon(Icons.insert_drive_file_rounded,
                             size: 15, color: Colors.blue),
@@ -310,48 +480,46 @@ class _HomeScreenState extends State<HomeScreen> {
                                 overflow: TextOverflow.ellipsis,
                                 style: const TextStyle(fontSize: 13))),
                       ]),
-                      if (sizeStr.isNotEmpty) ...[
-                        const SizedBox(height: 4),
-                        Text(sizeStr,
-                            style: const TextStyle(
-                                fontWeight: FontWeight.w600,
-                                color: Colors.blue,
-                                fontSize: 13)),
-                      ],
-                    ]),
+                    ],
+                    if (sizeStr.isNotEmpty) ...[
+                      const SizedBox(height: 4),
+                      Text(sizeStr,
+                          style: const TextStyle(
+                              fontWeight: FontWeight.w600,
+                              color: Colors.blue,
+                              fontSize: 13)),
+                    ],
+                  ]),
+            ),
+            const SizedBox(height: 20),
+            Row(children: [
+              Expanded(
+                child: OutlinedButton(
+                  onPressed: () {
+                    request.onResponse(false);
+                    Navigator.pop(context);
+                  },
+                  style: OutlinedButton.styleFrom(
+                      foregroundColor: Colors.red,
+                      side: const BorderSide(color: Colors.red),
+                      padding: const EdgeInsets.symmetric(vertical: 14)),
+                  child: Text(l10n.reject),
+                ),
               ),
-              const SizedBox(height: 20),
-              Row(children: [
-                Expanded(
-                  child: OutlinedButton(
-                    onPressed: () {
-                      request.onResponse(false);
-                      Navigator.pop(context);
-                    },
-                    style: OutlinedButton.styleFrom(
-                        foregroundColor: Colors.red,
-                        side: const BorderSide(color: Colors.red),
-                        padding:
-                            const EdgeInsets.symmetric(vertical: 14)),
-                    child: Text(l10n.reject),
-                  ),
+              const SizedBox(width: 12),
+              Expanded(
+                child: FilledButton(
+                  onPressed: () {
+                    request.onResponse(true);
+                    Navigator.pop(context);
+                  },
+                  style: FilledButton.styleFrom(
+                      padding: const EdgeInsets.symmetric(vertical: 14)),
+                  child: Text(l10n.accept),
                 ),
-                const SizedBox(width: 12),
-                Expanded(
-                  child: FilledButton(
-                    onPressed: () {
-                      request.onResponse(true);
-                      Navigator.pop(context);
-                    },
-                    style: FilledButton.styleFrom(
-                        padding:
-                            const EdgeInsets.symmetric(vertical: 14)),
-                    child: Text(l10n.accept),
-                  ),
-                ),
-              ]),
-            ],
-          ),
+              ),
+            ]),
+          ],
         ),
       ),
     );
@@ -448,8 +616,8 @@ class _HomeScreenState extends State<HomeScreen> {
                     label: Text(l10n.send),
                   ),
                   NavigationRailDestination(
-                    icon: const Icon(Icons.download_outlined),
-                    selectedIcon: const Icon(Icons.download_rounded),
+                    icon: const Icon(Icons.smartphone_outlined),
+                    selectedIcon: const Icon(Icons.smartphone_rounded),
                     label: Text(l10n.receive),
                   ),
                   NavigationRailDestination(
@@ -486,7 +654,8 @@ class _HomeScreenState extends State<HomeScreen> {
                           const SizedBox(height: 8),
                           // status dot
                           Container(
-                            width: 8, height: 8,
+                            width: 8,
+                            height: 8,
                             decoration: BoxDecoration(
                               color: _isRunning ? Colors.green : Colors.grey,
                               shape: BoxShape.circle,
@@ -540,12 +709,14 @@ class _HomeScreenState extends State<HomeScreen> {
                     child: Row(
                       children: [
                         Container(
-                          width: 32, height: 32,
+                          width: 32,
+                          height: 32,
                           decoration: BoxDecoration(
                             color: color.withValues(alpha: 0.15),
                             borderRadius: BorderRadius.circular(10),
                           ),
-                          child: Icon(Icons.share_rounded, color: color, size: 18),
+                          child:
+                              Icon(Icons.share_rounded, color: color, size: 18),
                         ),
                         const SizedBox(width: 10),
                         Text('Apex Transfer',
@@ -561,7 +732,8 @@ class _HomeScreenState extends State<HomeScreen> {
                   Padding(
                     padding: const EdgeInsets.symmetric(horizontal: 16),
                     child: Container(
-                      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
+                      padding: const EdgeInsets.symmetric(
+                          horizontal: 10, vertical: 6),
                       decoration: BoxDecoration(
                         color: _isRunning
                             ? Colors.green.withValues(alpha: 0.12)
@@ -570,7 +742,8 @@ class _HomeScreenState extends State<HomeScreen> {
                       ),
                       child: Row(mainAxisSize: MainAxisSize.min, children: [
                         Container(
-                          width: 7, height: 7,
+                          width: 7,
+                          height: 7,
                           decoration: BoxDecoration(
                             color: _isRunning ? Colors.green : Colors.grey,
                             shape: BoxShape.circle,
@@ -602,7 +775,7 @@ class _HomeScreenState extends State<HomeScreen> {
                     }),
                   ),
                   _SidebarItem(
-                    icon: Icons.download_rounded,
+                    icon: Icons.smartphone_rounded,
                     label: l10n.receive,
                     selected: _currentIndex == 1,
                     onTap: () => setState(() {
@@ -678,6 +851,8 @@ class _HomeScreenState extends State<HomeScreen> {
           isRunning: _isRunning,
           pendingFilePath: _pendingSinanFilePath,
           onPendingFileSent: () => setState(() => _pendingSinanFilePath = null),
+          pendingSharedFiles: _pendingSharedFiles,
+          onSharedFilesSent: () => setState(() => _pendingSharedFiles = null),
         );
       case 1:
         return ReceiveTab(
@@ -694,12 +869,14 @@ class _HomeScreenState extends State<HomeScreen> {
           onSelectAll: _selectAllFiles,
           onSaveSortPreference: _saveSortPreference,
           onSortByChanged: (v) => setState(() => _sortBy = v),
-          onToggleSortOrder: () => setState(() => _sortAscending = !_sortAscending),
+          onToggleSortOrder: () =>
+              setState(() => _sortAscending = !_sortAscending),
           onToggleFileSelection: _toggleFileSelection,
           onOpenFile: _openFile,
           onOpenFileLocation: _openFileLocation,
           onLongPress: _enterSelectionMode,
           getReceivedFiles: _getReceivedFiles,
+          refreshNotifier: _filesRefreshNotifier,
         );
       default:
         return const SizedBox.shrink();
@@ -713,7 +890,14 @@ class _HomeScreenState extends State<HomeScreen> {
       backgroundColor: Colors.transparent,
       builder: (_) => _FloatingSheet(
         scrollable: true,
-        child: SettingsScreen(settings: widget.settings, embedded: true),
+        child: SettingsScreen(
+          settings: widget.settings,
+          embedded: true,
+          onDebugUpdateTap: () {
+            Navigator.pop(context); // أغلق الإعدادات
+            _showUpdateAvailableBar();
+          },
+        ),
       ),
     );
   }
@@ -747,7 +931,8 @@ class _HomeScreenState extends State<HomeScreen> {
       await _fileOpsService.openFileLocation(file.path);
     } catch (e) {
       if (mounted) {
-        _showErrorSnack('${AppLocalizations.of(context).openLocationFailed}: $e');
+        _showErrorSnack(
+            '${AppLocalizations.of(context).openLocationFailed}: $e');
       }
     }
   }
@@ -755,11 +940,15 @@ class _HomeScreenState extends State<HomeScreen> {
   Future<List<FileSystemEntity>> _getReceivedFiles() =>
       FileStorageService().getReceivedFiles();
 
-  void _enterSelectionMode(String path) =>
-      setState(() { _isSelectionMode = true; _selectedFiles.add(path); });
+  void _enterSelectionMode(String path) => setState(() {
+        _isSelectionMode = true;
+        _selectedFiles.add(path);
+      });
 
-  void _exitSelectionMode() =>
-      setState(() { _isSelectionMode = false; _selectedFiles.clear(); });
+  void _exitSelectionMode() => setState(() {
+        _isSelectionMode = false;
+        _selectedFiles.clear();
+      });
 
   void _toggleFileSelection(String path) {
     setState(() {
@@ -804,9 +993,12 @@ class _HomeScreenState extends State<HomeScreen> {
       context: context,
       builder: (_) => AlertDialog(
         title: Text(l10n.deleteFiles),
-        content: Text('${l10n.deleteConfirmation} ${_selectedFiles.length} ${l10n.files}?'),
+        content: Text(
+            '${l10n.deleteConfirmation} ${_selectedFiles.length} ${l10n.files}?'),
         actions: [
-          TextButton(onPressed: () => Navigator.pop(context, false), child: Text(l10n.cancel)),
+          TextButton(
+              onPressed: () => Navigator.pop(context, false),
+              child: Text(l10n.cancel)),
           TextButton(
             onPressed: () => Navigator.pop(context, true),
             child: Text(l10n.delete, style: const TextStyle(color: Colors.red)),
@@ -815,7 +1007,8 @@ class _HomeScreenState extends State<HomeScreen> {
       ),
     );
     if (ok == true && mounted) {
-      final count = await _fileOpsService.deleteFiles(_selectedFiles, deleteFromFolder: true);
+      final count = await _fileOpsService.deleteFiles(_selectedFiles,
+          deleteFromFolder: true);
       _exitSelectionMode();
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(SnackBar(
@@ -840,8 +1033,196 @@ class _HomeScreenState extends State<HomeScreen> {
   }
 
   @override
-  void dispose() { super.dispose(); }
-}
+  void dispose() {
+    WidgetsBinding.instance.removeObserver(this);
+    _filesRefreshNotifier.dispose();
+    super.dispose();
+  }
+
+  // ─── App Lifecycle ────────────────────────────────────────────────────────
+
+  @override
+  void didChangeAppLifecycleState(AppLifecycleState state) {
+    if (state == AppLifecycleState.resumed) {
+      // عند العودة من الخلفية: تحقق من حالة التحديث
+      UpdateService.instance.onAppResumed();
+    }
+  }
+
+  // ─── Update Service ───────────────────────────────────────────────────────
+
+  void _initUpdateService() {
+    UpdateService.instance.stateStream.listen((updateState) {
+      if (!mounted) {
+        return;
+      }
+      switch (updateState) {
+        case UpdateState.available:
+          _showUpdateAvailableBar();
+        case UpdateState.downloading:
+          break;
+        case UpdateState.waitingForIdle:
+          break;
+        case UpdateState.readyToInstall:
+          _showUpdateReadySnackbar();
+        case UpdateState.idle:
+          break;
+      }
+    });
+    UpdateService.instance.checkForUpdate();
+  }
+
+  void _showUpdateAvailableBar() {
+    final isAr = AppLocalizations.of(context).localeName == 'ar';
+    final color = Theme.of(context).colorScheme.primary;
+
+    showModalBottomSheet(
+      context: context,
+      backgroundColor: Colors.transparent,
+      useSafeArea: true,
+      builder: (_) => _FloatingSheet(
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Container(
+              padding: const EdgeInsets.all(14),
+              decoration: BoxDecoration(
+                color: color.withValues(alpha: 0.12),
+                borderRadius: BorderRadius.circular(18),
+              ),
+              child: Icon(Icons.system_update_rounded, size: 36, color: color),
+            ),
+            const SizedBox(height: 14),
+            Text(
+              isAr ? 'تحديث جديد متاح' : 'New Update Available',
+              style: const TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
+            ),
+            const SizedBox(height: 6),
+            Text(
+              isAr
+                  ? 'يوجد إصدار جديد من Apex File Share'
+                  : 'A new version of Apex File Share is ready',
+              textAlign: TextAlign.center,
+              style: TextStyle(fontSize: 13, color: Colors.grey[600]),
+            ),
+            const SizedBox(height: 22),
+            Row(children: [
+              Expanded(
+                child: FilledButton.icon(
+                  onPressed: () {
+                    Navigator.pop(context);
+                    UpdateService.instance.startFlexibleDownload();
+                  },
+                  icon: const Icon(Icons.download_rounded, size: 18),
+                  label: Text(isAr ? 'تحديث الآن' : 'Update Now'),
+                  style: FilledButton.styleFrom(
+                    padding: const EdgeInsets.symmetric(vertical: 14),
+                  ),
+                ),
+              ),
+              const SizedBox(width: 10),
+              Expanded(
+                child: OutlinedButton(
+                  onPressed: () => Navigator.pop(context),
+                  style: OutlinedButton.styleFrom(
+                    padding: const EdgeInsets.symmetric(vertical: 14),
+                  ),
+                  child: Text(isAr ? 'لاحقاً' : 'Later'),
+                ),
+              ),
+            ]),
+          ],
+        ),
+      ),
+    );
+  }
+
+  void _showUpdateReadySnackbar() {
+    if (!mounted) {
+      return;
+    }
+    final isAr = AppLocalizations.of(context).localeName == 'ar';
+    final isBusy = TransferProgressService().isTransferring;
+
+    showModalBottomSheet(
+      context: context,
+      backgroundColor: Colors.transparent,
+      useSafeArea: true,
+      builder: (_) => _FloatingSheet(
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Container(
+              padding: const EdgeInsets.all(14),
+              decoration: BoxDecoration(
+                color: Colors.green.withValues(alpha: 0.12),
+                borderRadius: BorderRadius.circular(18),
+              ),
+              child: const Icon(Icons.download_done_rounded,
+                  size: 36, color: Colors.green),
+            ),
+            const SizedBox(height: 14),
+            Text(
+              isAr ? 'التحديث جاهز' : 'Update Ready',
+              style: const TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
+            ),
+            const SizedBox(height: 6),
+            Text(
+              isBusy
+                  ? (isAr
+                      ? 'سيُثبَّت التحديث تلقائياً بعد انتهاء الإرسال'
+                      : 'Update will install automatically after the transfer finishes')
+                  : (isAr
+                      ? 'التحديث محمّل وجاهز للتثبيت'
+                      : 'The update is downloaded and ready to install'),
+              textAlign: TextAlign.center,
+              style: TextStyle(fontSize: 13, color: Colors.grey[600]),
+            ),
+            const SizedBox(height: 22),
+            if (!isBusy) ...[
+              SizedBox(
+                width: double.infinity,
+                child: FilledButton.icon(
+                  onPressed: () {
+                    Navigator.pop(context);
+                    UpdateService.instance.completeUpdate();
+                  },
+                  icon: const Icon(Icons.install_mobile_rounded, size: 18),
+                  label: Text(isAr ? 'تثبيت الآن' : 'Install Now'),
+                  style: FilledButton.styleFrom(
+                    backgroundColor: Colors.green,
+                    padding: const EdgeInsets.symmetric(vertical: 14),
+                  ),
+                ),
+              ),
+              const SizedBox(height: 8),
+              SizedBox(
+                width: double.infinity,
+                child: OutlinedButton(
+                  onPressed: () => Navigator.pop(context),
+                  style: OutlinedButton.styleFrom(
+                    padding: const EdgeInsets.symmetric(vertical: 14),
+                  ),
+                  child: Text(isAr ? 'لاحقاً' : 'Later'),
+                ),
+              ),
+            ] else
+              SizedBox(
+                width: double.infinity,
+                child: OutlinedButton(
+                  onPressed: () => Navigator.pop(context),
+                  style: OutlinedButton.styleFrom(
+                    padding: const EdgeInsets.symmetric(vertical: 14),
+                  ),
+                  child: Text(isAr ? 'حسناً' : 'OK'),
+                ),
+              ),
+          ],
+        ),
+      ),
+    );
+  }
+} // ─── end _HomeScreenState ────────────────────────────────────────────────
 
 // ─── Sidebar widgets (Desktop) ────────────────────────────────────────────────────
 
@@ -878,15 +1259,18 @@ class _SidebarItem extends StatelessWidget {
             borderRadius: BorderRadius.circular(12),
           ),
           child: Row(children: [
-            Icon(icon, size: 20,
-                color: selected ? color
+            Icon(icon,
+                size: 20,
+                color: selected
+                    ? color
                     : (isDark ? Colors.white54 : Colors.black45)),
             const SizedBox(width: 12),
             Text(label,
                 style: TextStyle(
                   fontSize: 14,
                   fontWeight: selected ? FontWeight.w600 : FontWeight.normal,
-                  color: selected ? color
+                  color: selected
+                      ? color
                       : (isDark ? Colors.white70 : Colors.black54),
                 )),
           ]),
@@ -918,8 +1302,8 @@ class _SidebarActionTile extends StatelessWidget {
         child: Padding(
           padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 8),
           child: Row(children: [
-            Icon(icon, size: 18,
-                color: isDark ? Colors.white54 : Colors.black45),
+            Icon(icon,
+                size: 18, color: isDark ? Colors.white54 : Colors.black45),
             const SizedBox(width: 10),
             Text(label,
                 style: TextStyle(
@@ -1016,7 +1400,7 @@ class _FloatingNavBar extends StatelessWidget {
                     onTap: () => onTap(0),
                   ),
                   _NavItem(
-                    icon: Icons.download_rounded,
+                    icon: Icons.smartphone_rounded,
                     label: l10n.receive,
                     selected: currentIndex == 1,
                     onTap: () => onTap(1),
@@ -1083,10 +1467,14 @@ class _NavItem extends StatelessWidget {
             children: [
               AnimatedContainer(
                 duration: const Duration(milliseconds: 200),
-                padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 4),
+                padding:
+                    const EdgeInsets.symmetric(horizontal: 16, vertical: 4),
                 decoration: BoxDecoration(
                   color: selected
-                      ? Theme.of(context).colorScheme.primary.withValues(alpha: 0.12)
+                      ? Theme.of(context)
+                          .colorScheme
+                          .primary
+                          .withValues(alpha: 0.12)
                       : Colors.transparent,
                   borderRadius: BorderRadius.circular(12),
                 ),
@@ -1140,7 +1528,8 @@ class _MoreButtonState extends State<_MoreButton>
       vsync: this,
       duration: const Duration(milliseconds: 220),
     );
-    _scaleAnim = CurvedAnimation(parent: _controller, curve: Curves.easeOutBack);
+    _scaleAnim =
+        CurvedAnimation(parent: _controller, curve: Curves.easeOutBack);
     _fadeAnim = CurvedAnimation(parent: _controller, curve: Curves.easeOut);
   }
 
@@ -1177,17 +1566,26 @@ class _MoreButtonState extends State<_MoreButton>
           _MenuItem(
             icon: Icons.restart_alt_rounded,
             label: l10n.restartingSystem,
-            onTap: () { _close(); widget.onRestartTap(); },
+            onTap: () {
+              _close();
+              widget.onRestartTap();
+            },
           ),
           _MenuItem(
             icon: Icons.settings_rounded,
             label: l10n.settings,
-            onTap: () { _close(); widget.onSettingsTap(); },
+            onTap: () {
+              _close();
+              widget.onSettingsTap();
+            },
           ),
           _MenuItem(
             icon: Icons.info_outline_rounded,
             label: l10n.about,
-            onTap: () { _close(); widget.onAboutTap(); },
+            onTap: () {
+              _close();
+              widget.onAboutTap();
+            },
           ),
         ],
         onDismiss: _close,
@@ -1251,7 +1649,8 @@ class _MenuItem {
   final IconData icon;
   final String label;
   final VoidCallback onTap;
-  const _MenuItem({required this.icon, required this.label, required this.onTap});
+  const _MenuItem(
+      {required this.icon, required this.label, required this.onTap});
 }
 
 class _MenuOverlay extends StatelessWidget {
@@ -1311,7 +1710,8 @@ class _MenuOverlay extends StatelessWidget {
                     borderRadius: BorderRadius.circular(20),
                     boxShadow: [
                       BoxShadow(
-                        color: Colors.black.withValues(alpha: isDark ? 0.5 : 0.15),
+                        color:
+                            Colors.black.withValues(alpha: isDark ? 0.5 : 0.15),
                         blurRadius: 28,
                         offset: const Offset(0, 8),
                       ),
@@ -1493,14 +1893,19 @@ class _ModeBtn extends StatelessWidget {
           ),
         ),
         child: Column(mainAxisSize: MainAxisSize.min, children: [
-          Icon(icon, size: 16, color: selected ? color : (isDark ? Colors.white54 : Colors.black45)),
+          Icon(icon,
+              size: 16,
+              color: selected
+                  ? color
+                  : (isDark ? Colors.white54 : Colors.black45)),
           const SizedBox(height: 2),
           Text(
             label,
             style: TextStyle(
               fontSize: 10,
               fontWeight: selected ? FontWeight.w700 : FontWeight.normal,
-              color: selected ? color : (isDark ? Colors.white54 : Colors.black45),
+              color:
+                  selected ? color : (isDark ? Colors.white54 : Colors.black45),
             ),
           ),
         ]),
@@ -1548,7 +1953,8 @@ class _FloatingSheet extends StatelessWidget {
           ),
           const SizedBox(height: 8),
           scrollable
-              ? Expanded(child: SingleChildScrollView(
+              ? Expanded(
+                  child: SingleChildScrollView(
                   padding: const EdgeInsets.fromLTRB(20, 8, 20, 20),
                   child: child,
                 ))
@@ -1565,8 +1971,8 @@ class _FloatingSheet extends StatelessWidget {
             initialChildSize: 0.85,
             minChildSize: 0.5,
             maxChildSize: 0.95,
-            builder: (_, __) => sheet,
+            builder: (_, __) => SafeArea(top: false, child: sheet),
           )
-        : SingleChildScrollView(child: sheet);
+        : SafeArea(top: false, child: SingleChildScrollView(child: sheet));
   }
 }

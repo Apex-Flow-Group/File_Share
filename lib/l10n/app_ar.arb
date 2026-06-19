@@ -3,7 +3,7 @@
 
   "appTitle": "Apex Transfer",
   "send": "إرسال",
-  "receive": "استقبال",
+  "receive": "جهازي",
   "files": "ملفات",
   "settings": "الإعدادات",
   "about": "حول",
@@ -91,7 +91,7 @@
   "acceptConnection": "هل تريد قبول الاتصال؟",
   "ok": "حسناً",
   "reconnectFailed": "فشل إعادة الاتصال",
-  "restartingSystem": "إعادة تشغيل النظام",
+  "restartingSystem": "تحديث",
   "sendApp": "إرسال تطبيق",
   "installedApps": "التطبيقات المثبتة",
   "noApps": "لا توجد تطبيقات",

@@ -6,7 +6,9 @@ import android.graphics.Bitmap
 import android.graphics.Canvas
 import android.graphics.drawable.BitmapDrawable
 import android.graphics.drawable.Drawable
+import android.net.Uri
 import android.os.Build
+import android.provider.OpenableColumns
 import android.util.Log
 import androidx.annotation.NonNull
 import io.flutter.embedding.android.FlutterActivity
@@ -21,10 +23,14 @@ class MainActivity : FlutterActivity() {
         private const val TAG = "MainActivity"
         private const val APPS_CHANNEL = "com.apex.core/apps"
         private const val SINAN_CHANNEL = "com.apex.core/sinan"
+        private const val NEARBY_CHANNEL = "com.apex.core/nearby"
+        private const val SHARE_CHANNEL = "com.apex.core/share"
     }
 
     private var pendingSinanPath: String? = null
+    private var pendingSharedPaths: List<String>? = null
     private var sinanChannel: MethodChannel? = null
+    private var shareChannel: MethodChannel? = null
 
     override fun configureFlutterEngine(@NonNull flutterEngine: FlutterEngine) {
         super.configureFlutterEngine(flutterEngine)
@@ -56,41 +62,168 @@ class MainActivity : FlutterActivity() {
             }
         }
 
-        // Deliver any pending .sinan file from launch intent
-        handleSinanIntent(intent)
+        // Share intent channel - يستقبل الملفات من قائمة المشاركة
+        shareChannel = MethodChannel(flutterEngine.dartExecutor.binaryMessenger, SHARE_CHANNEL)
+        shareChannel!!.setMethodCallHandler { call, result ->
+            when (call.method) {
+                "getPendingSharedFiles" -> {
+                    result.success(pendingSharedPaths)
+                    pendingSharedPaths = null
+                }
+                else -> result.notImplemented()
+            }
+        }
+
+        // Nearby content URI resolver channel
+        MethodChannel(flutterEngine.dartExecutor.binaryMessenger, NEARBY_CHANNEL)
+            .setMethodCallHandler { call, result ->
+                if (call.method == "copyContentUri") {
+                    val uriStr = call.argument<String>("uri")
+                    val destPath = call.argument<String>("destPath")
+                    if (uriStr == null || destPath == null) {
+                        result.error("INVALID_ARGS", "uri and destPath required", null)
+                        return@setMethodCallHandler
+                    }
+                    Thread {
+                        try {
+                            val uri = Uri.parse(uriStr)
+                            val input = contentResolver.openInputStream(uri)
+                                ?: throw Exception("openInputStream returned null")
+                            val dest = File(destPath)
+                            dest.parentFile?.mkdirs()
+                            dest.outputStream().use { input.copyTo(it) }
+                            runOnUiThread { result.success(destPath) }
+                        } catch (e: Exception) {
+                            Log.e(TAG, "copyContentUri failed: ${e.message}")
+                            runOnUiThread { result.error("COPY_FAILED", e.message, null) }
+                        }
+                    }.start()
+                } else {
+                    result.notImplemented()
+                }
+            }
+
+        // معالجة الـ intent عند بدء التطبيق
+        handleIncomingIntent(intent)
     }
 
     override fun onNewIntent(intent: Intent) {
         super.onNewIntent(intent)
-        handleSinanIntent(intent)
+        handleIncomingIntent(intent)
     }
 
+    // ─── Intent Handler ────────────────────────────────────────────────────
+
+    private fun handleIncomingIntent(intent: Intent?) {
+        when (intent?.action) {
+            Intent.ACTION_VIEW -> handleSinanIntent(intent)
+            Intent.ACTION_SEND -> handleSendIntent(intent)
+            Intent.ACTION_SEND_MULTIPLE -> handleSendMultipleIntent(intent)
+        }
+    }
+
+    // معالجة ملف .sinan
     private fun handleSinanIntent(intent: Intent?) {
         if (intent?.action != Intent.ACTION_VIEW) return
-        // Path passed as extra (preferred)
         val extraPath = intent.getStringExtra("sinan_file_path")
         if (extraPath != null && File(extraPath).exists()) {
-            deliverOrStore(extraPath)
+            deliverOrStoreSinan(extraPath)
             return
         }
-        // Fallback: read from content URI
         val uri = intent.data ?: return
         try {
             val stream = contentResolver.openInputStream(uri) ?: return
             val tmpFile = File(cacheDir, "received.sinan")
             tmpFile.outputStream().use { stream.copyTo(it) }
-            deliverOrStore(tmpFile.absolutePath)
+            deliverOrStoreSinan(tmpFile.absolutePath)
         } catch (e: Exception) {
             Log.e(TAG, "Failed to read .sinan from URI: ${e.message}")
         }
     }
 
-    private fun deliverOrStore(path: String) {
+    // معالجة ملف واحد مشارك
+    private fun handleSendIntent(intent: Intent?) {
+        val uri = if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
+            intent?.getParcelableExtra(Intent.EXTRA_STREAM, Uri::class.java)
+        } else {
+            @Suppress("DEPRECATION")
+            intent?.getParcelableExtra(Intent.EXTRA_STREAM)
+        } ?: return
+
+        Thread {
+            val path = copyUriToCache(uri)
+            if (path != null) {
+                runOnUiThread { deliverOrStoreShared(listOf(path)) }
+            }
+        }.start()
+    }
+
+    // معالجة ملفات متعددة مشاركة
+    private fun handleSendMultipleIntent(intent: Intent?) {
+        val uris: List<Uri> = if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
+            intent?.getParcelableArrayListExtra(Intent.EXTRA_STREAM, Uri::class.java)
+        } else {
+            @Suppress("DEPRECATION")
+            intent?.getParcelableArrayListExtra(Intent.EXTRA_STREAM)
+        } ?: return
+
+        Thread {
+            val paths = uris.mapNotNull { copyUriToCache(it) }
+            if (paths.isNotEmpty()) {
+                runOnUiThread { deliverOrStoreShared(paths) }
+            }
+        }.start()
+    }
+
+    // نسخ content URI إلى مجلد مؤقت والحصول على المسار الحقيقي
+    private fun copyUriToCache(uri: Uri): String? {
+        return try {
+            val fileName = getFileNameFromUri(uri) ?: "shared_file_${System.currentTimeMillis()}"
+            val destDir = File(cacheDir, "shared_files")
+            destDir.mkdirs()
+            val destFile = File(destDir, fileName)
+            contentResolver.openInputStream(uri)?.use { input ->
+                destFile.outputStream().use { input.copyTo(it) }
+            }
+            destFile.absolutePath
+        } catch (e: Exception) {
+            Log.e(TAG, "copyUriToCache failed for $uri: ${e.message}")
+            null
+        }
+    }
+
+    // استخراج اسم الملف من content URI
+    private fun getFileNameFromUri(uri: Uri): String? {
+        if (uri.scheme == "content") {
+            try {
+                contentResolver.query(uri, null, null, null, null)?.use { cursor ->
+                    if (cursor.moveToFirst()) {
+                        val idx = cursor.getColumnIndex(OpenableColumns.DISPLAY_NAME)
+                        if (idx >= 0) return cursor.getString(idx)
+                    }
+                }
+            } catch (e: Exception) {
+                Log.e(TAG, "getFileNameFromUri query failed: ${e.message}")
+            }
+        }
+        return uri.lastPathSegment?.substringAfterLast('/')
+    }
+
+    private fun deliverOrStoreSinan(path: String) {
         val ch = sinanChannel
         if (ch != null) {
             runOnUiThread { ch.invokeMethod("onSinanFileReceived", path) }
         } else {
             pendingSinanPath = path
+        }
+    }
+
+    private fun deliverOrStoreShared(paths: List<String>) {
+        val ch = shareChannel
+        if (ch != null) {
+            ch.invokeMethod("onSharedFilesReceived", paths)
+        } else {
+            pendingSharedPaths = paths
         }
     }
 

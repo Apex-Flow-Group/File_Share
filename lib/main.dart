@@ -8,9 +8,9 @@ import 'managers/permission_manager.dart';
 import 'screens/home_screen.dart';
 import 'screens/intro_screen.dart';
 import 'screens/tv_home_screen.dart';
+import 'services/desktop_notification_service.dart';
 import 'services/settings_service.dart';
 import 'utils/platform_detector.dart';
-import 'widgets/transfer_progress_overlay.dart';
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
@@ -20,11 +20,16 @@ void main() async {
     try {
       final exe = Platform.resolvedExecutable;
       await Process.run('netsh', [
-        'advfirewall', 'firewall', 'add', 'rule',
+        'advfirewall',
+        'firewall',
+        'add',
+        'rule',
         'name=ApexFileShare',
-        'dir=in', 'action=allow',
+        'dir=in',
+        'action=allow',
         'program=$exe',
-        'enable=yes', 'profile=private,domain',
+        'enable=yes',
+        'profile=private,domain',
       ]);
     } catch (_) {}
   }
@@ -34,7 +39,10 @@ void main() async {
 
   // Initialize ApexCore
   await ApexCore.instance.initialize();
-  
+
+  // Initialize desktop notifications
+  await DesktopNotificationService.instance.initialize();
+
   final settings = SettingsService();
   await settings.loadSettings();
   runApp(FileShareApp(settings: settings));
@@ -80,7 +88,7 @@ class FileShareApp extends StatelessWidget {
               surfaceContainerHighest: Color(0xFFE7E0EC),
               onSurfaceVariant: Color(0xFF49454F),
             ),
-            fontFamily: 'Cairo',
+            fontFamily: 'Roboto',
             cardTheme: CardThemeData(
               elevation: 0,
               shape: RoundedRectangleBorder(
@@ -114,7 +122,7 @@ class FileShareApp extends StatelessWidget {
               surfaceContainerHighest: Color(0xFF49454F),
               onSurfaceVariant: Color(0xFFCAC4D0),
             ),
-            fontFamily: 'Cairo',
+            fontFamily: 'Roboto',
             cardTheme: CardThemeData(
               elevation: 0,
               shape: RoundedRectangleBorder(
@@ -136,9 +144,7 @@ class FileShareApp extends StatelessWidget {
             ),
           ),
           themeMode: settings.themeMode,
-          home: TransferProgressOverlay(
-            child: _buildHome(settings),
-          ),
+          home: _buildHome(settings),
         );
       },
     );

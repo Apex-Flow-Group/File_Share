@@ -15,7 +15,7 @@ class AppLocalizationsEn extends AppLocalizations {
   String get send => 'Send';
 
   @override
-  String get receive => 'Receive';
+  String get receive => 'My Device';
 
   @override
   String get files => 'Files';
@@ -281,7 +281,7 @@ class AppLocalizationsEn extends AppLocalizations {
   String get reconnectFailed => 'Reconnect failed';
 
   @override
-  String get restartingSystem => 'Restart System';
+  String get restartingSystem => 'Refresh';
 
   @override
   String get sendApp => 'Send App';

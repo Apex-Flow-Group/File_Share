@@ -11,8 +11,14 @@ import 'tour_screen.dart';
 class SettingsScreen extends StatelessWidget {
   final SettingsService settings;
   final bool embedded;
+  final VoidCallback? onDebugUpdateTap;
 
-  const SettingsScreen({required this.settings, this.embedded = false, super.key});
+  const SettingsScreen({
+    required this.settings,
+    this.embedded = false,
+    this.onDebugUpdateTap,
+    super.key,
+  });
 
   @override
   Widget build(BuildContext context) {
@@ -75,7 +81,8 @@ class SettingsScreen extends StatelessWidget {
               iconColor: const Color(0xFF8E8E93),
               title: l10n.systemSettings,
               subtitle: l10n.openSystemSettings,
-              trailing: const Icon(Icons.open_in_new_rounded, size: 16, color: Colors.grey),
+              trailing: const Icon(Icons.open_in_new_rounded,
+                  size: 16, color: Colors.grey),
               onTap: () => openAppSettings(),
             ),
           ]),
@@ -112,6 +119,13 @@ class SettingsScreen extends StatelessWidget {
                   builder: (_) => TourScreen(settings: settings),
                 ),
               ),
+            ),
+            _SettingsTile(
+              icon: Icons.system_update_rounded,
+              iconColor: const Color(0xFFFF9500),
+              title: 'Update Sheet',
+              subtitle: 'Preview update available dialog',
+              onTap: onDebugUpdateTap,
             ),
           ]),
         ],
@@ -152,8 +166,8 @@ class SettingsScreen extends StatelessWidget {
           Text(
             l10n.settings,
             style: Theme.of(context).textTheme.titleLarge?.copyWith(
-              fontWeight: FontWeight.bold,
-            ),
+                  fontWeight: FontWeight.bold,
+                ),
           ),
         ],
       ),
@@ -162,7 +176,8 @@ class SettingsScreen extends StatelessWidget {
 
   // ─── Group ─────────────────────────────────────────────────────────────────
 
-  Widget _buildGroup(BuildContext context, bool isDark, List<_SettingsTile> tiles) {
+  Widget _buildGroup(
+      BuildContext context, bool isDark, List<_SettingsTile> tiles) {
     return Container(
       margin: const EdgeInsets.fromLTRB(16, 0, 16, 8),
       decoration: BoxDecoration(
@@ -201,8 +216,8 @@ class SettingsScreen extends StatelessWidget {
     );
   }
 
-  Widget _buildTile(BuildContext context, _SettingsTile tile,
-      bool isFirst, bool isLast) {
+  Widget _buildTile(
+      BuildContext context, _SettingsTile tile, bool isFirst, bool isLast) {
     final radius = BorderRadius.only(
       topLeft: isFirst ? const Radius.circular(18) : Radius.zero,
       topRight: isFirst ? const Radius.circular(18) : Radius.zero,
@@ -233,7 +248,8 @@ class SettingsScreen extends StatelessWidget {
                 children: [
                   Text(tile.title,
                       style: const TextStyle(
-                        fontWeight: FontWeight.w500, fontSize: 15,
+                        fontWeight: FontWeight.w500,
+                        fontSize: 15,
                       )),
                   if (tile.subtitle != null)
                     Text(tile.subtitle!,
@@ -282,12 +298,12 @@ class SettingsScreen extends StatelessWidget {
       context: context,
       title: l10n.selectLanguage,
       items: [
-        _PickerItem(label: l10n.system, value: null,
-            icon: Icons.phone_android_rounded),
-        const _PickerItem(label: 'العربية', value: 'ar',
-            icon: Icons.translate_rounded),
-        const _PickerItem(label: 'English', value: 'en',
-            icon: Icons.translate_rounded),
+        _PickerItem(
+            label: l10n.system, value: null, icon: Icons.phone_android_rounded),
+        const _PickerItem(
+            label: 'العربية', value: 'ar', icon: Icons.translate_rounded),
+        const _PickerItem(
+            label: 'English', value: 'en', icon: Icons.translate_rounded),
       ],
       currentValue: current,
       onSelected: (v) => settings.setLocale(v == null ? null : Locale(v)),
@@ -302,12 +318,14 @@ class SettingsScreen extends StatelessWidget {
       context: context,
       title: l10n.selectTheme,
       items: [
-        _PickerItem(label: l10n.light, value: 'light',
-            icon: Icons.light_mode_rounded),
-        _PickerItem(label: l10n.dark, value: 'dark',
-            icon: Icons.dark_mode_rounded),
-        _PickerItem(label: l10n.system, value: 'system',
+        _PickerItem(
+            label: l10n.system,
+            value: 'system',
             icon: Icons.brightness_auto_rounded),
+        _PickerItem(
+            label: l10n.light, value: 'light', icon: Icons.light_mode_rounded),
+        _PickerItem(
+            label: l10n.dark, value: 'dark', icon: Icons.dark_mode_rounded),
       ],
       currentValue: current == ThemeMode.light
           ? 'light'
@@ -337,67 +355,78 @@ class SettingsScreen extends StatelessWidget {
     showModalBottomSheet(
       context: context,
       backgroundColor: Colors.transparent,
-      builder: (_) => Container(
-        margin: const EdgeInsets.fromLTRB(12, 0, 12, 12),
-        decoration: BoxDecoration(
-          color: isDark ? const Color(0xFF2C2C2E) : Colors.white,
-          borderRadius: BorderRadius.circular(24),
-        ),
-        child: Column(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            const SizedBox(height: 8),
-            Container(
-              width: 36, height: 4,
-              decoration: BoxDecoration(
-                color: Colors.grey.withValues(alpha: 0.3),
-                borderRadius: BorderRadius.circular(2),
-              ),
+      useSafeArea: true,
+      builder: (_) => SafeArea(
+        top: false,
+        child: Padding(
+          padding: const EdgeInsets.fromLTRB(12, 0, 12, 12),
+          child: Container(
+            decoration: BoxDecoration(
+              color: isDark ? const Color(0xFF2C2C2E) : Colors.white,
+              borderRadius: BorderRadius.circular(24),
             ),
-            Padding(
-              padding: const EdgeInsets.fromLTRB(20, 14, 20, 4),
-              child: Text(title,
-                  style: const TextStyle(
-                    fontWeight: FontWeight.bold, fontSize: 17,
-                  )),
-            ),
-            ...items.map((item) {
-              final isSelected = item.value == currentValue;
-              return ListTile(
-                leading: Container(
-                  width: 34, height: 34,
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                const SizedBox(height: 8),
+                Container(
+                  width: 36,
+                  height: 4,
                   decoration: BoxDecoration(
-                    color: isSelected
-                        ? Theme.of(context).colorScheme.primary
-                            .withValues(alpha: 0.15)
-                        : Colors.grey.withValues(alpha: 0.1),
-                    borderRadius: BorderRadius.circular(10),
+                    color: Colors.grey.withValues(alpha: 0.3),
+                    borderRadius: BorderRadius.circular(2),
                   ),
-                  child: Icon(item.icon, size: 18,
-                      color: isSelected
-                          ? Theme.of(context).colorScheme.primary
-                          : Colors.grey),
                 ),
-                title: Text(item.label,
-                    style: TextStyle(
-                      fontWeight: isSelected
-                          ? FontWeight.bold
-                          : FontWeight.normal,
-                    )),
-                trailing: isSelected
-                    ? Icon(Icons.check_circle_rounded,
-                        color: Theme.of(context).colorScheme.primary)
-                    : null,
-                onTap: () {
-                  Navigator.pop(context);
-                  onSelected(item.value);
-                },
-                shape: RoundedRectangleBorder(
-                    borderRadius: BorderRadius.circular(12)),
-              );
-            }),
-            SizedBox(height: MediaQuery.of(context).padding.bottom + 8),
-          ],
+                Padding(
+                  padding: const EdgeInsets.fromLTRB(20, 14, 20, 4),
+                  child: Text(title,
+                      style: const TextStyle(
+                        fontWeight: FontWeight.bold,
+                        fontSize: 17,
+                      )),
+                ),
+                ...items.map((item) {
+                  final isSelected = item.value == currentValue;
+                  return ListTile(
+                    leading: Container(
+                      width: 34,
+                      height: 34,
+                      decoration: BoxDecoration(
+                        color: isSelected
+                            ? Theme.of(context)
+                                .colorScheme
+                                .primary
+                                .withValues(alpha: 0.15)
+                            : Colors.grey.withValues(alpha: 0.1),
+                        borderRadius: BorderRadius.circular(10),
+                      ),
+                      child: Icon(item.icon,
+                          size: 18,
+                          color: isSelected
+                              ? Theme.of(context).colorScheme.primary
+                              : Colors.grey),
+                    ),
+                    title: Text(item.label,
+                        style: TextStyle(
+                          fontWeight:
+                              isSelected ? FontWeight.bold : FontWeight.normal,
+                        )),
+                    trailing: isSelected
+                        ? Icon(Icons.check_circle_rounded,
+                            color: Theme.of(context).colorScheme.primary)
+                        : null,
+                    onTap: () {
+                      Navigator.pop(context);
+                      onSelected(item.value);
+                    },
+                    shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(12)),
+                  );
+                }),
+                const SizedBox(height: 8),
+              ],
+            ),
+          ),
         ),
       ),
     );
@@ -405,19 +434,29 @@ class SettingsScreen extends StatelessWidget {
 
   // ─── Permissions Sheet ─────────────────────────────────────────────────────
 
-  void _showPermissionsSheet(BuildContext context, AppLocalizations l10n) async {
+  void _showPermissionsSheet(
+      BuildContext context, AppLocalizations l10n) async {
     final perms = <_PermissionItem>[];
 
     if (Platform.isAndroid) {
+      final androidInfo = await _getAndroidVersion();
       perms.addAll([
-        _PermissionItem(l10n.location, Icons.location_on_rounded,
-            const Color(0xFF007AFF), Permission.location),
+        // الموقع مطلوب على Android 12 وأقل فقط
+        if (androidInfo <= 32)
+          _PermissionItem(l10n.location, Icons.location_on_rounded,
+              const Color(0xFF007AFF), Permission.locationWhenInUse),
         _PermissionItem(l10n.bluetooth, Icons.bluetooth_rounded,
             const Color(0xFF5856D6), Permission.bluetoothScan),
-        _PermissionItem(l10n.storageLabel, Icons.folder_rounded,
-            const Color(0xFFFF9500), Permission.storage),
-        _PermissionItem(l10n.nearbyDevices, Icons.sensors_rounded,
-            const Color(0xFF34C759), Permission.nearbyWifiDevices),
+        // nearbyWifiDevices متاح على Android 13+ (API 33+) فقط
+        if (androidInfo >= 33)
+          _PermissionItem(l10n.nearbyDevices, Icons.sensors_rounded,
+              const Color(0xFF34C759), Permission.nearbyWifiDevices),
+        if (androidInfo >= 33)
+          _PermissionItem(l10n.storageLabel, Icons.photo_library_rounded,
+              const Color(0xFFFF9500), Permission.photos)
+        else
+          _PermissionItem(l10n.storageLabel, Icons.folder_rounded,
+              const Color(0xFFFF9500), Permission.storage),
       ]);
     } else if (Platform.isIOS) {
       perms.addAll([
@@ -443,86 +482,144 @@ class SettingsScreen extends StatelessWidget {
       return;
     }
     final isDark = Theme.of(context).brightness == Brightness.dark;
+    final isAr = Localizations.localeOf(context).languageCode == 'ar';
 
     await showModalBottomSheet(
       context: context,
       backgroundColor: Colors.transparent,
-      builder: (_) => Container(
-        margin: const EdgeInsets.fromLTRB(12, 0, 12, 12),
-        decoration: BoxDecoration(
-          color: isDark ? const Color(0xFF2C2C2E) : Colors.white,
-          borderRadius: BorderRadius.circular(24),
-        ),
-        child: Column(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            const SizedBox(height: 8),
-            Container(
-              width: 36, height: 4,
-              decoration: BoxDecoration(
-                color: Colors.grey.withValues(alpha: 0.3),
-                borderRadius: BorderRadius.circular(2),
-              ),
+      useSafeArea: true,
+      builder: (_) => SafeArea(
+        top: false,
+        child: Padding(
+          padding: const EdgeInsets.fromLTRB(12, 0, 12, 12),
+          child: Container(
+            decoration: BoxDecoration(
+              color: isDark ? const Color(0xFF2C2C2E) : Colors.white,
+              borderRadius: BorderRadius.circular(24),
             ),
-            Padding(
-              padding: const EdgeInsets.fromLTRB(20, 14, 20, 4),
-              child: Text(l10n.appPermissions,
-                  style: const TextStyle(
-                    fontWeight: FontWeight.bold, fontSize: 17,
-                  )),
-            ),
-            ...perms.map((p) {
-              final granted = statuses[p]?.isGranted ?? false;
-              return ListTile(
-                leading: Container(
-                  width: 34, height: 34,
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                const SizedBox(height: 8),
+                Container(
+                  width: 36,
+                  height: 4,
                   decoration: BoxDecoration(
-                    color: p.color.withValues(alpha: 0.15),
-                    borderRadius: BorderRadius.circular(10),
+                    color: Colors.grey.withValues(alpha: 0.3),
+                    borderRadius: BorderRadius.circular(2),
                   ),
-                  child: Icon(p.icon, size: 18, color: p.color),
                 ),
-                title: Text(p.label),
-                trailing: Container(
-                  padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
-                  decoration: BoxDecoration(
-                    color: granted
-                        ? Colors.green.withValues(alpha: 0.12)
-                        : Colors.orange.withValues(alpha: 0.12),
-                    borderRadius: BorderRadius.circular(10),
-                  ),
-                  child: Text(
-                    granted ? '✓ ممنوح' : '✗ مرفوض',
-                    style: TextStyle(
-                      fontSize: 12,
-                      fontWeight: FontWeight.w600,
-                      color: granted ? Colors.green : Colors.orange,
+                Padding(
+                  padding: const EdgeInsets.fromLTRB(20, 14, 20, 4),
+                  child: Text(l10n.appPermissions,
+                      style: const TextStyle(
+                        fontWeight: FontWeight.bold,
+                        fontSize: 17,
+                      )),
+                ),
+                ...perms.map((p) {
+                  final status = statuses[p] ?? PermissionStatus.denied;
+                  final granted = status.isGranted;
+                  final restricted = status.isPermanentlyDenied;
+                  final color = granted
+                      ? Colors.green
+                      : restricted
+                          ? Colors.red
+                          : Colors.orange;
+                  final label = granted
+                      ? (isAr ? '✓ ممنوح' : '✓ Granted')
+                      : restricted
+                          ? (isAr ? '✗ محظور' : '✗ Blocked')
+                          : (isAr ? '← اضغط للمنح' : '← Tap to grant');
+                  return ListTile(
+                    onTap: granted
+                        ? null
+                        : () async {
+                            if (restricted) {
+                              // محظور — افتح إعدادات النظام
+                              Navigator.pop(context);
+                              await openAppSettings();
+                            } else {
+                              // مرفوض — اطلب مباشرة
+                              await p.permission.request();
+                              if (context.mounted) {
+                                // أعد فتح الـ sheet بحالة محدّثة
+                                Navigator.pop(context);
+                                _showPermissionsSheet(context, l10n);
+                              }
+                            }
+                          },
+                    leading: Container(
+                      width: 34,
+                      height: 34,
+                      decoration: BoxDecoration(
+                        color: p.color.withValues(alpha: 0.15),
+                        borderRadius: BorderRadius.circular(10),
+                      ),
+                      child: Icon(p.icon, size: 18, color: p.color),
+                    ),
+                    title: Text(p.label),
+                    trailing: Container(
+                      padding: const EdgeInsets.symmetric(
+                          horizontal: 10, vertical: 4),
+                      decoration: BoxDecoration(
+                        color: color.withValues(alpha: 0.12),
+                        borderRadius: BorderRadius.circular(10),
+                      ),
+                      child: Text(
+                        label,
+                        style: TextStyle(
+                          fontSize: 12,
+                          fontWeight: FontWeight.w600,
+                          color: color,
+                        ),
+                      ),
+                    ),
+                    shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(12)),
+                  );
+                }),
+                Padding(
+                  padding: const EdgeInsets.fromLTRB(16, 8, 16, 8),
+                  child: SizedBox(
+                    width: double.infinity,
+                    child: FilledButton.icon(
+                      onPressed: () {
+                        Navigator.pop(context);
+                        openAppSettings();
+                      },
+                      icon: const Icon(Icons.settings_rounded, size: 18),
+                      label: Text(l10n.openSettings),
                     ),
                   ),
                 ),
-                shape: RoundedRectangleBorder(
-                    borderRadius: BorderRadius.circular(12)),
-              );
-            }),
-            Padding(
-              padding: const EdgeInsets.fromLTRB(16, 8, 16, 0),
-              child: SizedBox(
-                width: double.infinity,
-                child: FilledButton.icon(
-                  onPressed: () {
-                    Navigator.pop(context);
-                    openAppSettings();
-                  },
-                  icon: const Icon(Icons.settings_rounded, size: 18),
-                  label: Text(l10n.openSettings),
-                ),
-              ),
+              ],
             ),
-            SizedBox(height: MediaQuery.of(context).padding.bottom + 12),
-          ],
+          ),
         ),
       ),
     );
+  }
+
+  Future<int> _getAndroidVersion() async {
+    try {
+      // نستخدم Platform.version للحصول على إصدار Android SDK
+      // مثال: "3.19.0 (stable) (Sun Feb 4 ..."
+      // الطريقة الموثوقة: defaultTargetPlatform + dart:io
+      if (!Platform.isAndroid) {
+        return 0;
+      }
+      final versionStr = Platform.operatingSystemVersion;
+      // مثال: "Android 14 (API 34)"
+      final match = RegExp(r'API (\d+)').firstMatch(versionStr);
+      if (match != null) {
+        return int.tryParse(match.group(1) ?? '0') ?? 0;
+      }
+      // Fallback: افترض 33+
+      return 33;
+    } catch (_) {
+      return 33;
+    }
   }
 
   // ─── Helpers ───────────────────────────────────────────────────────────────
@@ -537,9 +634,12 @@ class SettingsScreen extends StatelessWidget {
   String _getThemeName(ThemeMode mode, BuildContext context) {
     final l10n = AppLocalizations.of(context);
     switch (mode) {
-      case ThemeMode.light: return l10n.light;
-      case ThemeMode.dark: return l10n.dark;
-      default: return l10n.system;
+      case ThemeMode.light:
+        return l10n.light;
+      case ThemeMode.dark:
+        return l10n.dark;
+      default:
+        return l10n.system;
     }
   }
 }
@@ -568,7 +668,8 @@ class _PickerItem {
   final String label;
   final dynamic value;
   final IconData icon;
-  const _PickerItem({required this.label, required this.value, required this.icon});
+  const _PickerItem(
+      {required this.label, required this.value, required this.icon});
 }
 
 class _PermissionItem {

@@ -15,7 +15,7 @@ class AppLocalizationsAr extends AppLocalizations {
   String get send => 'إرسال';
 
   @override
-  String get receive => 'استقبال';
+  String get receive => 'جهازي';
 
   @override
   String get files => 'ملفات';
@@ -280,7 +280,7 @@ class AppLocalizationsAr extends AppLocalizations {
   String get reconnectFailed => 'فشل إعادة الاتصال';
 
   @override
-  String get restartingSystem => 'إعادة تشغيل النظام';
+  String get restartingSystem => 'تحديث';
 
   @override
   String get sendApp => 'إرسال تطبيق';
