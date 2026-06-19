@@ -5,9 +5,10 @@ import 'package:flutter/material.dart';
 import '../models/transfer_progress.dart';
 import '../services/transfer_progress_service.dart';
 
+/// يعرض شريط تقدم الاستقبال عائماً فوق كل شيء
+/// يُستدعى مرة واحدة في main.dart كـ wrapper
 class TransferProgressOverlay extends StatefulWidget {
   final Widget child;
-
   const TransferProgressOverlay({required this.child, super.key});
 
   @override
@@ -15,199 +16,245 @@ class TransferProgressOverlay extends StatefulWidget {
       _TransferProgressOverlayState();
 }
 
-class _TransferProgressOverlayState extends State<TransferProgressOverlay>
-    with SingleTickerProviderStateMixin {
-  final _progressService = TransferProgressService();
-  late AnimationController _slideController;
-  late Animation<Offset> _slideAnimation;
-
-  @override
-  void initState() {
-    super.initState();
-    _slideController = AnimationController(
-      vsync: this,
-      duration: const Duration(milliseconds: 400),
-    );
-    _slideAnimation = Tween<Offset>(
-      begin: const Offset(0, 1),
-      end: Offset.zero,
-    ).animate(CurvedAnimation(
-      parent: _slideController,
-      curve: Curves.easeOutCubic,
-    ));
-  }
-
-  @override
-  void dispose() {
-    _slideController.dispose();
-    super.dispose();
-  }
-
+class _TransferProgressOverlayState extends State<TransferProgressOverlay> {
   @override
   Widget build(BuildContext context) {
     return Stack(
       children: [
         widget.child,
-        StreamBuilder<TransferProgress?>(
-          stream: _progressService.progressStream,
-          builder: (context, snapshot) {
-            final progress = snapshot.data;
-
-            if (progress == null) {
-              _slideController.reverse();
-              return const SizedBox.shrink();
-            }
-
-            _slideController.forward();
-
-            return Positioned(
-              left: 16,
-              right: 16,
-              bottom: 80,
-              child: SlideTransition(
-                position: _slideAnimation,
-                child: _buildProgressCard(progress),
-              ),
-            );
-          },
-        ),
+        const _ReceiveProgressFloating(),
       ],
     );
   }
+}
 
-  Widget _buildProgressCard(TransferProgress progress) {
-    return GestureDetector(
-      onTap: () {
-        // Tap to view transfer details
-      },
+// ─── الـ Widget العائم الفعلي ──────────────────────────────────────────────────
+
+class _ReceiveProgressFloating extends StatefulWidget {
+  const _ReceiveProgressFloating();
+
+  @override
+  State<_ReceiveProgressFloating> createState() =>
+      _ReceiveProgressFloatingState();
+}
+
+class _ReceiveProgressFloatingState extends State<_ReceiveProgressFloating>
+    with SingleTickerProviderStateMixin {
+  final _svc = TransferProgressService();
+  late AnimationController _anim;
+  late Animation<double> _fadeAnim;
+  late Animation<Offset> _slideAnim;
+
+  TransferProgress? _progress;
+
+  @override
+  void initState() {
+    super.initState();
+    _anim = AnimationController(
+      vsync: this,
+      duration: const Duration(milliseconds: 350),
+    );
+    _fadeAnim = CurvedAnimation(parent: _anim, curve: Curves.easeOut);
+    _slideAnim = Tween<Offset>(
+      begin: const Offset(0, 1),
+      end: Offset.zero,
+    ).animate(CurvedAnimation(parent: _anim, curve: Curves.easeOutCubic));
+
+    _svc.progressStream.listen((p) {
+      if (!mounted) {
+        return;
+      }
+      // أظهر فقط عند الاستقبال (ليس الإرسال)
+      final show = p != null && !_svc.isSending;
+      setState(() => _progress = show ? p : null);
+      if (show) {
+        _anim.forward();
+      } else {
+        _anim.reverse();
+      }
+    });
+  }
+
+  @override
+  void dispose() {
+    _anim.dispose();
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    if (_progress == null && !_anim.isAnimating) {
+      return const SizedBox.shrink();
+    }
+
+    // يحسب المسافة من الأسفل: فوق الـ navbar + safe area + هامش
+    final safeBottom = MediaQuery.of(context).padding.bottom;
+    const navbarHeight = kBottomNavigationBarHeight;
+
+    return Positioned(
+      left: 12,
+      right: 12,
+      bottom: safeBottom + navbarHeight + 10,
+      child: FadeTransition(
+        opacity: _fadeAnim,
+        child: SlideTransition(
+          position: _slideAnim,
+          child: _buildCard(context),
+        ),
+      ),
+    );
+  }
+
+  Widget _buildCard(BuildContext context) {
+    final p = _progress;
+    if (p == null) {
+      return const SizedBox.shrink();
+    }
+
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+    final color = Theme.of(context).colorScheme.primary;
+    final pct = p.percentage;
+
+    // Material يمنع وراثة TextDecoration.underline من الـ Stack
+    return Material(
+      color: Colors.transparent,
       child: ClipRRect(
-        borderRadius: BorderRadius.circular(12),
+        borderRadius: BorderRadius.circular(18),
         child: BackdropFilter(
-          filter: ImageFilter.blur(sigmaX: 10, sigmaY: 10),
+          filter: ImageFilter.blur(sigmaX: 14, sigmaY: 14),
           child: Container(
             decoration: BoxDecoration(
-              color:
-                  Theme.of(context).colorScheme.surface.withValues(alpha: 0.9),
-              borderRadius: BorderRadius.circular(12),
+              color: (isDark ? const Color(0xFF2C2C2E) : Colors.white)
+                  .withValues(alpha: 0.95),
+              borderRadius: BorderRadius.circular(18),
               border: Border.all(
-                color: Theme.of(context)
-                    .colorScheme
-                    .outline
-                    .withValues(alpha: 0.3),
-                width: 1,
+                color: color.withValues(alpha: isDark ? 0.25 : 0.15),
               ),
               boxShadow: [
                 BoxShadow(
-                  color: Colors.black.withValues(alpha: 0.1),
+                  color: Colors.black.withValues(alpha: isDark ? 0.35 : 0.1),
                   blurRadius: 20,
                   offset: const Offset(0, 4),
                 ),
               ],
             ),
-            padding: const EdgeInsets.all(16),
+            padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               mainAxisSize: MainAxisSize.min,
               children: [
+                // ─── صف العنوان ──────────────────────────────────────
                 Row(
                   children: [
+                    // أيقونة
                     Container(
-                      padding: const EdgeInsets.all(8),
+                      width: 36,
+                      height: 36,
                       decoration: BoxDecoration(
-                        color: Theme.of(context).colorScheme.primaryContainer,
-                        borderRadius: BorderRadius.circular(8),
+                        color: color.withValues(alpha: 0.12),
+                        borderRadius: BorderRadius.circular(10),
                       ),
                       child: Icon(
-                        Icons.upload,
-                        size: 20,
-                        color: Theme.of(context).colorScheme.primary,
+                        Icons.download_rounded,
+                        size: 18,
+                        color: color,
                       ),
                     ),
-                    const SizedBox(width: 12),
+                    const SizedBox(width: 10),
+                    // اسم الملف + اسم الجهاز
                     Expanded(
                       child: Column(
                         crossAxisAlignment: CrossAxisAlignment.start,
+                        mainAxisSize: MainAxisSize.min,
                         children: [
                           Text(
-                            progress.fileName,
-                            style: Theme.of(context)
-                                .textTheme
-                                .bodyMedium
-                                ?.copyWith(
-                                  fontWeight: FontWeight.w600,
-                                ),
+                            p.fileName,
                             maxLines: 1,
                             overflow: TextOverflow.ellipsis,
+                            style: TextStyle(
+                              fontSize: 13,
+                              fontWeight: FontWeight.w600,
+                              color: isDark
+                                  ? Colors.white
+                                  : const Color(0xFF1C1C1E),
+                              decoration: TextDecoration.none,
+                            ),
                           ),
-                          const SizedBox(height: 2),
+                          if (_svc.senderDeviceName != null &&
+                              _svc.senderDeviceName!.isNotEmpty)
+                            Text(
+                              '← ${_svc.senderDeviceName}',
+                              maxLines: 1,
+                              overflow: TextOverflow.ellipsis,
+                              style: TextStyle(
+                                fontSize: 11,
+                                color: color.withValues(alpha: 0.85),
+                                fontWeight: FontWeight.w500,
+                                decoration: TextDecoration.none,
+                              ),
+                            ),
                           Text(
-                            '${(progress.transferredBytes / 1024 / 1024).toStringAsFixed(1)} MB / ${(progress.totalBytes / 1024 / 1024).toStringAsFixed(1)} MB',
-                            style:
-                                Theme.of(context).textTheme.bodySmall?.copyWith(
-                                      color: Theme.of(context)
-                                          .colorScheme
-                                          .onSurface
-                                          .withValues(alpha: 0.6),
-                                    ),
+                            '${_formatSize(p.transferredBytes)} / ${_formatSize(p.totalBytes)}  •  ${p.speedFormatted}',
+                            style: TextStyle(
+                              fontSize: 11,
+                              color: isDark ? Colors.white54 : Colors.black45,
+                              decoration: TextDecoration.none,
+                            ),
                           ),
                         ],
                       ),
                     ),
+                    const SizedBox(width: 8),
+                    // النسبة
                     Text(
-                      '${progress.percentage.toStringAsFixed(0)}%',
-                      style: Theme.of(context).textTheme.titleMedium?.copyWith(
-                            fontWeight: FontWeight.bold,
-                            color: Theme.of(context).colorScheme.primary,
-                          ),
+                      '${pct.toStringAsFixed(0)}%',
+                      style: TextStyle(
+                        fontSize: 15,
+                        fontWeight: FontWeight.bold,
+                        color: color,
+                        decoration: TextDecoration.none,
+                      ),
                     ),
                     const SizedBox(width: 8),
-                    IconButton(
-                      icon: const Icon(Icons.close, size: 20),
-                      onPressed: () {
-                        _progressService.cancelTransfer();
-                      },
-                      tooltip: 'إلغاء',
-                      padding: EdgeInsets.zero,
-                      constraints: const BoxConstraints(),
+                    // زر الإلغاء
+                    GestureDetector(
+                      onTap: () => _svc.cancelReceive(),
+                      child: Container(
+                        width: 28,
+                        height: 28,
+                        decoration: BoxDecoration(
+                          color: Colors.red.withValues(alpha: 0.1),
+                          borderRadius: BorderRadius.circular(8),
+                        ),
+                        child: const Icon(
+                          Icons.close_rounded,
+                          size: 16,
+                          color: Colors.red,
+                        ),
+                      ),
                     ),
                   ],
                 ),
-                const SizedBox(height: 12),
+                const SizedBox(height: 10),
+                // ─── شريط التقدم ─────────────────────────────────────
                 ClipRRect(
-                  borderRadius: BorderRadius.circular(4),
+                  borderRadius: BorderRadius.circular(6),
                   child: LinearProgressIndicator(
-                    value: progress.percentage / 100,
-                    minHeight: 6,
-                    backgroundColor:
-                        Theme.of(context).colorScheme.surfaceContainerHighest,
-                    valueColor: AlwaysStoppedAnimation<Color>(
-                      Theme.of(context).colorScheme.primary,
-                    ),
+                    value: pct / 100,
+                    minHeight: 5,
+                    backgroundColor: color.withValues(alpha: 0.1),
+                    valueColor: AlwaysStoppedAnimation(color),
                   ),
                 ),
-                const SizedBox(height: 8),
-                Row(
-                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                  children: [
-                    Text(
-                      progress.speedFormatted,
-                      style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                            color: Theme.of(context)
-                                .colorScheme
-                                .onSurface
-                                .withValues(alpha: 0.6),
-                          ),
-                    ),
-                    Text(
-                      'متبقي ${progress.remainingTimeFormatted}',
-                      style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                            color: Theme.of(context)
-                                .colorScheme
-                                .onSurface
-                                .withValues(alpha: 0.6),
-                          ),
-                    ),
-                  ],
+                const SizedBox(height: 5),
+                // ─── الوقت المتبقي ────────────────────────────────────
+                Text(
+                  p.remainingTimeFormatted,
+                  style: TextStyle(
+                    fontSize: 10,
+                    color: isDark ? Colors.white38 : Colors.black38,
+                    decoration: TextDecoration.none,
+                  ),
                 ),
               ],
             ),
@@ -215,5 +262,12 @@ class _TransferProgressOverlayState extends State<TransferProgressOverlay>
         ),
       ),
     );
+  }
+
+  String _formatSize(int bytes) {
+    if (bytes < 1024 * 1024) {
+      return '${(bytes / 1024).toStringAsFixed(0)} KB';
+    }
+    return '${(bytes / 1024 / 1024).toStringAsFixed(1)} MB';
   }
 }

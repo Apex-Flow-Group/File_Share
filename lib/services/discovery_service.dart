@@ -60,7 +60,8 @@ class DiscoveryService {
           final json = jsonDecode(msg.substring(_magic.length))
               as Map<String, dynamic>;
           final id = json['id'] as String;
-          if (id == localDevice.id) return; // ignore self
+          if (id == localDevice.id) return; // ignore self by id
+          if (dg.address.address == localDevice.ip) return; // ignore self by IP
           _deviceFoundController.add(Device(
             id: id,
             name: json['name'] as String,

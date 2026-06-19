@@ -1,0 +1,14 @@
+=== Apex File Share - Signing Info ===
+
+Keystore File  : apex-release.jks
+Keystore Type  : PKCS12
+Key Alias      : apex-transfer-key
+Store Password : tOOp@59376
+Key Password   : tOOp@59376
+
+Owner          : CN=Apex Transfer, OU=ApexFlow, O=ApexFlow, L=SA, ST=SA, C=SA
+Valid Until    : 2053-08-02
+Algorithm      : SHA384withRSA / 2048-bit RSA
+
+SHA1   : 88:AF:E7:C4:F3:DF:7C:35:C6:97:05:B7:54:39:CA:07:E6:47:46:C8
+SHA256 : A3:9B:A1:55:4B:BD:0F:73:F9:CC:67:A7:F5:B6:4E:02:98:58:B5:CB:40:6E:BE:70:DA:40:AF:AD:5B:A4:B2:07

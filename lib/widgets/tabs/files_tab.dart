@@ -4,7 +4,6 @@ import 'package:flutter/material.dart';
 
 import '../../l10n/generated/app_localizations.dart';
 
-
 class FilesTab extends StatefulWidget {
   final bool isSelectionMode;
   final Set<String> selectedFiles;
@@ -21,6 +20,7 @@ class FilesTab extends StatefulWidget {
   final Function(File) onOpenFileLocation;
   final Function(String) onLongPress;
   final Future<List<FileSystemEntity>> Function() getReceivedFiles;
+  final ValueNotifier<int>? refreshNotifier;
 
   const FilesTab({
     required this.isSelectionMode,
@@ -38,6 +38,7 @@ class FilesTab extends StatefulWidget {
     required this.onOpenFileLocation,
     required this.onLongPress,
     required this.getReceivedFiles,
+    this.refreshNotifier,
     super.key,
   });
 
@@ -45,7 +46,8 @@ class FilesTab extends StatefulWidget {
   State<FilesTab> createState() => _FilesTabState();
 }
 
-class _FilesTabState extends State<FilesTab> with AutomaticKeepAliveClientMixin {
+class _FilesTabState extends State<FilesTab>
+    with AutomaticKeepAliveClientMixin {
   List<FileSystemEntity>? _files;
   bool _isLoading = false;
 
@@ -56,7 +58,19 @@ class _FilesTabState extends State<FilesTab> with AutomaticKeepAliveClientMixin 
   void initState() {
     super.initState();
     _load();
+    widget.refreshNotifier?.addListener(_onRefreshNotified);
   }
+
+  @override
+  void dispose() {
+    widget.refreshNotifier?.removeListener(_onRefreshNotified);
+    super.dispose();
+  }
+
+  void _onRefreshNotified() => _load();
+
+  /// يمكن استدعاءها من الخارج عبر GlobalKey لتحديث القائمة
+  Future<void> refresh() => _load();
 
   Future<void> _load() async {
     if (_isLoading) {
@@ -66,7 +80,10 @@ class _FilesTabState extends State<FilesTab> with AutomaticKeepAliveClientMixin 
     try {
       final f = await widget.getReceivedFiles();
       if (mounted) {
-        setState(() { _files = f; _isLoading = false; });
+        setState(() {
+          _files = f;
+          _isLoading = false;
+        });
       }
     } catch (_) {
       if (mounted) {
@@ -135,15 +152,13 @@ class _FilesTabState extends State<FilesTab> with AutomaticKeepAliveClientMixin 
               children: [
                 Text(l10n.files,
                     style: Theme.of(context).textTheme.titleLarge?.copyWith(
-                      fontWeight: FontWeight.bold,
-                    )),
+                          fontWeight: FontWeight.bold,
+                        )),
                 Text(
-                  _files == null
-                      ? '...'
-                      : '${_files!.length} ${l10n.files}',
+                  _files == null ? '...' : '${_files!.length} ${l10n.files}',
                   style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                    color: Theme.of(context).colorScheme.onSurfaceVariant,
-                  ),
+                        color: Theme.of(context).colorScheme.onSurfaceVariant,
+                      ),
                 ),
               ],
             ),
@@ -192,7 +207,8 @@ class _FilesTabState extends State<FilesTab> with AutomaticKeepAliveClientMixin 
           ),
           IconButton(
             icon: const Icon(Icons.delete_rounded, size: 20, color: Colors.red),
-            onPressed: widget.selectedFiles.isEmpty ? null : widget.onDeleteSelected,
+            onPressed:
+                widget.selectedFiles.isEmpty ? null : widget.onDeleteSelected,
             visualDensity: VisualDensity.compact,
           ),
         ],
@@ -253,7 +269,8 @@ class _FilesTabState extends State<FilesTab> with AutomaticKeepAliveClientMixin 
                 borderRadius: BorderRadius.circular(8),
               ),
               child: Row(mainAxisSize: MainAxisSize.min, children: [
-                Icon(Icons.save_rounded, size: 14,
+                Icon(Icons.save_rounded,
+                    size: 14,
                     color: Theme.of(context).colorScheme.onSurfaceVariant),
                 const SizedBox(width: 4),
                 Text(l10n.save,
@@ -273,6 +290,8 @@ class _FilesTabState extends State<FilesTab> with AutomaticKeepAliveClientMixin 
 
   Widget _buildList() {
     final l10n = AppLocalizations.of(context);
+    final bottomPadding =
+        MediaQuery.of(context).padding.bottom + kBottomNavigationBarHeight + 16;
 
     if (_files == null || _files!.isEmpty) {
       return SingleChildScrollView(
@@ -295,8 +314,8 @@ class _FilesTabState extends State<FilesTab> with AutomaticKeepAliveClientMixin 
                 const SizedBox(height: 20),
                 Text(l10n.noFiles,
                     style: Theme.of(context).textTheme.titleMedium?.copyWith(
-                      fontWeight: FontWeight.bold,
-                    )),
+                          fontWeight: FontWeight.bold,
+                        )),
                 const SizedBox(height: 6),
                 Text(
                   l10n.noFilesHint,
@@ -315,7 +334,7 @@ class _FilesTabState extends State<FilesTab> with AutomaticKeepAliveClientMixin 
     final sorted = _sort(_files!);
 
     return ListView.separated(
-      padding: const EdgeInsets.fromLTRB(16, 8, 16, 100),
+      padding: EdgeInsets.fromLTRB(16, 8, 16, bottomPadding),
       itemCount: sorted.length,
       separatorBuilder: (_, __) => const SizedBox(height: 8),
       itemBuilder: (context, i) {
@@ -341,16 +360,31 @@ class _FilesTabState extends State<FilesTab> with AutomaticKeepAliveClientMixin 
   List<FileSystemEntity> _sort(List<FileSystemEntity> files) {
     final sorted = List<FileSystemEntity>.from(files);
     sorted.sort((a, b) {
-      switch (widget.sortBy) {
-        case 'name':
-          return a.path.split('/').last.compareTo(b.path.split('/').last);
-        case 'size':
-          return File(a.path).lengthSync().compareTo(File(b.path).lengthSync());
-        case 'type':
-          return a.path.split('.').last.compareTo(b.path.split('.').last);
-        default:
-          return File(a.path).lastModifiedSync()
-              .compareTo(File(b.path).lastModifiedSync());
+      try {
+        switch (widget.sortBy) {
+          case 'name':
+            return a.path
+                .split('/')
+                .last
+                .toLowerCase()
+                .compareTo(b.path.split('/').last.toLowerCase());
+          case 'size':
+            return File(a.path)
+                .lengthSync()
+                .compareTo(File(b.path).lengthSync());
+          case 'type':
+            return a.path
+                .split('.')
+                .last
+                .toLowerCase()
+                .compareTo(b.path.split('.').last.toLowerCase());
+          default:
+            return File(a.path)
+                .lastModifiedSync()
+                .compareTo(File(b.path).lastModifiedSync());
+        }
+      } catch (_) {
+        return 0;
       }
     });
     return widget.sortAscending ? sorted : sorted.reversed.toList();
@@ -395,10 +429,13 @@ class _FileTile extends StatelessWidget {
         decoration: BoxDecoration(
           color: isSelected
               ? Theme.of(context).colorScheme.primaryContainer
-              : isDark ? const Color(0xFF1E1E1E) : Colors.white,
+              : isDark
+                  ? const Color(0xFF1E1E1E)
+                  : Colors.white,
           borderRadius: BorderRadius.circular(18),
           border: isSelected
-              ? Border.all(color: Theme.of(context).colorScheme.primary, width: 1.5)
+              ? Border.all(
+                  color: Theme.of(context).colorScheme.primary, width: 1.5)
               : null,
           boxShadow: isSelected
               ? null
@@ -465,7 +502,8 @@ class _FileTile extends StatelessWidget {
                     ),
                     const SizedBox(width: 6),
                     Container(
-                      width: 3, height: 3,
+                      width: 3,
+                      height: 3,
                       decoration: BoxDecoration(
                         color: Theme.of(context).colorScheme.onSurfaceVariant,
                         shape: BoxShape.circle,
@@ -521,39 +559,78 @@ class _FileTile extends StatelessWidget {
   IconData _fileIcon(String name) {
     final ext = name.split('.').last.toLowerCase();
     switch (ext) {
-      case 'pdf': return Icons.picture_as_pdf_rounded;
-      case 'jpg': case 'jpeg': case 'png': case 'gif': case 'webp':
+      case 'pdf':
+        return Icons.picture_as_pdf_rounded;
+      case 'jpg':
+      case 'jpeg':
+      case 'png':
+      case 'gif':
+      case 'webp':
         return Icons.image_rounded;
-      case 'mp4': case 'avi': case 'mkv': case 'mov':
+      case 'mp4':
+      case 'avi':
+      case 'mkv':
+      case 'mov':
         return Icons.movie_rounded;
-      case 'mp3': case 'wav': case 'flac': case 'm4a':
+      case 'mp3':
+      case 'wav':
+      case 'flac':
+      case 'm4a':
         return Icons.music_note_rounded;
-      case 'zip': case 'rar': case '7z':
+      case 'zip':
+      case 'rar':
+      case '7z':
         return Icons.folder_zip_rounded;
-      case 'apk': return Icons.android_rounded;
-      case 'doc': case 'docx': return Icons.description_rounded;
-      case 'xls': case 'xlsx': return Icons.table_chart_rounded;
-      case 'txt': return Icons.text_snippet_rounded;
-      default: return Icons.insert_drive_file_rounded;
+      case 'apk':
+        return Icons.android_rounded;
+      case 'doc':
+      case 'docx':
+        return Icons.description_rounded;
+      case 'xls':
+      case 'xlsx':
+        return Icons.table_chart_rounded;
+      case 'txt':
+        return Icons.text_snippet_rounded;
+      default:
+        return Icons.insert_drive_file_rounded;
     }
   }
 
   Color _fileColor(String name) {
     final ext = name.split('.').last.toLowerCase();
     switch (ext) {
-      case 'pdf': return const Color(0xFFFF3B30);
-      case 'jpg': case 'jpeg': case 'png': case 'gif': case 'webp':
+      case 'pdf':
+        return const Color(0xFFFF3B30);
+      case 'jpg':
+      case 'jpeg':
+      case 'png':
+      case 'gif':
+      case 'webp':
         return const Color(0xFF007AFF);
-      case 'mp4': case 'avi': case 'mkv': case 'mov':
+      case 'mp4':
+      case 'avi':
+      case 'mkv':
+      case 'mov':
         return const Color(0xFF5856D6);
-      case 'mp3': case 'wav': case 'flac': case 'm4a':
+      case 'mp3':
+      case 'wav':
+      case 'flac':
+      case 'm4a':
         return const Color(0xFFFF2D55);
-      case 'zip': case 'rar': case '7z':
+      case 'zip':
+      case 'rar':
+      case '7z':
         return const Color(0xFFFF9500);
-      case 'apk': return const Color(0xFF34C759);
-      case 'doc': case 'docx': return const Color(0xFF007AFF);
-      case 'xls': case 'xlsx': return const Color(0xFF34C759);
-      default: return const Color(0xFF8E8E93);
+      case 'apk':
+        return const Color(0xFF34C759);
+      case 'doc':
+      case 'docx':
+        return const Color(0xFF007AFF);
+      case 'xls':
+      case 'xlsx':
+        return const Color(0xFF34C759);
+      default:
+        return const Color(0xFF8E8E93);
     }
   }
 
@@ -591,13 +668,13 @@ class _SortChip extends StatelessWidget {
         context: context,
         backgroundColor: Colors.transparent,
         builder: (_) => SafeArea(
-        top: false,
-        child: _SortSheet(
-          current: value,
-          options: options,
-          onChanged: onChanged,
+          top: false,
+          child: _SortSheet(
+            current: value,
+            options: options,
+            onChanged: onChanged,
+          ),
         ),
-      ),
       ),
       child: Container(
         padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
@@ -613,8 +690,8 @@ class _SortChip extends StatelessWidget {
                 color: Theme.of(context).colorScheme.onSurface,
               )),
           const SizedBox(width: 4),
-          Icon(Icons.expand_more_rounded, size: 14,
-              color: Theme.of(context).colorScheme.onSurface),
+          Icon(Icons.expand_more_rounded,
+              size: 14, color: Theme.of(context).colorScheme.onSurface),
         ]),
       ),
     );
@@ -646,7 +723,8 @@ class _SortSheet extends StatelessWidget {
         children: [
           const SizedBox(height: 8),
           Container(
-            width: 36, height: 4,
+            width: 36,
+            height: 4,
             decoration: BoxDecoration(
               color: Colors.grey.withValues(alpha: 0.3),
               borderRadius: BorderRadius.circular(2),
@@ -654,21 +732,32 @@ class _SortSheet extends StatelessWidget {
           ),
           const SizedBox(height: 8),
           ...options.entries.map((e) => ListTile(
-            leading: Icon(
-              current == e.key ? Icons.check_circle_rounded : Icons.circle_outlined,
-              color: current == e.key
-                  ? Theme.of(context).colorScheme.primary
-                  : Colors.grey,
-            ),
-            title: Text(e.value,
-                style: TextStyle(
-                  fontWeight: current == e.key ? FontWeight.bold : FontWeight.normal,
-                )),
-            onTap: () { Navigator.pop(context); onChanged(e.key); },
-            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
-          )),
+                leading: Icon(
+                  current == e.key
+                      ? Icons.check_circle_rounded
+                      : Icons.circle_outlined,
+                  color: current == e.key
+                      ? Theme.of(context).colorScheme.primary
+                      : Colors.grey,
+                ),
+                title: Text(e.value,
+                    style: TextStyle(
+                      fontWeight: current == e.key
+                          ? FontWeight.bold
+                          : FontWeight.normal,
+                    )),
+                onTap: () {
+                  Navigator.pop(context);
+                  onChanged(e.key);
+                },
+                shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(12)),
+              )),
           const SizedBox(height: 8),
-          SafeArea(top: false, child: SizedBox(height: MediaQuery.of(context).padding.bottom > 0 ? 0 : 8)),
+          SafeArea(
+              top: false,
+              child: SizedBox(
+                  height: MediaQuery.of(context).padding.bottom > 0 ? 0 : 8)),
         ],
       ),
     );

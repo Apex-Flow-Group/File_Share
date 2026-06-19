@@ -4,6 +4,7 @@ import 'package:flutter/material.dart';
 
 import '../../l10n/generated/app_localizations.dart';
 import '../../models/device.dart';
+import '../../services/transfer_progress_service.dart';
 import '../connection_widget.dart';
 
 class SendTab extends StatefulWidget {
@@ -11,11 +12,15 @@ class SendTab extends StatefulWidget {
   final bool isRunning;
   final String? pendingFilePath;
   final VoidCallback? onPendingFileSent;
+  final List<String>? pendingSharedFiles;
+  final VoidCallback? onSharedFilesSent;
   const SendTab({
     required this.devices,
     required this.isRunning,
     this.pendingFilePath,
     this.onPendingFileSent,
+    this.pendingSharedFiles,
+    this.onSharedFilesSent,
     super.key,
   });
 
@@ -32,13 +37,16 @@ class _SendTabState extends State<SendTab> with TickerProviderStateMixin {
   void initState() {
     super.initState();
     _radarSpin = AnimationController(
-      vsync: this, duration: const Duration(seconds: 3),
+      vsync: this,
+      duration: const Duration(seconds: 3),
     )..repeat();
     _pulseFast = AnimationController(
-      vsync: this, duration: const Duration(milliseconds: 1200),
+      vsync: this,
+      duration: const Duration(milliseconds: 1200),
     )..repeat(reverse: true);
     _pulseSlow = AnimationController(
-      vsync: this, duration: const Duration(milliseconds: 1800),
+      vsync: this,
+      duration: const Duration(milliseconds: 1800),
     )..repeat(reverse: true);
   }
 
@@ -88,7 +96,8 @@ class _SendTabState extends State<SendTab> with TickerProviderStateMixin {
                           decoration: BoxDecoration(
                             shape: BoxShape.circle,
                             border: Border.all(
-                              color: color.withValues(alpha: 0.15 - _pulseSlow.value * 0.12),
+                              color: color.withValues(
+                                  alpha: 0.15 - _pulseSlow.value * 0.12),
                               width: 1.5,
                             ),
                           ),
@@ -103,7 +112,8 @@ class _SendTabState extends State<SendTab> with TickerProviderStateMixin {
                           decoration: BoxDecoration(
                             shape: BoxShape.circle,
                             border: Border.all(
-                              color: color.withValues(alpha: 0.25 - _pulseFast.value * 0.2),
+                              color: color.withValues(
+                                  alpha: 0.25 - _pulseFast.value * 0.2),
                               width: 1.5,
                             ),
                           ),
@@ -132,7 +142,9 @@ class _SendTabState extends State<SendTab> with TickerProviderStateMixin {
                         ),
                       // center icon
                       Icon(
-                        widget.isRunning ? Icons.wifi_tethering_rounded : Icons.wifi_tethering_off_rounded,
+                        widget.isRunning
+                            ? Icons.wifi_tethering_rounded
+                            : Icons.wifi_tethering_off_rounded,
                         size: 36,
                         color: color,
                       ),
@@ -143,16 +155,16 @@ class _SendTabState extends State<SendTab> with TickerProviderStateMixin {
                 Text(
                   widget.isRunning ? l10n.discovering : l10n.noDevicesFound,
                   style: Theme.of(context).textTheme.titleLarge?.copyWith(
-                    fontWeight: FontWeight.bold,
-                  ),
+                        fontWeight: FontWeight.bold,
+                      ),
                 ),
                 const SizedBox(height: 8),
                 Text(
                   l10n.makeSureDevicesOnSameNetwork,
                   textAlign: TextAlign.center,
                   style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                    color: Theme.of(context).colorScheme.onSurfaceVariant,
-                  ),
+                        color: Theme.of(context).colorScheme.onSurfaceVariant,
+                      ),
                 ),
               ],
             ),
@@ -166,19 +178,41 @@ class _SendTabState extends State<SendTab> with TickerProviderStateMixin {
 
   Widget _buildDeviceList() {
     final l10n = AppLocalizations.of(context);
+    final bottomPadding =
+        MediaQuery.of(context).padding.bottom + kBottomNavigationBarHeight + 16;
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
         _buildHeader(l10n),
         Expanded(
-          child: ListView.builder(
-            padding: const EdgeInsets.fromLTRB(16, 8, 16, 100),
-            itemCount: widget.devices.length,
-            itemBuilder: (context, i) => ConnectionWidget(
-              device: widget.devices[i],
-              pendingFilePath: widget.pendingFilePath,
-              onPendingFileSent: widget.onPendingFileSent,
-            ),
+          child: StreamBuilder<dynamic>(
+            stream: TransferProgressService().progressStream,
+            builder: (context, snapshot) {
+              final svc = TransferProgressService();
+              final isTransferring = svc.isTransferring;
+              return ListView.builder(
+                physics: isTransferring
+                    ? const NeverScrollableScrollPhysics()
+                    : const AlwaysScrollableScrollPhysics(),
+                padding: EdgeInsets.fromLTRB(16, 8, 16, bottomPadding),
+                itemCount: widget.devices.length,
+                itemBuilder: (context, i) {
+                  final device = widget.devices[i];
+                  // هذا الجهاز هو المستهدف بالإرسال الحالي؟
+                  final isTarget =
+                      isTransferring && svc.targetDeviceId == device.id;
+                  return ConnectionWidget(
+                    device: device,
+                    pendingFilePath: widget.pendingFilePath,
+                    onPendingFileSent: widget.onPendingFileSent,
+                    pendingSharedFiles: widget.pendingSharedFiles,
+                    onSharedFilesSent: widget.onSharedFilesSent,
+                    // مشغول عالمياً فقط إذا كان هناك إرسال لجهاز آخر
+                    isGloballyBusy: isTransferring && !isTarget,
+                  );
+                },
+              );
+            },
           ),
         ),
       ],
@@ -220,15 +254,15 @@ class _SendTabState extends State<SendTab> with TickerProviderStateMixin {
               children: [
                 Text(l10n.send,
                     style: Theme.of(context).textTheme.titleLarge?.copyWith(
-                      fontWeight: FontWeight.bold,
-                    )),
+                          fontWeight: FontWeight.bold,
+                        )),
                 Text(
                   widget.devices.isEmpty
                       ? l10n.discovering
                       : '${widget.devices.length} ${l10n.availableDevices}',
                   style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                    color: Theme.of(context).colorScheme.onSurfaceVariant,
-                  ),
+                        color: Theme.of(context).colorScheme.onSurfaceVariant,
+                      ),
                 ),
               ],
             ),
@@ -242,15 +276,19 @@ class _SendTabState extends State<SendTab> with TickerProviderStateMixin {
               ),
               child: Row(mainAxisSize: MainAxisSize.min, children: [
                 Container(
-                  width: 6, height: 6,
+                  width: 6,
+                  height: 6,
                   decoration: const BoxDecoration(
-                    color: Colors.green, shape: BoxShape.circle,
+                    color: Colors.green,
+                    shape: BoxShape.circle,
                   ),
                 ),
                 const SizedBox(width: 5),
                 const Text('Live',
                     style: TextStyle(
-                      color: Colors.green, fontSize: 12, fontWeight: FontWeight.w600,
+                      color: Colors.green,
+                      fontSize: 12,
+                      fontWeight: FontWeight.w600,
                     )),
               ]),
             ),
