@@ -1,17 +1,27 @@
 import 'dart:math';
 
+import 'package:file_picker/file_picker.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 
+import '../../core/apex_core.dart';
 import '../../l10n/generated/app_localizations.dart';
 import '../../models/device.dart';
+import '../../screens/apps_selection_screen.dart';
+import '../../services/desktop_notification_service.dart';
 import '../../services/transfer_progress_service.dart';
 import '../connection_widget.dart';
 
 class TVSendTab extends StatefulWidget {
   final List<Device> devices;
   final bool isRunning;
-  const TVSendTab({required this.devices, required this.isRunning, super.key});
+  final VoidCallback? onBackToSidebar;
+  const TVSendTab({
+    required this.devices,
+    required this.isRunning,
+    this.onBackToSidebar,
+    super.key,
+  });
 
   @override
   State<TVSendTab> createState() => _TVSendTabState();
@@ -166,6 +176,8 @@ class _TVSendTabState extends State<TVSendTab> with TickerProviderStateMixin {
                 return _TVDeviceCard(
                   device: device,
                   isGloballyBusy: isTransferring && !isTarget,
+                  autofocus: i == 0,
+                  onBackToSidebar: widget.onBackToSidebar,
                 );
               },
             );
@@ -244,12 +256,18 @@ class _TVSendTabState extends State<TVSendTab> with TickerProviderStateMixin {
 }
 
 // ─── TV Device Card ───────────────────────────────────────────────────────────
-// Same as ConnectionWidget but with TV-friendly focus border
 
 class _TVDeviceCard extends StatefulWidget {
   final Device device;
   final bool isGloballyBusy;
-  const _TVDeviceCard({required this.device, this.isGloballyBusy = false});
+  final bool autofocus;
+  final VoidCallback? onBackToSidebar;
+  const _TVDeviceCard({
+    required this.device,
+    this.isGloballyBusy = false,
+    this.autofocus = false,
+    this.onBackToSidebar,
+  });
 
   @override
   State<_TVDeviceCard> createState() => _TVDeviceCardState();
@@ -269,11 +287,19 @@ class _TVDeviceCardState extends State<_TVDeviceCard> {
     final color = Theme.of(context).colorScheme.primary;
     return Focus(
       focusNode: _focusNode,
+      autofocus: widget.autofocus,
       onKeyEvent: (_, event) {
-        if (event is KeyDownEvent &&
-            (event.logicalKey == LogicalKeyboardKey.select ||
-                event.logicalKey == LogicalKeyboardKey.enter)) {
-          _focusNode.requestFocus();
+        if (event is! KeyDownEvent) {
+          return KeyEventResult.ignored;
+        }
+
+        if (event.logicalKey == LogicalKeyboardKey.select ||
+            event.logicalKey == LogicalKeyboardKey.enter) {
+          _showSendOptions(context);
+          return KeyEventResult.handled;
+        }
+        if (event.logicalKey == LogicalKeyboardKey.arrowLeft) {
+          widget.onBackToSidebar?.call();
           return KeyEventResult.handled;
         }
         return KeyEventResult.ignored;
@@ -296,6 +322,237 @@ class _TVDeviceCardState extends State<_TVDeviceCard> {
           child: ConnectionWidget(
             device: widget.device,
             isGloballyBusy: widget.isGloballyBusy,
+          ),
+        );
+      }),
+    );
+  }
+
+  void _showSendOptions(BuildContext context) {
+    final l10n = AppLocalizations.of(context);
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+    final color = Theme.of(context).colorScheme.primary;
+
+    showDialog(
+      context: context,
+      builder: (dialogContext) => _TVOptionsDialog(
+        title: widget.device.name,
+        isDark: isDark,
+        color: color,
+        options: [
+          _TVOption(
+            icon: Icons.folder_open_rounded,
+            label: l10n.sendFile,
+            color: color,
+            onTap: () {
+              Navigator.pop(dialogContext);
+              _sendFile();
+            },
+          ),
+          _TVOption(
+            icon: Icons.android_rounded,
+            label: l10n.sendApp,
+            color: const Color(0xFF34C759),
+            onTap: () {
+              Navigator.pop(dialogContext);
+              _sendApp();
+            },
+          ),
+        ],
+      ),
+    );
+  }
+
+  Future<void> _sendFile() async {
+    final result = await FilePicker.platform.pickFiles(allowMultiple: true);
+    if (result == null || result.files.isEmpty || !mounted) {
+      return;
+    }
+
+    final paths =
+        result.files.where((f) => f.path != null).map((f) => f.path!).toList();
+
+    final ok = await ApexCore.instance.sendFiles(paths, widget.device);
+    if (mounted) {
+      final l10n = AppLocalizations.of(context);
+      ScaffoldMessenger.of(context).showSnackBar(SnackBar(
+        content: Text(ok ? l10n.fileSentSuccess : l10n.fileSendFailed),
+        backgroundColor: ok ? Colors.green : Colors.red,
+        behavior: SnackBarBehavior.floating,
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+      ));
+    }
+    final label = paths.length == 1
+        ? paths.first.split('/').last
+        : '${paths.length} files';
+    if (ok) {
+      await DesktopNotificationService.instance.showFileSent(label);
+    } else {
+      await DesktopNotificationService.instance.showSendFailed(label);
+    }
+    TransferProgressService().clearProgress();
+  }
+
+  Future<void> _sendApp() async {
+    if (!mounted) {
+      return;
+    }
+    await Navigator.push(
+      context,
+      MaterialPageRoute(
+        builder: (_) => AppsSelectionScreen(
+          onAppSelected: (apkFile, appName) async {
+            if (!mounted) {
+              return;
+            }
+            final ok = await ApexCore.instance
+                .sendFileWithName(apkFile.path, '$appName.apk', widget.device);
+            if (!mounted) {
+              return;
+            }
+            final l10n = AppLocalizations.of(context);
+            ScaffoldMessenger.of(context).showSnackBar(SnackBar(
+              content: Text(ok ? l10n.appSent : l10n.sendFailed),
+              backgroundColor: ok ? Colors.green : Colors.red,
+              behavior: SnackBarBehavior.floating,
+              shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(12)),
+            ));
+            TransferProgressService().clearProgress();
+          },
+        ),
+      ),
+    );
+  }
+}
+
+// ─── TV Options Dialog ────────────────────────────────────────────────────────
+// Dialog مخصص للريموت — أسهل من BottomSheet في التنقل
+
+class _TVOption {
+  final IconData icon;
+  final String label;
+  final Color color;
+  final VoidCallback onTap;
+  const _TVOption({
+    required this.icon,
+    required this.label,
+    required this.color,
+    required this.onTap,
+  });
+}
+
+class _TVOptionsDialog extends StatelessWidget {
+  final String title;
+  final bool isDark;
+  final Color color;
+  final List<_TVOption> options;
+
+  const _TVOptionsDialog({
+    required this.title,
+    required this.isDark,
+    required this.color,
+    required this.options,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    return Dialog(
+      backgroundColor: isDark ? const Color(0xFF2C2C2E) : Colors.white,
+      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(24)),
+      child: Padding(
+        padding: const EdgeInsets.symmetric(vertical: 20, horizontal: 16),
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Text(title,
+                style:
+                    const TextStyle(fontWeight: FontWeight.bold, fontSize: 16)),
+            const SizedBox(height: 16),
+            ...options.asMap().entries.map((entry) {
+              final i = entry.key;
+              final opt = entry.value;
+              return Padding(
+                padding: const EdgeInsets.only(bottom: 8),
+                child: _TVOptionButton(
+                  option: opt,
+                  autofocus: i == 0,
+                  isDark: isDark,
+                ),
+              );
+            }),
+          ],
+        ),
+      ),
+    );
+  }
+}
+
+class _TVOptionButton extends StatefulWidget {
+  final _TVOption option;
+  final bool autofocus;
+  final bool isDark;
+
+  const _TVOptionButton({
+    required this.option,
+    required this.autofocus,
+    required this.isDark,
+  });
+
+  @override
+  State<_TVOptionButton> createState() => _TVOptionButtonState();
+}
+
+class _TVOptionButtonState extends State<_TVOptionButton> {
+  final _focusNode = FocusNode();
+
+  @override
+  void dispose() {
+    _focusNode.dispose();
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return Focus(
+      focusNode: _focusNode,
+      autofocus: widget.autofocus,
+      onKeyEvent: (_, event) {
+        if (event is KeyDownEvent &&
+            (event.logicalKey == LogicalKeyboardKey.select ||
+                event.logicalKey == LogicalKeyboardKey.enter)) {
+          widget.option.onTap();
+          return KeyEventResult.handled;
+        }
+        return KeyEventResult.ignored;
+      },
+      child: Builder(builder: (ctx) {
+        final hasFocus = Focus.of(ctx).hasFocus;
+        return GestureDetector(
+          onTap: widget.option.onTap,
+          child: AnimatedContainer(
+            duration: const Duration(milliseconds: 150),
+            padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
+            decoration: BoxDecoration(
+              color: hasFocus
+                  ? widget.option.color.withValues(alpha: 0.15)
+                  : widget.option.color.withValues(alpha: 0.06),
+              borderRadius: BorderRadius.circular(14),
+              border: hasFocus
+                  ? Border.all(color: widget.option.color, width: 2)
+                  : Border.all(
+                      color: widget.option.color.withValues(alpha: 0.2)),
+            ),
+            child: Row(children: [
+              Icon(widget.option.icon, color: widget.option.color, size: 22),
+              const SizedBox(width: 12),
+              Text(widget.option.label,
+                  style: TextStyle(
+                    fontSize: 15,
+                    fontWeight: FontWeight.w600,
+                    color: widget.option.color,
+                  )),
+            ]),
           ),
         );
       }),
