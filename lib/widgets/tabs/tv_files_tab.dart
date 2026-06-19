@@ -8,7 +8,12 @@ import '../../services/file_operations_service.dart';
 
 class TVFilesTab extends StatefulWidget {
   final Future<List<FileSystemEntity>> Function() getReceivedFiles;
-  const TVFilesTab({required this.getReceivedFiles, super.key});
+  final VoidCallback? onBackToSidebar;
+  const TVFilesTab({
+    required this.getReceivedFiles,
+    this.onBackToSidebar,
+    super.key,
+  });
 
   @override
   State<TVFilesTab> createState() => _TVFilesTabState();
@@ -104,24 +109,14 @@ class _TVFilesTabState extends State<TVFilesTab> {
                     ),
                   ]),
             ),
-            IconButton(
-              onPressed: _load,
-              icon: const Icon(Icons.refresh_rounded),
-              style: IconButton.styleFrom(
-                backgroundColor: color.withValues(alpha: 0.12),
-                foregroundColor: color,
-              ),
-            ),
+            _TVFocusableRefreshButton(onTap: _load),
           ]),
         ),
         // ─── List ──────────────────────────────────────────────────────
         Expanded(
-          child: RefreshIndicator(
-            onRefresh: _load,
-            child: _isLoading
-                ? const Center(child: CircularProgressIndicator())
-                : _buildList(l10n, isDark),
-          ),
+          child: _isLoading
+              ? const Center(child: CircularProgressIndicator())
+              : _buildList(l10n, isDark),
         ),
       ]),
     );
@@ -166,9 +161,11 @@ class _TVFilesTabState extends State<TVFilesTab> {
           file: file,
           name: name,
           isDark: isDark,
+          autofocus: i == 0,
           onOpen: () => _openFile(file),
           onOpenLocation: () => _openLocation(file),
           onDelete: () => _deleteFile(file, l10n),
+          onBackToSidebar: widget.onBackToSidebar,
         );
       },
     );
@@ -204,19 +201,9 @@ class _TVFilesTabState extends State<TVFilesTab> {
   Future<void> _deleteFile(File file, AppLocalizations l10n) async {
     final ok = await showDialog<bool>(
       context: context,
-      builder: (_) => AlertDialog(
-        title: Text(l10n.deleteFiles),
-        content: Text(
-            '${l10n.deleteConfirmation} ${file.path.split(Platform.pathSeparator).last}?'),
-        actions: [
-          TextButton(
-              onPressed: () => Navigator.pop(context, false),
-              child: Text(l10n.cancel)),
-          TextButton(
-            onPressed: () => Navigator.pop(context, true),
-            child: Text(l10n.delete, style: const TextStyle(color: Colors.red)),
-          ),
-        ],
+      builder: (_) => _TVDeleteConfirmDialog(
+        fileName: file.path.split(Platform.pathSeparator).last,
+        l10n: l10n,
       ),
     );
     if (ok == true && mounted) {
@@ -226,23 +213,86 @@ class _TVFilesTabState extends State<TVFilesTab> {
   }
 }
 
+// ─── TV Delete Confirm Dialog ─────────────────────────────────────────────────
+
+class _TVDeleteConfirmDialog extends StatelessWidget {
+  final String fileName;
+  final AppLocalizations l10n;
+  const _TVDeleteConfirmDialog({
+    required this.fileName,
+    required this.l10n,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+    return Dialog(
+      backgroundColor: isDark ? const Color(0xFF2C2C2E) : Colors.white,
+      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
+      child: Padding(
+        padding: const EdgeInsets.all(24),
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            const Icon(Icons.delete_rounded, color: Colors.red, size: 40),
+            const SizedBox(height: 12),
+            Text(l10n.deleteFiles,
+                style:
+                    const TextStyle(fontWeight: FontWeight.bold, fontSize: 16)),
+            const SizedBox(height: 8),
+            Text('${l10n.deleteConfirmation} $fileName?',
+                textAlign: TextAlign.center,
+                style: const TextStyle(fontSize: 13)),
+            const SizedBox(height: 20),
+            Row(
+              children: [
+                Expanded(
+                  child: _TVDialogButton(
+                    label: l10n.cancel,
+                    color: Colors.grey,
+                    autofocus: true,
+                    onTap: () => Navigator.pop(context, false),
+                  ),
+                ),
+                const SizedBox(width: 12),
+                Expanded(
+                  child: _TVDialogButton(
+                    label: l10n.delete,
+                    color: Colors.red,
+                    autofocus: false,
+                    onTap: () => Navigator.pop(context, true),
+                  ),
+                ),
+              ],
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+}
+
 // ─── TV File Tile ─────────────────────────────────────────────────────────────
 
 class _TVFileTile extends StatefulWidget {
   final File file;
   final String name;
   final bool isDark;
+  final bool autofocus;
   final VoidCallback onOpen;
   final VoidCallback onOpenLocation;
   final VoidCallback onDelete;
+  final VoidCallback? onBackToSidebar;
 
   const _TVFileTile({
     required this.file,
     required this.name,
     required this.isDark,
+    required this.autofocus,
     required this.onOpen,
     required this.onOpenLocation,
     required this.onDelete,
+    this.onBackToSidebar,
   });
 
   @override
@@ -261,16 +311,23 @@ class _TVFileTileState extends State<_TVFileTile> {
   @override
   Widget build(BuildContext context) {
     final iconColor = _fileColor(widget.name);
-    final l10n = AppLocalizations.of(context);
     final color = Theme.of(context).colorScheme.primary;
 
     return Focus(
       focusNode: _focusNode,
+      autofocus: widget.autofocus,
       onKeyEvent: (_, event) {
-        if (event is KeyDownEvent &&
-            (event.logicalKey == LogicalKeyboardKey.select ||
-                event.logicalKey == LogicalKeyboardKey.enter)) {
-          _showOptions(context, l10n);
+        if (event is! KeyDownEvent) {
+          return KeyEventResult.ignored;
+        }
+
+        if (event.logicalKey == LogicalKeyboardKey.select ||
+            event.logicalKey == LogicalKeyboardKey.enter) {
+          _showOptions(context);
+          return KeyEventResult.handled;
+        }
+        if (event.logicalKey == LogicalKeyboardKey.arrowLeft) {
+          widget.onBackToSidebar?.call();
           return KeyEventResult.handled;
         }
         return KeyEventResult.ignored;
@@ -278,7 +335,7 @@ class _TVFileTileState extends State<_TVFileTile> {
       child: Builder(builder: (ctx) {
         final hasFocus = Focus.of(ctx).hasFocus;
         return GestureDetector(
-          onTap: () => _showOptions(context, l10n),
+          onTap: () => _showOptions(context),
           child: AnimatedContainer(
             duration: const Duration(milliseconds: 180),
             padding: const EdgeInsets.all(12),
@@ -355,62 +412,30 @@ class _TVFileTileState extends State<_TVFileTile> {
     );
   }
 
-  void _showOptions(BuildContext context, AppLocalizations l10n) {
+  void _showOptions(BuildContext context) {
+    final l10n = AppLocalizations.of(context);
     final isDark = Theme.of(context).brightness == Brightness.dark;
-    showModalBottomSheet(
+    final color = Theme.of(context).colorScheme.primary;
+
+    showDialog(
       context: context,
-      backgroundColor: Colors.transparent,
-      builder: (_) => SafeArea(
-        top: false,
-        child: Container(
-          margin: const EdgeInsets.fromLTRB(12, 0, 12, 12),
-          decoration: BoxDecoration(
-            color: isDark ? const Color(0xFF2C2C2E) : Colors.white,
-            borderRadius: BorderRadius.circular(24),
-          ),
-          child: Column(mainAxisSize: MainAxisSize.min, children: [
-            const SizedBox(height: 12),
-            Container(
-                width: 36,
-                height: 4,
-                decoration: BoxDecoration(
-                    color: Colors.grey.withValues(alpha: 0.3),
-                    borderRadius: BorderRadius.circular(2))),
-            const SizedBox(height: 8),
-            ListTile(
-              leading: const Icon(Icons.open_in_new_rounded),
-              title: Text(l10n.openFile),
-              onTap: () {
-                Navigator.pop(context);
-                widget.onOpen();
-              },
-              shape: RoundedRectangleBorder(
-                  borderRadius: BorderRadius.circular(12)),
-            ),
-            ListTile(
-              leading: const Icon(Icons.folder_open_rounded),
-              title: Text(l10n.openFolder),
-              onTap: () {
-                Navigator.pop(context);
-                widget.onOpenLocation();
-              },
-              shape: RoundedRectangleBorder(
-                  borderRadius: BorderRadius.circular(12)),
-            ),
-            ListTile(
-              leading: const Icon(Icons.delete_rounded, color: Colors.red),
-              title:
-                  Text(l10n.delete, style: const TextStyle(color: Colors.red)),
-              onTap: () {
-                Navigator.pop(context);
-                widget.onDelete();
-              },
-              shape: RoundedRectangleBorder(
-                  borderRadius: BorderRadius.circular(12)),
-            ),
-            const SizedBox(height: 8),
-          ]),
-        ),
+      builder: (dialogContext) => _TVFileOptionsDialog(
+        fileName: widget.name,
+        isDark: isDark,
+        color: color,
+        l10n: l10n,
+        onOpen: () {
+          Navigator.pop(dialogContext);
+          widget.onOpen();
+        },
+        onOpenLocation: () {
+          Navigator.pop(dialogContext);
+          widget.onOpenLocation();
+        },
+        onDelete: () {
+          Navigator.pop(dialogContext);
+          widget.onDelete();
+        },
       ),
     );
   }
@@ -493,5 +518,277 @@ class _TVFileTileState extends State<_TVFileTile> {
       return '${(b / 1024 / 1024).toStringAsFixed(1)} MB';
     }
     return '${(b / 1024 / 1024 / 1024).toStringAsFixed(1)} GB';
+  }
+}
+
+// ─── TV File Options Dialog ───────────────────────────────────────────────────
+// استبدال BottomSheet بـ Dialog يدعم الريموت بالكامل
+
+class _TVFileOptionsDialog extends StatelessWidget {
+  final String fileName;
+  final bool isDark;
+  final Color color;
+  final AppLocalizations l10n;
+  final VoidCallback onOpen;
+  final VoidCallback onOpenLocation;
+  final VoidCallback onDelete;
+
+  const _TVFileOptionsDialog({
+    required this.fileName,
+    required this.isDark,
+    required this.color,
+    required this.l10n,
+    required this.onOpen,
+    required this.onOpenLocation,
+    required this.onDelete,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    return Dialog(
+      backgroundColor: isDark ? const Color(0xFF2C2C2E) : Colors.white,
+      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(24)),
+      child: Padding(
+        padding: const EdgeInsets.symmetric(vertical: 20, horizontal: 16),
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Text(fileName,
+                maxLines: 1,
+                overflow: TextOverflow.ellipsis,
+                style:
+                    const TextStyle(fontWeight: FontWeight.bold, fontSize: 14)),
+            const SizedBox(height: 16),
+            _TVDialogOption(
+              icon: Icons.open_in_new_rounded,
+              label: l10n.openFile,
+              color: color,
+              autofocus: true,
+              onTap: onOpen,
+            ),
+            const SizedBox(height: 8),
+            _TVDialogOption(
+              icon: Icons.folder_open_rounded,
+              label: l10n.openFolder,
+              color: color,
+              autofocus: false,
+              onTap: onOpenLocation,
+            ),
+            const SizedBox(height: 8),
+            _TVDialogOption(
+              icon: Icons.delete_rounded,
+              label: l10n.delete,
+              color: Colors.red,
+              autofocus: false,
+              onTap: onDelete,
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+}
+
+// ─── TV Dialog Option (focusable) ─────────────────────────────────────────────
+
+class _TVDialogOption extends StatefulWidget {
+  final IconData icon;
+  final String label;
+  final Color color;
+  final bool autofocus;
+  final VoidCallback onTap;
+
+  const _TVDialogOption({
+    required this.icon,
+    required this.label,
+    required this.color,
+    required this.autofocus,
+    required this.onTap,
+  });
+
+  @override
+  State<_TVDialogOption> createState() => _TVDialogOptionState();
+}
+
+class _TVDialogOptionState extends State<_TVDialogOption> {
+  final _focusNode = FocusNode();
+
+  @override
+  void dispose() {
+    _focusNode.dispose();
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return Focus(
+      focusNode: _focusNode,
+      autofocus: widget.autofocus,
+      onKeyEvent: (_, event) {
+        if (event is KeyDownEvent &&
+            (event.logicalKey == LogicalKeyboardKey.select ||
+                event.logicalKey == LogicalKeyboardKey.enter)) {
+          widget.onTap();
+          return KeyEventResult.handled;
+        }
+        return KeyEventResult.ignored;
+      },
+      child: Builder(builder: (ctx) {
+        final hasFocus = Focus.of(ctx).hasFocus;
+        return GestureDetector(
+          onTap: widget.onTap,
+          child: AnimatedContainer(
+            duration: const Duration(milliseconds: 150),
+            padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
+            decoration: BoxDecoration(
+              color: hasFocus
+                  ? widget.color.withValues(alpha: 0.15)
+                  : widget.color.withValues(alpha: 0.05),
+              borderRadius: BorderRadius.circular(14),
+              border: hasFocus
+                  ? Border.all(color: widget.color, width: 2)
+                  : Border.all(color: widget.color.withValues(alpha: 0.15)),
+            ),
+            child: Row(children: [
+              Icon(widget.icon, color: widget.color, size: 20),
+              const SizedBox(width: 12),
+              Text(widget.label,
+                  style: TextStyle(
+                    fontSize: 14,
+                    fontWeight: FontWeight.w600,
+                    color: widget.color,
+                  )),
+            ]),
+          ),
+        );
+      }),
+    );
+  }
+}
+
+// ─── TV Dialog Button ─────────────────────────────────────────────────────────
+
+class _TVDialogButton extends StatefulWidget {
+  final String label;
+  final Color color;
+  final bool autofocus;
+  final VoidCallback onTap;
+
+  const _TVDialogButton({
+    required this.label,
+    required this.color,
+    required this.autofocus,
+    required this.onTap,
+  });
+
+  @override
+  State<_TVDialogButton> createState() => _TVDialogButtonState();
+}
+
+class _TVDialogButtonState extends State<_TVDialogButton> {
+  final _focusNode = FocusNode();
+
+  @override
+  void dispose() {
+    _focusNode.dispose();
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return Focus(
+      focusNode: _focusNode,
+      autofocus: widget.autofocus,
+      onKeyEvent: (_, event) {
+        if (event is KeyDownEvent &&
+            (event.logicalKey == LogicalKeyboardKey.select ||
+                event.logicalKey == LogicalKeyboardKey.enter)) {
+          widget.onTap();
+          return KeyEventResult.handled;
+        }
+        return KeyEventResult.ignored;
+      },
+      child: Builder(builder: (ctx) {
+        final hasFocus = Focus.of(ctx).hasFocus;
+        return GestureDetector(
+          onTap: widget.onTap,
+          child: AnimatedContainer(
+            duration: const Duration(milliseconds: 150),
+            padding: const EdgeInsets.symmetric(vertical: 12),
+            decoration: BoxDecoration(
+              color: hasFocus
+                  ? widget.color.withValues(alpha: 0.15)
+                  : widget.color.withValues(alpha: 0.06),
+              borderRadius: BorderRadius.circular(12),
+              border: hasFocus
+                  ? Border.all(color: widget.color, width: 2)
+                  : Border.all(color: widget.color.withValues(alpha: 0.2)),
+            ),
+            child: Center(
+              child: Text(widget.label,
+                  style: TextStyle(
+                    fontSize: 14,
+                    fontWeight: FontWeight.w600,
+                    color: widget.color,
+                  )),
+            ),
+          ),
+        );
+      }),
+    );
+  }
+}
+
+// ─── TV Focusable Refresh Button ──────────────────────────────────────────────
+
+class _TVFocusableRefreshButton extends StatefulWidget {
+  final VoidCallback onTap;
+  const _TVFocusableRefreshButton({required this.onTap});
+
+  @override
+  State<_TVFocusableRefreshButton> createState() =>
+      _TVFocusableRefreshButtonState();
+}
+
+class _TVFocusableRefreshButtonState extends State<_TVFocusableRefreshButton> {
+  final _focusNode = FocusNode();
+
+  @override
+  void dispose() {
+    _focusNode.dispose();
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    const color = Color(0xFFFF9500);
+    return Focus(
+      focusNode: _focusNode,
+      onKeyEvent: (_, event) {
+        if (event is KeyDownEvent &&
+            (event.logicalKey == LogicalKeyboardKey.select ||
+                event.logicalKey == LogicalKeyboardKey.enter)) {
+          widget.onTap();
+          return KeyEventResult.handled;
+        }
+        return KeyEventResult.ignored;
+      },
+      child: Builder(builder: (ctx) {
+        final hasFocus = Focus.of(ctx).hasFocus;
+        return GestureDetector(
+          onTap: widget.onTap,
+          child: AnimatedContainer(
+            duration: const Duration(milliseconds: 150),
+            padding: const EdgeInsets.all(8),
+            decoration: BoxDecoration(
+              color: color.withValues(alpha: hasFocus ? 0.25 : 0.12),
+              borderRadius: BorderRadius.circular(12),
+              border: hasFocus ? Border.all(color: color, width: 2) : null,
+            ),
+            child: const Icon(Icons.refresh_rounded, color: color, size: 22),
+          ),
+        );
+      }),
+    );
   }
 }

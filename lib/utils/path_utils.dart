@@ -70,7 +70,9 @@ class PathUtils {
   /// This method is Google Play compliant — no MANAGE_EXTERNAL_STORAGE needed.
   static Future<String?> saveToPublicDownloads(
       String fileName, String tempFilePath) async {
-    if (!Platform.isAndroid) return null;
+    if (!Platform.isAndroid) {
+      return null;
+    }
     try {
       final category = _getCategory(fileName);
       final result = await _channel.invokeMethod<String>('saveToDownloads', {
