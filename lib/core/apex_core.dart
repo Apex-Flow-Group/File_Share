@@ -2,8 +2,6 @@ import 'dart:async';
 import 'dart:io';
 
 import 'package:flutter/foundation.dart';
-import 'package:nearby_connections/nearby_connections.dart';
-
 import 'package:shared_preferences/shared_preferences.dart';
 
 import '../managers/device_manager.dart';
@@ -166,9 +164,7 @@ class ApexCore {
     _cleanupTimer?.cancel();
     await _httpServer?.close();
     if (_isAndroid) {
-      await Nearby().stopAdvertising();
-      await Nearby().stopDiscovery();
-      await Nearby().stopAllEndpoints();
+      await _nearby.stopAll();
     }
     await _discoveryService?.stop();
     _discoveryService = null;
@@ -258,12 +254,7 @@ class ApexCore {
   // ─── Nearby incoming connection ────────────────────────────────────────────
 
   void handleIncomingConnectionInitiated(String endpointId) async {
-    await Nearby().acceptConnection(
-      endpointId,
-      onPayLoadRecieved: _nearby.onPayloadReceived,
-      onPayloadTransferUpdate: _nearby.onPayloadTransferUpdate,
-    );
-    _nearby.connectedEndpoints.add(endpointId);
+    await _nearby.acceptConnection(endpointId);
     ApexLogger.instance
         .log('NEARBY', '✅ Accepted: $endpointId', LogLevel.success);
   }

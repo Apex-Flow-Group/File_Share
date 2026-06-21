@@ -1,6 +1,5 @@
 import 'dart:math';
 
-import 'package:file_picker/file_picker.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 
@@ -11,15 +10,18 @@ import '../../screens/apps_selection_screen.dart';
 import '../../services/desktop_notification_service.dart';
 import '../../services/transfer_progress_service.dart';
 import '../connection_widget.dart';
+import '../tv_file_browser.dart';
 
 class TVSendTab extends StatefulWidget {
   final List<Device> devices;
   final bool isRunning;
   final VoidCallback? onBackToSidebar;
+  final FocusNode? contentFocusNode;
   const TVSendTab({
     required this.devices,
     required this.isRunning,
     this.onBackToSidebar,
+    this.contentFocusNode,
     super.key,
   });
 
@@ -177,6 +179,7 @@ class _TVSendTabState extends State<TVSendTab> with TickerProviderStateMixin {
                   device: device,
                   isGloballyBusy: isTransferring && !isTarget,
                   autofocus: i == 0,
+                  contentFocusNode: i == 0 ? widget.contentFocusNode : null,
                   onBackToSidebar: widget.onBackToSidebar,
                 );
               },
@@ -261,11 +264,13 @@ class _TVDeviceCard extends StatefulWidget {
   final Device device;
   final bool isGloballyBusy;
   final bool autofocus;
+  final FocusNode? contentFocusNode;
   final VoidCallback? onBackToSidebar;
   const _TVDeviceCard({
     required this.device,
     this.isGloballyBusy = false,
     this.autofocus = false,
+    this.contentFocusNode,
     this.onBackToSidebar,
   });
 
@@ -274,11 +279,19 @@ class _TVDeviceCard extends StatefulWidget {
 }
 
 class _TVDeviceCardState extends State<_TVDeviceCard> {
-  final _focusNode = FocusNode();
+  late final FocusNode _focusNode;
+
+  @override
+  void initState() {
+    super.initState();
+    _focusNode = widget.contentFocusNode ?? FocusNode();
+  }
 
   @override
   void dispose() {
-    _focusNode.dispose();
+    if (widget.contentFocusNode == null) {
+      _focusNode.dispose();
+    }
     super.dispose();
   }
 
@@ -298,7 +311,11 @@ class _TVDeviceCardState extends State<_TVDeviceCard> {
           _showSendOptions(context);
           return KeyEventResult.handled;
         }
-        if (event.logicalKey == LogicalKeyboardKey.arrowLeft) {
+        final isRtl = Directionality.of(context) == TextDirection.rtl;
+        final toSidebarKey = isRtl
+            ? LogicalKeyboardKey.arrowRight
+            : LogicalKeyboardKey.arrowLeft;
+        if (event.logicalKey == toSidebarKey) {
           widget.onBackToSidebar?.call();
           return KeyEventResult.handled;
         }
@@ -364,13 +381,10 @@ class _TVDeviceCardState extends State<_TVDeviceCard> {
   }
 
   Future<void> _sendFile() async {
-    final result = await FilePicker.platform.pickFiles(allowMultiple: true);
-    if (result == null || result.files.isEmpty || !mounted) {
+    final paths = await showTVFileBrowser(context);
+    if (paths == null || paths.isEmpty || !mounted) {
       return;
     }
-
-    final paths =
-        result.files.where((f) => f.path != null).map((f) => f.path!).toList();
 
     final ok = await ApexCore.instance.sendFiles(paths, widget.device);
     if (mounted) {

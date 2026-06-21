@@ -1,17 +1,21 @@
+import 'dart:async';
 import 'dart:io';
 
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 
+import '../../core/apex_core.dart';
 import '../../l10n/generated/app_localizations.dart';
 import '../../services/file_operations_service.dart';
 
 class TVFilesTab extends StatefulWidget {
   final Future<List<FileSystemEntity>> Function() getReceivedFiles;
   final VoidCallback? onBackToSidebar;
+  final FocusNode? contentFocusNode;
   const TVFilesTab({
     required this.getReceivedFiles,
     this.onBackToSidebar,
+    this.contentFocusNode,
     super.key,
   });
 
@@ -23,11 +27,21 @@ class _TVFilesTabState extends State<TVFilesTab> {
   List<FileSystemEntity>? _files;
   bool _isLoading = false;
   final _fileOpsService = FileOperationsService();
+  StreamSubscription? _fileReceivedSub;
 
   @override
   void initState() {
     super.initState();
     _load();
+    _fileReceivedSub = ApexCore.instance.fileReceivedStream.listen((_) {
+      _load();
+    });
+  }
+
+  @override
+  void dispose() {
+    _fileReceivedSub?.cancel();
+    super.dispose();
   }
 
   Future<void> _load() async {
@@ -162,6 +176,7 @@ class _TVFilesTabState extends State<TVFilesTab> {
           name: name,
           isDark: isDark,
           autofocus: i == 0,
+          contentFocusNode: i == 0 ? widget.contentFocusNode : null,
           onOpen: () => _openFile(file),
           onOpenLocation: () => _openLocation(file),
           onDelete: () => _deleteFile(file, l10n),
@@ -283,6 +298,7 @@ class _TVFileTile extends StatefulWidget {
   final VoidCallback onOpenLocation;
   final VoidCallback onDelete;
   final VoidCallback? onBackToSidebar;
+  final FocusNode? contentFocusNode;
 
   const _TVFileTile({
     required this.file,
@@ -293,6 +309,7 @@ class _TVFileTile extends StatefulWidget {
     required this.onOpenLocation,
     required this.onDelete,
     this.onBackToSidebar,
+    this.contentFocusNode,
   });
 
   @override
@@ -300,11 +317,19 @@ class _TVFileTile extends StatefulWidget {
 }
 
 class _TVFileTileState extends State<_TVFileTile> {
-  final _focusNode = FocusNode();
+  late final FocusNode _focusNode;
+
+  @override
+  void initState() {
+    super.initState();
+    _focusNode = widget.contentFocusNode ?? FocusNode();
+  }
 
   @override
   void dispose() {
-    _focusNode.dispose();
+    if (widget.contentFocusNode == null) {
+      _focusNode.dispose();
+    }
     super.dispose();
   }
 
@@ -326,7 +351,11 @@ class _TVFileTileState extends State<_TVFileTile> {
           _showOptions(context);
           return KeyEventResult.handled;
         }
-        if (event.logicalKey == LogicalKeyboardKey.arrowLeft) {
+        final isRtl = Directionality.of(context) == TextDirection.rtl;
+        final toSidebarKey = isRtl
+            ? LogicalKeyboardKey.arrowRight
+            : LogicalKeyboardKey.arrowLeft;
+        if (event.logicalKey == toSidebarKey) {
           widget.onBackToSidebar?.call();
           return KeyEventResult.handled;
         }
