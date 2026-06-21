@@ -77,3 +77,6 @@ ico.png
 
 # Old docs folder
 /docs/
+key.properties
+android/key.properties
+android/*.jks

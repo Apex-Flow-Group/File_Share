@@ -287,14 +287,18 @@ class ApexCore {
           final name = iface.name.toLowerCase();
           if (name.contains('wlan') || name.contains('wifi') || name.contains('wl')) {
             for (final addr in iface.addresses) {
-              if (!addr.isLoopback) return addr.address;
+              if (!addr.isLoopback) {
+                return addr.address;
+              }
             }
           }
         }
         // fallback لأي interface آخر
         for (final iface in interfaces) {
           for (final addr in iface.addresses) {
-            if (!addr.isLoopback) return addr.address;
+            if (!addr.isLoopback) {
+              return addr.address;
+            }
           }
         }
         return '127.0.0.1';
@@ -327,7 +331,9 @@ class ApexCore {
         }
         for (final iface in interfaces) {
           for (final addr in iface.addresses) {
-            if (!addr.isLoopback) return addr.address;
+            if (!addr.isLoopback) {
+              return addr.address;
+            }
           }
         }
       }

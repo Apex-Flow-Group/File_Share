@@ -41,10 +41,14 @@ class _TVTourScreenState extends State<TVTourScreen> {
   }
 
   Future<void> _start() async {
-    if (!_agreed) return;
+    if (!_agreed) {
+      return;
+    }
     await PermissionManager.requestAll();
     await widget.settings.markIntroAsSeen();
-    if (!mounted) return;
+    if (!mounted) {
+      return;
+    }
     await Navigator.of(context).pushReplacement(
       PageRouteBuilder(
         pageBuilder: (_, __, ___) => TVHomeScreen(settings: widget.settings),
@@ -71,7 +75,9 @@ class _TVTourScreenState extends State<TVTourScreen> {
             child: Focus(
               focusNode: _scrollFocus,
               onKeyEvent: (_, event) {
-                if (event is! KeyDownEvent) return KeyEventResult.ignored;
+                if (event is! KeyDownEvent) {
+                  return KeyEventResult.ignored;
+                }
                 if (event.logicalKey == LogicalKeyboardKey.arrowDown) {
                   _scrollCtrl.animateTo(
                     (_scrollCtrl.offset + 120).clamp(
@@ -196,11 +202,15 @@ class _TVTourScreenState extends State<TVTourScreen> {
                 Focus(
                   focusNode: _checkFocus,
                   onKeyEvent: (_, event) {
-                    if (event is! KeyDownEvent) return KeyEventResult.ignored;
+                    if (event is! KeyDownEvent) {
+                      return KeyEventResult.ignored;
+                    }
                     if (event.logicalKey == LogicalKeyboardKey.select ||
                         event.logicalKey == LogicalKeyboardKey.enter) {
                       setState(() => _agreed = !_agreed);
-                      if (_agreed) _startFocus.requestFocus();
+                      if (_agreed) {
+                        _startFocus.requestFocus();
+                      }
                       return KeyEventResult.handled;
                     }
                     if (event.logicalKey == LogicalKeyboardKey.arrowDown) {
@@ -218,7 +228,9 @@ class _TVTourScreenState extends State<TVTourScreen> {
                     return GestureDetector(
                       onTap: () {
                         setState(() => _agreed = !_agreed);
-                        if (_agreed) _startFocus.requestFocus();
+                        if (_agreed) {
+                          _startFocus.requestFocus();
+                        }
                       },
                       child: AnimatedContainer(
                         duration: const Duration(milliseconds: 180),
@@ -281,7 +293,9 @@ class _TVTourScreenState extends State<TVTourScreen> {
                 Focus(
                   focusNode: _startFocus,
                   onKeyEvent: (_, event) {
-                    if (event is! KeyDownEvent) return KeyEventResult.ignored;
+                    if (event is! KeyDownEvent) {
+                      return KeyEventResult.ignored;
+                    }
                     if (event.logicalKey == LogicalKeyboardKey.select ||
                         event.logicalKey == LogicalKeyboardKey.enter) {
                       _start();
