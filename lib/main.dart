@@ -9,6 +9,7 @@ import 'screens/home_screen.dart';
 import 'screens/intro_screen.dart';
 import 'screens/splash_screen.dart';
 import 'screens/tv_home_screen.dart';
+import 'screens/tv_intro_screen.dart';
 import 'services/desktop_notification_service.dart';
 import 'services/settings_service.dart';
 import 'utils/platform_detector.dart';
@@ -100,7 +101,9 @@ class FileShareApp extends StatelessWidget {
 
   Widget _buildHome(SettingsService settings) {
     if (PlatformDetector.instance.isTV) {
-      return _PermissionGate(child: TVHomeScreen(settings: settings));
+      return settings.hasSeenIntro
+          ? _PermissionGate(child: TVHomeScreen(settings: settings))
+          : TVIntroScreen(settings: settings);
     }
     return settings.hasSeenIntro
         ? _PermissionGate(child: HomeScreen(settings: settings))
@@ -134,7 +137,9 @@ class _PermissionGateState extends State<_PermissionGate> {
   @override
   Widget build(BuildContext context) {
     if (!_done) {
-      return const Scaffold(body: SizedBox.shrink());
+      return const Scaffold(
+        body: Center(child: CircularProgressIndicator()),
+      );
     }
     return widget.child;
   }
