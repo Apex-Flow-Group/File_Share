@@ -276,8 +276,29 @@ class ApexCore {
 
   Future<String> _getLocalIp() async {
     try {
-      final socket = await RawDatagramSocket.bind(InternetAddress.anyIPv4, 0);
-      socket.close();
+      // Android و iOS — استخدم NetworkInterface مباشرة
+      if (!kIsWeb && (Platform.isAndroid || Platform.isIOS)) {
+        final interfaces = await NetworkInterface.list(
+          includeLinkLocal: false,
+          type: InternetAddressType.IPv4,
+        );
+        // أولوية لـ wlan/wifi
+        for (final iface in interfaces) {
+          final name = iface.name.toLowerCase();
+          if (name.contains('wlan') || name.contains('wifi') || name.contains('wl')) {
+            for (final addr in iface.addresses) {
+              if (!addr.isLoopback) return addr.address;
+            }
+          }
+        }
+        // fallback لأي interface آخر
+        for (final iface in interfaces) {
+          for (final addr in iface.addresses) {
+            if (!addr.isLoopback) return addr.address;
+          }
+        }
+        return '127.0.0.1';
+      }
 
       if (!kIsWeb &&
           (Platform.isWindows || Platform.isLinux || Platform.isMacOS)) {
@@ -306,28 +327,7 @@ class ApexCore {
         }
         for (final iface in interfaces) {
           for (final addr in iface.addresses) {
-            if (!addr.isLoopback) {
-              return addr.address;
-            }
-          }
-        }
-      }
-
-      try {
-        final s = await Socket.connect('8.8.8.8', 53,
-            timeout: const Duration(seconds: 2));
-        final ip = s.address.address;
-        s.destroy();
-        if (!ip.startsWith('127.')) {
-          return ip;
-        }
-      } catch (_) {}
-
-      for (final iface in await NetworkInterface.list(
-          includeLinkLocal: false, type: InternetAddressType.IPv4)) {
-        for (final addr in iface.addresses) {
-          if (!addr.isLoopback && addr.type == InternetAddressType.IPv4) {
-            return addr.address;
+            if (!addr.isLoopback) return addr.address;
           }
         }
       }
