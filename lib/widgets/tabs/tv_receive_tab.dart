@@ -10,10 +10,12 @@ class TVReceiveTab extends StatefulWidget {
   final Device? localDevice;
   final bool isRunning;
   final VoidCallback? onBackToSidebar;
+  final FocusNode? contentFocusNode;
   const TVReceiveTab({
     required this.localDevice,
     required this.isRunning,
     this.onBackToSidebar,
+    this.contentFocusNode,
     super.key,
   });
 
@@ -26,12 +28,13 @@ class _TVReceiveTabState extends State<TVReceiveTab>
   bool _isReceiving = false;
   bool _cancelledByUser = false;
   late AnimationController _pulseAnim;
-  final FocusNode _copyFocus = FocusNode(debugLabel: 'copy-ip');
+  late final FocusNode _copyFocus;
   final FocusNode _cancelFocus = FocusNode(debugLabel: 'cancel-receive');
 
   @override
   void initState() {
     super.initState();
+    _copyFocus = widget.contentFocusNode ?? FocusNode(debugLabel: 'copy-ip');
     _pulseAnim = AnimationController(
       vsync: this,
       duration: const Duration(milliseconds: 1400),
@@ -56,7 +59,9 @@ class _TVReceiveTabState extends State<TVReceiveTab>
   @override
   void dispose() {
     _pulseAnim.dispose();
-    _copyFocus.dispose();
+    if (widget.contentFocusNode == null) {
+      _copyFocus.dispose();
+    }
     _cancelFocus.dispose();
     super.dispose();
   }

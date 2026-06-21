@@ -10,6 +10,7 @@ import '../services/settings_service.dart';
 import '../widgets/tabs/tv_files_tab.dart';
 import '../widgets/tabs/tv_receive_tab.dart';
 import '../widgets/tabs/tv_send_tab.dart';
+import '../widgets/tv_details_panel.dart';
 
 class TVHomeScreen extends StatefulWidget {
   final SettingsService settings;
@@ -21,81 +22,129 @@ class TVHomeScreen extends StatefulWidget {
 
 class _TVHomeScreenState extends State<TVHomeScreen> {
   int _selectedIndex = 0;
-  final FocusNode _sendFocus = FocusNode(debugLabel: 'nav-send');
-  final FocusNode _receiveFocus = FocusNode(debugLabel: 'nav-receive');
-  final FocusNode _filesFocus = FocusNode(debugLabel: 'nav-files');
-  final FocusNode _contentFocus = FocusNode(debugLabel: 'content-area');
+
+  // ─── Focus nodes — كلها محكومة يدوياً ────────────────────────────────────
+  final FocusNode _sendFocus     = FocusNode(debugLabel: 'nav-send');
+  final FocusNode _receiveFocus  = FocusNode(debugLabel: 'nav-receive');
+  final FocusNode _filesFocus    = FocusNode(debugLabel: 'nav-files');
+  final FocusNode _settingsFocus = FocusNode(debugLabel: 'nav-settings');
+  final FocusNode _refreshFocus  = FocusNode(debugLabel: 'nav-refresh');
+
+  // FocusNode لأول عنصر في كل tab
+  final FocusNode _sendContentFocus    = FocusNode(debugLabel: 'send-content');
+  final FocusNode _receiveContentFocus = FocusNode(debugLabel: 'receive-content');
+  final FocusNode _filesContentFocus   = FocusNode(debugLabel: 'files-content');
+
+  // ترتيب عناصر الـ Sidebar للتنقل بالأسهم
+  late final List<FocusNode> _sidebarNodes;
+
   final List<Device> _devices = [];
   Device? _localDevice;
   bool _isRunning = false;
-  bool _focusInContent = false;
 
   @override
   void initState() {
     super.initState();
+    _sidebarNodes = [_sendFocus, _receiveFocus, _filesFocus, _settingsFocus, _refreshFocus];
     _initializeSystem();
-    WidgetsBinding.instance
-        .addPostFrameCallback((_) => _sendFocus.requestFocus());
+    WidgetsBinding.instance.addPostFrameCallback((_) => _sendFocus.requestFocus());
   }
 
   Future<void> _initializeSystem() async {
     final core = ApexCore.instance;
-
     core.devicesStream.listen((devices) {
       if (mounted) {
-        setState(() {
-          _devices.clear();
-          _devices.addAll(devices);
-        });
+        setState(() { _devices..clear()..addAll(devices); });
       }
     });
-
     core.fileReceivedStream.listen((e) {
-      DesktopNotificationService.instance
-          .showFileReceived(e.fileName, e.fromDevice);
+      DesktopNotificationService.instance.showFileReceived(e.fileName, e.fromDevice);
       if (mounted) {
         setState(() => _selectedIndex = 2);
       }
     });
-
     setState(() {
       _localDevice = core.localDevice;
       _isRunning = core.isRunning;
     });
-
     await core.start();
     if (mounted) {
       setState(() => _isRunning = core.isRunning);
     }
   }
 
+  Future<void> _restartCore() async {
+    await ApexCore.instance.stop();
+    await ApexCore.instance.start();
+    if (mounted) {
+      setState(() => _isRunning = ApexCore.instance.isRunning);
+    }
+  }
+
   @override
   void dispose() {
-    _sendFocus.dispose();
-    _receiveFocus.dispose();
-    _filesFocus.dispose();
-    _contentFocus.dispose();
+    for (final n in [..._sidebarNodes, _sendContentFocus, _receiveContentFocus, _filesContentFocus]) {
+      n.dispose();
+    }
     super.dispose();
   }
 
   void _moveToContent() {
-    setState(() => _focusInContent = true);
-    _contentFocus.requestFocus();
+    switch (_selectedIndex) {
+      case 0: _sendContentFocus.requestFocus();
+      case 1: _receiveContentFocus.requestFocus();
+      case 2: _filesContentFocus.requestFocus();
+      default: _sendContentFocus.requestFocus();
+    }
   }
 
   void _moveToSidebar() {
-    setState(() => _focusInContent = false);
     switch (_selectedIndex) {
-      case 0:
-        _sendFocus.requestFocus();
-        break;
-      case 1:
-        _receiveFocus.requestFocus();
-        break;
-      case 2:
-        _filesFocus.requestFocus();
-        break;
+      case 0: _sendFocus.requestFocus();
+      case 1: _receiveFocus.requestFocus();
+      case 2: _filesFocus.requestFocus();
+      default: _sendFocus.requestFocus();
     }
+  }
+
+  // تنقل الـ Sidebar بالأسهم — مغلق تماماً لا يخرج
+  // RTL: يسار → محتوى، يمين → مسدود
+  // LTR: يمين → محتوى، يسار → مسدود
+  KeyEventResult _handleSidebarKey(FocusNode current, KeyEvent event) {
+    if (event is! KeyDownEvent) {
+      return KeyEventResult.ignored;
+    }
+
+    final isRtl = Directionality.of(context) == TextDirection.rtl;
+    final toContentKey = isRtl
+        ? LogicalKeyboardKey.arrowLeft
+        : LogicalKeyboardKey.arrowRight;
+    final blockedKey = isRtl
+        ? LogicalKeyboardKey.arrowRight
+        : LogicalKeyboardKey.arrowLeft;
+
+    final idx = _sidebarNodes.indexOf(current);
+
+    if (event.logicalKey == LogicalKeyboardKey.arrowDown) {
+      if (idx < _sidebarNodes.length - 1) {
+        _sidebarNodes[idx + 1].requestFocus();
+      }
+      return KeyEventResult.handled;
+    }
+    if (event.logicalKey == LogicalKeyboardKey.arrowUp) {
+      if (idx > 0) {
+        _sidebarNodes[idx - 1].requestFocus();
+      }
+      return KeyEventResult.handled;
+    }
+    if (event.logicalKey == toContentKey) {
+      _moveToContent();
+      return KeyEventResult.handled;
+    }
+    if (event.logicalKey == blockedKey) {
+      return KeyEventResult.handled; // لا يخرج للخارج
+    }
+    return KeyEventResult.ignored;
   }
 
   @override
@@ -108,24 +157,16 @@ class _TVHomeScreenState extends State<TVHomeScreen> {
       canPop: false,
       onPopInvokedWithResult: (didPop, _) async {
         if (!didPop) {
-          // إذا كان الفوكس في المحتوى، ارجع للشريط الجانبي أولاً
-          if (_focusInContent) {
-            _moveToSidebar();
-            return;
-          }
           final shouldExit = await showDialog<bool>(
             context: context,
             builder: (_) => AlertDialog(
               title: Text(l10n.exitApp),
               content: Text(l10n.exitConfirmation),
               actions: [
-                TextButton(
-                    onPressed: () => Navigator.pop(context, false),
-                    child: Text(l10n.cancel)),
+                TextButton(onPressed: () => Navigator.pop(context, false), child: Text(l10n.cancel)),
                 TextButton(
                   onPressed: () => Navigator.pop(context, true),
-                  child: Text(l10n.exit,
-                      style: const TextStyle(color: Colors.red)),
+                  child: Text(l10n.exit, style: const TextStyle(color: Colors.red)),
                 ),
               ],
             ),
@@ -136,160 +177,93 @@ class _TVHomeScreenState extends State<TVHomeScreen> {
         }
       },
       child: Scaffold(
-        body: Row(
-          children: [
-            // Sidebar
-            FocusTraversalGroup(
-              policy: OrderedTraversalPolicy(),
-              child: Container(
-                width: 260,
-                decoration: BoxDecoration(
-                  color: isDark
-                      ? const Color(0xFF1C1C1E)
-                      : const Color(0xFFF5F5F7),
-                  border: Border(
-                    right: BorderSide(
-                      color: isDark
-                          ? Colors.white.withValues(alpha: 0.06)
-                          : Colors.black.withValues(alpha: 0.06),
+        body: Row(children: [
+          // ─── Sidebar ──────────────────────────────────────────────────
+          Container(
+            width: 260,
+            decoration: BoxDecoration(
+              color: isDark ? const Color(0xFF1C1C1E) : const Color(0xFFF5F5F7),
+              border: Border(right: BorderSide(
+                color: isDark
+                    ? Colors.white.withValues(alpha: 0.06)
+                    : Colors.black.withValues(alpha: 0.06),
+              )),
+            ),
+            child: SafeArea(
+              child: Column(crossAxisAlignment: CrossAxisAlignment.stretch, children: [
+                // App name
+                Padding(
+                  padding: const EdgeInsets.fromLTRB(20, 28, 20, 16),
+                  child: Row(children: [
+                    ClipRRect(
+                      borderRadius: BorderRadius.circular(12),
+                      child: Image.asset(
+                        'assets/images/ico.png',
+                        width: 40,
+                        height: 40,
+                        fit: BoxFit.cover,
+                      ),
                     ),
-                  ),
+                    const SizedBox(width: 12),
+                    Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+                      Text('Apex Transfer', style: TextStyle(
+                        fontWeight: FontWeight.bold, fontSize: 17,
+                        color: isDark ? Colors.white : Colors.black,
+                      )),
+                      Text('TV Mode', style: TextStyle(fontSize: 11, color: color)),
+                    ]),
+                  ]),
                 ),
-                child: SafeArea(
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.stretch,
-                    children: [
-                      // App name
-                      Padding(
-                        padding: const EdgeInsets.fromLTRB(20, 28, 20, 20),
-                        child: Row(children: [
-                          Container(
-                            width: 40,
-                            height: 40,
-                            decoration: BoxDecoration(
-                              color: color.withValues(alpha: 0.15),
-                              borderRadius: BorderRadius.circular(12),
-                            ),
-                            child: Icon(Icons.share_rounded,
-                                color: color, size: 22),
-                          ),
-                          const SizedBox(width: 12),
-                          Column(
-                            crossAxisAlignment: CrossAxisAlignment.start,
-                            children: [
-                              Text('Apex Transfer',
-                                  style: TextStyle(
-                                    fontWeight: FontWeight.bold,
-                                    fontSize: 17,
-                                    color: isDark ? Colors.white : Colors.black,
-                                  )),
-                              Text('TV Mode',
-                                  style: TextStyle(fontSize: 11, color: color)),
-                            ],
-                          ),
-                        ]),
-                      ),
-                      // Status
-                      Padding(
-                        padding: const EdgeInsets.symmetric(horizontal: 16),
-                        child: Container(
-                          padding: const EdgeInsets.symmetric(
-                              horizontal: 10, vertical: 6),
-                          decoration: BoxDecoration(
-                            color: _isRunning
-                                ? Colors.green.withValues(alpha: 0.12)
-                                : Colors.grey.withValues(alpha: 0.12),
-                            borderRadius: BorderRadius.circular(10),
-                          ),
-                          child: Row(mainAxisSize: MainAxisSize.min, children: [
-                            Container(
-                              width: 7,
-                              height: 7,
-                              decoration: BoxDecoration(
-                                color: _isRunning ? Colors.green : Colors.grey,
-                                shape: BoxShape.circle,
-                              ),
-                            ),
-                            const SizedBox(width: 6),
-                            Text(
-                              _isRunning ? 'Online' : 'Offline',
-                              style: TextStyle(
-                                fontSize: 12,
-                                fontWeight: FontWeight.w600,
-                                color: _isRunning ? Colors.green : Colors.grey,
-                              ),
-                            ),
-                          ]),
-                        ),
-                      ),
-                      const SizedBox(height: 20),
-                      // Nav items
-                      _TVNavItem(
-                          icon: Icons.send_rounded,
-                          label: l10n.send,
-                          selected: _selectedIndex == 0,
-                          focusNode: _sendFocus,
-                          onSelect: () => setState(() => _selectedIndex = 0),
-                          onMoveToContent: _moveToContent,
-                          nextFocus: _receiveFocus,
-                          prevFocus: null),
-                      _TVNavItem(
-                          icon: Icons.smartphone_rounded,
-                          label: l10n.receive,
-                          selected: _selectedIndex == 1,
-                          focusNode: _receiveFocus,
-                          onSelect: () => setState(() => _selectedIndex = 1),
-                          onMoveToContent: _moveToContent,
-                          nextFocus: _filesFocus,
-                          prevFocus: _sendFocus),
-                      _TVNavItem(
-                          icon: Icons.folder_rounded,
-                          label: l10n.files,
-                          selected: _selectedIndex == 2,
-                          focusNode: _filesFocus,
-                          onSelect: () => setState(() => _selectedIndex = 2),
-                          onMoveToContent: _moveToContent,
-                          nextFocus: null,
-                          prevFocus: _receiveFocus),
-                      const Spacer(),
-                      Padding(
-                        padding: const EdgeInsets.fromLTRB(16, 0, 16, 24),
-                        child: Text(
-                          l10n.pressMenuForSettings,
-                          style: TextStyle(
-                              fontSize: 11,
-                              color: isDark ? Colors.white38 : Colors.black38),
-                          textAlign: TextAlign.center,
-                        ),
-                      ),
-                    ],
-                  ),
+                const SizedBox(height: 8),
+                // ─── Nav items ─────────────────────────────────────────
+                _TVNavItem(
+                  icon: Icons.send_rounded, label: l10n.send,
+                  selected: _selectedIndex == 0, focusNode: _sendFocus,
+                  onSelect: () => setState(() => _selectedIndex = 0),
+                  onMoveToContent: _moveToContent,
+                  onKey: (e) => _handleSidebarKey(_sendFocus, e),
                 ),
-              ),
+                _TVNavItem(
+                  icon: Icons.smartphone_rounded, label: l10n.receive,
+                  selected: _selectedIndex == 1, focusNode: _receiveFocus,
+                  onSelect: () => setState(() => _selectedIndex = 1),
+                  onMoveToContent: _moveToContent,
+                  onKey: (e) => _handleSidebarKey(_receiveFocus, e),
+                ),
+                _TVNavItem(
+                  icon: Icons.folder_rounded, label: l10n.files,
+                  selected: _selectedIndex == 2, focusNode: _filesFocus,
+                  onSelect: () => setState(() => _selectedIndex = 2),
+                  onMoveToContent: _moveToContent,
+                  onKey: (e) => _handleSidebarKey(_filesFocus, e),
+                ),
+                const Padding(
+                  padding: EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+                  child: Divider(height: 1),
+                ),
+                // ─── Settings زر ──────────────────────────────────────
+                _TVNavItem(
+                  icon: Icons.settings_rounded, label: l10n.settings,
+                  selected: false, focusNode: _settingsFocus,
+                  onSelect: () => showTVDetailsPanel(context, widget.settings),
+                  onMoveToContent: () {},
+                  onKey: (e) => _handleSidebarKey(_settingsFocus, e),
+                ),
+                // ─── Refresh زر ───────────────────────────────────────
+                _TVNavItem(
+                  icon: Icons.refresh_rounded, label: l10n.restartingSystem,
+                  selected: false, focusNode: _refreshFocus,
+                  onSelect: _restartCore,
+                  onMoveToContent: () {},
+                  onKey: (e) => _handleSidebarKey(_refreshFocus, e),
+                ),
+                const Spacer(),
+              ]),
             ),
-            // Content
-            Expanded(
-              child: FocusTraversalGroup(
-                policy: ReadingOrderTraversalPolicy(),
-                child: Focus(
-                  focusNode: _contentFocus,
-                  onKeyEvent: (_, event) {
-                    if (event is! KeyDownEvent) {
-                      return KeyEventResult.ignored;
-                    }
-                    // ArrowLeft يعود للشريط الجانبي
-                    if (event.logicalKey == LogicalKeyboardKey.arrowLeft) {
-                      _moveToSidebar();
-                      return KeyEventResult.handled;
-                    }
-                    return KeyEventResult.ignored;
-                  },
-                  child: _buildContent(),
-                ),
-              ),
-            ),
-          ],
-        ),
+          ),
+          // ─── Content ──────────────────────────────────────
+          Expanded(child: _buildContent()),
+        ]),
       ),
     );
   }
@@ -298,26 +272,27 @@ class _TVHomeScreenState extends State<TVHomeScreen> {
     switch (_selectedIndex) {
       case 0:
         return TVSendTab(
-          devices: _devices,
-          isRunning: _isRunning,
+          devices: _devices, isRunning: _isRunning,
           onBackToSidebar: _moveToSidebar,
+          contentFocusNode: _sendContentFocus,
         );
       case 1:
         return TVReceiveTab(
-          localDevice: _localDevice,
-          isRunning: _isRunning,
+          localDevice: _localDevice, isRunning: _isRunning,
           onBackToSidebar: _moveToSidebar,
+          contentFocusNode: _receiveContentFocus,
         );
       default:
         return TVFilesTab(
           getReceivedFiles: () => FileStorageService().getReceivedFiles(),
           onBackToSidebar: _moveToSidebar,
+          contentFocusNode: _filesContentFocus,
         );
     }
   }
 }
 
-// TV Nav Item
+// ─── TV Nav Item ──────────────────────────────────────────────────────────────
 
 class _TVNavItem extends StatelessWidget {
   final IconData icon;
@@ -326,8 +301,7 @@ class _TVNavItem extends StatelessWidget {
   final FocusNode focusNode;
   final VoidCallback onSelect;
   final VoidCallback onMoveToContent;
-  final FocusNode? nextFocus;
-  final FocusNode? prevFocus;
+  final KeyEventResult Function(KeyEvent) onKey;
 
   const _TVNavItem({
     required this.icon,
@@ -336,8 +310,7 @@ class _TVNavItem extends StatelessWidget {
     required this.focusNode,
     required this.onSelect,
     required this.onMoveToContent,
-    required this.nextFocus,
-    required this.prevFocus,
+    required this.onKey,
   });
 
   @override
@@ -351,35 +324,20 @@ class _TVNavItem extends StatelessWidget {
         if (event is! KeyDownEvent) {
           return KeyEventResult.ignored;
         }
-        if (event.logicalKey == LogicalKeyboardKey.arrowDown &&
-            nextFocus != null) {
-          nextFocus!.requestFocus();
-          return KeyEventResult.handled;
-        }
-        if (event.logicalKey == LogicalKeyboardKey.arrowUp &&
-            prevFocus != null) {
-          prevFocus!.requestFocus();
-          return KeyEventResult.handled;
-        }
-        if (event.logicalKey == LogicalKeyboardKey.arrowRight) {
+        if (event.logicalKey == LogicalKeyboardKey.select ||
+            event.logicalKey == LogicalKeyboardKey.enter) {
           onSelect();
           onMoveToContent();
           return KeyEventResult.handled;
         }
-        if (event.logicalKey == LogicalKeyboardKey.select ||
-            event.logicalKey == LogicalKeyboardKey.enter) {
-          onSelect();
-          return KeyEventResult.handled;
-        }
-        return KeyEventResult.ignored;
+        return onKey(event);
       },
       child: Builder(builder: (ctx) {
         final hasFocus = Focus.of(ctx).hasFocus;
         return Padding(
           padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 3),
-          child: InkWell(
-            onTap: onSelect,
-            borderRadius: BorderRadius.circular(12),
+          child: GestureDetector(
+            onTap: () { onSelect(); onMoveToContent(); },
             child: AnimatedContainer(
               duration: const Duration(milliseconds: 180),
               padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
@@ -401,15 +359,13 @@ class _TVNavItem extends StatelessWidget {
                         ? color
                         : (isDark ? Colors.white54 : Colors.black45)),
                 const SizedBox(width: 12),
-                Text(label,
-                    style: TextStyle(
-                      fontSize: 15,
-                      fontWeight:
-                          selected ? FontWeight.w600 : FontWeight.normal,
-                      color: selected || hasFocus
-                          ? color
-                          : (isDark ? Colors.white70 : Colors.black54),
-                    )),
+                Text(label, style: TextStyle(
+                  fontSize: 15,
+                  fontWeight: selected ? FontWeight.w600 : FontWeight.normal,
+                  color: selected || hasFocus
+                      ? color
+                      : (isDark ? Colors.white70 : Colors.black54),
+                )),
               ]),
             ),
           ),

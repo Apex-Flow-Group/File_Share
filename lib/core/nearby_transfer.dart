@@ -11,6 +11,7 @@ import '../models/transfer_progress.dart';
 import '../services/transfer_progress_service.dart';
 import '../utils/apex_logger.dart';
 import '../utils/path_utils.dart';
+import '../utils/platform_detector.dart';
 import 'core_models.dart';
 
 class NearbyTransfer {
@@ -496,6 +497,17 @@ class NearbyTransfer {
     final fileSize = (msg['size'] as num?)?.toInt() ?? 0;
     final fromName = msg['from'] as String? ?? 'Unknown';
 
+    // على TV نقبل تلقائياً بدون أي نافذة
+    if (PlatformDetector.instance.isTV) {
+      await Nearby().sendBytesPayload(
+        endpointId,
+        Uint8List.fromList(
+            utf8.encode(jsonEncode({'type': 'response', 'accepted': true}))),
+      );
+      ApexLogger.instance.log('NEARBY', '✅ TV auto-accepted: $fileName', LogLevel.success);
+      return;
+    }
+
     final completer = Completer<bool>();
     _pendingRequests[endpointId] = completer;
 
@@ -527,6 +539,17 @@ class NearbyTransfer {
     final names = (msg['names'] as List?)?.cast<String>() ?? [];
     final totalSize = (msg['totalSize'] as num?)?.toInt() ?? 0;
 
+    // على TV نقبل تلقائياً
+    if (PlatformDetector.instance.isTV) {
+      await Nearby().sendBytesPayload(
+        endpointId,
+        Uint8List.fromList(
+            utf8.encode(jsonEncode({'type': 'response', 'accepted': true}))),
+      );
+      ApexLogger.instance.log('NEARBY', '✅ TV auto-accepted batch: $total files', LogLevel.success);
+      return;
+    }
+
     final displayName = '$total ملفات';
     final completer = Completer<bool>();
     _pendingRequests[endpointId] = completer;
@@ -557,4 +580,21 @@ class NearbyTransfer {
 
   String _sanitize(String name) =>
       name.replaceAll(RegExp(r'[\\/\x00]'), '_').replaceAll('..', '_');
+
+  Future<void> stopAll() async {
+    await Nearby().stopAdvertising();
+    await Nearby().stopDiscovery();
+    await Nearby().stopAllEndpoints();
+  }
+
+  Future<void> acceptConnection(String endpointId) async {
+    await Nearby().acceptConnection(
+      endpointId,
+      onPayLoadRecieved: onPayloadReceived,
+      onPayloadTransferUpdate: (_, update) {
+        _transferCallbacks[update.id]?.call(update);
+      },
+    );
+    connectedEndpoints.add(endpointId);
+  }
 }

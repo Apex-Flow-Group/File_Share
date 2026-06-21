@@ -7,6 +7,7 @@ import '../models/transfer_progress.dart';
 import '../services/transfer_progress_service.dart';
 import '../utils/apex_logger.dart';
 import '../utils/path_utils.dart';
+import '../utils/platform_detector.dart';
 import 'core_models.dart';
 
 class _CancelException implements Exception {
@@ -51,6 +52,16 @@ class HttpTransfer {
     final fileNamesList = isBatch ? (namesStr.split(',')) : <String>[];
 
     final requestId = '${fromIp}_${DateTime.now().millisecondsSinceEpoch}';
+
+    // على TV نقبل تلقائياً بدون نافذة
+    if (PlatformDetector.instance.isTV) {
+      req.response
+        ..statusCode = HttpStatus.ok
+        ..write(jsonEncode({'accepted': true}));
+      await req.response.close();
+      return;
+    }
+
     final completer = Completer<bool>();
 
     onConnectionRequest(ConnectionRequest(
