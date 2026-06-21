@@ -55,7 +55,9 @@ class _TVDetailsPanelState extends State<_TVDetailsPanel> {
 
   @override
   void dispose() {
-    for (final n in _allNodes) { n.dispose(); }
+    for (final n in _allNodes) {
+      n.dispose();
+    }
     super.dispose();
   }
 

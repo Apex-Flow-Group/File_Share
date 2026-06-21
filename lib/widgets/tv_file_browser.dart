@@ -351,15 +351,7 @@ class _BrowserTile extends StatelessWidget {
   final VoidCallback onTap;
 
   const _BrowserTile({
-    super.key,
-    required this.item,
-    required this.isSelected,
-    required this.focusNode,
-    required this.isDark,
-    required this.color,
-    required this.isRtl,
-    required this.onKey,
-    required this.onTap,
+    required this.item, required this.isSelected, required this.focusNode, required this.isDark, required this.color, required this.isRtl, required this.onKey, required this.onTap, super.key,
   });
 
   @override

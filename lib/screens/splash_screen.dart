@@ -59,7 +59,9 @@ class _SplashScreenState extends State<SplashScreen>
 
     // الانتقال فور انتهاء الـ init — لا انتظار إضافي
     widget.onInit().then((settings) {
-      if (!mounted) return;
+      if (!mounted) {
+        return;
+      }
       Navigator.of(context).pushReplacement(
         PageRouteBuilder(
           pageBuilder: (_, __, ___) => widget.nextScreenBuilder(settings),

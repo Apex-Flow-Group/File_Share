@@ -1,3 +1,5 @@
+import 'dart:io';
+
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 
@@ -172,7 +174,7 @@ class _TVHomeScreenState extends State<TVHomeScreen> {
             ),
           );
           if (shouldExit == true && context.mounted) {
-            await SystemNavigator.pop();
+            exit(0);
           }
         }
       },
