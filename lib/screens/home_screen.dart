@@ -279,9 +279,12 @@ class _HomeScreenState extends State<HomeScreen> with WidgetsBindingObserver {
 
   void _showFileReceivedSheet(FileReceivedEvent event) {
     final l10n = AppLocalizations.of(context);
-    final displayPath = event.filePath
-        .substring(0, event.filePath.lastIndexOf('/'))
-        .replaceAll('/storage/emulated/0/', '');
+    final sepIndex = event.filePath.lastIndexOf(RegExp(r'[/\\]'));
+    final displayPath = sepIndex == -1
+        ? event.filePath
+        : event.filePath
+            .substring(0, sepIndex)
+            .replaceAll('/storage/emulated/0/', '');
 
     showModalBottomSheet(
       context: context,

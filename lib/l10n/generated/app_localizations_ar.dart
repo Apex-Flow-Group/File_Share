@@ -286,6 +286,15 @@ class AppLocalizationsAr extends AppLocalizations {
   String get sendApp => 'إرسال تطبيق';
 
   @override
+  String get sendFolder => 'إرسال مجلد';
+
+  @override
+  String get folderSent => 'تم إرسال المجلد';
+
+  @override
+  String get compressingFolder => 'جاري ضغط المجلد...';
+
+  @override
   String get installedApps => 'التطبيقات المثبتة';
 
   @override

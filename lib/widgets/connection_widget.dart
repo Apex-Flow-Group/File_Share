@@ -1,3 +1,4 @@
+import 'dart:io';
 import 'package:file_picker/file_picker.dart';
 import 'package:flutter/material.dart';
 
@@ -6,6 +7,7 @@ import '../l10n/generated/app_localizations.dart';
 import '../models/device.dart';
 import '../screens/apps_selection_screen.dart';
 import '../services/desktop_notification_service.dart';
+import '../services/folder_zip_service.dart';
 import '../services/transfer_progress_service.dart';
 
 enum _Status { idle, sending }
@@ -340,14 +342,24 @@ class _ConnectionWidgetState extends State<ConnectionWidget>
           onTap: _sendFile,
         )),
         const SizedBox(width: 10),
-        Expanded(
-            child: _ActionButton(
-          icon: Icons.android_rounded,
-          label: l10n.sendApp,
-          color: const Color(0xFF34C759),
-          isDark: isDark,
-          onTap: _sendApp,
-        )),
+        if (Platform.isAndroid)
+          Expanded(
+              child: _ActionButton(
+            icon: Icons.android_rounded,
+            label: l10n.sendApp,
+            color: const Color(0xFF34C759),
+            isDark: isDark,
+            onTap: _sendApp,
+          ))
+        else
+          Expanded(
+              child: _ActionButton(
+            icon: Icons.folder_zip_rounded,
+            label: l10n.sendFolder,
+            color: const Color(0xFF5856D6),
+            isDark: isDark,
+            onTap: _sendFolder,
+          )),
       ],
     );
   }
@@ -603,6 +615,47 @@ class _ConnectionWidgetState extends State<ConnectionWidget>
         ),
       ),
     );
+  }
+
+  Future<void> _sendFolder() async {
+    final folderPath = await FilePicker.platform.getDirectoryPath();
+    if (folderPath == null || !mounted) {
+      return;
+    }
+
+    setState(() => _status = _Status.sending);
+    String? zipPath;
+    try {
+      // ضغط المجلد إلى ZIP
+      zipPath = await FolderZipService.zipFolder(folderPath);
+      final folderName = folderPath.split(Platform.pathSeparator).last;
+
+      final ok = await ApexCore.instance
+          .sendFileWithName(zipPath, '$folderName.zip', widget.device);
+      if (mounted) {
+        _showSnack(
+          ok
+              ? AppLocalizations.of(context).folderSent
+              : AppLocalizations.of(context).sendFailed,
+          ok,
+        );
+      }
+      final label = '$folderName.zip';
+      if (ok) {
+        await DesktopNotificationService.instance.showFileSent(label);
+      } else {
+        await DesktopNotificationService.instance.showSendFailed(label);
+      }
+    } finally {
+      // تنظيف ملف ZIP المؤقت
+      if (zipPath != null) {
+        await FolderZipService.cleanupTemp(zipPath);
+      }
+      TransferProgressService().clearProgress();
+      if (mounted) {
+        setState(() => _status = _Status.idle);
+      }
+    }
   }
 
   void _showSnack(String msg, bool ok) {
