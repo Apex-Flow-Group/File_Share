@@ -210,7 +210,7 @@ class ApexCore {
   // ─── Send ──────────────────────────────────────────────────────────────────
 
   Future<bool> sendFile(String filePath, Device target) =>
-      sendFileWithName(filePath, filePath.split('/').last, target);
+      sendFileWithName(filePath, _extractFileName(filePath), target);
 
   Future<bool> sendFileWithName(
       String filePath, String fileName, Device target) async {
@@ -238,7 +238,7 @@ class ApexCore {
         continue;
       }
       files.add(
-          (path: path, name: path.split('/').last, size: await f.length()));
+          (path: path, name: _extractFileName(path), size: await f.length()));
     }
     if (files.isEmpty) {
       return false;
@@ -285,7 +285,9 @@ class ApexCore {
         // أولوية لـ wlan/wifi
         for (final iface in interfaces) {
           final name = iface.name.toLowerCase();
-          if (name.contains('wlan') || name.contains('wifi') || name.contains('wl')) {
+          if (name.contains('wlan') ||
+              name.contains('wifi') ||
+              name.contains('wl')) {
             for (final addr in iface.addresses) {
               if (!addr.isLoopback) {
                 return addr.address;
@@ -346,5 +348,12 @@ class ApexCore {
     _devicesController.close();
     _fileReceivedController.close();
     _connectionRequestController.close();
+  }
+
+  /// استخراج اسم الملف من المسار بشكل يعمل على كل الأنظمة
+  static String _extractFileName(String path) {
+    // يدعم / و \ كفاصل مسارات
+    final lastSep = path.lastIndexOf(RegExp(r'[/\\]'));
+    return lastSep == -1 ? path : path.substring(lastSep + 1);
   }
 }

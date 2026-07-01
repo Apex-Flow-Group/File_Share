@@ -650,6 +650,24 @@ abstract class AppLocalizations {
   /// **'Send App'**
   String get sendApp;
 
+  /// No description provided for @sendFolder.
+  ///
+  /// In en, this message translates to:
+  /// **'Send Folder'**
+  String get sendFolder;
+
+  /// No description provided for @folderSent.
+  ///
+  /// In en, this message translates to:
+  /// **'Folder sent'**
+  String get folderSent;
+
+  /// No description provided for @compressingFolder.
+  ///
+  /// In en, this message translates to:
+  /// **'Compressing folder...'**
+  String get compressingFolder;
+
   /// No description provided for @installedApps.
   ///
   /// In en, this message translates to:

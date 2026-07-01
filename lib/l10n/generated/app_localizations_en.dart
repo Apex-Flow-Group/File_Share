@@ -287,6 +287,15 @@ class AppLocalizationsEn extends AppLocalizations {
   String get sendApp => 'Send App';
 
   @override
+  String get sendFolder => 'Send Folder';
+
+  @override
+  String get folderSent => 'Folder sent';
+
+  @override
+  String get compressingFolder => 'Compressing folder...';
+
+  @override
   String get installedApps => 'Installed Apps';
 
   @override

@@ -1,5 +1,7 @@
+import 'dart:io';
 import 'dart:math';
 
+import 'package:file_picker/file_picker.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 
@@ -8,6 +10,7 @@ import '../../l10n/generated/app_localizations.dart';
 import '../../models/device.dart';
 import '../../screens/apps_selection_screen.dart';
 import '../../services/desktop_notification_service.dart';
+import '../../services/folder_zip_service.dart';
 import '../../services/transfer_progress_service.dart';
 import '../connection_widget.dart';
 import '../tv_file_browser.dart';
@@ -366,15 +369,26 @@ class _TVDeviceCardState extends State<_TVDeviceCard> {
               _sendFile();
             },
           ),
-          _TVOption(
-            icon: Icons.android_rounded,
-            label: l10n.sendApp,
-            color: const Color(0xFF34C759),
-            onTap: () {
-              Navigator.pop(dialogContext);
-              _sendApp();
-            },
-          ),
+          if (Platform.isAndroid)
+            _TVOption(
+              icon: Icons.android_rounded,
+              label: l10n.sendApp,
+              color: const Color(0xFF34C759),
+              onTap: () {
+                Navigator.pop(dialogContext);
+                _sendApp();
+              },
+            )
+          else
+            _TVOption(
+              icon: Icons.folder_zip_rounded,
+              label: l10n.sendFolder,
+              color: const Color(0xFF5856D6),
+              onTap: () {
+                Navigator.pop(dialogContext);
+                _sendFolder();
+              },
+            ),
         ],
       ),
     );
@@ -437,6 +451,44 @@ class _TVDeviceCardState extends State<_TVDeviceCard> {
         ),
       ),
     );
+  }
+
+  Future<void> _sendFolder() async {
+    final folderPath = await FilePicker.platform.getDirectoryPath();
+    if (folderPath == null || !mounted) {
+      return;
+    }
+
+    String? zipPath;
+    try {
+      // ضغط المجلد إلى ZIP
+      zipPath = await FolderZipService.zipFolder(folderPath);
+      final folderName = folderPath.split(Platform.pathSeparator).last;
+
+      final ok = await ApexCore.instance
+          .sendFileWithName(zipPath, '$folderName.zip', widget.device);
+      if (mounted) {
+        final l10n = AppLocalizations.of(context);
+        ScaffoldMessenger.of(context).showSnackBar(SnackBar(
+          content: Text(ok ? l10n.folderSent : l10n.sendFailed),
+          backgroundColor: ok ? Colors.green : Colors.red,
+          behavior: SnackBarBehavior.floating,
+          shape:
+              RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+        ));
+      }
+      final label = '$folderName.zip';
+      if (ok) {
+        await DesktopNotificationService.instance.showFileSent(label);
+      } else {
+        await DesktopNotificationService.instance.showSendFailed(label);
+      }
+    } finally {
+      if (zipPath != null) {
+        await FolderZipService.cleanupTemp(zipPath);
+      }
+      TransferProgressService().clearProgress();
+    }
   }
 }
 
