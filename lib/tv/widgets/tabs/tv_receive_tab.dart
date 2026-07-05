@@ -1,10 +1,12 @@
-import 'package:flutter/material.dart';
+﻿import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 
-import '../../l10n/generated/app_localizations.dart';
-import '../../models/device.dart';
-import '../../models/transfer_progress.dart';
-import '../../services/transfer_progress_service.dart';
+import '../../../l10n/generated/app_localizations.dart';
+import '../../../models/device.dart';
+import '../../../models/transfer_progress.dart';
+import '../../../services/transfer_progress_service.dart';
+import '../../../shared/apex_snackbar.dart';
+import '../tv_focusable_widgets.dart';
 
 class TVReceiveTab extends StatefulWidget {
   final Device? localDevice;
@@ -84,7 +86,7 @@ class _TVReceiveTabState extends State<TVReceiveTab>
     );
   }
 
-  // ─── Header ────────────────────────────────────────────────────────────────
+  // â”€â”€â”€ Header â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 
   Widget _buildHeader() {
     final l10n = AppLocalizations.of(context);
@@ -168,7 +170,7 @@ class _TVReceiveTabState extends State<TVReceiveTab>
     );
   }
 
-  // ─── Not Ready ─────────────────────────────────────────────────────────────
+  // â”€â”€â”€ Not Ready â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 
   Widget _buildNotReady() {
     final isAr = Localizations.localeOf(context).languageCode == 'ar';
@@ -189,14 +191,14 @@ class _TVReceiveTabState extends State<TVReceiveTab>
             ),
             const SizedBox(height: 24),
             Text(
-              isAr ? 'النظام غير جاهز' : 'System not ready',
+              isAr ? 'ط§ظ„ظ†ط¸ط§ظ… ط؛ظٹط± ط¬ط§ظ‡ط²' : 'System not ready',
               style: Theme.of(context).textTheme.titleLarge?.copyWith(
                     fontWeight: FontWeight.bold,
                   ),
             ),
             const SizedBox(height: 8),
             Text(
-              isAr ? 'تأكد من تشغيل النظام' : 'Make sure the system is running',
+              isAr ? 'طھط£ظƒط¯ ظ…ظ† طھط´ط؛ظٹظ„ ط§ظ„ظ†ط¸ط§ظ…' : 'Make sure the system is running',
               style: Theme.of(context).textTheme.bodyMedium?.copyWith(
                     color: Theme.of(context).colorScheme.onSurfaceVariant,
                   ),
@@ -208,7 +210,7 @@ class _TVReceiveTabState extends State<TVReceiveTab>
     );
   }
 
-  // ─── Ready ─────────────────────────────────────────────────────────────────
+  // â”€â”€â”€ Ready â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 
   Widget _buildReady() {
     final l10n = AppLocalizations.of(context);
@@ -284,7 +286,7 @@ class _TVReceiveTabState extends State<TVReceiveTab>
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
               Text(
-                isAr ? 'جاهز للاستقبال' : 'Ready to Receive',
+                isAr ? 'ط¬ط§ظ‡ط² ظ„ظ„ط§ط³طھظ‚ط¨ط§ظ„' : 'Ready to Receive',
                 style: const TextStyle(
                   fontWeight: FontWeight.bold,
                   fontSize: 17,
@@ -333,7 +335,7 @@ class _TVReceiveTabState extends State<TVReceiveTab>
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
                     Text(
-                      isAr ? 'جاري الاستقبال...' : 'Receiving...',
+                      isAr ? 'ط¬ط§ط±ظٹ ط§ظ„ط§ط³طھظ‚ط¨ط§ظ„...' : 'Receiving...',
                       style: const TextStyle(
                         fontWeight: FontWeight.bold,
                         fontSize: 16,
@@ -342,7 +344,7 @@ class _TVReceiveTabState extends State<TVReceiveTab>
                     ),
                     if (senderName != null && senderName.isNotEmpty)
                       Text(
-                        isAr ? 'من: $senderName' : 'From: $senderName',
+                        isAr ? 'ظ…ظ†: $senderName' : 'From: $senderName',
                         style: const TextStyle(
                           fontSize: 12,
                           color: Colors.purple,
@@ -356,8 +358,8 @@ class _TVReceiveTabState extends State<TVReceiveTab>
                 Text(p.speedFormatted,
                     style: const TextStyle(fontSize: 12, color: Colors.purple)),
               const SizedBox(width: 8),
-              // Cancel button — focusable for remote
-              _TVFocusableButton(
+              // Cancel button â€” focusable for remote
+              TVFocusableButton(
                 focusNode: _cancelFocus,
                 onTap: () {
                   _cancelledByUser = true;
@@ -365,7 +367,7 @@ class _TVReceiveTabState extends State<TVReceiveTab>
                   setState(() => _isReceiving = false);
                 },
                 color: Colors.red,
-                label: isAr ? 'إلغاء' : 'Cancel',
+                label: isAr ? 'ط¥ظ„ط؛ط§ط،' : 'Cancel',
               ),
             ]),
             if (p != null) ...[
@@ -526,19 +528,13 @@ class _TVReceiveTabState extends State<TVReceiveTab>
             ],
           ),
         ),
-        // Copy button — focusable for TV remote
-        _TVFocusableIconButton(
+        // Copy button â€” focusable for TV remote
+        TVFocusableIconButton(
           focusNode: _copyFocus,
           icon: Icons.copy_rounded,
           onTap: () {
             Clipboard.setData(ClipboardData(text: value));
-            ScaffoldMessenger.of(context).showSnackBar(SnackBar(
-              content: Text(AppLocalizations.of(context).textCopied),
-              duration: const Duration(seconds: 2),
-              behavior: SnackBarBehavior.floating,
-              shape: RoundedRectangleBorder(
-                  borderRadius: BorderRadius.circular(12)),
-            ));
+            ApexSnackBar.info(context, AppLocalizations.of(context).textCopied);
           },
         ),
       ],
@@ -613,125 +609,4 @@ class _TVReceiveTabState extends State<TVReceiveTab>
   }
 }
 
-// ─── TV Focusable Button ──────────────────────────────────────────────────────
-// زر صغير يدعم التنقل بالريموت
-
-class _TVFocusableButton extends StatefulWidget {
-  final FocusNode focusNode;
-  final VoidCallback onTap;
-  final Color color;
-  final String label;
-
-  const _TVFocusableButton({
-    required this.focusNode,
-    required this.onTap,
-    required this.color,
-    required this.label,
-  });
-
-  @override
-  State<_TVFocusableButton> createState() => _TVFocusableButtonState();
-}
-
-class _TVFocusableButtonState extends State<_TVFocusableButton> {
-  @override
-  Widget build(BuildContext context) {
-    return Focus(
-      focusNode: widget.focusNode,
-      onKeyEvent: (_, event) {
-        if (event is KeyDownEvent &&
-            (event.logicalKey == LogicalKeyboardKey.select ||
-                event.logicalKey == LogicalKeyboardKey.enter)) {
-          widget.onTap();
-          return KeyEventResult.handled;
-        }
-        return KeyEventResult.ignored;
-      },
-      child: Builder(builder: (ctx) {
-        final hasFocus = Focus.of(ctx).hasFocus;
-        return GestureDetector(
-          onTap: widget.onTap,
-          child: AnimatedContainer(
-            duration: const Duration(milliseconds: 150),
-            padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
-            decoration: BoxDecoration(
-              color: widget.color.withValues(alpha: hasFocus ? 0.2 : 0.1),
-              borderRadius: BorderRadius.circular(8),
-              border: Border.all(
-                color: widget.color.withValues(alpha: hasFocus ? 0.8 : 0.3),
-                width: hasFocus ? 2 : 1,
-              ),
-            ),
-            child: Text(
-              widget.label,
-              style: TextStyle(
-                fontSize: 12,
-                color: widget.color,
-                fontWeight: FontWeight.w600,
-              ),
-            ),
-          ),
-        );
-      }),
-    );
-  }
-}
-
-// ─── TV Focusable Icon Button ─────────────────────────────────────────────────
-
-class _TVFocusableIconButton extends StatefulWidget {
-  final FocusNode focusNode;
-  final IconData icon;
-  final VoidCallback onTap;
-
-  const _TVFocusableIconButton({
-    required this.focusNode,
-    required this.icon,
-    required this.onTap,
-  });
-
-  @override
-  State<_TVFocusableIconButton> createState() => _TVFocusableIconButtonState();
-}
-
-class _TVFocusableIconButtonState extends State<_TVFocusableIconButton> {
-  @override
-  Widget build(BuildContext context) {
-    final color = Theme.of(context).colorScheme.primary;
-    return Focus(
-      focusNode: widget.focusNode,
-      onKeyEvent: (_, event) {
-        if (event is KeyDownEvent &&
-            (event.logicalKey == LogicalKeyboardKey.select ||
-                event.logicalKey == LogicalKeyboardKey.enter)) {
-          widget.onTap();
-          return KeyEventResult.handled;
-        }
-        return KeyEventResult.ignored;
-      },
-      child: Builder(builder: (ctx) {
-        final hasFocus = Focus.of(ctx).hasFocus;
-        return GestureDetector(
-          onTap: widget.onTap,
-          child: AnimatedContainer(
-            duration: const Duration(milliseconds: 150),
-            padding: const EdgeInsets.all(8),
-            decoration: BoxDecoration(
-              color:
-                  hasFocus ? color.withValues(alpha: 0.15) : Colors.transparent,
-              borderRadius: BorderRadius.circular(10),
-              border: hasFocus ? Border.all(color: color, width: 2) : null,
-            ),
-            child: Icon(
-              widget.icon,
-              size: 18,
-              color: hasFocus
-                  ? color
-                  : Theme.of(context).colorScheme.onSurfaceVariant,
-            ),
-          ),
-        );
-      }),
-    );
-  }
-}
+// â”€â”€â”€ TV Focusable Button â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€

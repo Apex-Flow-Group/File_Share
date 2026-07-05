@@ -2,8 +2,8 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:permission_handler/permission_handler.dart';
 
-import '../l10n/generated/app_localizations.dart';
-import '../services/settings_service.dart';
+import '../../l10n/generated/app_localizations.dart';
+import '../../services/settings_service.dart';
 
 // ─── Public entry point ───────────────────────────────────────────────────────
 // استدعِ هذه الدالة من tv_home_screen لإظهار الـ panel
@@ -39,10 +39,10 @@ class _TVDetailsPanel extends StatefulWidget {
 
 class _TVDetailsPanelState extends State<_TVDetailsPanel> {
   // focus nodes للتنقل بالريموت
-  final FocusNode _languageFocus   = FocusNode(debugLabel: 'lang');
-  final FocusNode _themeFocus      = FocusNode(debugLabel: 'theme');
+  final FocusNode _languageFocus = FocusNode(debugLabel: 'lang');
+  final FocusNode _themeFocus = FocusNode(debugLabel: 'theme');
   final FocusNode _permissionFocus = FocusNode(debugLabel: 'perm');
-  final FocusNode _closeFocus      = FocusNode(debugLabel: 'close');
+  final FocusNode _closeFocus = FocusNode(debugLabel: 'close');
 
   late final List<FocusNode> _allNodes;
 
@@ -50,7 +50,8 @@ class _TVDetailsPanelState extends State<_TVDetailsPanel> {
   void initState() {
     super.initState();
     _allNodes = [_languageFocus, _themeFocus, _permissionFocus, _closeFocus];
-    WidgetsBinding.instance.addPostFrameCallback((_) => _languageFocus.requestFocus());
+    WidgetsBinding.instance
+        .addPostFrameCallback((_) => _languageFocus.requestFocus());
   }
 
   @override
@@ -67,7 +68,8 @@ class _TVDetailsPanelState extends State<_TVDetailsPanel> {
     }
 
     final isRtl = Directionality.of(context) == TextDirection.rtl;
-    final closeKey = isRtl ? LogicalKeyboardKey.arrowRight : LogicalKeyboardKey.arrowLeft;
+    final closeKey =
+        isRtl ? LogicalKeyboardKey.arrowRight : LogicalKeyboardKey.arrowLeft;
 
     final idx = _allNodes.indexOf(current);
 
@@ -98,12 +100,12 @@ class _TVDetailsPanelState extends State<_TVDetailsPanel> {
 
   @override
   Widget build(BuildContext context) {
-    final l10n     = AppLocalizations.of(context);
-    final isDark   = Theme.of(context).brightness == Brightness.dark;
-    final color    = Theme.of(context).colorScheme.primary;
-    final isRtl    = Directionality.of(context) == TextDirection.rtl;
-    final screenW  = MediaQuery.of(context).size.width;
-    final panelW   = (screenW * 0.38).clamp(320.0, 480.0);
+    final l10n = AppLocalizations.of(context);
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+    final color = Theme.of(context).colorScheme.primary;
+    final isRtl = Directionality.of(context) == TextDirection.rtl;
+    final screenW = MediaQuery.of(context).size.width;
+    final panelW = (screenW * 0.38).clamp(320.0, 480.0);
 
     return Align(
       alignment: isRtl ? Alignment.centerLeft : Alignment.centerRight,
@@ -129,7 +131,8 @@ class _TVDetailsPanelState extends State<_TVDetailsPanel> {
                 _buildPanelHeader(context, l10n, isDark, color),
                 Expanded(
                   child: SingleChildScrollView(
-                    padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+                    padding:
+                        const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
                     child: Column(
                       crossAxisAlignment: CrossAxisAlignment.stretch,
                       children: [
@@ -141,7 +144,8 @@ class _TVDetailsPanelState extends State<_TVDetailsPanel> {
                             icon: Icons.language_rounded,
                             iconColor: const Color(0xFF007AFF),
                             title: l10n.language,
-                            subtitle: _langName(widget.settings.locale?.languageCode, l10n),
+                            subtitle: _langName(
+                                widget.settings.locale?.languageCode, l10n),
                             onTap: () => _pickLanguage(context, l10n),
                             onKey: (e) => _handleNavKey(_languageFocus, e),
                           ),
@@ -150,7 +154,8 @@ class _TVDetailsPanelState extends State<_TVDetailsPanel> {
                             icon: Icons.contrast_rounded,
                             iconColor: const Color(0xFF5856D6),
                             title: l10n.theme,
-                            subtitle: _themeName(widget.settings.themeMode, l10n),
+                            subtitle:
+                                _themeName(widget.settings.themeMode, l10n),
                             onTap: () => _pickTheme(context, l10n),
                             onKey: (e) => _handleNavKey(_themeFocus, e),
                           ),
@@ -192,8 +197,8 @@ class _TVDetailsPanelState extends State<_TVDetailsPanel> {
 
   // ─── Header ────────────────────────────────────────────────────────────────
 
-  Widget _buildPanelHeader(BuildContext context, AppLocalizations l10n,
-      bool isDark, Color color) {
+  Widget _buildPanelHeader(
+      BuildContext context, AppLocalizations l10n, bool isDark, Color color) {
     return Container(
       padding: const EdgeInsets.fromLTRB(20, 24, 20, 16),
       decoration: BoxDecoration(
@@ -207,7 +212,8 @@ class _TVDetailsPanelState extends State<_TVDetailsPanel> {
       ),
       child: Row(children: [
         Container(
-          width: 40, height: 40,
+          width: 40,
+          height: 40,
           decoration: BoxDecoration(
             color: color.withValues(alpha: 0.15),
             borderRadius: BorderRadius.circular(12),
@@ -243,14 +249,15 @@ class _TVDetailsPanelState extends State<_TVDetailsPanel> {
       child: Column(
         mainAxisSize: MainAxisSize.min,
         children: items.asMap().entries.map((e) {
-          final i    = e.key;
+          final i = e.key;
           final item = e.value;
           return Column(
             mainAxisSize: MainAxisSize.min,
             children: [
               if (i > 0)
                 Divider(
-                  height: 1, indent: 52,
+                  height: 1,
+                  indent: 52,
                   color: isDark
                       ? Colors.white.withValues(alpha: 0.06)
                       : Colors.black.withValues(alpha: 0.06),
@@ -272,7 +279,7 @@ class _TVDetailsPanelState extends State<_TVDetailsPanel> {
       onKeyEvent: (_, event) {
         if (event is KeyDownEvent &&
             (event.logicalKey == LogicalKeyboardKey.select ||
-             event.logicalKey == LogicalKeyboardKey.enter)) {
+                event.logicalKey == LogicalKeyboardKey.enter)) {
           item.onTap();
           return KeyEventResult.handled;
         }
@@ -281,17 +288,19 @@ class _TVDetailsPanelState extends State<_TVDetailsPanel> {
       child: Builder(builder: (ctx) {
         final hasFocus = Focus.of(ctx).hasFocus;
         final radius = BorderRadius.only(
-          topLeft:     isFirst ? const Radius.circular(16) : Radius.zero,
-          topRight:    isFirst ? const Radius.circular(16) : Radius.zero,
-          bottomLeft:  isLast  ? const Radius.circular(16) : Radius.zero,
-          bottomRight: isLast  ? const Radius.circular(16) : Radius.zero,
+          topLeft: isFirst ? const Radius.circular(16) : Radius.zero,
+          topRight: isFirst ? const Radius.circular(16) : Radius.zero,
+          bottomLeft: isLast ? const Radius.circular(16) : Radius.zero,
+          bottomRight: isLast ? const Radius.circular(16) : Radius.zero,
         );
         return AnimatedContainer(
           duration: const Duration(milliseconds: 150),
           decoration: BoxDecoration(
             color: hasFocus ? color.withValues(alpha: 0.1) : Colors.transparent,
             borderRadius: radius,
-            border: hasFocus ? Border.all(color: color.withValues(alpha: 0.5), width: 2) : null,
+            border: hasFocus
+                ? Border.all(color: color.withValues(alpha: 0.5), width: 2)
+                : null,
           ),
           child: InkWell(
             onTap: item.onTap,
@@ -300,7 +309,8 @@ class _TVDetailsPanelState extends State<_TVDetailsPanel> {
               padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 13),
               child: Row(children: [
                 Container(
-                  width: 34, height: 34,
+                  width: 34,
+                  height: 34,
                   decoration: BoxDecoration(
                     color: item.iconColor.withValues(alpha: 0.15),
                     borderRadius: BorderRadius.circular(10),
@@ -308,19 +318,27 @@ class _TVDetailsPanelState extends State<_TVDetailsPanel> {
                   child: Icon(item.icon, size: 18, color: item.iconColor),
                 ),
                 const SizedBox(width: 12),
-                Expanded(child: Column(
+                Expanded(
+                    child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
                     Text(item.title,
-                        style: const TextStyle(fontWeight: FontWeight.w500, fontSize: 14)),
+                        style: const TextStyle(
+                            fontWeight: FontWeight.w500, fontSize: 14)),
                     if (item.subtitle != null)
                       Text(item.subtitle!,
-                          style: TextStyle(fontSize: 12,
-                              color: Theme.of(context).colorScheme.onSurfaceVariant)),
+                          style: TextStyle(
+                              fontSize: 12,
+                              color: Theme.of(context)
+                                  .colorScheme
+                                  .onSurfaceVariant)),
                   ],
                 )),
-                Icon(Icons.chevron_right_rounded, size: 18,
-                    color: Theme.of(context).colorScheme.onSurfaceVariant
+                Icon(Icons.chevron_right_rounded,
+                    size: 18,
+                    color: Theme.of(context)
+                        .colorScheme
+                        .onSurfaceVariant
                         .withValues(alpha: 0.5)),
               ]),
             ),
@@ -335,7 +353,9 @@ class _TVDetailsPanelState extends State<_TVDetailsPanel> {
       padding: const EdgeInsets.only(left: 4, bottom: 2),
       child: Text(title.toUpperCase(),
           style: TextStyle(
-            fontSize: 11, fontWeight: FontWeight.w600, letterSpacing: 0.8,
+            fontSize: 11,
+            fontWeight: FontWeight.w600,
+            letterSpacing: 0.8,
             color: Theme.of(context).colorScheme.onSurfaceVariant,
           )),
     );
@@ -352,9 +372,12 @@ class _TVDetailsPanelState extends State<_TVDetailsPanel> {
 
   String _themeName(ThemeMode mode, AppLocalizations l10n) {
     switch (mode) {
-      case ThemeMode.light: return l10n.light;
-      case ThemeMode.dark:  return l10n.dark;
-      default:              return l10n.system;
+      case ThemeMode.light:
+        return l10n.light;
+      case ThemeMode.dark:
+        return l10n.dark;
+      default:
+        return l10n.system;
     }
   }
 
@@ -365,29 +388,44 @@ class _TVDetailsPanelState extends State<_TVDetailsPanel> {
       context: context,
       title: l10n.selectLanguage,
       items: [
-        _PickItem(label: l10n.system,   value: null, icon: Icons.phone_android_rounded),
-        const _PickItem(label: 'العربية', value: 'ar', icon: Icons.translate_rounded),
-        const _PickItem(label: 'English', value: 'en', icon: Icons.translate_rounded),
+        _PickItem(
+            label: l10n.system, value: null, icon: Icons.phone_android_rounded),
+        const _PickItem(
+            label: 'العربية', value: 'ar', icon: Icons.translate_rounded),
+        const _PickItem(
+            label: 'English', value: 'en', icon: Icons.translate_rounded),
       ],
       current: widget.settings.locale?.languageCode,
-      onSelected: (v) => widget.settings.setLocale(v == null ? null : Locale(v as String)),
+      onSelected: (v) =>
+          widget.settings.setLocale(v == null ? null : Locale(v as String)),
     );
   }
 
   void _pickTheme(BuildContext context, AppLocalizations l10n) {
-    final cur = widget.settings.themeMode == ThemeMode.light ? 'light'
-              : widget.settings.themeMode == ThemeMode.dark  ? 'dark' : 'system';
+    final cur = widget.settings.themeMode == ThemeMode.light
+        ? 'light'
+        : widget.settings.themeMode == ThemeMode.dark
+            ? 'dark'
+            : 'system';
     _showTVPicker(
       context: context,
       title: l10n.selectTheme,
       items: [
-        _PickItem(label: l10n.system, value: 'system', icon: Icons.brightness_auto_rounded),
-        _PickItem(label: l10n.light,  value: 'light',  icon: Icons.light_mode_rounded),
-        _PickItem(label: l10n.dark,   value: 'dark',   icon: Icons.dark_mode_rounded),
+        _PickItem(
+            label: l10n.system,
+            value: 'system',
+            icon: Icons.brightness_auto_rounded),
+        _PickItem(
+            label: l10n.light, value: 'light', icon: Icons.light_mode_rounded),
+        _PickItem(
+            label: l10n.dark, value: 'dark', icon: Icons.dark_mode_rounded),
       ],
       current: cur,
-      onSelected: (v) => widget.settings.setThemeMode(
-        v == 'light' ? ThemeMode.light : v == 'dark' ? ThemeMode.dark : ThemeMode.system),
+      onSelected: (v) => widget.settings.setThemeMode(v == 'light'
+          ? ThemeMode.light
+          : v == 'dark'
+              ? ThemeMode.dark
+              : ThemeMode.system),
     );
   }
 
@@ -412,7 +450,10 @@ class _TVDetailsPanelState extends State<_TVDetailsPanel> {
         items: items,
         current: current,
         isDark: isDark,
-        onSelected: (v) { onSelected(v); setState(() {}); },
+        onSelected: (v) {
+          onSelected(v);
+          setState(() {});
+        },
       ),
     );
   }
@@ -454,7 +495,9 @@ class _TVPickerDialogState extends State<_TVPickerDialog> {
 
   @override
   void dispose() {
-    for (final n in _nodes) { n.dispose(); }
+    for (final n in _nodes) {
+      n.dispose();
+    }
     super.dispose();
   }
 
@@ -470,10 +513,11 @@ class _TVPickerDialogState extends State<_TVPickerDialog> {
           mainAxisSize: MainAxisSize.min,
           children: [
             Text(widget.title,
-                style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 16)),
+                style:
+                    const TextStyle(fontWeight: FontWeight.bold, fontSize: 16)),
             const SizedBox(height: 16),
             ...widget.items.asMap().entries.map((e) {
-              final i    = e.key;
+              final i = e.key;
               final item = e.value;
               final selected = item.value == widget.current;
               return Padding(
@@ -484,11 +528,13 @@ class _TVPickerDialogState extends State<_TVPickerDialog> {
                     if (event is! KeyDownEvent) {
                       return KeyEventResult.ignored;
                     }
-                    if (event.logicalKey == LogicalKeyboardKey.arrowDown && i < _nodes.length - 1) {
+                    if (event.logicalKey == LogicalKeyboardKey.arrowDown &&
+                        i < _nodes.length - 1) {
                       _nodes[i + 1].requestFocus();
                       return KeyEventResult.handled;
                     }
-                    if (event.logicalKey == LogicalKeyboardKey.arrowUp && i > 0) {
+                    if (event.logicalKey == LogicalKeyboardKey.arrowUp &&
+                        i > 0) {
                       _nodes[i - 1].requestFocus();
                       return KeyEventResult.handled;
                     }
@@ -508,10 +554,14 @@ class _TVPickerDialogState extends State<_TVPickerDialog> {
                   child: Builder(builder: (ctx) {
                     final hasFocus = Focus.of(ctx).hasFocus;
                     return GestureDetector(
-                      onTap: () { Navigator.pop(context); widget.onSelected(item.value); },
+                      onTap: () {
+                        Navigator.pop(context);
+                        widget.onSelected(item.value);
+                      },
                       child: AnimatedContainer(
                         duration: const Duration(milliseconds: 150),
-                        padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 13),
+                        padding: const EdgeInsets.symmetric(
+                            horizontal: 14, vertical: 13),
                         decoration: BoxDecoration(
                           color: selected
                               ? color.withValues(alpha: 0.15)
@@ -529,16 +579,21 @@ class _TVPickerDialogState extends State<_TVPickerDialog> {
                         child: Row(children: [
                           Icon(item.icon,
                               size: 20,
-                              color: selected || hasFocus ? color : Colors.grey),
+                              color:
+                                  selected || hasFocus ? color : Colors.grey),
                           const SizedBox(width: 12),
-                          Expanded(child: Text(item.label,
-                              style: TextStyle(
-                                fontSize: 14,
-                                fontWeight: selected ? FontWeight.w600 : FontWeight.normal,
-                                color: selected || hasFocus ? color : null,
-                              ))),
+                          Expanded(
+                              child: Text(item.label,
+                                  style: TextStyle(
+                                    fontSize: 14,
+                                    fontWeight: selected
+                                        ? FontWeight.w600
+                                        : FontWeight.normal,
+                                    color: selected || hasFocus ? color : null,
+                                  ))),
                           if (selected)
-                            Icon(Icons.check_circle_rounded, color: color, size: 20),
+                            Icon(Icons.check_circle_rounded,
+                                color: color, size: 20),
                         ]),
                       ),
                     );
@@ -576,7 +631,7 @@ class _CloseButton extends StatelessWidget {
       onKeyEvent: (_, event) {
         if (event is KeyDownEvent &&
             (event.logicalKey == LogicalKeyboardKey.select ||
-             event.logicalKey == LogicalKeyboardKey.enter)) {
+                event.logicalKey == LogicalKeyboardKey.enter)) {
           onTap();
           return KeyEventResult.handled;
         }
@@ -592,7 +647,9 @@ class _CloseButton extends StatelessWidget {
             decoration: BoxDecoration(
               color: hasFocus ? color : color.withValues(alpha: 0.12),
               borderRadius: BorderRadius.circular(14),
-              border: hasFocus ? null : Border.all(color: color.withValues(alpha: 0.3)),
+              border: hasFocus
+                  ? null
+                  : Border.all(color: color.withValues(alpha: 0.3)),
             ),
             child: Center(
               child: Text(label,
@@ -625,7 +682,9 @@ class _PanelItem {
     required this.icon,
     required this.iconColor,
     required this.title,
-    required this.onTap, required this.onKey, this.subtitle,
+    required this.onTap,
+    required this.onKey,
+    this.subtitle,
   });
 }
 
@@ -633,5 +692,6 @@ class _PickItem {
   final String label;
   final dynamic value;
   final IconData icon;
-  const _PickItem({required this.label, required this.value, required this.icon});
+  const _PickItem(
+      {required this.label, required this.value, required this.icon});
 }

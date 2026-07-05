@@ -2,8 +2,8 @@ import 'dart:ui';
 
 import 'package:flutter/material.dart';
 
-import '../models/transfer_progress.dart';
-import '../services/transfer_progress_service.dart';
+import '../../models/transfer_progress.dart';
+import '../../services/transfer_progress_service.dart';
 
 /// يعرض شريط تقدم الاستقبال عائماً فوق كل شيء
 /// يُستدعى مرة واحدة في main.dart كـ wrapper

@@ -5,10 +5,11 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:url_launcher/url_launcher.dart';
 
-import '../../l10n/generated/app_localizations.dart';
-import '../../models/device.dart';
-import '../../models/transfer_progress.dart';
-import '../../services/transfer_progress_service.dart';
+import '../../../l10n/generated/app_localizations.dart';
+import '../../../models/device.dart';
+import '../../../models/transfer_progress.dart';
+import '../../../services/transfer_progress_service.dart';
+import '../../../shared/apex_snackbar.dart';
 
 class ReceiveTab extends StatefulWidget {
   final Device? localDevice;
@@ -514,13 +515,8 @@ class _ReceiveTabState extends State<ReceiveTab>
                 color: Theme.of(context).colorScheme.onSurfaceVariant),
             onPressed: () {
               Clipboard.setData(ClipboardData(text: value));
-              ScaffoldMessenger.of(context).showSnackBar(SnackBar(
-                content: Text(AppLocalizations.of(context).textCopied),
-                duration: const Duration(seconds: 2),
-                behavior: SnackBarBehavior.floating,
-                shape: RoundedRectangleBorder(
-                    borderRadius: BorderRadius.circular(12)),
-              ));
+              ApexSnackBar.info(
+                  context, AppLocalizations.of(context).textCopied);
             },
           ),
       ],

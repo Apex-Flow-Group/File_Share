@@ -93,8 +93,8 @@ class HttpTransfer {
     final expectedSize =
         int.tryParse(req.headers.value('content-length') ?? '') ?? 0;
 
-    // Write to temp cache first, then move to public Downloads via MediaStore
-    final tempDir = await PathUtils.getCategoryPath(fileName);
+    // Write to app cache first, then move to public Downloads via MediaStore
+    final tempDir = await PathUtils.getTempCachePath();
     final tempPath = '$tempDir/$fileName';
     IOSink? sink;
 
@@ -131,9 +131,21 @@ class HttpTransfer {
       sink = null;
       TransferProgressService().clearProgress();
 
-      // Move to public Downloads via MediaStore (Android 10+)
-      final finalPath =
-          await PathUtils.saveToPublicDownloads(fileName, tempPath) ?? tempPath;
+      // Move to public Downloads via MediaStore (Android 10+), or category path for non-Android
+      String finalPath;
+      if (Platform.isAndroid) {
+        finalPath = await PathUtils.saveToPublicDownloads(fileName, tempPath) ??
+            tempPath;
+      } else {
+        final categoryDir = await PathUtils.getCategoryPath(fileName);
+        final destPath = '$categoryDir/$fileName';
+        try {
+          await File(tempPath).rename(destPath);
+        } catch (_) {
+          await File(tempPath).copy(destPath);
+        }
+        finalPath = destPath;
+      }
       // Clean up temp if moved successfully
       if (finalPath != tempPath) {
         try {

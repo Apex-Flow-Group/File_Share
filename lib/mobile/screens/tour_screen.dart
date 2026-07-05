@@ -1,8 +1,8 @@
 import 'package:flutter/material.dart';
 
-import '../l10n/generated/app_localizations.dart';
-import '../managers/permission_manager.dart';
-import '../services/settings_service.dart';
+import '../../l10n/generated/app_localizations.dart';
+import '../../managers/permission_manager.dart';
+import '../../services/settings_service.dart';
 import 'home_screen.dart';
 
 class TourScreen extends StatefulWidget {
@@ -76,92 +76,100 @@ class _TourScreenState extends State<TourScreen> {
                       SingleChildScrollView(
                         controller: _scrollController,
                         padding: const EdgeInsets.symmetric(horizontal: 20),
-                    child: Column(
-                      children: [
-                        // الأيقونة والعنوان تتحرك مع بقية المحتوى
-                        Padding(
-                          padding: EdgeInsets.fromLTRB(4, isWide ? 32 : 20, 4, 24),
-                          child: Column(
-                            children: [
-                              Container(
-                                width: 80,
-                                height: 80,
-                                decoration: BoxDecoration(
-                                  borderRadius: BorderRadius.circular(22),
-                                  boxShadow: [
-                                    BoxShadow(
-                                      color: Theme.of(context)
-                                          .colorScheme
-                                          .primary
-                                          .withValues(alpha: 0.35),
-                                      blurRadius: 20,
-                                      offset: const Offset(0, 8),
-                                    ),
-                                  ],
-                                ),
-                                child: ClipRRect(
-                                  borderRadius: BorderRadius.circular(22),
-                                  child: Image.asset(
-                                    'assets/images/ico.png',
+                        child: Column(
+                          children: [
+                            // الأيقونة والعنوان تتحرك مع بقية المحتوى
+                            Padding(
+                              padding: EdgeInsets.fromLTRB(
+                                  4, isWide ? 32 : 20, 4, 24),
+                              child: Column(
+                                children: [
+                                  Container(
                                     width: 80,
                                     height: 80,
-                                    fit: BoxFit.cover,
+                                    decoration: BoxDecoration(
+                                      borderRadius: BorderRadius.circular(22),
+                                      boxShadow: [
+                                        BoxShadow(
+                                          color: Theme.of(context)
+                                              .colorScheme
+                                              .primary
+                                              .withValues(alpha: 0.35),
+                                          blurRadius: 20,
+                                          offset: const Offset(0, 8),
+                                        ),
+                                      ],
+                                    ),
+                                    child: ClipRRect(
+                                      borderRadius: BorderRadius.circular(22),
+                                      child: Image.asset(
+                                        'assets/images/ico.png',
+                                        width: 80,
+                                        height: 80,
+                                        fit: BoxFit.cover,
+                                      ),
+                                    ),
+                                  ),
+                                  const SizedBox(height: 16),
+                                  Text(
+                                    l10n.appTitle,
+                                    style: Theme.of(context)
+                                        .textTheme
+                                        .headlineMedium
+                                        ?.copyWith(fontWeight: FontWeight.bold),
+                                  ),
+                                  const SizedBox(height: 6),
+                                  Text(
+                                    l10n.fastAndSecure,
+                                    style: Theme.of(context)
+                                        .textTheme
+                                        .bodyLarge
+                                        ?.copyWith(
+                                          color: Theme.of(context)
+                                              .colorScheme
+                                              .onSurfaceVariant,
+                                        ),
+                                    textAlign: TextAlign.center,
+                                  ),
+                                ],
+                              ),
+                            ),
+                            // المميزات
+                            isWide
+                                ? _buildWideFeatures(l10n, isDark)
+                                : _buildNarrowFeatures(l10n, isDark),
+                            const SizedBox(height: 16),
+                          ],
+                        ),
+                      ),
+                      // gradient overlay يتلاشى عند الوصول للأسفل
+                      if (_fadeOpacity > 0)
+                        Positioned(
+                          left: 0,
+                          right: 0,
+                          bottom: 0,
+                          height: 80,
+                          child: IgnorePointer(
+                            child: Opacity(
+                              opacity: _fadeOpacity,
+                              child: DecoratedBox(
+                                decoration: BoxDecoration(
+                                  gradient: LinearGradient(
+                                    begin: Alignment.topCenter,
+                                    end: Alignment.bottomCenter,
+                                    colors: [
+                                      Theme.of(context)
+                                          .scaffoldBackgroundColor
+                                          .withValues(alpha: 0),
+                                      Theme.of(context).scaffoldBackgroundColor,
+                                    ],
                                   ),
                                 ),
-                              ),
-                              const SizedBox(height: 16),
-                              Text(
-                                l10n.appTitle,
-                                style: Theme.of(context)
-                                    .textTheme
-                                    .headlineMedium
-                                    ?.copyWith(fontWeight: FontWeight.bold),
-                              ),
-                              const SizedBox(height: 6),
-                              Text(
-                                l10n.fastAndSecure,
-                                style: Theme.of(context).textTheme.bodyLarge?.copyWith(
-                                      color: Theme.of(context).colorScheme.onSurfaceVariant,
-                                    ),
-                                textAlign: TextAlign.center,
-                              ),
-                            ],
-                          ),
-                        ),
-                        // المميزات
-                        isWide
-                            ? _buildWideFeatures(l10n, isDark)
-                            : _buildNarrowFeatures(l10n, isDark),
-                        const SizedBox(height: 16),
-                      ],
-                    ),
-                  ),
-                  // gradient overlay يتلاشى عند الوصول للأسفل
-                  if (_fadeOpacity > 0)
-                    Positioned(
-                      left: 0,
-                      right: 0,
-                      bottom: 0,
-                      height: 80,
-                      child: IgnorePointer(
-                        child: Opacity(
-                          opacity: _fadeOpacity,
-                          child: DecoratedBox(
-                            decoration: BoxDecoration(
-                              gradient: LinearGradient(
-                                begin: Alignment.topCenter,
-                                end: Alignment.bottomCenter,
-                                colors: [
-                                  Theme.of(context).scaffoldBackgroundColor.withValues(alpha: 0),
-                                  Theme.of(context).scaffoldBackgroundColor,
-                                ],
                               ),
                             ),
                           ),
                         ),
-                      ),
-                    ),
-                ],
+                    ],
                   ),
                 ),
               ),
@@ -185,7 +193,8 @@ class _TourScreenState extends State<TourScreen> {
       runSpacing: 12,
       children: features
           .map((f) => SizedBox(
-                width: (MediaQuery.of(context).size.width.clamp(0, 680) - 52) / 2,
+                width:
+                    (MediaQuery.of(context).size.width.clamp(0, 680) - 52) / 2,
                 child: _FeatureCard(feature: f, isDark: isDark),
               ))
           .toList(),
@@ -232,7 +241,8 @@ class _TourScreenState extends State<TourScreen> {
                     ),
                   ),
                   child: _agreed
-                      ? const Icon(Icons.check_rounded, color: Colors.white, size: 16)
+                      ? const Icon(Icons.check_rounded,
+                          color: Colors.white, size: 16)
                       : null,
                 ),
                 const SizedBox(width: 12),
@@ -269,7 +279,8 @@ class _TourScreenState extends State<TourScreen> {
                     const SizedBox(width: 8),
                     Text(
                       AppLocalizations.of(context).finish,
-                      style: const TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
+                      style: const TextStyle(
+                          fontSize: 16, fontWeight: FontWeight.bold),
                     ),
                   ],
                 ),
@@ -402,7 +413,8 @@ class _FeatureCard extends StatelessWidget {
               children: [
                 Text(
                   feature.title,
-                  style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 14),
+                  style: const TextStyle(
+                      fontWeight: FontWeight.bold, fontSize: 14),
                 ),
                 const SizedBox(height: 4),
                 Text(

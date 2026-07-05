@@ -5,6 +5,16 @@ import 'package:path_provider/path_provider.dart';
 class PathUtils {
   static const _channel = MethodChannel('com.apex.core/file_ops');
 
+  /// Returns a temporary cache directory for receiving files before moving to final location.
+  static Future<String> getTempCachePath() async {
+    final tempDir = await getTemporaryDirectory();
+    final cacheDir = Directory('${tempDir.path}/apex_receive');
+    if (!await cacheDir.exists()) {
+      await cacheDir.create(recursive: true);
+    }
+    return cacheDir.path;
+  }
+
   static Future<String> getDownloadPath() async {
     if (Platform.isAndroid) {
       try {
