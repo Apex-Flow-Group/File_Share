@@ -3,8 +3,8 @@ import 'dart:math';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 
-import '../l10n/generated/app_localizations.dart';
-import '../services/settings_service.dart';
+import '../../l10n/generated/app_localizations.dart';
+import '../../services/settings_service.dart';
 import 'tv_tour_screen.dart';
 
 class TVIntroScreen extends StatefulWidget {
@@ -36,19 +36,23 @@ class _TVIntroScreenState extends State<TVIntroScreen>
     )..forward();
 
     _titleSlide = Tween<double>(begin: 60, end: 0).animate(
-      CurvedAnimation(parent: _ctrl,
+      CurvedAnimation(
+          parent: _ctrl,
           curve: const Interval(0.0, 0.35, curve: Curves.easeOut)),
     );
     _titleFade = Tween<double>(begin: 0, end: 1).animate(
-      CurvedAnimation(parent: _ctrl,
+      CurvedAnimation(
+          parent: _ctrl,
           curve: const Interval(0.0, 0.35, curve: Curves.easeIn)),
     );
     _subtitleFade = Tween<double>(begin: 0, end: 1).animate(
-      CurvedAnimation(parent: _ctrl,
+      CurvedAnimation(
+          parent: _ctrl,
           curve: const Interval(0.3, 0.55, curve: Curves.easeIn)),
     );
     _buttonFade = Tween<double>(begin: 0, end: 1).animate(
-      CurvedAnimation(parent: _ctrl,
+      CurvedAnimation(
+          parent: _ctrl,
           curve: const Interval(0.6, 0.85, curve: Curves.easeIn)),
     );
     _shimmer = Tween<double>(begin: -1, end: 2).animate(
@@ -73,8 +77,7 @@ class _TVIntroScreenState extends State<TVIntroScreen>
   void _next() {
     Navigator.of(context).pushReplacement(
       PageRouteBuilder(
-        pageBuilder: (_, __, ___) =>
-            TVTourScreen(settings: widget.settings),
+        pageBuilder: (_, __, ___) => TVTourScreen(settings: widget.settings),
         transitionsBuilder: (_, anim, __, child) =>
             FadeTransition(opacity: anim, child: child),
         transitionDuration: const Duration(milliseconds: 350),
@@ -100,7 +103,8 @@ class _TVIntroScreenState extends State<TVIntroScreen>
               children: [
                 // العنوان
                 Transform.translate(
-                  offset: Offset(isAr ? _titleSlide.value : -_titleSlide.value, 0),
+                  offset:
+                      Offset(isAr ? _titleSlide.value : -_titleSlide.value, 0),
                   child: Opacity(
                     opacity: _titleFade.value,
                     child: _ShimmerText(
@@ -129,7 +133,7 @@ class _TVIntroScreenState extends State<TVIntroScreen>
                     onKeyEvent: (_, event) {
                       if (event is KeyDownEvent &&
                           (event.logicalKey == LogicalKeyboardKey.select ||
-                           event.logicalKey == LogicalKeyboardKey.enter)) {
+                              event.logicalKey == LogicalKeyboardKey.enter)) {
                         _next();
                         return KeyEventResult.handled;
                       }
@@ -155,11 +159,13 @@ class _TVIntroScreenState extends State<TVIntroScreen>
                               width: hasFocus ? 0 : 2,
                             ),
                             boxShadow: hasFocus
-                                ? [BoxShadow(
-                                    color: const Color(0xFF9575CD)
-                                        .withValues(alpha: 0.5),
-                                    blurRadius: 24,
-                                  )]
+                                ? [
+                                    BoxShadow(
+                                      color: const Color(0xFF9575CD)
+                                          .withValues(alpha: 0.5),
+                                      blurRadius: 24,
+                                    )
+                                  ]
                                 : null,
                           ),
                           child: Center(
@@ -213,7 +219,11 @@ class _BGPainter extends CustomPainter {
         ..shader = LinearGradient(
           begin: Alignment.topLeft,
           end: Alignment.bottomRight,
-          colors: const [Color(0xFF1A237E), Color(0xFF283593), Color(0xFF1A237E)],
+          colors: const [
+            Color(0xFF1A237E),
+            Color(0xFF283593),
+            Color(0xFF1A237E)
+          ],
           stops: [
             (sin(p * pi * 2) * 0.1).clamp(0.0, 1.0),
             0.5,

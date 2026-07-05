@@ -1,9 +1,9 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 
-import '../l10n/generated/app_localizations.dart';
-import '../managers/permission_manager.dart';
-import '../services/settings_service.dart';
+import '../../l10n/generated/app_localizations.dart';
+import '../../managers/permission_manager.dart';
+import '../../services/settings_service.dart';
 import 'tv_home_screen.dart';
 
 class TVTourScreen extends StatefulWidget {
@@ -19,9 +19,9 @@ class _TVTourScreenState extends State<TVTourScreen> {
   final _scrollCtrl = ScrollController();
 
   // Focus nodes بالترتيب: scroll area → checkbox → button
-  final FocusNode _scrollFocus  = FocusNode(debugLabel: 'tour-scroll');
-  final FocusNode _checkFocus   = FocusNode(debugLabel: 'tour-check');
-  final FocusNode _startFocus   = FocusNode(debugLabel: 'tour-start');
+  final FocusNode _scrollFocus = FocusNode(debugLabel: 'tour-scroll');
+  final FocusNode _checkFocus = FocusNode(debugLabel: 'tour-check');
+  final FocusNode _startFocus = FocusNode(debugLabel: 'tour-start');
 
   @override
   void initState() {
@@ -61,10 +61,10 @@ class _TVTourScreenState extends State<TVTourScreen> {
 
   @override
   Widget build(BuildContext context) {
-    final l10n  = AppLocalizations.of(context);
+    final l10n = AppLocalizations.of(context);
     final isDark = Theme.of(context).brightness == Brightness.dark;
-    final color  = Theme.of(context).colorScheme.primary;
-    final isAr   = Localizations.localeOf(context).languageCode == 'ar';
+    final color = Theme.of(context).colorScheme.primary;
+    final isAr = Localizations.localeOf(context).languageCode == 'ar';
 
     return Scaffold(
       body: SafeArea(
@@ -80,8 +80,8 @@ class _TVTourScreenState extends State<TVTourScreen> {
                 }
                 if (event.logicalKey == LogicalKeyboardKey.arrowDown) {
                   _scrollCtrl.animateTo(
-                    (_scrollCtrl.offset + 120).clamp(
-                        0.0, _scrollCtrl.position.maxScrollExtent),
+                    (_scrollCtrl.offset + 120)
+                        .clamp(0.0, _scrollCtrl.position.maxScrollExtent),
                     duration: const Duration(milliseconds: 200),
                     curve: Curves.easeOut,
                   );
@@ -89,8 +89,8 @@ class _TVTourScreenState extends State<TVTourScreen> {
                 }
                 if (event.logicalKey == LogicalKeyboardKey.arrowUp) {
                   _scrollCtrl.animateTo(
-                    (_scrollCtrl.offset - 120).clamp(
-                        0.0, _scrollCtrl.position.maxScrollExtent),
+                    (_scrollCtrl.offset - 120)
+                        .clamp(0.0, _scrollCtrl.position.maxScrollExtent),
                     duration: const Duration(milliseconds: 200),
                     curve: Curves.easeOut,
                   );
@@ -114,7 +114,8 @@ class _TVTourScreenState extends State<TVTourScreen> {
                   decoration: BoxDecoration(
                     borderRadius: BorderRadius.circular(20),
                     border: hasFocus
-                        ? Border.all(color: color.withValues(alpha: 0.4), width: 2)
+                        ? Border.all(
+                            color: color.withValues(alpha: 0.4), width: 2)
                         : null,
                   ),
                   child: ClipRRect(
@@ -131,18 +132,20 @@ class _TVTourScreenState extends State<TVTourScreen> {
                                 width: 52, height: 52, fit: BoxFit.cover),
                           ),
                           const SizedBox(width: 14),
-                          Column(crossAxisAlignment: CrossAxisAlignment.start,
+                          Column(
+                              crossAxisAlignment: CrossAxisAlignment.start,
                               children: [
-                            Text(l10n.appTitle,
-                                style: const TextStyle(
-                                    fontSize: 22, fontWeight: FontWeight.bold)),
-                            Text(l10n.fastAndSecure,
-                                style: TextStyle(
-                                    fontSize: 13,
-                                    color: Theme.of(context)
-                                        .colorScheme
-                                        .onSurfaceVariant)),
-                          ]),
+                                Text(l10n.appTitle,
+                                    style: const TextStyle(
+                                        fontSize: 22,
+                                        fontWeight: FontWeight.bold)),
+                                Text(l10n.fastAndSecure,
+                                    style: TextStyle(
+                                        fontSize: 13,
+                                        color: Theme.of(context)
+                                            .colorScheme
+                                            .onSurfaceVariant)),
+                              ]),
                         ]),
                         const SizedBox(height: 24),
                         // Features
@@ -259,7 +262,9 @@ class _TVTourScreenState extends State<TVTourScreen> {
                               color: _agreed ? color : Colors.transparent,
                               borderRadius: BorderRadius.circular(6),
                               border: Border.all(
-                                color: _agreed ? color : Colors.grey.withValues(alpha: 0.5),
+                                color: _agreed
+                                    ? color
+                                    : Colors.grey.withValues(alpha: 0.5),
                                 width: 2,
                               ),
                             ),
@@ -319,16 +324,20 @@ class _TVTourScreenState extends State<TVTourScreen> {
                           width: double.infinity,
                           padding: const EdgeInsets.symmetric(vertical: 15),
                           decoration: BoxDecoration(
-                            color: hasFocus && _agreed ? color : color.withValues(alpha: 0.15),
+                            color: hasFocus && _agreed
+                                ? color
+                                : color.withValues(alpha: 0.15),
                             borderRadius: BorderRadius.circular(14),
                             border: hasFocus
                                 ? Border.all(color: color, width: 2)
                                 : null,
                             boxShadow: hasFocus && _agreed
-                                ? [BoxShadow(
-                                    color: color.withValues(alpha: 0.4),
-                                    blurRadius: 16,
-                                  )]
+                                ? [
+                                    BoxShadow(
+                                      color: color.withValues(alpha: 0.4),
+                                      blurRadius: 16,
+                                    )
+                                  ]
                                 : null,
                           ),
                           child: Row(
@@ -337,9 +346,8 @@ class _TVTourScreenState extends State<TVTourScreen> {
                               Icon(
                                 Icons.rocket_launch_rounded,
                                 size: 18,
-                                color: hasFocus && _agreed
-                                    ? Colors.white
-                                    : color,
+                                color:
+                                    hasFocus && _agreed ? Colors.white : color,
                               ),
                               const SizedBox(width: 8),
                               Text(
@@ -374,13 +382,19 @@ class _TVTourScreenState extends State<TVTourScreen> {
             l10n.feature2Title, l10n.feature2Desc),
         _Feature(Icons.lock_rounded, const Color(0xFF5856D6),
             l10n.feature3Title, l10n.feature3Desc),
-        _Feature(Icons.sensors_rounded, const Color(0xFF007AFF),
+        _Feature(
+            Icons.sensors_rounded,
+            const Color(0xFF007AFF),
             'Nearby + WiFi',
             isAr ? 'اكتشاف تلقائي سريع' : 'Fast auto-discovery'),
-        _Feature(Icons.phone_android_rounded, const Color(0xFFFF2D55),
+        _Feature(
+            Icons.phone_android_rounded,
+            const Color(0xFFFF2D55),
             'APK Sharing',
             isAr ? 'شارك تطبيقاتك المثبتة' : 'Share your installed apps'),
-        _Feature(Icons.devices_rounded, const Color(0xFF32ADE6),
+        _Feature(
+            Icons.devices_rounded,
+            const Color(0xFF32ADE6),
             'Multi-platform',
             isAr ? 'هاتف، تابلت، كمبيوتر' : 'Phone, tablet & desktop'),
       ];
@@ -418,7 +432,8 @@ class _TVFeatureCard extends StatelessWidget {
       ),
       child: Row(children: [
         Container(
-          width: 40, height: 40,
+          width: 40,
+          height: 40,
           decoration: BoxDecoration(
             gradient: LinearGradient(
               colors: [feature.color, feature.color.withValues(alpha: 0.7)],
@@ -431,11 +446,11 @@ class _TVFeatureCard extends StatelessWidget {
         ),
         const SizedBox(width: 12),
         Expanded(
-          child: Column(crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
+          child:
+              Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
             Text(feature.title,
-                style: const TextStyle(
-                    fontWeight: FontWeight.bold, fontSize: 13)),
+                style:
+                    const TextStyle(fontWeight: FontWeight.bold, fontSize: 13)),
             const SizedBox(height: 3),
             Text(feature.desc,
                 style: TextStyle(

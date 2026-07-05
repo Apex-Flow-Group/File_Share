@@ -1,10 +1,11 @@
-import 'dart:math';
+﻿import 'dart:math';
 
 import 'package:flutter/material.dart';
 
 import '../l10n/generated/app_localizations.dart';
+import '../mobile/screens/tour_screen.dart';
 import '../services/settings_service.dart';
-import 'tour_screen.dart';
+import '../shared/intro_button.dart';
 
 class IntroScreen extends StatefulWidget {
   final SettingsService settings;
@@ -15,7 +16,8 @@ class IntroScreen extends StatefulWidget {
   State<IntroScreen> createState() => _IntroScreenState();
 }
 
-class _IntroScreenState extends State<IntroScreen> with SingleTickerProviderStateMixin {
+class _IntroScreenState extends State<IntroScreen>
+    with SingleTickerProviderStateMixin {
   late AnimationController _controller;
   late Animation<double> _backgroundAnimation;
   late Animation<double> _titleSlide;
@@ -36,35 +38,51 @@ class _IntroScreenState extends State<IntroScreen> with SingleTickerProviderStat
     );
 
     _backgroundAnimation = Tween<double>(begin: 0, end: 1).animate(
-      CurvedAnimation(parent: _controller, curve: const Interval(0.0, 1.0, curve: Curves.linear)),
+      CurvedAnimation(
+          parent: _controller,
+          curve: const Interval(0.0, 1.0, curve: Curves.linear)),
     );
 
     _titleSlide = Tween<double>(begin: 100, end: 0).animate(
-      CurvedAnimation(parent: _controller, curve: const Interval(0.1, 0.4, curve: Curves.easeOut)),
+      CurvedAnimation(
+          parent: _controller,
+          curve: const Interval(0.1, 0.4, curve: Curves.easeOut)),
     );
 
     _titleFade = Tween<double>(begin: 0, end: 1).animate(
-      CurvedAnimation(parent: _controller, curve: const Interval(0.1, 0.4, curve: Curves.easeIn)),
+      CurvedAnimation(
+          parent: _controller,
+          curve: const Interval(0.1, 0.4, curve: Curves.easeIn)),
     );
 
     _subtitleSlide = Tween<double>(begin: 100, end: 0).animate(
-      CurvedAnimation(parent: _controller, curve: const Interval(0.3, 0.6, curve: Curves.easeOut)),
+      CurvedAnimation(
+          parent: _controller,
+          curve: const Interval(0.3, 0.6, curve: Curves.easeOut)),
     );
 
     _subtitleFade = Tween<double>(begin: 0, end: 1).animate(
-      CurvedAnimation(parent: _controller, curve: const Interval(0.3, 0.6, curve: Curves.easeIn)),
+      CurvedAnimation(
+          parent: _controller,
+          curve: const Interval(0.3, 0.6, curve: Curves.easeIn)),
     );
 
     _buttonDraw = Tween<double>(begin: 0, end: 1).animate(
-      CurvedAnimation(parent: _controller, curve: const Interval(0.5, 0.7, curve: Curves.easeInOut)),
+      CurvedAnimation(
+          parent: _controller,
+          curve: const Interval(0.5, 0.7, curve: Curves.easeInOut)),
     );
 
     _buttonFill = Tween<double>(begin: 0, end: 1).animate(
-      CurvedAnimation(parent: _controller, curve: const Interval(0.7, 0.85, curve: Curves.easeIn)),
+      CurvedAnimation(
+          parent: _controller,
+          curve: const Interval(0.7, 0.85, curve: Curves.easeIn)),
     );
 
     _buttonTextFade = Tween<double>(begin: 0, end: 1).animate(
-      CurvedAnimation(parent: _controller, curve: const Interval(0.85, 1.0, curve: Curves.easeIn)),
+      CurvedAnimation(
+          parent: _controller,
+          curve: const Interval(0.85, 1.0, curve: Curves.easeIn)),
     );
 
     _shimmerAnimation = Tween<double>(begin: -1, end: 2).animate(
@@ -83,7 +101,8 @@ class _IntroScreenState extends State<IntroScreen> with SingleTickerProviderStat
   void _startApp() {
     Navigator.of(context).pushReplacement(
       PageRouteBuilder(
-        pageBuilder: (context, animation, secondaryAnimation) => TourScreen(settings: widget.settings),
+        pageBuilder: (context, animation, secondaryAnimation) =>
+            TourScreen(settings: widget.settings),
         transitionsBuilder: (context, animation, secondaryAnimation, child) {
           return FadeTransition(opacity: animation, child: child);
         },
@@ -101,8 +120,10 @@ class _IntroScreenState extends State<IntroScreen> with SingleTickerProviderStat
     final isWideScreen = screenSize.width > 900;
 
     // Dynamic font sizes based on screen size
-    final titleFontSize = isWideScreen ? 72.0 : (isSmallScreen ? screenSize.width * 0.12 : 56.0);
-    final subtitleFontSize = isWideScreen ? 28.0 : (isSmallScreen ? screenSize.width * 0.045 : 20.0);
+    final titleFontSize =
+        isWideScreen ? 72.0 : (isSmallScreen ? screenSize.width * 0.12 : 56.0);
+    final subtitleFontSize =
+        isWideScreen ? 28.0 : (isSmallScreen ? screenSize.width * 0.045 : 20.0);
     final buttonWidth = isWideScreen ? 350.0 : (isSmallScreen ? 250.0 : 300.0);
     final buttonHeight = isWideScreen ? 64.0 : 56.0;
 
@@ -116,13 +137,14 @@ class _IntroScreenState extends State<IntroScreen> with SingleTickerProviderStat
               children: [
                 _AnimatedBackground(progress: _backgroundAnimation.value),
 
-                // المحتوى المتحرك (العنوان والوصف)
+                // ط§ظ„ظ…ط­طھظˆظ‰ ط§ظ„ظ…طھط­ط±ظƒ (ط§ظ„ط¹ظ†ظˆط§ظ† ظˆط§ظ„ظˆطµظپ)
                 Positioned.fill(
                   child: SafeArea(
                     bottom: false,
                     child: Center(
                       child: ConstrainedBox(
-                        constraints: BoxConstraints(maxWidth: isWideScreen ? 900 : 600),
+                        constraints:
+                            BoxConstraints(maxWidth: isWideScreen ? 900 : 600),
                         child: Padding(
                           padding: EdgeInsets.fromLTRB(
                             isWideScreen ? 48 : 32,
@@ -135,7 +157,11 @@ class _IntroScreenState extends State<IntroScreen> with SingleTickerProviderStat
                             children: [
                               const Spacer(),
                               Transform.translate(
-                                offset: Offset(isArabic ? _titleSlide.value : -_titleSlide.value, 0),
+                                offset: Offset(
+                                    isArabic
+                                        ? _titleSlide.value
+                                        : -_titleSlide.value,
+                                    0),
                                 child: Opacity(
                                   opacity: _titleFade.value,
                                   child: _ShinyText(
@@ -147,7 +173,11 @@ class _IntroScreenState extends State<IntroScreen> with SingleTickerProviderStat
                               ),
                               SizedBox(height: isWideScreen ? 24 : 16),
                               Transform.translate(
-                                offset: Offset(isArabic ? _subtitleSlide.value : -_subtitleSlide.value, 0),
+                                offset: Offset(
+                                    isArabic
+                                        ? _subtitleSlide.value
+                                        : -_subtitleSlide.value,
+                                    0),
                                 child: Opacity(
                                   opacity: _subtitleFade.value,
                                   child: _ShinyText(
@@ -166,7 +196,7 @@ class _IntroScreenState extends State<IntroScreen> with SingleTickerProviderStat
                   ),
                 ),
 
-                // الزر الثابت في الأسفل
+                // ط§ظ„ط²ط± ط§ظ„ط«ط§ط¨طھ ظپظٹ ط§ظ„ط£ط³ظپظ„
                 Positioned(
                   left: 0,
                   right: 0,
@@ -175,10 +205,13 @@ class _IntroScreenState extends State<IntroScreen> with SingleTickerProviderStat
                     top: false,
                     child: Padding(
                       padding: EdgeInsets.fromLTRB(
-                        32, 16, 32, isWideScreen ? 48 : 32,
+                        32,
+                        16,
+                        32,
+                        isWideScreen ? 48 : 32,
                       ),
                       child: Center(
-                        child: _ComplexButton(
+                        child: IntroButton(
                           text: l10n.startTour,
                           drawProgress: _buttonDraw.value,
                           fillProgress: _buttonFill.value,
@@ -303,148 +336,3 @@ class _ShinyText extends StatelessWidget {
   }
 }
 
-class _ComplexButton extends StatefulWidget {
-  final String text;
-  final double drawProgress;
-  final double fillProgress;
-  final double textOpacity;
-  final VoidCallback onPressed;
-  final double width;
-  final double height;
-
-  const _ComplexButton({
-    required this.text,
-    required this.drawProgress,
-    required this.fillProgress,
-    required this.textOpacity,
-    required this.onPressed,
-    this.width = 250,
-    this.height = 56,
-  });
-
-  @override
-  State<_ComplexButton> createState() => _ComplexButtonState();
-}
-
-class _ComplexButtonState extends State<_ComplexButton> with SingleTickerProviderStateMixin {
-  late AnimationController _pulseController;
-
-  @override
-  void initState() {
-    super.initState();
-    _pulseController = AnimationController(
-      duration: const Duration(milliseconds: 300),
-      vsync: this,
-    );
-  }
-
-  @override
-  void dispose() {
-    _pulseController.dispose();
-    super.dispose();
-  }
-
-  void _handleTap() {
-    _pulseController.forward().then((_) {
-      _pulseController.reverse().then((_) {
-        if (mounted) {
-          widget.onPressed();
-        }
-      });
-    });
-  }
-
-  @override
-  Widget build(BuildContext context) {
-    return GestureDetector(
-      onTap: widget.textOpacity > 0.5 ? _handleTap : null,
-      child: AnimatedBuilder(
-        animation: _pulseController,
-        builder: (context, child) {
-          return Transform.scale(
-            scale: 1.0 + _pulseController.value * 0.1,
-            child: CustomPaint(
-              painter: _ButtonPainter(
-                drawProgress: widget.drawProgress,
-                fillProgress: widget.fillProgress,
-                pulseProgress: _pulseController.value,
-              ),
-              child: Container(
-                width: widget.width,
-                height: widget.height,
-                alignment: Alignment.center,
-                child: Opacity(
-                  opacity: widget.textOpacity,
-                  child: Text(
-                    widget.text,
-                    style: TextStyle(
-                      color: Colors.white,
-                      fontSize: widget.width > 300 ? 20 : 18,
-                      fontWeight: FontWeight.bold,
-                      letterSpacing: 1.5,
-                    ),
-                  ),
-                ),
-              ),
-            ),
-          );
-        },
-      ),
-    );
-  }
-}
-
-class _ButtonPainter extends CustomPainter {
-  final double drawProgress;
-  final double fillProgress;
-  final double pulseProgress;
-
-  _ButtonPainter({
-    required this.drawProgress,
-    required this.fillProgress,
-    required this.pulseProgress,
-  });
-
-  @override
-  void paint(Canvas canvas, Size size) {
-    final rect = RRect.fromRectAndRadius(
-      Rect.fromLTWH(0, 0, size.width, size.height),
-      const Radius.circular(28),
-    );
-
-    if (fillProgress > 0) {
-      final fillPaint = Paint()
-        ..color = const Color(0xFF6750A4).withValues(alpha: 0.3 * fillProgress)
-        ..style = PaintingStyle.fill;
-      canvas.drawRRect(rect, fillPaint);
-    }
-
-    if (drawProgress > 0) {
-      final path = Path();
-      final totalLength = (size.width + size.height) * 2;
-      final currentLength = totalLength * drawProgress;
-
-      path.addRRect(rect);
-
-      final pathMetrics = path.computeMetrics().first;
-      final extractPath = pathMetrics.extractPath(0, currentLength);
-
-      final borderPaint = Paint()
-        ..color = const Color(0xFF9575CD)
-        ..style = PaintingStyle.stroke
-        ..strokeWidth = 2;
-      canvas.drawPath(extractPath, borderPaint);
-    }
-
-    if (pulseProgress > 0) {
-      final pulsePaint = Paint()
-        ..color = const Color(0xFF9575CD).withValues(alpha: 0.3 * (1 - pulseProgress))
-        ..style = PaintingStyle.stroke
-        ..strokeWidth = 4 + pulseProgress * 8;
-      canvas.drawRRect(rect, pulsePaint);
-    }
-  }
-
-  @override
-  bool shouldRepaint(_ButtonPainter oldDelegate) => true;
-}

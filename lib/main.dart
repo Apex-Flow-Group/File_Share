@@ -5,13 +5,13 @@ import 'package:flutter/material.dart';
 import 'core/apex_core.dart';
 import 'l10n/generated/app_localizations.dart';
 import 'managers/permission_manager.dart';
-import 'screens/home_screen.dart';
+import 'mobile/screens/home_screen.dart';
 import 'screens/intro_screen.dart';
 import 'screens/splash_screen.dart';
-import 'screens/tv_home_screen.dart';
-import 'screens/tv_intro_screen.dart';
 import 'services/desktop_notification_service.dart';
 import 'services/settings_service.dart';
+import 'tv/screens/tv_home_screen.dart';
+import 'tv/screens/tv_intro_screen.dart';
 import 'utils/platform_detector.dart';
 
 void main() {
@@ -46,9 +46,16 @@ class _BootApp extends StatelessWidget {
       try {
         final exe = Platform.resolvedExecutable;
         await Process.run('netsh', [
-          'advfirewall', 'firewall', 'add', 'rule',
-          'name=ApexFileShare', 'dir=in', 'action=allow',
-          'program=$exe', 'enable=yes', 'profile=private,domain',
+          'advfirewall',
+          'firewall',
+          'add',
+          'rule',
+          'name=ApexFileShare',
+          'dir=in',
+          'action=allow',
+          'program=$exe',
+          'enable=yes',
+          'profile=private,domain',
         ]);
       } catch (_) {}
     }

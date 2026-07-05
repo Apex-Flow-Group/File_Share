@@ -1,10 +1,11 @@
-import 'dart:math';
+﻿import 'dart:math';
 
 import 'package:flutter/material.dart';
 
-import '../../l10n/generated/app_localizations.dart';
-import '../../models/device.dart';
-import '../../services/transfer_progress_service.dart';
+import '../../../l10n/generated/app_localizations.dart';
+import '../../../models/device.dart';
+import '../../../services/transfer_progress_service.dart';
+import '../../../shared/radar_painter.dart';
 import '../connection_widget.dart';
 
 class SendTab extends StatefulWidget {
@@ -66,7 +67,7 @@ class _SendTabState extends State<SendTab> with TickerProviderStateMixin {
     );
   }
 
-  // ─── Scanning Screen ───────────────────────────────────────────────────────
+  // â”€â”€â”€ Scanning Screen â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 
   Widget _buildScanning() {
     final l10n = AppLocalizations.of(context);
@@ -136,7 +137,7 @@ class _SendTabState extends State<SendTab> with TickerProviderStateMixin {
                             angle: _radarSpin.value * 2 * pi,
                             child: CustomPaint(
                               size: const Size(90, 90),
-                              painter: _RadarSweepPainter(color),
+                              painter: RadarSweepPainter(color),
                             ),
                           ),
                         ),
@@ -174,7 +175,7 @@ class _SendTabState extends State<SendTab> with TickerProviderStateMixin {
     );
   }
 
-  // ─── Device List ───────────────────────────────────────────────────────────
+  // â”€â”€â”€ Device List â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 
   Widget _buildDeviceList() {
     final l10n = AppLocalizations.of(context);
@@ -198,7 +199,7 @@ class _SendTabState extends State<SendTab> with TickerProviderStateMixin {
                 itemCount: widget.devices.length,
                 itemBuilder: (context, i) {
                   final device = widget.devices[i];
-                  // هذا الجهاز هو المستهدف بالإرسال الحالي؟
+                  // ظ‡ط°ط§ ط§ظ„ط¬ظ‡ط§ط² ظ‡ظˆ ط§ظ„ظ…ط³طھظ‡ط¯ظپ ط¨ط§ظ„ط¥ط±ط³ط§ظ„ ط§ظ„ط­ط§ظ„ظٹطں
                   final isTarget =
                       isTransferring && svc.targetDeviceId == device.id;
                   return ConnectionWidget(
@@ -207,7 +208,7 @@ class _SendTabState extends State<SendTab> with TickerProviderStateMixin {
                     onPendingFileSent: widget.onPendingFileSent,
                     pendingSharedFiles: widget.pendingSharedFiles,
                     onSharedFilesSent: widget.onSharedFilesSent,
-                    // مشغول عالمياً فقط إذا كان هناك إرسال لجهاز آخر
+                    // ظ…ط´ط؛ظˆظ„ ط¹ط§ظ„ظ…ظٹط§ظ‹ ظپظ‚ط· ط¥ط°ط§ ظƒط§ظ† ظ‡ظ†ط§ظƒ ط¥ط±ط³ط§ظ„ ظ„ط¬ظ‡ط§ط² ط¢ط®ط±
                     isGloballyBusy: isTransferring && !isTarget,
                   );
                 },
@@ -219,7 +220,7 @@ class _SendTabState extends State<SendTab> with TickerProviderStateMixin {
     );
   }
 
-  // ─── Header ────────────────────────────────────────────────────────────────
+  // â”€â”€â”€ Header â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 
   Widget _buildHeader(AppLocalizations l10n) {
     final isDark = Theme.of(context).brightness == Brightness.dark;
@@ -298,24 +299,3 @@ class _SendTabState extends State<SendTab> with TickerProviderStateMixin {
   }
 }
 
-// ─── Radar Sweep Painter ───────────────────────────────────────────────────────
-
-class _RadarSweepPainter extends CustomPainter {
-  final Color color;
-  _RadarSweepPainter(this.color);
-
-  @override
-  void paint(Canvas canvas, Size size) {
-    final center = Offset(size.width / 2, size.height / 2);
-    final radius = size.width / 2;
-    final paint = Paint()
-      ..shader = SweepGradient(
-        colors: [color.withValues(alpha: 0.0), color.withValues(alpha: 0.5)],
-        stops: const [0.7, 1.0],
-      ).createShader(Rect.fromCircle(center: center, radius: radius));
-    canvas.drawCircle(center, radius, paint);
-  }
-
-  @override
-  bool shouldRepaint(_) => false;
-}
