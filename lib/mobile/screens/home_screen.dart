@@ -104,7 +104,7 @@ class _HomeScreenState extends State<HomeScreen>
         onTap: (i) => _ctrl.setCurrentIndex(i),
         onSettingsTap: _openSettings,
         onAboutTap: _openAbout,
-        onRestartTap: _ctrl.restartSystem,
+        onRestartTap: _ctrl.refreshDiscovery,
       ),
     );
   }
@@ -158,7 +158,7 @@ class _HomeScreenState extends State<HomeScreen>
                       RailIconButton(
                           icon: Icons.restart_alt_rounded,
                           tooltip: l10n.restartingSystem,
-                          onTap: _ctrl.restartSystem),
+                          onTap: _ctrl.refreshDiscovery),
                       const SizedBox(height: 8),
                       RailIconButton(
                           icon: Icons.settings_rounded,
@@ -295,7 +295,7 @@ class _HomeScreenState extends State<HomeScreen>
                     SidebarActionTile(
                         icon: Icons.restart_alt_rounded,
                         label: l10n.restartingSystem,
-                        onTap: _ctrl.restartSystem),
+                        onTap: _ctrl.refreshDiscovery),
                     SidebarActionTile(
                         icon: Icons.settings_rounded,
                         label: l10n.settings,

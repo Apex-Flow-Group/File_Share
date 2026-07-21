@@ -81,6 +81,14 @@ class HttpTransfer {
     final accepted = await completer.future
         .timeout(const Duration(seconds: 30), onTimeout: () => false);
 
+    // إذا قُبل — ابدأ وضع الاستقبال مع عدد الملفات
+    if (accepted) {
+      TransferProgressService().startReceive(
+        senderDeviceName: fromDevice,
+        totalFiles: fileCount,
+      );
+    }
+
     req.response
       ..statusCode = HttpStatus.ok
       ..write(jsonEncode({'accepted': accepted}));
@@ -104,8 +112,8 @@ class HttpTransfer {
       final startTime = DateTime.now();
       const updateInterval = 256 * 1024;
 
-      // أبلغ عن بدء الاستقبال مع اسم الجهاز المُرسِل
-      TransferProgressService().startReceive(senderDeviceName: fromDevice);
+      // أبلغ عن بدء استقبال الملف الحالي
+      // (startReceive تم استدعاؤه في handlePermissionRequest مع العدد الكامل)
 
       await for (final chunk in req) {
         if (TransferProgressService().isCancelledReceive) {
@@ -129,7 +137,6 @@ class HttpTransfer {
       await sink.flush();
       await sink.close();
       sink = null;
-      TransferProgressService().clearProgress();
 
       // Move to public Downloads via MediaStore (Android 10+), or category path for non-Android
       String finalPath;
@@ -158,11 +165,23 @@ class HttpTransfer {
         ..write(jsonEncode({'success': true}));
       await req.response.close();
 
+      final progress = TransferProgressService();
+      progress.nextFile();
+
+      // أطلق الإشعار فقط عند آخر ملف في الدفعة
+      final isLastFile = progress.currentFileIndex >= progress.totalFiles;
+      if (isLastFile) {
+        progress.clearProgress();
+      }
+
       onFileReceived(FileReceivedEvent(
         fileName: fileName,
         fileSize: received,
         fromDevice: fromDevice,
         filePath: finalPath,
+        isLastInBatch: isLastFile,
+        batchTotal: progress.totalFiles,
+        batchIndex: progress.currentFileIndex,
       ));
     } on _CancelException {
       try {
@@ -230,17 +249,22 @@ class HttpTransfer {
   }
 
   Future<bool> ping(Device device) async {
-    HttpClient? client;
-    try {
-      client = HttpClient()..connectionTimeout = const Duration(seconds: 3);
-      final req = await client.get(device.ip, device.port, '/ping');
-      final res = await req.close();
-      return res.statusCode == 200;
-    } catch (_) {
-      return false;
-    } finally {
-      client?.close(force: true);
+    // محاولتين بـ timeout قصير — أسرع من محاولة واحدة بـ timeout طويل
+    for (int attempt = 0; attempt < 2; attempt++) {
+      HttpClient? client;
+      try {
+        client = HttpClient()..connectionTimeout = const Duration(seconds: 2);
+        final req = await client.get(device.ip, device.port, '/ping');
+        final res = await req.close();
+        if (res.statusCode == 200) {
+          return true;
+        }
+      } catch (_) {
+      } finally {
+        client?.close(force: true);
+      }
     }
+    return false;
   }
 
   Future<bool> _requestBatch(

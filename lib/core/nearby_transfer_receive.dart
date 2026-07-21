@@ -194,12 +194,22 @@ extension NearbyTransferReceive on NearbyTransfer {
         final fileSize = await File(finalPath).length();
         ApexLogger.instance.log('NEARBY',
             '✅ Saved: $finalPath | size=$fileSize bytes', LogLevel.success);
-        progress.clearProgress();
+
+        final progress = TransferProgressService();
+        progress.nextFile();
+        final isLast = progress.currentFileIndex >= progress.totalFiles;
+        if (isLast) {
+          progress.clearProgress();
+        }
+
         onFileReceived(FileReceivedEvent(
           fileName: fileName,
           fileSize: fileSize,
           fromDevice: device?.name ?? endpointId,
           filePath: finalPath,
+          isLastInBatch: isLast,
+          batchTotal: progress.totalFiles,
+          batchIndex: progress.currentFileIndex,
         ));
       } catch (e) {
         progress.clearProgress();
@@ -291,6 +301,13 @@ extension NearbyTransferReceive on NearbyTransfer {
           Uint8List.fromList(
               utf8.encode(jsonEncode({'type': 'response', 'accepted': v}))),
         );
+        // ابدأ وضع الاستقبال مع عدد الملفات
+        if (v) {
+          TransferProgressService().startReceive(
+            senderDeviceName: fromName,
+            totalFiles: total,
+          );
+        }
       },
     ));
   }

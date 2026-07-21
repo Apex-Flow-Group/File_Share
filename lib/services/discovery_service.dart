@@ -40,6 +40,14 @@ class DiscoveryService {
     }
   }
 
+  /// بث فوري متعدد — يُستخدم عند الضغط على refresh
+  /// يرسل 3 باكتات بفاصل 300ms لتقليل احتمال الضياع
+  void forceBroadcast() {
+    _broadcast();
+    Future.delayed(const Duration(milliseconds: 300), _broadcast);
+    Future.delayed(const Duration(milliseconds: 700), _broadcast);
+  }
+
   // ─── UDP Broadcast (works on all platforms) ───────────────────────────────
 
   Future<void> _startUdp(Device localDevice) async {
@@ -57,8 +65,8 @@ class DiscoveryService {
         try {
           final msg = utf8.decode(dg.data);
           if (!msg.startsWith(_magic)) return;
-          final json = jsonDecode(msg.substring(_magic.length))
-              as Map<String, dynamic>;
+          final json =
+              jsonDecode(msg.substring(_magic.length)) as Map<String, dynamic>;
           final id = json['id'] as String;
           if (id == localDevice.id) return; // ignore self by id
           if (dg.address.address == localDevice.ip) return; // ignore self by IP
@@ -73,8 +81,8 @@ class DiscoveryService {
         } catch (_) {}
       });
 
-      // Broadcast presence every 3 seconds
-      _broadcastTimer = Timer.periodic(const Duration(seconds: 3), (_) {
+      // Broadcast presence every 2 seconds
+      _broadcastTimer = Timer.periodic(const Duration(seconds: 2), (_) {
         _broadcast();
       });
       _broadcast(); // immediate first broadcast
@@ -90,11 +98,11 @@ class DiscoveryService {
     final d = _localDevice;
     if (d == null || _udpSocket == null) return;
     final msg = '$_magic${jsonEncode({
-      'id': d.id,
-      'name': d.name,
-      'type': d.type,
-      'port': d.port,
-    })}';
+          'id': d.id,
+          'name': d.name,
+          'type': d.type,
+          'port': d.port,
+        })}';
     final data = utf8.encode(msg);
     // Send to both general broadcast and subnet broadcast
     for (final addr in _getBroadcastAddresses()) {
@@ -141,11 +149,9 @@ class DiscoveryService {
         serviceId: serviceId,
       );
       _nearbyAdvertising = true;
-      ApexLogger.instance
-          .log('NEARBY', '✅ Advertising', LogLevel.success);
+      ApexLogger.instance.log('NEARBY', '✅ Advertising', LogLevel.success);
     } catch (e) {
-      ApexLogger.instance
-          .log('NEARBY', 'Advertise failed: $e', LogLevel.error);
+      ApexLogger.instance.log('NEARBY', 'Advertise failed: $e', LogLevel.error);
     }
 
     try {
@@ -167,11 +173,9 @@ class DiscoveryService {
         serviceId: serviceId,
       );
       _nearbyDiscovering = true;
-      ApexLogger.instance
-          .log('NEARBY', '✅ Discovering', LogLevel.success);
+      ApexLogger.instance.log('NEARBY', '✅ Discovering', LogLevel.success);
     } catch (e) {
-      ApexLogger.instance
-          .log('NEARBY', 'Discovery failed: $e', LogLevel.error);
+      ApexLogger.instance.log('NEARBY', 'Discovery failed: $e', LogLevel.error);
     }
   }
 

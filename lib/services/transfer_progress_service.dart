@@ -47,14 +47,16 @@ class TransferProgressService {
     _senderDeviceName = null;
   }
 
-  /// تهيئة استقبال مع تحديد اسم الجهاز المُرسِل
-  void startReceive({String? senderDeviceName}) {
+  /// تهيئة استقبال مع تحديد اسم الجهاز المُرسِل وعدد الملفات
+  void startReceive({String? senderDeviceName, int totalFiles = 1}) {
     _isCancelled = false;
     _isCancelledReceive = false; // أعد تصفير الإلغاء السابق
     _isBatchActive = true;
     _isSending = false;
     _senderDeviceName = senderDeviceName;
     _targetDeviceId = null;
+    _totalFiles = totalFiles;
+    _currentFileIndex = 0;
   }
 
   void nextFile() {
