@@ -5,7 +5,6 @@ import 'package:flutter/services.dart';
 
 import '../../core/apex_core.dart';
 import '../../models/device.dart';
-import '../../services/desktop_notification_service.dart';
 import '../../services/file_operations_service.dart';
 import '../../services/file_storage_service.dart';
 import '../../services/settings_service.dart';
@@ -81,12 +80,14 @@ class HomeController extends ChangeNotifier {
       notifyListeners();
     });
     ApexCore.instance.fileReceivedStream.listen((e) {
-      onFileReceived?.call(e);
       _currentIndex = 2;
       filesRefreshNotifier.value++;
       notifyListeners();
-      DesktopNotificationService.instance
-          .showFileReceived(e.fileName, e.fromDevice);
+
+      // اعرض الإشعار فقط عند آخر ملف في الدفعة
+      if (e.isLastInBatch) {
+        onFileReceived?.call(e);
+      }
     });
     ApexCore.instance.connectionRequestStream.listen((r) {
       onConnectionRequest?.call(r);
@@ -118,6 +119,11 @@ class HomeController extends ChangeNotifier {
     await stopSystem();
     await Future.delayed(const Duration(milliseconds: 400));
     await _startSystem();
+  }
+
+  /// تحديث خفيف — يبث وجود الجهاز فوراً بدون إعادة تشغيل
+  void refreshDiscovery() {
+    ApexCore.instance.refreshDiscovery();
   }
 
   // ─── Navigation ─────────────────────────────────────────────────────────────

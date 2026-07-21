@@ -173,6 +173,18 @@ class ApexCore {
     _devicesController.add([]);
   }
 
+  /// تحديث خفيف — بث فوري بدون إعادة تشغيل النظام
+  void refreshDiscovery() {
+    if (TransferProgressService().isTransferring) {
+      return;
+    }
+    // مسح القائمة الحالية وإعادة البث — نفس تأثير restart لكن بدون إيقاف الخادم
+    _discoveredDevices.clear();
+    _nearby.connectedEndpoints.clear();
+    _devicesController.add([]);
+    _discoveryService?.forceBroadcast();
+  }
+
   // ─── HTTP Server ───────────────────────────────────────────────────────────
 
   Future<void> _startHttpServer() async {

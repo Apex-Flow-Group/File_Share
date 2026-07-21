@@ -12,18 +12,22 @@ mixin HomeDialogs<T extends StatefulWidget> on State<T> {
   bool _isFileReceivedSheetOpen = false;
   int _fileReceivedSheetGeneration = 0;
 
+  // ─── Batch accumulator ─────────────────────────────────────────────────────
+
   // ─── File Received Sheet ───────────────────────────────────────────────────
 
-  void showFileReceivedSheet(FileReceivedEvent event) async {
+  void showFileReceivedSheet(FileReceivedEvent event) {
+    // أغلق أي sheet مفتوح
     if (_isFileReceivedSheetOpen) {
       _isFileReceivedSheetOpen = false;
       Navigator.of(context).pop();
-      await Future.delayed(const Duration(milliseconds: 250));
-      if (!mounted) {
-        return;
-      }
     }
-    _showFileReceivedSheetInternal(event);
+
+    if (event.batchTotal > 1) {
+      _showBatchSummarySheet(event);
+    } else {
+      _showFileReceivedSheetInternal(event);
+    }
   }
 
   /// Called when the user taps "Open Files" in the sheet.
@@ -80,6 +84,85 @@ mixin HomeDialogs<T extends StatefulWidget> on State<T> {
             maxLines: 1,
             overflow: TextOverflow.ellipsis,
             style: TextStyle(fontSize: 12, color: Colors.grey[500])),
+      ]),
+      actions: [
+        Expanded(
+            child: FilledButton.icon(
+          onPressed: () {
+            Navigator.pop(context);
+            onOpenFilesFromSheet();
+          },
+          icon: const Icon(Icons.folder_open_rounded, size: 18),
+          label: Text(l10n.openFiles,
+              maxLines: 1, overflow: TextOverflow.ellipsis),
+          style: FilledButton.styleFrom(
+            backgroundColor: Colors.green,
+            padding: const EdgeInsets.symmetric(vertical: 14),
+            shape:
+                RoundedRectangleBorder(borderRadius: BorderRadius.circular(14)),
+          ),
+        )),
+        const SizedBox(width: 8),
+        Expanded(
+            child: OutlinedButton(
+          onPressed: () => Navigator.pop(context),
+          style: OutlinedButton.styleFrom(
+            padding: const EdgeInsets.symmetric(vertical: 14),
+            shape:
+                RoundedRectangleBorder(borderRadius: BorderRadius.circular(14)),
+          ),
+          child: Text(l10n.close, maxLines: 1, overflow: TextOverflow.ellipsis),
+        )),
+      ],
+    ).whenComplete(() {
+      if (myGeneration == _fileReceivedSheetGeneration) {
+        _isFileReceivedSheetOpen = false;
+      }
+    });
+  }
+
+  // ─── Batch File Received Sheet ─────────────────────────────────────────────
+
+  void _showBatchSummarySheet(FileReceivedEvent lastEvent) {
+    final l10n = AppLocalizations.of(context);
+    final fromDevice = lastEvent.fromDevice;
+    final totalFiles = lastEvent.batchTotal;
+
+    _isFileReceivedSheetOpen = true;
+    _fileReceivedSheetGeneration++;
+    final myGeneration = _fileReceivedSheetGeneration;
+
+    ApexBottomSheet.showStyled(
+      context,
+      headerIcon: Icons.check_circle_rounded,
+      headerColor: Colors.green,
+      headerTitle: '${l10n.fileReceived} ($totalFiles)',
+      isDismissible: true,
+      enableDrag: false,
+      content: Column(mainAxisSize: MainAxisSize.min, children: [
+        Container(
+          width: double.infinity,
+          padding: const EdgeInsets.all(14),
+          decoration: BoxDecoration(
+            color: Colors.green.withValues(alpha: 0.06),
+            borderRadius: BorderRadius.circular(14),
+            border: Border.all(color: Colors.green.withValues(alpha: 0.2)),
+          ),
+          child: Column(children: [
+            const Icon(Icons.folder_rounded, size: 36, color: Colors.green),
+            const SizedBox(height: 8),
+            Text(
+                '$totalFiles ${l10n.localeName == 'ar' ? 'ملفات تم استلامها بنجاح' : 'files received successfully'}',
+                textAlign: TextAlign.center,
+                style:
+                    const TextStyle(fontWeight: FontWeight.bold, fontSize: 16)),
+          ]),
+        ),
+        const SizedBox(height: 10),
+        Text('${l10n.from}: $fromDevice',
+            maxLines: 1,
+            overflow: TextOverflow.ellipsis,
+            style: TextStyle(color: Colors.grey[600])),
       ]),
       actions: [
         Expanded(
