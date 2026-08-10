@@ -533,4 +533,10 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get clipboardSendTooltip => 'Send from clipboard';
+
+  @override
+  String get pinnedDevices => 'Pinned Devices';
+
+  @override
+  String get newDevices => 'New Devices';
 }

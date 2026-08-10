@@ -182,5 +182,7 @@
   "clipboardTypeImage": "Image",
   "clipboardTypeFiles": "Files",
   "clipboardTypeText": "Text",
-  "clipboardSendTooltip": "Send from clipboard"
+  "clipboardSendTooltip": "Send from clipboard",
+  "pinnedDevices": "Pinned Devices",
+  "newDevices": "New Devices"
 }

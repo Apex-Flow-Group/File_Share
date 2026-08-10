@@ -9,6 +9,7 @@ import '../../models/device.dart';
 import '../../services/clipboard_monitor_service.dart';
 import '../../services/file_operations_service.dart';
 import '../../services/file_storage_service.dart';
+import '../../services/pinned_devices_service.dart';
 import '../../services/settings_service.dart';
 import '../../services/update_service.dart';
 
@@ -25,6 +26,11 @@ class HomeController extends ChangeNotifier {
 
   List<Device> _devices = [];
   List<Device> get devices => _devices;
+
+  List<Device> _pinnedDevices = [];
+  List<Device> get pinnedDevices => _pinnedDevices;
+
+  final _pinnedService = PinnedDevicesService();
 
   bool _isRunning = false;
   bool get isRunning => _isRunning;
@@ -77,6 +83,7 @@ class HomeController extends ChangeNotifier {
     _initClipboardMonitor();
     await _startSystem();
     await _loadSortPreference();
+    await _loadPinnedDevices();
     if (!kIsWeb && Platform.isAndroid) {
       Future.delayed(const Duration(seconds: 3), _initUpdateService);
     }
@@ -131,7 +138,39 @@ class HomeController extends ChangeNotifier {
 
   /// تحديث خفيف — يبث وجود الجهاز فوراً بدون إعادة تشغيل
   void refreshDiscovery() {
+    // ping الأجهزة المثبتة فوراً قبل البحث العام
+    _pingPinnedDevices();
     ApexCore.instance.refreshDiscovery();
+  }
+
+  // ─── Pinned Devices ──────────────────────────────────────────────────────────
+
+  Future<void> _loadPinnedDevices() async {
+    _pinnedDevices = await _pinnedService.load();
+    notifyListeners();
+  }
+
+  Future<void> pinDevice(Device device) async {
+    await _pinnedService.pin(device);
+    _pinnedDevices = await _pinnedService.load();
+    notifyListeners();
+  }
+
+  Future<void> unpinDevice(String deviceId) async {
+    await _pinnedService.unpin(deviceId);
+    _pinnedDevices = await _pinnedService.load();
+    notifyListeners();
+  }
+
+  bool isPinned(String deviceId) => _pinnedDevices.any((d) => d.id == deviceId);
+
+  /// يرسل UDP ping مباشرة لـ IPs الأجهزة المثبتة
+  void _pingPinnedDevices() {
+    for (final d in _pinnedDevices) {
+      if (d.ip.isNotEmpty) {
+        ApexCore.instance.pingDevice(d);
+      }
+    }
   }
 
   // ─── Navigation ─────────────────────────────────────────────────────────────

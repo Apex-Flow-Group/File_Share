@@ -185,6 +185,11 @@ class ApexCore {
     _discoveryService?.forceBroadcast();
   }
 
+  /// إرسال UDP unicast مباشر لجهاز محدد بـ IP (للأجهزة المثبتة)
+  void pingDevice(Device device) {
+    _discoveryService?.pingDevice(device);
+  }
+
   // ─── HTTP Server ───────────────────────────────────────────────────────────
 
   Future<void> _startHttpServer() async {

@@ -1135,6 +1135,18 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Send from clipboard'**
   String get clipboardSendTooltip;
+
+  /// No description provided for @pinnedDevices.
+  ///
+  /// In en, this message translates to:
+  /// **'Pinned Devices'**
+  String get pinnedDevices;
+
+  /// No description provided for @newDevices.
+  ///
+  /// In en, this message translates to:
+  /// **'New Devices'**
+  String get newDevices;
 }
 
 class _AppLocalizationsDelegate

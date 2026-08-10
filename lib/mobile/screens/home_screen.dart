@@ -330,7 +330,11 @@ class _HomeScreenState extends State<HomeScreen>
       case 0:
         return SendTab(
           devices: _ctrl.devices,
+          pinnedDevices: _ctrl.pinnedDevices,
           isRunning: _ctrl.isRunning,
+          isPinned: _ctrl.isPinned,
+          onPin: _ctrl.pinDevice,
+          onUnpin: _ctrl.unpinDevice,
           pendingFilePath: _ctrl.pendingSinanFilePath,
           onPendingFileSent: _ctrl.clearPendingSinanFile,
           pendingSharedFiles: _ctrl.pendingSharedFiles,

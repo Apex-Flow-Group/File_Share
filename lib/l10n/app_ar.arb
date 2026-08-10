@@ -179,5 +179,7 @@
   "clipboardTypeImage": "صورة",
   "clipboardTypeFiles": "ملفات",
   "clipboardTypeText": "نص",
-  "clipboardSendTooltip": "إرسال من الحافظة"
+  "clipboardSendTooltip": "إرسال من الحافظة",
+  "pinnedDevices": "الأجهزة المثبتة",
+  "newDevices": "أجهزة جديدة"
 }
