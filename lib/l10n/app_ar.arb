@@ -173,5 +173,11 @@
   "deleteWarning": "سيتم حذف الملفات نهائياً!",
   "filesCount": "عدد الملفات",
   "fileSentSuccessfully": "تم إرسال الملف بنجاح",
-  "pickFile": "اختيار ملف"
+  "pickFile": "اختيار ملف",
+
+  "clipboardSend": "إرسال",
+  "clipboardTypeImage": "صورة",
+  "clipboardTypeFiles": "ملفات",
+  "clipboardTypeText": "نص",
+  "clipboardSendTooltip": "إرسال من الحافظة"
 }

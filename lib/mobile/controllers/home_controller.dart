@@ -1,3 +1,4 @@
+import 'dart:async';
 import 'dart:io';
 
 import 'package:flutter/foundation.dart';
@@ -5,6 +6,7 @@ import 'package:flutter/services.dart';
 
 import '../../core/apex_core.dart';
 import '../../models/device.dart';
+import '../../services/clipboard_monitor_service.dart';
 import '../../services/file_operations_service.dart';
 import '../../services/file_storage_service.dart';
 import '../../services/settings_service.dart';
@@ -32,6 +34,11 @@ class HomeController extends ChangeNotifier {
 
   List<String>? _pendingSharedFiles;
   List<String>? get pendingSharedFiles => _pendingSharedFiles;
+
+  // Clipboard state (Windows only)
+  ClipboardItem? _pendingClipboardItem;
+  ClipboardItem? get pendingClipboardItem => _pendingClipboardItem;
+  StreamSubscription<ClipboardItem?>? _clipboardSub;
 
   // Files tab state
   bool _isSelectionMode = false;
@@ -67,6 +74,7 @@ class HomeController extends ChangeNotifier {
     _checkIncomingSinanFile();
     _checkIncomingSharedFiles();
     _listenToStreams();
+    _initClipboardMonitor();
     await _startSystem();
     await _loadSortPreference();
     if (!kIsWeb && Platform.isAndroid) {
@@ -237,6 +245,29 @@ class HomeController extends ChangeNotifier {
     notifyListeners();
   }
 
+  // ─── Clipboard monitor (Windows only) ───────────────────────────────────────
+
+  void _initClipboardMonitor() {
+    if (kIsWeb || !Platform.isWindows) {
+      return;
+    }
+    ClipboardMonitorService.instance.initialize();
+    _clipboardSub = ClipboardMonitorService.instance.stream.listen((item) {
+      _pendingClipboardItem = item;
+      if (item != null) {
+        // انتقل تلقائياً لتبويب الإرسال لعرض البانر
+        _currentIndex = 0;
+      }
+      notifyListeners();
+    });
+  }
+
+  void clearPendingClipboardItem() {
+    _pendingClipboardItem = null;
+    ClipboardMonitorService.instance.clearItem();
+    notifyListeners();
+  }
+
   // ─── Incoming files (platform channels) ─────────────────────────────────────
 
   void _checkIncomingSinanFile() async {
@@ -300,6 +331,7 @@ class HomeController extends ChangeNotifier {
 
   @override
   void dispose() {
+    _clipboardSub?.cancel();
     filesRefreshNotifier.dispose();
     super.dispose();
   }

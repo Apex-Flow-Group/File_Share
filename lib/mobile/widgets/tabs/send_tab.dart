@@ -4,6 +4,7 @@ import 'package:flutter/material.dart';
 
 import '../../../l10n/generated/app_localizations.dart';
 import '../../../models/device.dart';
+import '../../../services/clipboard_monitor_service.dart';
 import '../../../services/transfer_progress_service.dart';
 import '../../../shared/radar_painter.dart';
 import '../connection_widget.dart';
@@ -15,6 +16,8 @@ class SendTab extends StatefulWidget {
   final VoidCallback? onPendingFileSent;
   final List<String>? pendingSharedFiles;
   final VoidCallback? onSharedFilesSent;
+  final ClipboardItem? pendingClipboardItem;
+  final VoidCallback? onClipboardItemSent;
   const SendTab({
     required this.devices,
     required this.isRunning,
@@ -22,6 +25,8 @@ class SendTab extends StatefulWidget {
     this.onPendingFileSent,
     this.pendingSharedFiles,
     this.onSharedFilesSent,
+    this.pendingClipboardItem,
+    this.onClipboardItemSent,
     super.key,
   });
 
@@ -208,7 +213,9 @@ class _SendTabState extends State<SendTab> with TickerProviderStateMixin {
                     onPendingFileSent: widget.onPendingFileSent,
                     pendingSharedFiles: widget.pendingSharedFiles,
                     onSharedFilesSent: widget.onSharedFilesSent,
-                    // ظ…ط´ط؛ظˆظ„ ط¹ط§ظ„ظ…ظٹط§ظ‹ ظپظ‚ط· ط¥ط°ط§ ظƒط§ظ† ظ‡ظ†ط§ظƒ ط¥ط±ط³ط§ظ„ ظ„ط¬ظ‡ط§ط² ط¢ط®ط±
+                    pendingClipboardItem: widget.pendingClipboardItem,
+                    onClipboardItemSent: widget.onClipboardItemSent,
+                    // مشغول عالمياً فقط إذا كان هناك إرسال لجهاز آخر
                     isGloballyBusy: isTransferring && !isTarget,
                   );
                 },

@@ -176,5 +176,11 @@
   "deleteWarning": "Files will be permanently deleted!",
   "filesCount": "Files Count",
   "fileSentSuccessfully": "File sent successfully",
-  "pickFile": "Pick File"
+  "pickFile": "Pick File",
+
+  "clipboardSend": "Send",
+  "clipboardTypeImage": "Image",
+  "clipboardTypeFiles": "Files",
+  "clipboardTypeText": "Text",
+  "clipboardSendTooltip": "Send from clipboard"
 }
