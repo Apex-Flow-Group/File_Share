@@ -179,7 +179,7 @@ class _TourScreenState extends State<TourScreen> {
           // ─── الاتفاقية والزر ثابتان في الأسفل ────────────────────
           SafeArea(
             top: false,
-            child: _buildBottom(l10n, isDark),
+            child: _buildBottom(l10n, isDark, isWide),
           ),
         ],
       ),
@@ -212,7 +212,7 @@ class _TourScreenState extends State<TourScreen> {
     );
   }
 
-  Widget _buildBottom(AppLocalizations l10n, bool isDark) {
+  Widget _buildBottom(AppLocalizations l10n, bool isDark, bool isWide) {
     return Container(
       padding: const EdgeInsets.fromLTRB(20, 16, 20, 20),
       color: isDark ? const Color(0xFF1C1C1E) : Colors.white,
@@ -263,11 +263,11 @@ class _TourScreenState extends State<TourScreen> {
             duration: const Duration(milliseconds: 300),
             opacity: _agreed ? 1.0 : 0.4,
             child: SizedBox(
-              width: double.infinity,
+              width: isWide ? 320 : double.infinity,
               child: FilledButton(
                 onPressed: _agreed ? _start : null,
                 style: FilledButton.styleFrom(
-                  padding: const EdgeInsets.symmetric(vertical: 16),
+                  padding: EdgeInsets.symmetric(vertical: isWide ? 12 : 16),
                   shape: RoundedRectangleBorder(
                     borderRadius: BorderRadius.circular(16),
                   ),
