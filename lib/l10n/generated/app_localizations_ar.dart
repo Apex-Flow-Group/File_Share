@@ -515,4 +515,19 @@ class AppLocalizationsAr extends AppLocalizations {
 
   @override
   String get pickFile => 'اختيار ملف';
+
+  @override
+  String get clipboardSend => 'إرسال';
+
+  @override
+  String get clipboardTypeImage => 'صورة';
+
+  @override
+  String get clipboardTypeFiles => 'ملفات';
+
+  @override
+  String get clipboardTypeText => 'نص';
+
+  @override
+  String get clipboardSendTooltip => 'إرسال من الحافظة';
 }

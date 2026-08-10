@@ -518,4 +518,19 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get pickFile => 'Pick File';
+
+  @override
+  String get clipboardSend => 'Send';
+
+  @override
+  String get clipboardTypeImage => 'Image';
+
+  @override
+  String get clipboardTypeFiles => 'Files';
+
+  @override
+  String get clipboardTypeText => 'Text';
+
+  @override
+  String get clipboardSendTooltip => 'Send from clipboard';
 }

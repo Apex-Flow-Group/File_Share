@@ -335,6 +335,8 @@ class _HomeScreenState extends State<HomeScreen>
           onPendingFileSent: _ctrl.clearPendingSinanFile,
           pendingSharedFiles: _ctrl.pendingSharedFiles,
           onSharedFilesSent: _ctrl.clearPendingSharedFiles,
+          pendingClipboardItem: _ctrl.pendingClipboardItem,
+          onClipboardItemSent: _ctrl.clearPendingClipboardItem,
         );
       case 1:
         return ReceiveTab(

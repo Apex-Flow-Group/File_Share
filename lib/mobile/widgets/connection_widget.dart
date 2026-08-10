@@ -5,6 +5,7 @@ import 'package:flutter/material.dart';
 import '../../core/apex_core.dart';
 import '../../l10n/generated/app_localizations.dart';
 import '../../models/device.dart';
+import '../../services/clipboard_monitor_service.dart';
 import '../../services/desktop_notification_service.dart';
 import '../../services/transfer_progress_service.dart';
 import '../../shared/apex_snackbar.dart';
@@ -19,6 +20,8 @@ class ConnectionWidget extends StatefulWidget {
   final VoidCallback? onPendingFileSent;
   final List<String>? pendingSharedFiles;
   final VoidCallback? onSharedFilesSent;
+  final ClipboardItem? pendingClipboardItem;
+  final VoidCallback? onClipboardItemSent;
   final bool isGloballyBusy;
   const ConnectionWidget({
     required this.device,
@@ -26,6 +29,8 @@ class ConnectionWidget extends StatefulWidget {
     this.onPendingFileSent,
     this.pendingSharedFiles,
     this.onSharedFilesSent,
+    this.pendingClipboardItem,
+    this.onClipboardItemSent,
     this.isGloballyBusy = false,
     super.key,
   });
@@ -116,6 +121,14 @@ class _ConnectionWidgetState extends State<ConnectionWidget>
                 _status == _Status.idle &&
                 !widget.isGloballyBusy)
               _buildPendingFileBanner(l10n),
+            if (widget.pendingClipboardItem != null &&
+                _status == _Status.idle &&
+                !widget.isGloballyBusy)
+              _ClipboardBanner(
+                item: widget.pendingClipboardItem!,
+                onSend: _sendClipboardItem,
+                onDismiss: widget.onClipboardItemSent,
+              ),
             _status == _Status.sending
                 ? _buildSendingState()
                 : _buildActions(l10n, isDark),
@@ -321,6 +334,43 @@ class _ConnectionWidgetState extends State<ConnectionWidget>
     }
   }
 
+  Future<void> _sendClipboardItem() async {
+    final item = widget.pendingClipboardItem;
+    if (item == null) {
+      return;
+    }
+    setSending();
+    try {
+      final ok = await ApexCore.instance.sendFiles(item.paths, widget.device);
+      if (mounted) {
+        ApexSnackBar.result(
+          context,
+          ok: ok,
+          successMessage: AppLocalizations.of(context).fileSentSuccess,
+          failMessage: AppLocalizations.of(context).fileSendFailed,
+        );
+        if (ok) {
+          widget.onClipboardItemSent?.call();
+          // نظّف الصور المؤقتة بعد الإرسال الناجح
+          await ClipboardMonitorService.instance.cleanupTempImages();
+        }
+      }
+      final label = item.paths.length == 1
+          ? item.displayName
+          : '${item.paths.length} files';
+      if (ok) {
+        await DesktopNotificationService.instance.showFileSent(label);
+      } else {
+        await DesktopNotificationService.instance.showSendFailed(label);
+      }
+    } finally {
+      TransferProgressService().clearProgress();
+      if (mounted) {
+        setIdle();
+      }
+    }
+  }
+
   Widget _buildActions(AppLocalizations l10n, bool isDark) {
     final svc = TransferProgressService();
     final isThisDeviceTarget = svc.targetDeviceId == widget.device.id;
@@ -510,6 +560,302 @@ class _TransportBadge extends StatelessWidget {
             style: TextStyle(
                 fontSize: 10, color: color, fontWeight: FontWeight.bold)),
       ]),
+    );
+  }
+}
+
+// ─── Clipboard Banner ─────────────────────────────────────────────────────────
+
+class _ClipboardBanner extends StatefulWidget {
+  final ClipboardItem item;
+  final VoidCallback onSend;
+  final VoidCallback? onDismiss;
+
+  const _ClipboardBanner({
+    required this.item,
+    required this.onSend,
+    this.onDismiss,
+  });
+
+  @override
+  State<_ClipboardBanner> createState() => _ClipboardBannerState();
+}
+
+class _ClipboardBannerState extends State<_ClipboardBanner> {
+  int? _fileSizeBytes;
+
+  @override
+  void initState() {
+    super.initState();
+    _loadSize();
+  }
+
+  @override
+  void didUpdateWidget(_ClipboardBanner old) {
+    super.didUpdateWidget(old);
+    if (old.item != widget.item) {
+      _loadSize();
+    }
+  }
+
+  Future<void> _loadSize() async {
+    final s = await widget.item.totalSize;
+    if (mounted) {
+      setState(() => _fileSizeBytes = s);
+    }
+  }
+
+  // ─── icon per type / extension ────────────────────────────────────────────
+
+  IconData get _icon {
+    if (widget.item.type == ClipboardItemType.image) {
+      return Icons.image_rounded;
+    }
+    if (widget.item.type == ClipboardItemType.text) {
+      return Icons.text_snippet_rounded;
+    }
+    switch (widget.item.extensionHint) {
+      case 'pdf':
+        return Icons.picture_as_pdf_rounded;
+      case 'zip':
+      case 'rar':
+      case '7z':
+        return Icons.folder_zip_rounded;
+      case 'mp4':
+      case 'mov':
+      case 'avi':
+      case 'mkv':
+        return Icons.video_file_rounded;
+      case 'mp3':
+      case 'wav':
+      case 'aac':
+        return Icons.audio_file_rounded;
+      case 'apk':
+        return Icons.android_rounded;
+      default:
+        return Icons.insert_drive_file_rounded;
+    }
+  }
+
+  // ─── colour per type ──────────────────────────────────────────────────────
+
+  Color get _color {
+    if (widget.item.type == ClipboardItemType.image) {
+      return const Color(0xFF007AFF); // أزرق — صورة
+    }
+    if (widget.item.type == ClipboardItemType.text) {
+      return const Color(0xFF30B0C7); // تيل — نص
+    }
+    switch (widget.item.extensionHint) {
+      case 'pdf':
+        return const Color(0xFFFF3B30);
+      case 'zip':
+      case 'rar':
+      case '7z':
+        return const Color(0xFFFF9500);
+      case 'mp4':
+      case 'mov':
+      case 'avi':
+      case 'mkv':
+        return const Color(0xFF5856D6);
+      case 'mp3':
+      case 'wav':
+      case 'aac':
+        return const Color(0xFFFF2D55);
+      default:
+        return const Color(0xFF34C759);
+    }
+  }
+
+  String _formatSize(int bytes) {
+    if (bytes < 1024) {
+      return '$bytes B';
+    }
+    if (bytes < 1024 * 1024) {
+      return '${(bytes / 1024).toStringAsFixed(1)} KB';
+    }
+    return '${(bytes / (1024 * 1024)).toStringAsFixed(1)} MB';
+  }
+
+  String get _typeLabel {
+    final l10n = AppLocalizations.of(context);
+    if (widget.item.type == ClipboardItemType.image) {
+      return l10n.clipboardTypeImage;
+    }
+    if (widget.item.type == ClipboardItemType.text) {
+      return l10n.clipboardTypeText;
+    }
+    if (widget.item.paths.length > 1) {
+      return '${widget.item.paths.length} ${l10n.clipboardTypeFiles}';
+    }
+    return widget.item.extensionHint.toUpperCase();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+    final l10n = AppLocalizations.of(context);
+    final color = _color;
+
+    return GestureDetector(
+      onTap: widget.onSend,
+      child: Container(
+        margin: const EdgeInsets.only(bottom: 10),
+        padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
+        decoration: BoxDecoration(
+          color: color.withValues(alpha: isDark ? 0.15 : 0.08),
+          borderRadius: BorderRadius.circular(14),
+          border: Border.all(
+            color: color.withValues(alpha: isDark ? 0.35 : 0.25),
+          ),
+        ),
+        child: Row(
+          children: [
+            // ─── أيقونة النوع ────────────────────────────────────────────
+            Container(
+              width: 36,
+              height: 36,
+              decoration: BoxDecoration(
+                color: color.withValues(alpha: isDark ? 0.22 : 0.12),
+                borderRadius: BorderRadius.circular(10),
+              ),
+              child: Icon(_icon, color: color, size: 18),
+            ),
+            const SizedBox(width: 10),
+
+            // ─── اسم الملف + النوع + الحجم ──────────────────────────────
+            Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  // السطر الأول: أيقونة الحافظة الصغيرة + اسم الملف
+                  Row(
+                    children: [
+                      Icon(
+                        Icons.content_paste_rounded,
+                        size: 11,
+                        color: color.withValues(alpha: 0.7),
+                      ),
+                      const SizedBox(width: 4),
+                      Expanded(
+                        child: Text(
+                          widget.item.displayName,
+                          maxLines:
+                              widget.item.type == ClipboardItemType.text
+                                  ? 2
+                                  : 1,
+                          overflow: TextOverflow.ellipsis,
+                          style: TextStyle(
+                            fontSize: widget.item.type ==
+                                    ClipboardItemType.text
+                                ? 12
+                                : 13,
+                            fontWeight: FontWeight.w600,
+                            color: isDark
+                                ? Colors.white
+                                : const Color(0xFF1C1C1E),
+                          ),
+                        ),
+                      ),
+                    ],
+                  ),
+                  const SizedBox(height: 3),
+                  // السطر الثاني: نوع الملف + الحجم (الحجم مخفي للنص)
+                  Row(
+                    children: [
+                      _TypeChip(label: _typeLabel, color: color),
+                      if (_fileSizeBytes != null &&
+                          widget.item.type != ClipboardItemType.text) ...[
+                        const SizedBox(width: 6),
+                        Text(
+                          _formatSize(_fileSizeBytes!),
+                          style: TextStyle(
+                            fontSize: 11,
+                            color: isDark ? Colors.white54 : Colors.black45,
+                          ),
+                        ),
+                      ],
+                    ],
+                  ),
+                ],
+              ),
+            ),
+            const SizedBox(width: 8),
+
+            // ─── زر الإرسال ──────────────────────────────────────────────
+            Container(
+              padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
+              decoration: BoxDecoration(
+                color: color.withValues(alpha: isDark ? 0.25 : 0.15),
+                borderRadius: BorderRadius.circular(10),
+                border: Border.all(
+                  color: color.withValues(alpha: isDark ? 0.4 : 0.3),
+                ),
+              ),
+              child: Row(mainAxisSize: MainAxisSize.min, children: [
+                Icon(Icons.send_rounded, size: 13, color: color),
+                const SizedBox(width: 4),
+                Text(
+                  l10n.clipboardSend,
+                  style: TextStyle(
+                    fontSize: 12,
+                    fontWeight: FontWeight.w600,
+                    color: color,
+                  ),
+                ),
+              ]),
+            ),
+            const SizedBox(width: 6),
+
+            // ─── زر الإغلاق ──────────────────────────────────────────────
+            GestureDetector(
+              onTap: widget.onDismiss,
+              child: Container(
+                width: 26,
+                height: 26,
+                decoration: BoxDecoration(
+                  color: (isDark ? Colors.white : Colors.black)
+                      .withValues(alpha: 0.07),
+                  borderRadius: BorderRadius.circular(8),
+                ),
+                child: Icon(
+                  Icons.close_rounded,
+                  size: 14,
+                  color: isDark ? Colors.white54 : Colors.black45,
+                ),
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+}
+
+// ─── Type Chip ────────────────────────────────────────────────────────────────
+
+class _TypeChip extends StatelessWidget {
+  final String label;
+  final Color color;
+  const _TypeChip({required this.label, required this.color});
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+      decoration: BoxDecoration(
+        color: color.withValues(alpha: 0.12),
+        borderRadius: BorderRadius.circular(6),
+      ),
+      child: Text(
+        label,
+        style: TextStyle(
+          fontSize: 10,
+          fontWeight: FontWeight.bold,
+          color: color,
+        ),
+      ),
     );
   }
 }

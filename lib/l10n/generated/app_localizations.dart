@@ -1105,6 +1105,36 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Pick File'**
   String get pickFile;
+
+  /// No description provided for @clipboardSend.
+  ///
+  /// In en, this message translates to:
+  /// **'Send'**
+  String get clipboardSend;
+
+  /// No description provided for @clipboardTypeImage.
+  ///
+  /// In en, this message translates to:
+  /// **'Image'**
+  String get clipboardTypeImage;
+
+  /// No description provided for @clipboardTypeFiles.
+  ///
+  /// In en, this message translates to:
+  /// **'Files'**
+  String get clipboardTypeFiles;
+
+  /// No description provided for @clipboardTypeText.
+  ///
+  /// In en, this message translates to:
+  /// **'Text'**
+  String get clipboardTypeText;
+
+  /// No description provided for @clipboardSendTooltip.
+  ///
+  /// In en, this message translates to:
+  /// **'Send from clipboard'**
+  String get clipboardSendTooltip;
 }
 
 class _AppLocalizationsDelegate
