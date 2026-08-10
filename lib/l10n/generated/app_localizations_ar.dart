@@ -530,4 +530,10 @@ class AppLocalizationsAr extends AppLocalizations {
 
   @override
   String get clipboardSendTooltip => 'إرسال من الحافظة';
+
+  @override
+  String get pinnedDevices => 'الأجهزة المثبتة';
+
+  @override
+  String get newDevices => 'أجهزة جديدة';
 }

@@ -48,6 +48,22 @@ class DiscoveryService {
     Future.delayed(const Duration(milliseconds: 700), _broadcast);
   }
 
+  /// إرسال unicast مباشر لـ IP جهاز محدد (للأجهزة المثبتة)
+  void pingDevice(Device device) {
+    final d = _localDevice;
+    if (d == null || _udpSocket == null || device.ip.isEmpty) return;
+    final msg = '$_magic${jsonEncode({
+          'id': d.id,
+          'name': d.name,
+          'type': d.type,
+          'port': d.port,
+        })}';
+    final data = utf8.encode(msg);
+    try {
+      _udpSocket!.send(data, InternetAddress(device.ip), _udpPort);
+    } catch (_) {}
+  }
+
   // ─── UDP Broadcast (works on all platforms) ───────────────────────────────
 
   Future<void> _startUdp(Device localDevice) async {

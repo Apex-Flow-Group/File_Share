@@ -5,7 +5,7 @@
 #define AppPublisher "ApexFlow"
 #define AppURL "https://apexflow.app"
 #define AppExeName "file_share_app.exe"
-#define ProjectDir "C:\Users\Jawal\Documents\GitHub\File_Share"
+#define ProjectDir "C:\Users\aljaw\Documents\GitHub\Apex_File_Share"
 #define SourceDir ProjectDir + "\build\windows\x64\runner\Release"
 #define AppVersion GetVersionNumbersString(SourceDir + "\" + AppExeName)
 

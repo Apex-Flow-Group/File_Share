@@ -16,6 +16,10 @@ enum _Status { idle, sending }
 
 class ConnectionWidget extends StatefulWidget {
   final Device device;
+  final bool isActive;
+  final bool isPinned;
+  final VoidCallback? onPin;
+  final VoidCallback? onUnpin;
   final String? pendingFilePath;
   final VoidCallback? onPendingFileSent;
   final List<String>? pendingSharedFiles;
@@ -25,6 +29,10 @@ class ConnectionWidget extends StatefulWidget {
   final bool isGloballyBusy;
   const ConnectionWidget({
     required this.device,
+    this.isActive = true,
+    this.isPinned = false,
+    this.onPin,
+    this.onUnpin,
     this.pendingFilePath,
     this.onPendingFileSent,
     this.pendingSharedFiles,
@@ -105,34 +113,40 @@ class _ConnectionWidgetState extends State<ConnectionWidget>
           ),
         ],
       ),
-      child: Padding(
-        padding: const EdgeInsets.all(16),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            _buildHeader(isDark),
-            const SizedBox(height: 14),
-            if (widget.pendingSharedFiles != null &&
-                widget.pendingSharedFiles!.isNotEmpty &&
-                _status == _Status.idle &&
-                !widget.isGloballyBusy)
-              _buildSharedFilesBanner(l10n),
-            if (widget.pendingFilePath != null &&
-                _status == _Status.idle &&
-                !widget.isGloballyBusy)
-              _buildPendingFileBanner(l10n),
-            if (widget.pendingClipboardItem != null &&
-                _status == _Status.idle &&
-                !widget.isGloballyBusy)
-              _ClipboardBanner(
-                item: widget.pendingClipboardItem!,
-                onSend: _sendClipboardItem,
-                onDismiss: widget.onClipboardItemSent,
-              ),
-            _status == _Status.sending
-                ? _buildSendingState()
-                : _buildActions(l10n, isDark),
-          ],
+      child: Opacity(
+        opacity: widget.isActive ? 1.0 : 0.45,
+        child: Padding(
+          padding: const EdgeInsets.all(16),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              _buildHeader(isDark),
+              const SizedBox(height: 14),
+              if (widget.isActive && widget.pendingSharedFiles != null &&
+                  widget.pendingSharedFiles!.isNotEmpty &&
+                  _status == _Status.idle &&
+                  !widget.isGloballyBusy)
+                _buildSharedFilesBanner(l10n),
+              if (widget.isActive && widget.pendingFilePath != null &&
+                  _status == _Status.idle &&
+                  !widget.isGloballyBusy)
+                _buildPendingFileBanner(l10n),
+              if (widget.isActive && widget.pendingClipboardItem != null &&
+                  _status == _Status.idle &&
+                  !widget.isGloballyBusy)
+                _ClipboardBanner(
+                  item: widget.pendingClipboardItem!,
+                  onSend: _sendClipboardItem,
+                  onDismiss: widget.onClipboardItemSent,
+                ),
+              if (!widget.isActive)
+                _buildOfflineBar(l10n)
+              else
+                _status == _Status.sending
+                    ? _buildSendingState()
+                    : _buildActions(l10n, isDark),
+            ],
+          ),
         ),
       ),
     );
@@ -176,33 +190,92 @@ class _ConnectionWidgetState extends State<ConnectionWidget>
               ),
               const SizedBox(height: 4),
               Row(children: [
-                _TransportBadge(
-                  isNearby: widget.device.isNearby,
-                  isWifi: widget.device.isMdns,
-                ),
-                if (!widget.device.isNearby && widget.device.ip.isNotEmpty) ...[
-                  const SizedBox(width: 6),
+                if (widget.isActive) ...[
+                  _TransportBadge(
+                    isNearby: widget.device.isNearby,
+                    isWifi: widget.device.isMdns,
+                  ),
+                  if (!widget.device.isNearby && widget.device.ip.isNotEmpty) ...[
+                    const SizedBox(width: 6),
+                    Text(
+                      widget.device.ip,
+                      style: TextStyle(
+                        fontSize: 11,
+                        color: Theme.of(context).colorScheme.onSurfaceVariant,
+                      ),
+                    ),
+                  ],
+                ] else
                   Text(
-                    widget.device.ip,
+                    widget.device.ip.isNotEmpty ? widget.device.ip : '—',
                     style: TextStyle(
                       fontSize: 11,
                       color: Theme.of(context).colorScheme.onSurfaceVariant,
                     ),
                   ),
-                ],
               ]),
             ],
           ),
         ),
+        // ─── زر الدبوس
+        if (widget.onPin != null || widget.onUnpin != null)
+          GestureDetector(
+            onTap: widget.isPinned ? widget.onUnpin : widget.onPin,
+            child: Container(
+              width: 30,
+              height: 30,
+              margin: const EdgeInsets.only(right: 6),
+              decoration: BoxDecoration(
+                color: widget.isPinned
+                    ? color.withValues(alpha: isDark ? 0.25 : 0.15)
+                    : (isDark ? Colors.white : Colors.black)
+                        .withValues(alpha: 0.06),
+                borderRadius: BorderRadius.circular(9),
+              ),
+              child: Icon(
+                widget.isPinned
+                    ? Icons.push_pin_rounded
+                    : Icons.push_pin_outlined,
+                size: 16,
+                color: widget.isPinned
+                    ? color
+                    : (isDark ? Colors.white38 : Colors.black38),
+              ),
+            ),
+          ),
         Container(
           width: 10,
           height: 10,
-          decoration: const BoxDecoration(
-            color: Colors.green,
+          decoration: BoxDecoration(
+            color: widget.isActive ? Colors.green : Colors.grey,
             shape: BoxShape.circle,
           ),
         ),
       ],
+    );
+  }
+
+  Widget _buildOfflineBar(AppLocalizations l10n) {
+    final isAr = l10n.localeName == 'ar';
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
+      decoration: BoxDecoration(
+        color: Colors.grey.withValues(alpha: 0.08),
+        borderRadius: BorderRadius.circular(12),
+        border: Border.all(color: Colors.grey.withValues(alpha: 0.2)),
+      ),
+      child: Row(children: [
+        const Icon(Icons.wifi_off_rounded, size: 16, color: Colors.grey),
+        const SizedBox(width: 8),
+        Text(
+          isAr ? 'غير متصل حالياً' : 'Currently offline',
+          style: const TextStyle(
+            fontSize: 12,
+            color: Colors.grey,
+            fontWeight: FontWeight.w500,
+          ),
+        ),
+      ]),
     );
   }
 
