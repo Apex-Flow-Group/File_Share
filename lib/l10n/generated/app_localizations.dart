@@ -650,6 +650,24 @@ abstract class AppLocalizations {
   /// **'Send App'**
   String get sendApp;
 
+  /// No description provided for @sendFolder.
+  ///
+  /// In en, this message translates to:
+  /// **'Send Folder'**
+  String get sendFolder;
+
+  /// No description provided for @folderSent.
+  ///
+  /// In en, this message translates to:
+  /// **'Folder sent'**
+  String get folderSent;
+
+  /// No description provided for @compressingFolder.
+  ///
+  /// In en, this message translates to:
+  /// **'Compressing folder...'**
+  String get compressingFolder;
+
   /// No description provided for @installedApps.
   ///
   /// In en, this message translates to:
@@ -1087,6 +1105,48 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Pick File'**
   String get pickFile;
+
+  /// No description provided for @clipboardSend.
+  ///
+  /// In en, this message translates to:
+  /// **'Send'**
+  String get clipboardSend;
+
+  /// No description provided for @clipboardTypeImage.
+  ///
+  /// In en, this message translates to:
+  /// **'Image'**
+  String get clipboardTypeImage;
+
+  /// No description provided for @clipboardTypeFiles.
+  ///
+  /// In en, this message translates to:
+  /// **'Files'**
+  String get clipboardTypeFiles;
+
+  /// No description provided for @clipboardTypeText.
+  ///
+  /// In en, this message translates to:
+  /// **'Text'**
+  String get clipboardTypeText;
+
+  /// No description provided for @clipboardSendTooltip.
+  ///
+  /// In en, this message translates to:
+  /// **'Send from clipboard'**
+  String get clipboardSendTooltip;
+
+  /// No description provided for @pinnedDevices.
+  ///
+  /// In en, this message translates to:
+  /// **'Pinned Devices'**
+  String get pinnedDevices;
+
+  /// No description provided for @newDevices.
+  ///
+  /// In en, this message translates to:
+  /// **'New Devices'**
+  String get newDevices;
 }
 
 class _AppLocalizationsDelegate

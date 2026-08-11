@@ -95,6 +95,9 @@
   "reconnectFailed": "Reconnect failed",
   "restartingSystem": "Refresh",
   "sendApp": "Send App",
+  "sendFolder": "Send Folder",
+  "folderSent": "Folder sent",
+  "compressingFolder": "Compressing folder...",
   "installedApps": "Installed Apps",
   "noApps": "No apps",
   "appSent": "App sent",
@@ -173,5 +176,13 @@
   "deleteWarning": "Files will be permanently deleted!",
   "filesCount": "Files Count",
   "fileSentSuccessfully": "File sent successfully",
-  "pickFile": "Pick File"
+  "pickFile": "Pick File",
+
+  "clipboardSend": "Send",
+  "clipboardTypeImage": "Image",
+  "clipboardTypeFiles": "Files",
+  "clipboardTypeText": "Text",
+  "clipboardSendTooltip": "Send from clipboard",
+  "pinnedDevices": "Pinned Devices",
+  "newDevices": "New Devices"
 }

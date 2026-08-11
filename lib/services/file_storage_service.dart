@@ -5,8 +5,8 @@ import '../utils/path_utils.dart';
 class FileStorageService {
   Future<String?> saveFile(String fileName, List<int> data) async {
     try {
-      // Step 1: Write to a temporary file first
-      final dirPath = await PathUtils.getCategoryPath(fileName);
+      // Step 1: Write to a temporary cache file first
+      final dirPath = await PathUtils.getTempCachePath();
       final dir = Directory(dirPath);
 
       if (!await dir.exists()) {
@@ -31,6 +31,20 @@ class FileStorageService {
           try {
             await tempFile.delete();
           } catch (_) {}
+        }
+      } else {
+        // Non-Android: move from temp to final category path
+        final categoryDir = await PathUtils.getCategoryPath(fileName);
+        final destPath = '$categoryDir/$fileName';
+        try {
+          await tempFile.rename(destPath);
+          finalPath = destPath;
+        } catch (_) {
+          await tempFile.copy(destPath);
+          try {
+            await tempFile.delete();
+          } catch (_) {}
+          finalPath = destPath;
         }
       }
 

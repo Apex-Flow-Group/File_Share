@@ -241,10 +241,8 @@ class MainActivity : FlutterActivity() {
             val isSystem = (appInfo.flags and ApplicationInfo.FLAG_SYSTEM) != 0
             val pkg = packageInfo.packageName
 
-            // Skip system packages
-            if (isSystem && (pkg.startsWith("android.") ||
-                    pkg.startsWith("com.android.") ||
-                    pkg.startsWith("com.google.android."))) return@mapNotNull null
+            // Skip core Android framework packages (not useful to share)
+            if (pkg == "android" || pkg.startsWith("android.")) return@mapNotNull null
 
             val apkPath = appInfo.sourceDir ?: return@mapNotNull null
 
@@ -254,7 +252,8 @@ class MainActivity : FlutterActivity() {
                     "name" to pm.getApplicationLabel(appInfo).toString(),
                     "path" to apkPath,
                     "package" to pkg,
-                    "icon" to drawableToByteArray(icon)
+                    "icon" to drawableToByteArray(icon),
+                    "isSystem" to isSystem
                 )
             } catch (e: Exception) {
                 Log.e(TAG, "Error processing app $pkg: ${e.message}")

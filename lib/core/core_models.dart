@@ -5,11 +5,17 @@ class FileReceivedEvent {
   final int fileSize;
   final String fromDevice;
   final String filePath;
+  final bool isLastInBatch;
+  final int batchTotal;
+  final int batchIndex;
   FileReceivedEvent({
     required this.fileName,
     required this.fileSize,
     required this.fromDevice,
     required this.filePath,
+    this.isLastInBatch = true,
+    this.batchTotal = 1,
+    this.batchIndex = 1,
   });
 }
 

@@ -1,35 +1,42 @@
-import 'dart:io';
-
-import 'package:flutter/foundation.dart';
-import 'package:flutter/material.dart';
+﻿import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
-import 'package:url_launcher/url_launcher.dart';
 
-import '../../l10n/generated/app_localizations.dart';
-import '../../models/device.dart';
-import '../../models/transfer_progress.dart';
-import '../../services/transfer_progress_service.dart';
+import '../../../l10n/generated/app_localizations.dart';
+import '../../../models/device.dart';
+import '../../../models/transfer_progress.dart';
+import '../../../services/transfer_progress_service.dart';
+import '../../../shared/apex_snackbar.dart';
+import '../tv_focusable_widgets.dart';
 
-class ReceiveTab extends StatefulWidget {
+class TVReceiveTab extends StatefulWidget {
   final Device? localDevice;
   final bool isRunning;
-  const ReceiveTab(
-      {required this.localDevice, required this.isRunning, super.key});
+  final VoidCallback? onBackToSidebar;
+  final FocusNode? contentFocusNode;
+  const TVReceiveTab({
+    required this.localDevice,
+    required this.isRunning,
+    this.onBackToSidebar,
+    this.contentFocusNode,
+    super.key,
+  });
 
   @override
-  State<ReceiveTab> createState() => _ReceiveTabState();
+  State<TVReceiveTab> createState() => _TVReceiveTabState();
 }
 
-class _ReceiveTabState extends State<ReceiveTab>
+class _TVReceiveTabState extends State<TVReceiveTab>
     with SingleTickerProviderStateMixin {
   bool _isReceiving = false;
-  bool _cancelledByUser =
-      false; // منع الـ listener من إعادة التشغيل بعد الإلغاء
+  bool _cancelledByUser = false;
   late AnimationController _pulseAnim;
+  late final FocusNode _copyFocus;
+  final FocusNode _cancelFocus = FocusNode(debugLabel: 'cancel-receive');
 
   @override
   void initState() {
     super.initState();
+    _copyFocus = widget.contentFocusNode ?? FocusNode(debugLabel: 'copy-ip');
     _pulseAnim = AnimationController(
       vsync: this,
       duration: const Duration(milliseconds: 1400),
@@ -39,10 +46,8 @@ class _ReceiveTabState extends State<ReceiveTab>
       if (!mounted) {
         return;
       }
-      // إذا ألغى المستخدم — لا نعيد إظهار الشريط مهما جاء من الـ stream
       if (_cancelledByUser) {
         if (p == null) {
-          // الاستقبال انتهى فعلاً — أعد ضبط الـ flag
           _cancelledByUser = false;
         }
         return;
@@ -56,6 +61,10 @@ class _ReceiveTabState extends State<ReceiveTab>
   @override
   void dispose() {
     _pulseAnim.dispose();
+    if (widget.contentFocusNode == null) {
+      _copyFocus.dispose();
+    }
+    _cancelFocus.dispose();
     super.dispose();
   }
 
@@ -77,7 +86,7 @@ class _ReceiveTabState extends State<ReceiveTab>
     );
   }
 
-  // ─── Header ────────────────────────────────────────────────────────────────
+  // â”€â”€â”€ Header â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 
   Widget _buildHeader() {
     final l10n = AppLocalizations.of(context);
@@ -161,7 +170,7 @@ class _ReceiveTabState extends State<ReceiveTab>
     );
   }
 
-  // ─── Not Ready ─────────────────────────────────────────────────────────────
+  // â”€â”€â”€ Not Ready â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 
   Widget _buildNotReady() {
     final isAr = Localizations.localeOf(context).languageCode == 'ar';
@@ -182,14 +191,14 @@ class _ReceiveTabState extends State<ReceiveTab>
             ),
             const SizedBox(height: 24),
             Text(
-              isAr ? 'النظام غير جاهز' : 'System not ready',
+              isAr ? 'ط§ظ„ظ†ط¸ط§ظ… ط؛ظٹط± ط¬ط§ظ‡ط²' : 'System not ready',
               style: Theme.of(context).textTheme.titleLarge?.copyWith(
                     fontWeight: FontWeight.bold,
                   ),
             ),
             const SizedBox(height: 8),
             Text(
-              isAr ? 'تأكد من تشغيل النظام' : 'Make sure the system is running',
+              isAr ? 'طھط£ظƒط¯ ظ…ظ† طھط´ط؛ظٹظ„ ط§ظ„ظ†ط¸ط§ظ…' : 'Make sure the system is running',
               style: Theme.of(context).textTheme.bodyMedium?.copyWith(
                     color: Theme.of(context).colorScheme.onSurfaceVariant,
                   ),
@@ -201,16 +210,14 @@ class _ReceiveTabState extends State<ReceiveTab>
     );
   }
 
-  // ─── Ready ─────────────────────────────────────────────────────────────────
+  // â”€â”€â”€ Ready â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 
   Widget _buildReady() {
     final l10n = AppLocalizations.of(context);
     final device = widget.localDevice!;
-    final bottomPadding =
-        MediaQuery.of(context).padding.bottom + kBottomNavigationBarHeight + 16;
 
     return SingleChildScrollView(
-      padding: EdgeInsets.fromLTRB(16, 16, 16, bottomPadding),
+      padding: const EdgeInsets.fromLTRB(16, 16, 16, 40),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.stretch,
         children: [
@@ -219,11 +226,6 @@ class _ReceiveTabState extends State<ReceiveTab>
           _buildDeviceCard(device, l10n),
           const SizedBox(height: 14),
           _buildTipsCard(l10n),
-          // PC download banner (Android only)
-          if (!kIsWeb && Platform.isAndroid) ...[
-            const SizedBox(height: 14),
-            _buildPcBanner(),
-          ],
         ],
       ),
     );
@@ -284,7 +286,7 @@ class _ReceiveTabState extends State<ReceiveTab>
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
               Text(
-                isAr ? 'جاهز للاستقبال' : 'Ready to Receive',
+                isAr ? 'ط¬ط§ظ‡ط² ظ„ظ„ط§ط³طھظ‚ط¨ط§ظ„' : 'Ready to Receive',
                 style: const TextStyle(
                   fontWeight: FontWeight.bold,
                   fontSize: 17,
@@ -311,7 +313,6 @@ class _ReceiveTabState extends State<ReceiveTab>
       builder: (context, snapshot) {
         final p = snapshot.data;
         final svc = TransferProgressService();
-        // تأكد أن هذا تقدم استقبال وليس إرسال
         if (svc.isSending) {
           return _buildReadyContent(isAr, AppLocalizations.of(context));
         }
@@ -334,7 +335,7 @@ class _ReceiveTabState extends State<ReceiveTab>
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
                     Text(
-                      isAr ? 'جاري الاستقبال...' : 'Receiving...',
+                      isAr ? 'ط¬ط§ط±ظٹ ط§ظ„ط§ط³طھظ‚ط¨ط§ظ„...' : 'Receiving...',
                       style: const TextStyle(
                         fontWeight: FontWeight.bold,
                         fontSize: 16,
@@ -343,7 +344,7 @@ class _ReceiveTabState extends State<ReceiveTab>
                     ),
                     if (senderName != null && senderName.isNotEmpty)
                       Text(
-                        isAr ? 'من: $senderName' : 'From: $senderName',
+                        isAr ? 'ظ…ظ†: $senderName' : 'From: $senderName',
                         style: const TextStyle(
                           fontSize: 12,
                           color: Colors.purple,
@@ -357,31 +358,16 @@ class _ReceiveTabState extends State<ReceiveTab>
                 Text(p.speedFormatted,
                     style: const TextStyle(fontSize: 12, color: Colors.purple)),
               const SizedBox(width: 8),
-              GestureDetector(
+              // Cancel button â€” focusable for remote
+              TVFocusableButton(
+                focusNode: _cancelFocus,
                 onTap: () {
                   _cancelledByUser = true;
                   TransferProgressService().cancelReceive();
-                  // أخفِ الشريط فوراً
                   setState(() => _isReceiving = false);
                 },
-                child: Container(
-                  padding:
-                      const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
-                  decoration: BoxDecoration(
-                    color: Colors.red.withValues(alpha: 0.1),
-                    borderRadius: BorderRadius.circular(8),
-                    border:
-                        Border.all(color: Colors.red.withValues(alpha: 0.3)),
-                  ),
-                  child: Text(
-                    isAr ? 'إلغاء' : 'Cancel',
-                    style: const TextStyle(
-                      fontSize: 12,
-                      color: Colors.red,
-                      fontWeight: FontWeight.w600,
-                    ),
-                  ),
-                ),
+                color: Colors.red,
+                label: isAr ? 'ط¥ظ„ط؛ط§ط،' : 'Cancel',
               ),
             ]),
             if (p != null) ...[
@@ -462,12 +448,11 @@ class _ReceiveTabState extends State<ReceiveTab>
               padding: EdgeInsets.symmetric(vertical: 8),
               child: Divider(height: 1),
             ),
-            _infoTile(
+            _infoTileWithCopy(
               icon: Icons.wifi_rounded,
               iconColor: const Color(0xFF34C759),
               label: l10n.ipAddress,
               value: device.ip,
-              copyable: true,
             ),
           ],
         ],
@@ -475,12 +460,12 @@ class _ReceiveTabState extends State<ReceiveTab>
     );
   }
 
-  Widget _infoTile(
-      {required IconData icon,
-      required Color iconColor,
-      required String label,
-      required String value,
-      bool copyable = false}) {
+  Widget _infoTile({
+    required IconData icon,
+    required Color iconColor,
+    required String label,
+    required String value,
+  }) {
     return Row(
       children: [
         Container(
@@ -507,80 +492,52 @@ class _ReceiveTabState extends State<ReceiveTab>
             ],
           ),
         ),
-        if (copyable)
-          IconButton(
-            icon: Icon(Icons.copy_rounded,
-                size: 18,
-                color: Theme.of(context).colorScheme.onSurfaceVariant),
-            onPressed: () {
-              Clipboard.setData(ClipboardData(text: value));
-              ScaffoldMessenger.of(context).showSnackBar(SnackBar(
-                content: Text(AppLocalizations.of(context).textCopied),
-                duration: const Duration(seconds: 2),
-                behavior: SnackBarBehavior.floating,
-                shape: RoundedRectangleBorder(
-                    borderRadius: BorderRadius.circular(12)),
-              ));
-            },
-          ),
       ],
     );
   }
 
-  Widget _buildPcBanner() {
-    final isDark = Theme.of(context).brightness == Brightness.dark;
-    final isAr = Localizations.localeOf(context).languageCode == 'ar';
-    const color = Color(0xFF007AFF);
-
-    return GestureDetector(
-      onTap: () async {
-        final uri = Uri.parse('https://apexflow.now');
-        if (await canLaunchUrl(uri)) {
-          await launchUrl(uri, mode: LaunchMode.externalApplication);
-        }
-      },
-      child: Container(
-        padding: const EdgeInsets.all(16),
-        decoration: BoxDecoration(
-          color: color.withValues(alpha: isDark ? 0.12 : 0.07),
-          borderRadius: BorderRadius.circular(18),
-          border: Border.all(color: color.withValues(alpha: 0.25)),
+  Widget _infoTileWithCopy({
+    required IconData icon,
+    required Color iconColor,
+    required String label,
+    required String value,
+  }) {
+    return Row(
+      children: [
+        Container(
+          padding: const EdgeInsets.all(8),
+          decoration: BoxDecoration(
+            color: iconColor.withValues(alpha: 0.12),
+            borderRadius: BorderRadius.circular(10),
+          ),
+          child: Icon(icon, size: 18, color: iconColor),
         ),
-        child: Row(children: [
-          Container(
-            padding: const EdgeInsets.all(10),
-            decoration: BoxDecoration(
-              color: color.withValues(alpha: 0.15),
-              borderRadius: BorderRadius.circular(12),
-            ),
-            child: const Icon(Icons.computer_rounded, color: color, size: 22),
-          ),
-          const SizedBox(width: 14),
-          Expanded(
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Text(
-                  isAr ? 'حمّل نسخة الكمبيوتر' : 'Get PC Version',
+        const SizedBox(width: 12),
+        Expanded(
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Text(label,
+                  style: TextStyle(
+                    fontSize: 11,
+                    color: Theme.of(context).colorScheme.onSurfaceVariant,
+                  )),
+              Text(value,
                   style: const TextStyle(
-                    fontWeight: FontWeight.bold,
-                    fontSize: 14,
-                    color: color,
-                  ),
-                ),
-                const SizedBox(height: 2),
-                Text(
-                  isAr
-                      ? 'Windows و Linux • apexflow.now'
-                      : 'Windows & Linux • apexflow.now',
-                  style: TextStyle(fontSize: 12, color: Colors.grey[600]),
-                ),
-              ],
-            ),
+                      fontWeight: FontWeight.w600, fontSize: 14)),
+            ],
           ),
-          const Icon(Icons.arrow_outward_rounded, size: 18, color: color),
-        ]),
-      ),
+        ),
+        // Copy button â€” focusable for TV remote
+        TVFocusableIconButton(
+          focusNode: _copyFocus,
+          icon: Icons.copy_rounded,
+          onTap: () {
+            Clipboard.setData(ClipboardData(text: value));
+            ApexSnackBar.info(context, AppLocalizations.of(context).textCopied);
+          },
+        ),
+      ],
     );
   }
 
@@ -651,3 +608,5 @@ class _ReceiveTabState extends State<ReceiveTab>
     );
   }
 }
+
+// â”€â”€â”€ TV Focusable Button â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
