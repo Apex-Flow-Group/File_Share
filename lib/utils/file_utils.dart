@@ -96,6 +96,22 @@ class FileUtils {
         // fallback to open_filex
       }
     }
+
+    if (Platform.isWindows) {
+      await Process.run('cmd', ['/c', 'start', '', filePath]);
+      return;
+    }
+
+    if (Platform.isLinux) {
+      await Process.run('xdg-open', [filePath]);
+      return;
+    }
+
+    if (Platform.isMacOS) {
+      await Process.run('open', [filePath]);
+      return;
+    }
+
     final result = await OpenFilex.open(filePath);
     if (result.type != ResultType.done && result.type != ResultType.noAppToOpen) {
       throw Exception(result.message);
