@@ -76,12 +76,13 @@ class ClipboardMonitorService {
   // مسارات الملفات المؤقتة للصور — لحذفها بعد الإرسال
   final List<String> _tempImagePaths = [];
 
-  static bool get _isWindows => !kIsWeb && Platform.isWindows;
+  static bool get _isDesktop =>
+      !kIsWeb && (Platform.isWindows || Platform.isLinux);
 
   // ─── تهيئة ────────────────────────────────────────────────────────────────
 
   void initialize() {
-    if (!_isWindows) {
+    if (!_isDesktop) {
       return;
     }
     _channel.setMethodCallHandler(_handleMethodCall);

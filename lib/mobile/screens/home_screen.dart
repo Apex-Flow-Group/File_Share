@@ -46,7 +46,13 @@ class _HomeScreenState extends State<HomeScreen>
   }
 
   @override
-  void onOpenFilesFromSheet() => _ctrl.setCurrentIndex(2);
+  void onOpenFilesFromSheet([String? filePath]) {
+    if (filePath != null) {
+      _openFile(File(filePath));
+    } else {
+      _ctrl.setCurrentIndex(2);
+    }
+  }
 
   void _onStateChanged() {
     if (mounted) {

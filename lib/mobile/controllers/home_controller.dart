@@ -41,7 +41,7 @@ class HomeController extends ChangeNotifier {
   List<String>? _pendingSharedFiles;
   List<String>? get pendingSharedFiles => _pendingSharedFiles;
 
-  // Clipboard state (Windows only)
+  // Clipboard state (Windows + Linux)
   ClipboardItem? _pendingClipboardItem;
   ClipboardItem? get pendingClipboardItem => _pendingClipboardItem;
   StreamSubscription<ClipboardItem?>? _clipboardSub;
@@ -284,10 +284,10 @@ class HomeController extends ChangeNotifier {
     notifyListeners();
   }
 
-  // ─── Clipboard monitor (Windows only) ───────────────────────────────────────
+  // ─── Clipboard monitor (Windows + Linux) ────────────────────────────────────
 
   void _initClipboardMonitor() {
-    if (kIsWeb || !Platform.isWindows) {
+    if (kIsWeb || (!Platform.isWindows && !Platform.isLinux)) {
       return;
     }
     ClipboardMonitorService.instance.initialize();

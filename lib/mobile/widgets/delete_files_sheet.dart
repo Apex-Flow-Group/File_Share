@@ -79,7 +79,9 @@ class DeleteFilesSheet {
                   Switch.adaptive(
                     value: deleteFromDevice,
                     activeTrackColor: Colors.red.withValues(alpha: 0.5),
-                    activeThumbColor: Colors.red,
+                    thumbColor: WidgetStateProperty.resolveWith(
+                      (s) => s.contains(WidgetState.selected) ? Colors.red : null,
+                    ),
                     onChanged: (v) => setSheetState(() => deleteFromDevice = v),
                   ),
                 ],
