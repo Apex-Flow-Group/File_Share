@@ -1,23 +1,46 @@
-# دليل تطوير Flutter لـ Android TV
-## مرجع شامل للمشاكل والحلول
+# Android TV Development Guide
+
+A reference for building and maintaining the Android TV interface in Apex File Share.
+All solutions here were derived from real issues encountered during development.
 
 ---
 
-## 1. متطلبات AndroidManifest.xml
+## Table of Contents
 
-### أساسيات لا تعمل التطبيق على TV بدونها
+1. [AndroidManifest Requirements](#1-androidmanifest-requirements)
+2. [Detecting TV vs Phone](#2-detecting-tv-vs-phone)
+3. [Permissions on TV](#3-permissions-on-tv)
+4. [Remote Control Navigation](#4-remote-control-navigation)
+5. [ListView Scroll with Remote](#5-listview-scroll-with-remote)
+6. [FilePicker on TV](#6-filepicker-on-tv)
+7. [Receiving Files on TV](#7-receiving-files-on-tv)
+8. [Correct IP Address Detection](#8-correct-ip-address-detection)
+9. [Splash Screen & Startup Speed](#9-splash-screen--startup-speed)
+10. [MENU Button Limitation](#10-menu-button-limitation)
+11. [TV UI Best Practices](#11-tv-ui-best-practices)
+12. [Nearby Connections on TV](#12-nearby-connections-on-tv)
+13. [Saving Files on TV](#13-saving-files-on-tv)
+14. [Release Build & Signing](#14-release-build--signing)
+15. [ADB over WiFi](#15-adb-over-wifi)
+16. [Pre-release Checklist](#16-pre-release-checklist)
+
+---
+
+## 1. AndroidManifest Requirements
+
+These entries are mandatory for the app to appear in the TV launcher and pass store review.
 
 ```xml
-<!-- إلزامي: يجعل التطبيق يظهر في متجر TV -->
+<!-- Required: makes the app visible in the TV store -->
 <uses-feature android:name="android.software.leanback" android:required="false" />
 
-<!-- إلزامي: بدونه يُرفض التطبيق من متجر TV -->
+<!-- Required: without this the app is rejected from the TV store -->
 <uses-feature android:name="android.hardware.touchscreen" android:required="false" />
 
-<!-- البنر الذي يظهر في الـ launcher (320x180 px PNG) -->
+<!-- Banner shown in the launcher (320x180 px PNG) -->
 <application android:banner="@drawable/tv_banner" ...>
 
-<!-- يجعل التطبيق يظهر في قائمة TV -->
+<!-- Makes the app appear in the TV home screen -->
 <intent-filter>
     <action android:name="android.intent.action.MAIN"/>
     <category android:name="android.intent.category.LAUNCHER"/>
@@ -27,86 +50,85 @@
 
 ---
 
-## 2. اكتشاف نوع الجهاز (TV vs Mobile)
+## 2. Detecting TV vs Phone
 
-### المشكلة
-`Platform.isAndroid` يرجع `true` على TV والهاتف معاً.
+`Platform.isAndroid` returns `true` on both phone and TV. Use the system feature list to distinguish them.
 
-### الحل
 ```dart
 // lib/utils/platform_detector.dart
 class PlatformDetector {
   bool _isTV = false;
+  bool get isTV => _isTV;
 
   Future<void> initialize() async {
     if (!kIsWeb && Platform.isAndroid) {
-      final androidInfo = await DeviceInfoPlugin().androidInfo;
-      _isTV = androidInfo.systemFeatures
-              .contains('android.software.leanback') ||
-          androidInfo.systemFeatures
-              .contains('android.hardware.type.television');
+      final info = await DeviceInfoPlugin().androidInfo;
+      _isTV = info.systemFeatures.contains('android.software.leanback') ||
+              info.systemFeatures.contains('android.hardware.type.television');
     }
   }
 }
 ```
 
-### ملاحظة مهمة
-استدعِ `initialize()` قبل `runApp()` لكن بعد `WidgetsFlutterBinding.ensureInitialized()`.
+Call `initialize()` before `runApp()` but after `WidgetsFlutterBinding.ensureInitialized()`.
 
 ---
 
-## 3. الصلاحيات على TV
+## 3. Permissions on TV
 
-### المشكلة
-TV لا تعرض شاشة `_PermissionGate` مما يعني عدم طلب الصلاحيات أبداً وفشل حفظ الملفات صامتاً.
+TV devices do not display the `_PermissionGate` screen, so permissions are never requested and file saves fail silently.
 
-### الحل
+**Fix:** apply `_PermissionGate` on TV the same way as on phone.
+
 ```dart
-// main.dart - طبّق _PermissionGate على TV أيضاً
 Widget _buildHome(SettingsService settings) {
   if (PlatformDetector.instance.isTV) {
     return settings.hasSeenIntro
         ? _PermissionGate(child: TVHomeScreen(settings: settings))
-        : TVIntroScreen(settings: settings);  // وليس TVHomeScreen مباشرة
+        : TVIntroScreen(settings: settings);
   }
-  // ...
+  // phone path ...
 }
 ```
 
 ---
 
-## 4. نظام التنقل بالريموت (Focus Management)
+## 4. Remote Control Navigation
 
-### المشكلة الأكبر
-وضع `Focus` wrapper حول منطقة المحتوى يمنع الـ focus من الوصول للعناصر الداخلية.
+### The main pitfall — wrapping content in `Focus`
+
+Putting a `Focus` wrapper around the content area prevents the D-pad from reaching inner widgets.
 
 ```dart
-// ❌ خطأ — يحجب الريموت عن العناصر الداخلية
+// ❌ Wrong — blocks remote from reaching inner elements
 Expanded(
   child: Focus(
     focusNode: _contentFocus,
     onKeyEvent: (_, event) { ... },
-    child: _buildContent(),  // عناصر داخلية لا تستجيب
+    child: _buildContent(),
   ),
 ),
 
-// ✅ صحيح — المحتوى مباشر بدون غلاف
+// ✅ Correct — content is rendered directly
 Expanded(child: _buildContent()),
 ```
 
-### قاعدة التنقل بين Sidebar والمحتوى
+### Moving focus between Sidebar and Content
+
 ```dart
-// RTL (عربي): يسار → محتوى، يمين → Sidebar
-// LTR (إنجليزي): يمين → محتوى، يسار → Sidebar
+// RTL (Arabic): Left → content, Right → Sidebar
+// LTR (English): Right → content, Left → Sidebar
 final isRtl = Directionality.of(context) == TextDirection.rtl;
 final toContentKey = isRtl
     ? LogicalKeyboardKey.arrowLeft
     : LogicalKeyboardKey.arrowRight;
 ```
 
-### نقل الـ Focus من Sidebar للمحتوى
+### Exposing a FocusNode per tab
+
+Each tab exposes a `FocusNode` for its first interactive element so the Sidebar can jump to it directly.
+
 ```dart
-// كل tab يُعرّض FocusNode للعنصر الأول
 final FocusNode _sendContentFocus = FocusNode();
 
 void _moveToContent() {
@@ -117,222 +139,22 @@ void _moveToContent() {
   }
 }
 
-// مرّر الـ FocusNode للـ tab
+// Pass the FocusNode to the tab widget
 TVSendTab(contentFocusNode: _sendContentFocus, ...)
 ```
 
-### منع خروج الـ focus من التطبيق
+### Preventing focus from leaving the app
+
 ```dart
-// في Sidebar — ابتلع كل الأسهم
+// In the Sidebar — absorb the arrow key that would exit the app
 if (event.logicalKey == blockedKey) {
-  return KeyEventResult.handled;  // لا تسمح بالخروج
+  return KeyEventResult.handled;
 }
 ```
 
----
+### Focusable button template
 
-## 5. الـ Scroll لا يتحرك مع الريموت
-
-### المشكلة
-`ListView` لا يتابع الـ focus — الريموت ينتقل للعنصر التالي لكن القائمة تبقى ثابتة.
-
-### الحل
 ```dart
-// أضف GlobalKey لكل عنصر
-final List<GlobalKey> _itemKeys = [];
-
-// في onKey عند arrowDown/arrowUp
-WidgetsBinding.instance.addPostFrameCallback((_) {
-  final ctx = _itemKeys[nextIndex].currentContext;
-  if (ctx != null) {
-    Scrollable.ensureVisible(
-      ctx,
-      alignment: 0.7,
-      duration: const Duration(milliseconds: 150),
-    );
-  }
-});
-```
-
----
-
-## 6. FilePicker لا يعمل على TV
-
-### المشكلة
-```
-No application found to handle this action
-```
-TV لا تملك file manager مثبتاً.
-
-### الحل
-ابنِ file browser مدمج يتصفح `/storage/emulated/0/` مباشرة بدون Intent:
-```dart
-Future<List<String>?> showTVFileBrowser(BuildContext context) {
-  return showDialog<List<String>>(
-    context: context,
-    builder: (_) => _TVFileBrowser(),  // يتصفح الـ storage مباشرة
-  );
-}
-```
-
----
-
-## 7. استقبال الملفات لا يعمل على TV
-
-### المشكلة A — HTTP
-`handlePermissionRequest` ينتظر رد المستخدم من dialog لا تظهر على TV.
-
-### الحل
-```dart
-// http_transfer.dart
-if (PlatformDetector.instance.isTV) {
-  req.response
-    ..statusCode = HttpStatus.ok
-    ..write(jsonEncode({'accepted': true}));
-  await req.response.close();
-  return;  // قبول تلقائي
-}
-```
-
-### المشكلة B — Nearby Connections
-`_handleTransferRequest` ينتظر رد المستخدم لكن لا أحد يرد على TV.
-
-### الحل
-```dart
-// nearby_transfer.dart
-Future<void> _handleTransferRequest(String endpointId, Map msg) async {
-  if (PlatformDetector.instance.isTV) {
-    await Nearby().sendBytesPayload(
-      endpointId,
-      Uint8List.fromList(utf8.encode(
-          jsonEncode({'type': 'response', 'accepted': true}))),
-    );
-    return;  // قبول تلقائي بدون dialog
-  }
-  // ... منطق الـ dialog العادي
-}
-```
-
-### نفس الشيء لـ Batch Request
-```dart
-Future<void> _handleBatchTransferRequest(...) async {
-  if (PlatformDetector.instance.isTV) {
-    await Nearby().sendBytesPayload(...accepted: true...);
-    return;
-  }
-  // ...
-}
-```
-
----
-
-## 8. عنوان IP خاطئ (يظهر 8.8.8.8)
-
-### المشكلة
-```dart
-// ❌ خطأ — Socket.connect يرجع عنوان الـ socket وليس الـ interface
-final s = await Socket.connect('8.8.8.8', 53);
-final ip = s.address.address;  // يرجع 8.8.8.8 على بعض الأجهزة!
-```
-
-### الحل
-```dart
-// ✅ صحيح لـ Android/TV
-if (Platform.isAndroid || Platform.isIOS) {
-  final interfaces = await NetworkInterface.list(
-    includeLinkLocal: false,
-    type: InternetAddressType.IPv4,
-  );
-  // أولوية لـ wlan
-  for (final iface in interfaces) {
-    if (iface.name.toLowerCase().contains('wlan')) {
-      for (final addr in iface.addresses) {
-        if (!addr.isLoopback) return addr.address;
-      }
-    }
-  }
-  // fallback
-  for (final iface in interfaces) {
-    for (final addr in iface.addresses) {
-      if (!addr.isLoopback) return addr.address;
-    }
-  }
-}
-```
-
----
-
-## 9. السبلاش سكرين بطيئة / شاشة بيضاء
-
-### المشكلة
-`await` قبل `runApp()` يجعل Flutter لا يبدأ حتى ينتهي الـ init → شاشة بيضاء.
-
-### الحل
-```dart
-// ❌ خطأ
-void main() async {
-  await PlatformDetector.instance.initialize();
-  await ApexCore.instance.initialize();
-  runApp(MyApp());
-}
-
-// ✅ صحيح — runApp فوراً والـ init يحدث داخل السبلاش
-void main() {
-  WidgetsFlutterBinding.ensureInitialized();
-  runApp(const BootApp());
-}
-
-// السبلاش تعرض animation وتنتقل فور انتهاء الـ init
-class SplashScreen extends StatefulWidget {
-  final Future<void> Function() onInit;
-  // ...
-  void initState() {
-    widget.onInit().then((_) => _navigate());
-  }
-}
-```
-
-### Native Splash (Android)
-```xml
-<!-- drawable/launch_background.xml — أيقونة على خلفية ملونة -->
-<layer-list>
-    <item android:drawable="@color/splash_background" />
-    <item>
-        <bitmap android:gravity="center"
-                android:src="@drawable/ic_splash"
-                android:width="56dp"
-                android:height="56dp" />
-    </item>
-</layer-list>
-```
-
----
-
-## 10. زر القائمة (MENU) على الريموت
-
-### المشكلة
-زر MENU محجوز للنظام ولا يصل للتطبيق.
-
-### الحل
-لا تعتمد على MENU. ضع Settings وRefresh كعناصر مرئية في الـ Sidebar مع FocusNode.
-
----
-
-## 11. واجهة TV — أفضل الممارسات
-
-### الشاشات
-- استخدم layout **Sidebar + Content** بدلاً من BottomNavigation أو TabBar
-- الـ Sidebar عرضه 240-280dp
-- المحتوى `Expanded`
-
-### الـ Dialogs
-- استخدم `Dialog` بدلاً من `BottomSheet` — أسهل للتنقل بالريموت
-- أول عنصر في الـ Dialog يأخذ `autofocus: true`
-- أضف `onKeyEvent` لكل عنصر قابل للتفاعل
-
-### الأزرار
-```dart
-// كل زر يحتاج
 Focus(
   focusNode: _focusNode,
   onKeyEvent: (_, event) {
@@ -347,47 +169,235 @@ Focus(
   child: Builder(builder: (ctx) {
     final hasFocus = Focus.of(ctx).hasFocus;
     return AnimatedContainer(
+      duration: const Duration(milliseconds: 150),
       decoration: BoxDecoration(
         border: hasFocus ? Border.all(color: color, width: 2) : null,
+        borderRadius: BorderRadius.circular(12),
       ),
-      child: /* ... */,
+      child: /* your widget */,
     );
   }),
 )
 ```
 
-### الـ Settings على TV
-- لا تفتح شاشة جديدة
-- استخدم **Details Panel** — يظهر من الجانب (slide animation) ويغلق بسهم العودة
+---
+
+## 5. ListView Scroll with Remote
+
+`ListView` does not auto-scroll to keep the focused item visible. Add a `GlobalKey` per item and call `Scrollable.ensureVisible` on D-pad navigation.
+
+```dart
+final List<GlobalKey> _itemKeys = List.generate(count, (_) => GlobalKey());
+
+// Inside onKeyEvent for arrowDown / arrowUp:
+WidgetsBinding.instance.addPostFrameCallback((_) {
+  final ctx = _itemKeys[nextIndex].currentContext;
+  if (ctx != null) {
+    Scrollable.ensureVisible(
+      ctx,
+      alignment: 0.7,
+      duration: const Duration(milliseconds: 150),
+    );
+  }
+});
+```
 
 ---
 
-## 12. الـ Nearby Connections على TV
+## 6. FilePicker on TV
 
-### المشكلة
+TV devices typically have no file manager installed, so `FilePicker` throws:
+
+```
+No application found to handle this action
+```
+
+**Fix:** build a custom file browser that reads `/storage/emulated/0/` directly without using an Intent.
+
+```dart
+Future<List<String>?> showTVFileBrowser(BuildContext context) {
+  return showDialog<List<String>>(
+    context: context,
+    builder: (_) => const TVFileBrowser(),
+  );
+}
+```
+
+The implementation lives in `lib/tv/widgets/tv_file_browser.dart`.
+
+---
+
+## 7. Receiving Files on TV
+
+### HTTP — auto-accept
+
+The standard flow shows an accept dialog that no one sees on TV.
+
+```dart
+// http_transfer.dart
+if (PlatformDetector.instance.isTV) {
+  req.response
+    ..statusCode = HttpStatus.ok
+    ..write(jsonEncode({'accepted': true}));
+  await req.response.close();
+  return; // auto-accept
+}
+```
+
+### Nearby Connections — auto-accept
+
+```dart
+// nearby_transfer.dart
+Future<void> _handleTransferRequest(String endpointId, Map msg) async {
+  if (PlatformDetector.instance.isTV) {
+    await Nearby().sendBytesPayload(
+      endpointId,
+      Uint8List.fromList(utf8.encode(
+          jsonEncode({'type': 'response', 'accepted': true}))),
+    );
+    return; // auto-accept
+  }
+  // normal dialog flow ...
+}
+```
+
+Apply the same pattern to `_handleBatchTransferRequest`.
+
+---
+
+## 8. Correct IP Address Detection
+
+Using `Socket.connect('8.8.8.8', 53)` can return `8.8.8.8` instead of the local interface address on some devices.
+
+```dart
+// ❌ Wrong
+final s = await Socket.connect('8.8.8.8', 53);
+final ip = s.address.address; // may return 8.8.8.8
+
+// ✅ Correct — enumerate network interfaces directly
+if (Platform.isAndroid || Platform.isIOS) {
+  final interfaces = await NetworkInterface.list(
+    includeLinkLocal: false,
+    type: InternetAddressType.IPv4,
+  );
+  // prefer wlan interface
+  for (final iface in interfaces) {
+    if (iface.name.toLowerCase().contains('wlan')) {
+      for (final addr in iface.addresses) {
+        if (!addr.isLoopback) return addr.address;
+      }
+    }
+  }
+  // fallback to any non-loopback address
+  for (final iface in interfaces) {
+    for (final addr in iface.addresses) {
+      if (!addr.isLoopback) return addr.address;
+    }
+  }
+}
+```
+
+---
+
+## 9. Splash Screen & Startup Speed
+
+`await` calls before `runApp()` block Flutter from painting the first frame, causing a white screen.
+
+```dart
+// ❌ Wrong — white screen until all init completes
+void main() async {
+  await PlatformDetector.instance.initialize();
+  await ApexCore.instance.initialize();
+  runApp(MyApp());
+}
+
+// ✅ Correct — runApp immediately, init happens inside SplashScreen
+void main() {
+  WidgetsFlutterBinding.ensureInitialized();
+  runApp(const BootApp());
+}
+```
+
+`SplashScreen` runs the async init and navigates forward when it finishes:
+
+```dart
+class SplashScreen extends StatefulWidget {
+  final Future<void> Function() onInit;
+  // ...
+  @override
+  void initState() {
+    super.initState();
+    widget.onInit().then((_) => _navigateNext());
+  }
+}
+```
+
+### Native Android splash
+
+```xml
+<!-- drawable/launch_background.xml -->
+<layer-list>
+    <item android:drawable="@color/splash_background" />
+    <item>
+        <bitmap
+            android:gravity="center"
+            android:src="@drawable/ic_splash"
+            android:width="56dp"
+            android:height="56dp" />
+    </item>
+</layer-list>
+```
+
+---
+
+## 10. MENU Button Limitation
+
+The MENU button is reserved by the Android TV system and does not reach the app. Do not rely on it for navigation. Place Settings and Refresh as visible focusable items inside the Sidebar instead.
+
+---
+
+## 11. TV UI Best Practices
+
+### Layout
+
+- Use a **Sidebar + Content** layout — not BottomNavigation or TabBar
+- Sidebar width: 240–280 dp
+- Content area: `Expanded`
+
+### Dialogs
+
+- Use `Dialog` instead of `BottomSheet` — easier to navigate with the remote
+- Set `autofocus: true` on the first element inside every dialog
+- Add `onKeyEvent` to each interactive element
+
+### Settings panel
+
+- Do not push a new route for settings on TV
+- Use a **Details Panel** — slides in from the side with an animation and closes on back arrow
+
+---
+
+## 12. Nearby Connections on TV
+
+Some TV devices report:
+
 ```
 MISSING_PERMISSION_ACCESS_COARSE_LOCATION
 ```
-هذا طبيعي على بعض TV — التطبيق يعمل بـ UDP discovery بدلاً من Nearby.
 
-### ملاحظة
-التلفاز يعمل بـ **HTTP + UDP** فقط، ليس Nearby. الهواتف تستخدم Nearby.
+This is expected — the app falls back to UDP discovery + HTTP transfer on TV. Nearby Connections is phone-only.
 
 ---
 
-## 13. حفظ الملفات على TV
+## 13. Saving Files on TV
 
-### `rename()` تفشل بـ Cross-device link
-```
-FileSystemException: Cannot rename file, errno = 18 (Cross-device link)
-```
+`File.rename()` throws a `Cross-device link` error when the temp directory and the destination are on different partitions.
 
-### الحل
 ```dart
 try {
   await File(tmpPath).rename(destPath);
 } catch (_) {
-  // Fallback
+  // fallback: copy then delete
   await File(tmpPath).copy(destPath);
   await File(tmpPath).delete();
 }
@@ -395,69 +405,76 @@ try {
 
 ---
 
-## 14. تثبيت نسخة Release على TV
+## 14. Release Build & Signing
 
-### مشكلة توقيع مختلف
+### Signature mismatch error
+
 ```
 INSTALL_FAILED_UPDATE_INCOMPATIBLE: signatures do not match
 ```
 
-### الحل
+Uninstall the old build first:
 ```bash
-# احذف القديم أولاً
-adb uninstall com.your.package
+adb uninstall com.apexflow.tools.transfer
 adb install app-release.apk
 ```
 
-### إنشاء Keystore
+### Creating a keystore
+
 ```bash
 keytool -genkeypair -v \
   -keystore android/release.jks \
-  -alias mykey \
+  -alias apexkey \
   -keyalg RSA -keysize 2048 -validity 10000 \
-  -storepass mypassword -keypass mypassword \
-  -dname "CN=MyApp, O=MyOrg, C=SA"
+  -storepass YOUR_STORE_PASS -keypass YOUR_KEY_PASS \
+  -dname "CN=ApexFileShare, O=ApexFlowGroup, C=SA"
 ```
 
-### key.properties
+### android/key.properties
+
 ```properties
-storePassword=mypassword
-keyPassword=mypassword
-keyAlias=mykey
+storePassword=YOUR_STORE_PASS
+keyPassword=YOUR_KEY_PASS
+keyAlias=apexkey
 storeFile=release.jks
 ```
 
-> ⚠️ أضف `key.properties` و `*.jks` للـ `.gitignore`
+> ⚠️ Add both `key.properties` and `*.jks` to `.gitignore` — never commit signing credentials.
 
 ---
 
-## 15. اختبار TV عبر ADB WiFi
+## 15. ADB over WiFi
 
 ```bash
-# اتصل بالتلفاز
-adb connect 192.168.x.x:5555
+# Enable ADB on the TV (Developer Options → Network Debugging)
+adb connect <tv-ip>:5555
 
-# تثبيت
-adb -s 192.168.x.x:5555 install -r app.apk
+# Install
+adb -s <tv-ip>:5555 install -r app.apk
 
-# مراقبة اللوق
-adb -s 192.168.x.x:5555 logcat --pid=$(adb -s 192.168.x.x:5555 shell pidof com.your.package) -d
+# Run Flutter directly on the TV
+flutter run -d <tv-ip>:5555
+
+# View logs for this app only
+adb -s <tv-ip>:5555 logcat \
+  --pid=$(adb -s <tv-ip>:5555 shell pidof com.apexflow.tools.transfer) -d
 ```
 
 ---
 
-## ملخص Checklist قبل نشر تطبيق على TV
+## 16. Pre-release Checklist
 
-- [ ] `android.software.leanback` مضاف بـ `required="false"`
-- [ ] `android.hardware.touchscreen` مضاف بـ `required="false"`
-- [ ] `LEANBACK_LAUNCHER` مضاف للـ intent-filter
-- [ ] `android:banner` مضاف للـ application
-- [ ] `PlatformDetector.isTV` يعمل صح
-- [ ] `_PermissionGate` مطبّق على TV
-- [ ] كل عنصر تفاعلي له `FocusNode` و `onKeyEvent`
-- [ ] `Scrollable.ensureVisible` في القوائم
-- [ ] قبول تلقائي للملفات على TV (HTTP + Nearby)
-- [ ] IP address يستخدم `NetworkInterface.list()` وليس `Socket.connect`
-- [ ] `FilePicker` مستبدل بـ file browser مدمج
-- [ ] Native splash يحتوي أيقونة (لا شاشة بيضاء فارغة)
-- [ ] `runApp()` بدون `await` قبله
+- [ ] `android.software.leanback` added with `required="false"`
+- [ ] `android.hardware.touchscreen` added with `required="false"`
+- [ ] `LEANBACK_LAUNCHER` added to intent-filter
+- [ ] `android:banner` set in application tag
+- [ ] `PlatformDetector.isTV` returns correct value
+- [ ] `_PermissionGate` applied on TV path
+- [ ] Every interactive element has a `FocusNode` and `onKeyEvent`
+- [ ] `Scrollable.ensureVisible` used in all list views
+- [ ] Auto-accept enabled for file transfer on TV (HTTP + Nearby)
+- [ ] IP address uses `NetworkInterface.list()` not `Socket.connect`
+- [ ] `FilePicker` replaced with built-in `TVFileBrowser`
+- [ ] Native splash has an icon (no blank white screen on startup)
+- [ ] `runApp()` is called without any `await` before it
+- [ ] Signing keystore is in `.gitignore`
