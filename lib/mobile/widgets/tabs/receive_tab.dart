@@ -1,33 +1,32 @@
+import 'dart:io';
+
+import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
+import 'package:url_launcher/url_launcher.dart';
 
-import '../../l10n/generated/app_localizations.dart';
-import '../../models/device.dart';
-import '../../models/transfer_progress.dart';
-import '../../services/transfer_progress_service.dart';
+import '../../../l10n/generated/app_localizations.dart';
+import '../../../models/device.dart';
+import '../../../models/transfer_progress.dart';
+import '../../../services/transfer_progress_service.dart';
+import '../../../shared/apex_snackbar.dart';
 
-class TVReceiveTab extends StatefulWidget {
+class ReceiveTab extends StatefulWidget {
   final Device? localDevice;
   final bool isRunning;
-  final VoidCallback? onBackToSidebar;
-  const TVReceiveTab({
-    required this.localDevice,
-    required this.isRunning,
-    this.onBackToSidebar,
-    super.key,
-  });
+  const ReceiveTab(
+      {required this.localDevice, required this.isRunning, super.key});
 
   @override
-  State<TVReceiveTab> createState() => _TVReceiveTabState();
+  State<ReceiveTab> createState() => _ReceiveTabState();
 }
 
-class _TVReceiveTabState extends State<TVReceiveTab>
+class _ReceiveTabState extends State<ReceiveTab>
     with SingleTickerProviderStateMixin {
   bool _isReceiving = false;
-  bool _cancelledByUser = false;
+  bool _cancelledByUser =
+      false; // منع الـ listener من إعادة التشغيل بعد الإلغاء
   late AnimationController _pulseAnim;
-  final FocusNode _copyFocus = FocusNode(debugLabel: 'copy-ip');
-  final FocusNode _cancelFocus = FocusNode(debugLabel: 'cancel-receive');
 
   @override
   void initState() {
@@ -41,8 +40,10 @@ class _TVReceiveTabState extends State<TVReceiveTab>
       if (!mounted) {
         return;
       }
+      // إذا ألغى المستخدم — لا نعيد إظهار الشريط مهما جاء من الـ stream
       if (_cancelledByUser) {
         if (p == null) {
+          // الاستقبال انتهى فعلاً — أعد ضبط الـ flag
           _cancelledByUser = false;
         }
         return;
@@ -56,8 +57,6 @@ class _TVReceiveTabState extends State<TVReceiveTab>
   @override
   void dispose() {
     _pulseAnim.dispose();
-    _copyFocus.dispose();
-    _cancelFocus.dispose();
     super.dispose();
   }
 
@@ -208,9 +207,11 @@ class _TVReceiveTabState extends State<TVReceiveTab>
   Widget _buildReady() {
     final l10n = AppLocalizations.of(context);
     final device = widget.localDevice!;
+    final bottomPadding =
+        MediaQuery.of(context).padding.bottom + kBottomNavigationBarHeight + 16;
 
     return SingleChildScrollView(
-      padding: const EdgeInsets.fromLTRB(16, 16, 16, 40),
+      padding: EdgeInsets.fromLTRB(16, 16, 16, bottomPadding),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.stretch,
         children: [
@@ -219,6 +220,11 @@ class _TVReceiveTabState extends State<TVReceiveTab>
           _buildDeviceCard(device, l10n),
           const SizedBox(height: 14),
           _buildTipsCard(l10n),
+          // PC download banner (Android only)
+          if (!kIsWeb && Platform.isAndroid) ...[
+            const SizedBox(height: 14),
+            _buildPcBanner(),
+          ],
         ],
       ),
     );
@@ -306,6 +312,7 @@ class _TVReceiveTabState extends State<TVReceiveTab>
       builder: (context, snapshot) {
         final p = snapshot.data;
         final svc = TransferProgressService();
+        // تأكد أن هذا تقدم استقبال وليس إرسال
         if (svc.isSending) {
           return _buildReadyContent(isAr, AppLocalizations.of(context));
         }
@@ -351,16 +358,31 @@ class _TVReceiveTabState extends State<TVReceiveTab>
                 Text(p.speedFormatted,
                     style: const TextStyle(fontSize: 12, color: Colors.purple)),
               const SizedBox(width: 8),
-              // Cancel button — focusable for remote
-              _TVFocusableButton(
-                focusNode: _cancelFocus,
+              GestureDetector(
                 onTap: () {
                   _cancelledByUser = true;
                   TransferProgressService().cancelReceive();
+                  // أخفِ الشريط فوراً
                   setState(() => _isReceiving = false);
                 },
-                color: Colors.red,
-                label: isAr ? 'إلغاء' : 'Cancel',
+                child: Container(
+                  padding:
+                      const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
+                  decoration: BoxDecoration(
+                    color: Colors.red.withValues(alpha: 0.1),
+                    borderRadius: BorderRadius.circular(8),
+                    border:
+                        Border.all(color: Colors.red.withValues(alpha: 0.3)),
+                  ),
+                  child: Text(
+                    isAr ? 'إلغاء' : 'Cancel',
+                    style: const TextStyle(
+                      fontSize: 12,
+                      color: Colors.red,
+                      fontWeight: FontWeight.w600,
+                    ),
+                  ),
+                ),
               ),
             ]),
             if (p != null) ...[
@@ -441,11 +463,12 @@ class _TVReceiveTabState extends State<TVReceiveTab>
               padding: EdgeInsets.symmetric(vertical: 8),
               child: Divider(height: 1),
             ),
-            _infoTileWithCopy(
+            _infoTile(
               icon: Icons.wifi_rounded,
               iconColor: const Color(0xFF34C759),
               label: l10n.ipAddress,
               value: device.ip,
+              copyable: true,
             ),
           ],
         ],
@@ -453,12 +476,12 @@ class _TVReceiveTabState extends State<TVReceiveTab>
     );
   }
 
-  Widget _infoTile({
-    required IconData icon,
-    required Color iconColor,
-    required String label,
-    required String value,
-  }) {
+  Widget _infoTile(
+      {required IconData icon,
+      required Color iconColor,
+      required String label,
+      required String value,
+      bool copyable = false}) {
     return Row(
       children: [
         Container(
@@ -485,58 +508,75 @@ class _TVReceiveTabState extends State<TVReceiveTab>
             ],
           ),
         ),
+        if (copyable)
+          IconButton(
+            icon: Icon(Icons.copy_rounded,
+                size: 18,
+                color: Theme.of(context).colorScheme.onSurfaceVariant),
+            onPressed: () {
+              Clipboard.setData(ClipboardData(text: value));
+              ApexSnackBar.info(
+                  context, AppLocalizations.of(context).textCopied);
+            },
+          ),
       ],
     );
   }
 
-  Widget _infoTileWithCopy({
-    required IconData icon,
-    required Color iconColor,
-    required String label,
-    required String value,
-  }) {
-    return Row(
-      children: [
-        Container(
-          padding: const EdgeInsets.all(8),
-          decoration: BoxDecoration(
-            color: iconColor.withValues(alpha: 0.12),
-            borderRadius: BorderRadius.circular(10),
-          ),
-          child: Icon(icon, size: 18, color: iconColor),
+  Widget _buildPcBanner() {
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+    final isAr = Localizations.localeOf(context).languageCode == 'ar';
+    const color = Color(0xFF007AFF);
+
+    return GestureDetector(
+      onTap: () async {
+        final uri = Uri.parse('https://apexflow.now');
+        if (await canLaunchUrl(uri)) {
+          await launchUrl(uri, mode: LaunchMode.externalApplication);
+        }
+      },
+      child: Container(
+        padding: const EdgeInsets.all(16),
+        decoration: BoxDecoration(
+          color: color.withValues(alpha: isDark ? 0.12 : 0.07),
+          borderRadius: BorderRadius.circular(18),
+          border: Border.all(color: color.withValues(alpha: 0.25)),
         ),
-        const SizedBox(width: 12),
-        Expanded(
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Text(label,
-                  style: TextStyle(
-                    fontSize: 11,
-                    color: Theme.of(context).colorScheme.onSurfaceVariant,
-                  )),
-              Text(value,
+        child: Row(children: [
+          Container(
+            padding: const EdgeInsets.all(10),
+            decoration: BoxDecoration(
+              color: color.withValues(alpha: 0.15),
+              borderRadius: BorderRadius.circular(12),
+            ),
+            child: const Icon(Icons.computer_rounded, color: color, size: 22),
+          ),
+          const SizedBox(width: 14),
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  isAr ? 'حمّل نسخة الكمبيوتر' : 'Get PC Version',
                   style: const TextStyle(
-                      fontWeight: FontWeight.w600, fontSize: 14)),
-            ],
+                    fontWeight: FontWeight.bold,
+                    fontSize: 14,
+                    color: color,
+                  ),
+                ),
+                const SizedBox(height: 2),
+                Text(
+                  isAr
+                      ? 'Windows و Linux • apexflow.now'
+                      : 'Windows & Linux • apexflow.now',
+                  style: TextStyle(fontSize: 12, color: Colors.grey[600]),
+                ),
+              ],
+            ),
           ),
-        ),
-        // Copy button — focusable for TV remote
-        _TVFocusableIconButton(
-          focusNode: _copyFocus,
-          icon: Icons.copy_rounded,
-          onTap: () {
-            Clipboard.setData(ClipboardData(text: value));
-            ScaffoldMessenger.of(context).showSnackBar(SnackBar(
-              content: Text(AppLocalizations.of(context).textCopied),
-              duration: const Duration(seconds: 2),
-              behavior: SnackBarBehavior.floating,
-              shape: RoundedRectangleBorder(
-                  borderRadius: BorderRadius.circular(12)),
-            ));
-          },
-        ),
-      ],
+          const Icon(Icons.arrow_outward_rounded, size: 18, color: color),
+        ]),
+      ),
     );
   }
 
@@ -604,129 +644,6 @@ class _TVReceiveTabState extends State<TVReceiveTab>
           ),
         ],
       ),
-    );
-  }
-}
-
-// ─── TV Focusable Button ──────────────────────────────────────────────────────
-// زر صغير يدعم التنقل بالريموت
-
-class _TVFocusableButton extends StatefulWidget {
-  final FocusNode focusNode;
-  final VoidCallback onTap;
-  final Color color;
-  final String label;
-
-  const _TVFocusableButton({
-    required this.focusNode,
-    required this.onTap,
-    required this.color,
-    required this.label,
-  });
-
-  @override
-  State<_TVFocusableButton> createState() => _TVFocusableButtonState();
-}
-
-class _TVFocusableButtonState extends State<_TVFocusableButton> {
-  @override
-  Widget build(BuildContext context) {
-    return Focus(
-      focusNode: widget.focusNode,
-      onKeyEvent: (_, event) {
-        if (event is KeyDownEvent &&
-            (event.logicalKey == LogicalKeyboardKey.select ||
-                event.logicalKey == LogicalKeyboardKey.enter)) {
-          widget.onTap();
-          return KeyEventResult.handled;
-        }
-        return KeyEventResult.ignored;
-      },
-      child: Builder(builder: (ctx) {
-        final hasFocus = Focus.of(ctx).hasFocus;
-        return GestureDetector(
-          onTap: widget.onTap,
-          child: AnimatedContainer(
-            duration: const Duration(milliseconds: 150),
-            padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
-            decoration: BoxDecoration(
-              color: widget.color.withValues(alpha: hasFocus ? 0.2 : 0.1),
-              borderRadius: BorderRadius.circular(8),
-              border: Border.all(
-                color: widget.color.withValues(alpha: hasFocus ? 0.8 : 0.3),
-                width: hasFocus ? 2 : 1,
-              ),
-            ),
-            child: Text(
-              widget.label,
-              style: TextStyle(
-                fontSize: 12,
-                color: widget.color,
-                fontWeight: FontWeight.w600,
-              ),
-            ),
-          ),
-        );
-      }),
-    );
-  }
-}
-
-// ─── TV Focusable Icon Button ─────────────────────────────────────────────────
-
-class _TVFocusableIconButton extends StatefulWidget {
-  final FocusNode focusNode;
-  final IconData icon;
-  final VoidCallback onTap;
-
-  const _TVFocusableIconButton({
-    required this.focusNode,
-    required this.icon,
-    required this.onTap,
-  });
-
-  @override
-  State<_TVFocusableIconButton> createState() => _TVFocusableIconButtonState();
-}
-
-class _TVFocusableIconButtonState extends State<_TVFocusableIconButton> {
-  @override
-  Widget build(BuildContext context) {
-    final color = Theme.of(context).colorScheme.primary;
-    return Focus(
-      focusNode: widget.focusNode,
-      onKeyEvent: (_, event) {
-        if (event is KeyDownEvent &&
-            (event.logicalKey == LogicalKeyboardKey.select ||
-                event.logicalKey == LogicalKeyboardKey.enter)) {
-          widget.onTap();
-          return KeyEventResult.handled;
-        }
-        return KeyEventResult.ignored;
-      },
-      child: Builder(builder: (ctx) {
-        final hasFocus = Focus.of(ctx).hasFocus;
-        return GestureDetector(
-          onTap: widget.onTap,
-          child: AnimatedContainer(
-            duration: const Duration(milliseconds: 150),
-            padding: const EdgeInsets.all(8),
-            decoration: BoxDecoration(
-              color:
-                  hasFocus ? color.withValues(alpha: 0.15) : Colors.transparent,
-              borderRadius: BorderRadius.circular(10),
-              border: hasFocus ? Border.all(color: color, width: 2) : null,
-            ),
-            child: Icon(
-              widget.icon,
-              size: 18,
-              color: hasFocus
-                  ? color
-                  : Theme.of(context).colorScheme.onSurfaceVariant,
-            ),
-          ),
-        );
-      }),
     );
   }
 }

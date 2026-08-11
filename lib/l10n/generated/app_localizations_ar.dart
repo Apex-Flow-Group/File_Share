@@ -286,6 +286,15 @@ class AppLocalizationsAr extends AppLocalizations {
   String get sendApp => 'إرسال تطبيق';
 
   @override
+  String get sendFolder => 'إرسال مجلد';
+
+  @override
+  String get folderSent => 'تم إرسال المجلد';
+
+  @override
+  String get compressingFolder => 'جاري ضغط المجلد...';
+
+  @override
   String get installedApps => 'التطبيقات المثبتة';
 
   @override
@@ -506,4 +515,25 @@ class AppLocalizationsAr extends AppLocalizations {
 
   @override
   String get pickFile => 'اختيار ملف';
+
+  @override
+  String get clipboardSend => 'إرسال';
+
+  @override
+  String get clipboardTypeImage => 'صورة';
+
+  @override
+  String get clipboardTypeFiles => 'ملفات';
+
+  @override
+  String get clipboardTypeText => 'نص';
+
+  @override
+  String get clipboardSendTooltip => 'إرسال من الحافظة';
+
+  @override
+  String get pinnedDevices => 'الأجهزة المثبتة';
+
+  @override
+  String get newDevices => 'أجهزة جديدة';
 }

@@ -158,6 +158,33 @@ class FileOperationsHandler(private val context: Context) {
             val mimeType = MimeTypeMap.getSingleton()
                 .getMimeTypeFromExtension(ext) ?: "*/*"
 
+            // Special handling for APK files — check install permission first
+            if (ext == "apk" || mimeType == "application/vnd.android.package-archive") {
+                if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
+                    if (!context.packageManager.canRequestPackageInstalls()) {
+                        // Redirect user to enable "Install from unknown sources" for this app
+                        val settingsIntent = Intent(
+                            android.provider.Settings.ACTION_MANAGE_UNKNOWN_APP_SOURCES,
+                            Uri.parse("package:${context.packageName}")
+                        ).apply {
+                            addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
+                        }
+                        context.startActivity(settingsIntent)
+                        result.success(true)
+                        return
+                    }
+                }
+
+                val installIntent = Intent(Intent.ACTION_VIEW).apply {
+                    setDataAndType(uri, "application/vnd.android.package-archive")
+                    addFlags(Intent.FLAG_GRANT_READ_URI_PERMISSION)
+                    addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
+                }
+                context.startActivity(installIntent)
+                result.success(true)
+                return
+            }
+
             val intent = Intent(Intent.ACTION_VIEW).apply {
                 setDataAndType(uri, mimeType)
                 addFlags(Intent.FLAG_GRANT_READ_URI_PERMISSION)

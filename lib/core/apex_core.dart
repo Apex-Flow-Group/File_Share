@@ -2,8 +2,6 @@ import 'dart:async';
 import 'dart:io';
 
 import 'package:flutter/foundation.dart';
-import 'package:nearby_connections/nearby_connections.dart';
-
 import 'package:shared_preferences/shared_preferences.dart';
 
 import '../managers/device_manager.dart';
@@ -166,15 +164,30 @@ class ApexCore {
     _cleanupTimer?.cancel();
     await _httpServer?.close();
     if (_isAndroid) {
-      await Nearby().stopAdvertising();
-      await Nearby().stopDiscovery();
-      await Nearby().stopAllEndpoints();
+      await _nearby.stopAll();
     }
     await _discoveryService?.stop();
     _discoveryService = null;
     _discoveredDevices.clear();
     _nearby.connectedEndpoints.clear();
     _devicesController.add([]);
+  }
+
+  /// تحديث خفيف — بث فوري بدون إعادة تشغيل النظام
+  void refreshDiscovery() {
+    if (TransferProgressService().isTransferring) {
+      return;
+    }
+    // مسح القائمة الحالية وإعادة البث — نفس تأثير restart لكن بدون إيقاف الخادم
+    _discoveredDevices.clear();
+    _nearby.connectedEndpoints.clear();
+    _devicesController.add([]);
+    _discoveryService?.forceBroadcast();
+  }
+
+  /// إرسال UDP unicast مباشر لجهاز محدد بـ IP (للأجهزة المثبتة)
+  void pingDevice(Device device) {
+    _discoveryService?.pingDevice(device);
   }
 
   // ─── HTTP Server ───────────────────────────────────────────────────────────
@@ -214,7 +227,7 @@ class ApexCore {
   // ─── Send ──────────────────────────────────────────────────────────────────
 
   Future<bool> sendFile(String filePath, Device target) =>
-      sendFileWithName(filePath, filePath.split('/').last, target);
+      sendFileWithName(filePath, _extractFileName(filePath), target);
 
   Future<bool> sendFileWithName(
       String filePath, String fileName, Device target) async {
@@ -242,7 +255,7 @@ class ApexCore {
         continue;
       }
       files.add(
-          (path: path, name: path.split('/').last, size: await f.length()));
+          (path: path, name: _extractFileName(path), size: await f.length()));
     }
     if (files.isEmpty) {
       return false;
@@ -258,12 +271,7 @@ class ApexCore {
   // ─── Nearby incoming connection ────────────────────────────────────────────
 
   void handleIncomingConnectionInitiated(String endpointId) async {
-    await Nearby().acceptConnection(
-      endpointId,
-      onPayLoadRecieved: _nearby.onPayloadReceived,
-      onPayloadTransferUpdate: _nearby.onPayloadTransferUpdate,
-    );
-    _nearby.connectedEndpoints.add(endpointId);
+    await _nearby.acceptConnection(endpointId);
     ApexLogger.instance
         .log('NEARBY', '✅ Accepted: $endpointId', LogLevel.success);
   }
@@ -285,8 +293,35 @@ class ApexCore {
 
   Future<String> _getLocalIp() async {
     try {
-      final socket = await RawDatagramSocket.bind(InternetAddress.anyIPv4, 0);
-      socket.close();
+      // Android و iOS — استخدم NetworkInterface مباشرة
+      if (!kIsWeb && (Platform.isAndroid || Platform.isIOS)) {
+        final interfaces = await NetworkInterface.list(
+          includeLinkLocal: false,
+          type: InternetAddressType.IPv4,
+        );
+        // أولوية لـ wlan/wifi
+        for (final iface in interfaces) {
+          final name = iface.name.toLowerCase();
+          if (name.contains('wlan') ||
+              name.contains('wifi') ||
+              name.contains('wl')) {
+            for (final addr in iface.addresses) {
+              if (!addr.isLoopback) {
+                return addr.address;
+              }
+            }
+          }
+        }
+        // fallback لأي interface آخر
+        for (final iface in interfaces) {
+          for (final addr in iface.addresses) {
+            if (!addr.isLoopback) {
+              return addr.address;
+            }
+          }
+        }
+        return '127.0.0.1';
+      }
 
       if (!kIsWeb &&
           (Platform.isWindows || Platform.isLinux || Platform.isMacOS)) {
@@ -321,25 +356,6 @@ class ApexCore {
           }
         }
       }
-
-      try {
-        final s = await Socket.connect('8.8.8.8', 53,
-            timeout: const Duration(seconds: 2));
-        final ip = s.address.address;
-        s.destroy();
-        if (!ip.startsWith('127.')) {
-          return ip;
-        }
-      } catch (_) {}
-
-      for (final iface in await NetworkInterface.list(
-          includeLinkLocal: false, type: InternetAddressType.IPv4)) {
-        for (final addr in iface.addresses) {
-          if (!addr.isLoopback && addr.type == InternetAddressType.IPv4) {
-            return addr.address;
-          }
-        }
-      }
     } catch (_) {}
     return '127.0.0.1';
   }
@@ -349,5 +365,12 @@ class ApexCore {
     _devicesController.close();
     _fileReceivedController.close();
     _connectionRequestController.close();
+  }
+
+  /// استخراج اسم الملف من المسار بشكل يعمل على كل الأنظمة
+  static String _extractFileName(String path) {
+    // يدعم / و \ كفاصل مسارات
+    final lastSep = path.lastIndexOf(RegExp(r'[/\\]'));
+    return lastSep == -1 ? path : path.substring(lastSep + 1);
   }
 }

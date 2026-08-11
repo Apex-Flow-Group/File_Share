@@ -2,25 +2,40 @@ import 'dart:math';
 
 import 'package:flutter/material.dart';
 
-import '../../l10n/generated/app_localizations.dart';
-import '../../models/device.dart';
-import '../../services/transfer_progress_service.dart';
+import '../../../l10n/generated/app_localizations.dart';
+import '../../../models/device.dart';
+import '../../../services/clipboard_monitor_service.dart';
+import '../../../services/transfer_progress_service.dart';
+import '../../../shared/radar_painter.dart';
 import '../connection_widget.dart';
 
 class SendTab extends StatefulWidget {
   final List<Device> devices;
+  final List<Device> pinnedDevices;
   final bool isRunning;
   final String? pendingFilePath;
   final VoidCallback? onPendingFileSent;
   final List<String>? pendingSharedFiles;
   final VoidCallback? onSharedFilesSent;
+  final ClipboardItem? pendingClipboardItem;
+  final VoidCallback? onClipboardItemSent;
+  final bool Function(String) isPinned;
+  final Future<void> Function(Device) onPin;
+  final Future<void> Function(String) onUnpin;
+
   const SendTab({
     required this.devices,
+    required this.pinnedDevices,
     required this.isRunning,
+    required this.isPinned,
+    required this.onPin,
+    required this.onUnpin,
     this.pendingFilePath,
     this.onPendingFileSent,
     this.pendingSharedFiles,
     this.onSharedFilesSent,
+    this.pendingClipboardItem,
+    this.onClipboardItemSent,
     super.key,
   });
 
@@ -60,9 +75,16 @@ class _SendTabState extends State<SendTab> with TickerProviderStateMixin {
 
   @override
   Widget build(BuildContext context) {
+    final isDesktop = MediaQuery.of(context).size.width >= 900;
+    final hasAny =
+        widget.devices.isNotEmpty || widget.pinnedDevices.isNotEmpty;
     return SafeArea(
       bottom: false,
-      child: widget.devices.isEmpty ? _buildScanning() : _buildDeviceList(),
+      child: !hasAny
+          ? _buildScanning()
+          : isDesktop
+              ? _buildDesktopList()
+              : _buildDeviceList(),
     );
   }
 
@@ -87,7 +109,6 @@ class _SendTabState extends State<SendTab> with TickerProviderStateMixin {
                   child: Stack(
                     alignment: Alignment.center,
                     children: [
-                      // outer pulse ring
                       AnimatedBuilder(
                         animation: _pulseSlow,
                         builder: (_, __) => Container(
@@ -103,7 +124,6 @@ class _SendTabState extends State<SendTab> with TickerProviderStateMixin {
                           ),
                         ),
                       ),
-                      // inner pulse ring
                       AnimatedBuilder(
                         animation: _pulseFast,
                         builder: (_, __) => Container(
@@ -119,7 +139,6 @@ class _SendTabState extends State<SendTab> with TickerProviderStateMixin {
                           ),
                         ),
                       ),
-                      // center circle
                       Container(
                         width: 90,
                         height: 90,
@@ -128,7 +147,6 @@ class _SendTabState extends State<SendTab> with TickerProviderStateMixin {
                           color: color.withValues(alpha: isDark ? 0.15 : 0.08),
                         ),
                       ),
-                      // radar sweep
                       if (widget.isRunning)
                         AnimatedBuilder(
                           animation: _radarSpin,
@@ -136,11 +154,10 @@ class _SendTabState extends State<SendTab> with TickerProviderStateMixin {
                             angle: _radarSpin.value * 2 * pi,
                             child: CustomPaint(
                               size: const Size(90, 90),
-                              painter: _RadarSweepPainter(color),
+                              painter: RadarSweepPainter(color),
                             ),
                           ),
                         ),
-                      // center icon
                       Icon(
                         widget.isRunning
                             ? Icons.wifi_tethering_rounded
@@ -174,7 +191,96 @@ class _SendTabState extends State<SendTab> with TickerProviderStateMixin {
     );
   }
 
-  // ─── Device List ───────────────────────────────────────────────────────────
+  // ─── Desktop List (Pinned + New) ───────────────────────────────────────────
+
+  Widget _buildDesktopList() {
+    final l10n = AppLocalizations.of(context);
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+    final bottomPadding =
+        MediaQuery.of(context).padding.bottom + kBottomNavigationBarHeight + 16;
+
+    // الأجهزة الجديدة = المكتشفة وليست مثبتة
+    final newDevices =
+        widget.devices.where((d) => !widget.isPinned(d.id)).toList();
+
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        _buildHeader(l10n),
+        Expanded(
+          child: StreamBuilder<dynamic>(
+            stream: TransferProgressService().progressStream,
+            builder: (context, snapshot) {
+              final svc = TransferProgressService();
+              final isTransferring = svc.isTransferring;
+              return ListView(
+                physics: isTransferring
+                    ? const NeverScrollableScrollPhysics()
+                    : const AlwaysScrollableScrollPhysics(),
+                padding: EdgeInsets.fromLTRB(16, 8, 16, bottomPadding),
+                children: [
+                  // ─── الأجهزة المثبتة
+                  if (widget.pinnedDevices.isNotEmpty) ...[
+                    _SectionHeader(
+                      icon: Icons.push_pin_rounded,
+                      label: l10n.pinnedDevices,
+                      isDark: isDark,
+                    ),
+                    ...widget.pinnedDevices.map((pinned) {
+                      final active = widget.devices
+                          .where((d) => d.id == pinned.id)
+                          .firstOrNull;
+                      return ConnectionWidget(
+                        device: active ?? pinned,
+                        isActive: active != null,
+                        isPinned: true,
+                        onPin: () => widget.onPin(active ?? pinned),
+                        onUnpin: () => widget.onUnpin(pinned.id),
+                        pendingFilePath: widget.pendingFilePath,
+                        onPendingFileSent: widget.onPendingFileSent,
+                        pendingSharedFiles: widget.pendingSharedFiles,
+                        onSharedFilesSent: widget.onSharedFilesSent,
+                        pendingClipboardItem: widget.pendingClipboardItem,
+                        onClipboardItemSent: widget.onClipboardItemSent,
+                        isGloballyBusy: isTransferring &&
+                            svc.targetDeviceId != (active?.id ?? pinned.id),
+                      );
+                    }),
+                    const SizedBox(height: 8),
+                  ],
+                  // ─── الأجهزة الجديدة
+                  if (newDevices.isNotEmpty) ...[
+                    _SectionHeader(
+                      icon: Icons.devices_rounded,
+                      label: l10n.newDevices,
+                      isDark: isDark,
+                    ),
+                    ...newDevices.map((device) => ConnectionWidget(
+                          device: device,
+                          isActive: true,
+                          isPinned: false,
+                          onPin: () => widget.onPin(device),
+                          onUnpin: () => widget.onUnpin(device.id),
+                          pendingFilePath: widget.pendingFilePath,
+                          onPendingFileSent: widget.onPendingFileSent,
+                          pendingSharedFiles: widget.pendingSharedFiles,
+                          onSharedFilesSent: widget.onSharedFilesSent,
+                          pendingClipboardItem: widget.pendingClipboardItem,
+                          onClipboardItemSent: widget.onClipboardItemSent,
+                          isGloballyBusy:
+                              isTransferring && svc.targetDeviceId != device.id,
+                        )),
+                  ],
+                ],
+              );
+            },
+          ),
+        ),
+      ],
+    );
+  }
+
+  // ─── Device List (Mobile/Tablet) ───────────────────────────────────────────
 
   Widget _buildDeviceList() {
     final l10n = AppLocalizations.of(context);
@@ -198,16 +304,20 @@ class _SendTabState extends State<SendTab> with TickerProviderStateMixin {
                 itemCount: widget.devices.length,
                 itemBuilder: (context, i) {
                   final device = widget.devices[i];
-                  // هذا الجهاز هو المستهدف بالإرسال الحالي؟
                   final isTarget =
                       isTransferring && svc.targetDeviceId == device.id;
                   return ConnectionWidget(
                     device: device,
+                    isActive: true,
+                    isPinned: widget.isPinned(device.id),
+                    onPin: () => widget.onPin(device),
+                    onUnpin: () => widget.onUnpin(device.id),
                     pendingFilePath: widget.pendingFilePath,
                     onPendingFileSent: widget.onPendingFileSent,
                     pendingSharedFiles: widget.pendingSharedFiles,
                     onSharedFilesSent: widget.onSharedFilesSent,
-                    // مشغول عالمياً فقط إذا كان هناك إرسال لجهاز آخر
+                    pendingClipboardItem: widget.pendingClipboardItem,
+                    onClipboardItemSent: widget.onClipboardItemSent,
                     isGloballyBusy: isTransferring && !isTarget,
                   );
                 },
@@ -298,24 +408,33 @@ class _SendTabState extends State<SendTab> with TickerProviderStateMixin {
   }
 }
 
-// ─── Radar Sweep Painter ───────────────────────────────────────────────────────
+// ─── Section Header ────────────────────────────────────────────────────────────
 
-class _RadarSweepPainter extends CustomPainter {
-  final Color color;
-  _RadarSweepPainter(this.color);
+class _SectionHeader extends StatelessWidget {
+  final IconData icon;
+  final String label;
+  final bool isDark;
+  const _SectionHeader(
+      {required this.icon, required this.label, required this.isDark});
 
   @override
-  void paint(Canvas canvas, Size size) {
-    final center = Offset(size.width / 2, size.height / 2);
-    final radius = size.width / 2;
-    final paint = Paint()
-      ..shader = SweepGradient(
-        colors: [color.withValues(alpha: 0.0), color.withValues(alpha: 0.5)],
-        stops: const [0.7, 1.0],
-      ).createShader(Rect.fromCircle(center: center, radius: radius));
-    canvas.drawCircle(center, radius, paint);
+  Widget build(BuildContext context) {
+    return Padding(
+      padding: const EdgeInsets.only(bottom: 8, top: 4),
+      child: Row(children: [
+        Icon(icon,
+            size: 14,
+            color: isDark ? Colors.white38 : Colors.black38),
+        const SizedBox(width: 6),
+        Text(
+          label,
+          style: TextStyle(
+            fontSize: 12,
+            fontWeight: FontWeight.w600,
+            color: isDark ? Colors.white38 : Colors.black38,
+          ),
+        ),
+      ]),
+    );
   }
-
-  @override
-  bool shouldRepaint(_) => false;
 }

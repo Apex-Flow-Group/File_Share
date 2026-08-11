@@ -287,6 +287,15 @@ class AppLocalizationsEn extends AppLocalizations {
   String get sendApp => 'Send App';
 
   @override
+  String get sendFolder => 'Send Folder';
+
+  @override
+  String get folderSent => 'Folder sent';
+
+  @override
+  String get compressingFolder => 'Compressing folder...';
+
+  @override
   String get installedApps => 'Installed Apps';
 
   @override
@@ -509,4 +518,25 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get pickFile => 'Pick File';
+
+  @override
+  String get clipboardSend => 'Send';
+
+  @override
+  String get clipboardTypeImage => 'Image';
+
+  @override
+  String get clipboardTypeFiles => 'Files';
+
+  @override
+  String get clipboardTypeText => 'Text';
+
+  @override
+  String get clipboardSendTooltip => 'Send from clipboard';
+
+  @override
+  String get pinnedDevices => 'Pinned Devices';
+
+  @override
+  String get newDevices => 'New Devices';
 }
