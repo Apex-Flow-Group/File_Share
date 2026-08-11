@@ -30,8 +30,8 @@ mixin HomeDialogs<T extends StatefulWidget> on State<T> {
     }
   }
 
-  /// Called when the user taps "Open Files" in the sheet.
-  void onOpenFilesFromSheet();
+  /// Called when the user taps "Open File" in the sheet.
+  void onOpenFilesFromSheet([String? filePath]);
 
   void _showFileReceivedSheetInternal(FileReceivedEvent event) {
     final l10n = AppLocalizations.of(context);
@@ -90,7 +90,7 @@ mixin HomeDialogs<T extends StatefulWidget> on State<T> {
             child: FilledButton.icon(
           onPressed: () {
             Navigator.pop(context);
-            onOpenFilesFromSheet();
+            onOpenFilesFromSheet(event.filePath);
           },
           icon: const Icon(Icons.folder_open_rounded, size: 18),
           label: Text(l10n.openFiles,
@@ -154,8 +154,7 @@ mixin HomeDialogs<T extends StatefulWidget> on State<T> {
             Text(
                 '$totalFiles ${l10n.localeName == 'ar' ? 'ملفات تم استلامها بنجاح' : 'files received successfully'}',
                 textAlign: TextAlign.center,
-                style:
-                    const TextStyle(fontWeight: FontWeight.bold, fontSize: 16)),
+                style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 16)),
           ]),
         ),
         const SizedBox(height: 10),
@@ -172,13 +171,11 @@ mixin HomeDialogs<T extends StatefulWidget> on State<T> {
             onOpenFilesFromSheet();
           },
           icon: const Icon(Icons.folder_open_rounded, size: 18),
-          label: Text(l10n.openFiles,
-              maxLines: 1, overflow: TextOverflow.ellipsis),
+          label: Text(l10n.openFiles, maxLines: 1, overflow: TextOverflow.ellipsis),
           style: FilledButton.styleFrom(
             backgroundColor: Colors.green,
             padding: const EdgeInsets.symmetric(vertical: 14),
-            shape:
-                RoundedRectangleBorder(borderRadius: BorderRadius.circular(14)),
+            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(14)),
           ),
         )),
         const SizedBox(width: 8),
@@ -187,8 +184,7 @@ mixin HomeDialogs<T extends StatefulWidget> on State<T> {
           onPressed: () => Navigator.pop(context),
           style: OutlinedButton.styleFrom(
             padding: const EdgeInsets.symmetric(vertical: 14),
-            shape:
-                RoundedRectangleBorder(borderRadius: BorderRadius.circular(14)),
+            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(14)),
           ),
           child: Text(l10n.close, maxLines: 1, overflow: TextOverflow.ellipsis),
         )),
