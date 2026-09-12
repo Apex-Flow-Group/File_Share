@@ -30,7 +30,7 @@ android {
     defaultConfig {
         applicationId = "com.apexflow.tools.transfer"
         minSdk = flutter.minSdkVersion
-        targetSdk = 35
+        targetSdk = 36
         versionCode = flutter.versionCode
         versionName = flutter.versionName
         // استهداف الأجهزة الحقيقية فقط — حذف x86_64 (محاكيات)

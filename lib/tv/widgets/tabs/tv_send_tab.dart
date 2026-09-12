@@ -10,12 +10,20 @@ import 'tv_send_device_card.dart';
 
 class TVSendTab extends StatefulWidget {
   final List<Device> devices;
+  final List<Device> pinnedDevices;
   final bool isRunning;
+  final bool Function(String) isPinned;
+  final Future<void> Function(Device) onPin;
+  final Future<void> Function(String) onUnpin;
   final VoidCallback? onBackToSidebar;
   final FocusNode? contentFocusNode;
   const TVSendTab({
     required this.devices,
+    required this.pinnedDevices,
     required this.isRunning,
+    required this.isPinned,
+    required this.onPin,
+    required this.onUnpin,
     this.onBackToSidebar,
     this.contentFocusNode,
     super.key,
@@ -54,9 +62,10 @@ class _TVSendTabState extends State<TVSendTab> with TickerProviderStateMixin {
 
   @override
   Widget build(BuildContext context) {
+    final hasAny = widget.devices.isNotEmpty || widget.pinnedDevices.isNotEmpty;
     return SafeArea(
       bottom: false,
-      child: widget.devices.isEmpty ? _buildScanning() : _buildDeviceList(),
+      child: !hasAny ? _buildScanning() : _buildDeviceList(),
     );
   }
 
@@ -156,6 +165,12 @@ class _TVSendTabState extends State<TVSendTab> with TickerProviderStateMixin {
 
   Widget _buildDeviceList() {
     final l10n = AppLocalizations.of(context);
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+
+    // الأجهزة الجديدة = المكتشفة وليست مثبتة
+    final newDevices =
+        widget.devices.where((d) => !widget.isPinned(d.id)).toList();
+
     return Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
       _buildHeader(l10n),
       Expanded(
@@ -164,21 +179,65 @@ class _TVSendTabState extends State<TVSendTab> with TickerProviderStateMixin {
           builder: (context, snapshot) {
             final svc = TransferProgressService();
             final isTransferring = svc.isTransferring;
-            return ListView.builder(
+            return ListView(
               padding: const EdgeInsets.fromLTRB(16, 8, 16, 40),
-              itemCount: widget.devices.length,
-              itemBuilder: (context, i) {
-                final device = widget.devices[i];
-                final isTarget =
-                    isTransferring && svc.targetDeviceId == device.id;
-                return TVDeviceCard(
-                  device: device,
-                  isGloballyBusy: isTransferring && !isTarget,
-                  autofocus: i == 0,
-                  contentFocusNode: i == 0 ? widget.contentFocusNode : null,
-                  onBackToSidebar: widget.onBackToSidebar,
-                );
-              },
+              children: [
+                // ─── الأجهزة المثبتة
+                if (widget.pinnedDevices.isNotEmpty) ...[
+                  _TVSectionHeader(
+                    icon: Icons.push_pin_rounded,
+                    label: l10n.pinnedDevices,
+                    isDark: isDark,
+                  ),
+                  ...widget.pinnedDevices.asMap().entries.map((entry) {
+                    final i = entry.key;
+                    final pinned = entry.value;
+                    final active = widget.devices
+                        .where((d) => d.id == pinned.id)
+                        .firstOrNull;
+                    return TVDeviceCard(
+                      device: active ?? pinned,
+                      isActive: active != null,
+                      isPinned: true,
+                      onPin: () => widget.onPin(active ?? pinned),
+                      onUnpin: () => widget.onUnpin(pinned.id),
+                      isGloballyBusy: isTransferring &&
+                          svc.targetDeviceId != (active?.id ?? pinned.id),
+                      autofocus: i == 0 && widget.pinnedDevices.isNotEmpty,
+                      contentFocusNode: i == 0 ? widget.contentFocusNode : null,
+                      onBackToSidebar: widget.onBackToSidebar,
+                    );
+                  }),
+                  const SizedBox(height: 8),
+                ],
+                // ─── الأجهزة الجديدة
+                if (newDevices.isNotEmpty) ...[
+                  _TVSectionHeader(
+                    icon: Icons.devices_rounded,
+                    label: l10n.newDevices,
+                    isDark: isDark,
+                  ),
+                  ...newDevices.asMap().entries.map((entry) {
+                    final i = entry.key;
+                    final device = entry.value;
+                    final isTarget =
+                        isTransferring && svc.targetDeviceId == device.id;
+                    return TVDeviceCard(
+                      device: device,
+                      isActive: true,
+                      isPinned: false,
+                      onPin: () => widget.onPin(device),
+                      onUnpin: () => widget.onUnpin(device.id),
+                      isGloballyBusy: isTransferring && !isTarget,
+                      autofocus: i == 0 && widget.pinnedDevices.isEmpty,
+                      contentFocusNode: i == 0 && widget.pinnedDevices.isEmpty
+                          ? widget.contentFocusNode
+                          : null,
+                      onBackToSidebar: widget.onBackToSidebar,
+                    );
+                  }),
+                ],
+              ],
             );
           },
         ),
@@ -249,6 +308,35 @@ class _TVSendTabState extends State<TVSendTab> with TickerProviderStateMixin {
                       fontWeight: FontWeight.w600)),
             ]),
           ),
+      ]),
+    );
+  }
+}
+
+// ─── TV Section Header ────────────────────────────────────────────────────────
+
+class _TVSectionHeader extends StatelessWidget {
+  final IconData icon;
+  final String label;
+  final bool isDark;
+  const _TVSectionHeader(
+      {required this.icon, required this.label, required this.isDark});
+
+  @override
+  Widget build(BuildContext context) {
+    return Padding(
+      padding: const EdgeInsets.only(bottom: 8, top: 4),
+      child: Row(children: [
+        Icon(icon, size: 14, color: isDark ? Colors.white38 : Colors.black38),
+        const SizedBox(width: 6),
+        Text(
+          label,
+          style: TextStyle(
+            fontSize: 12,
+            fontWeight: FontWeight.w600,
+            color: isDark ? Colors.white38 : Colors.black38,
+          ),
+        ),
       ]),
     );
   }
