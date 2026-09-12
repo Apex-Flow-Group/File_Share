@@ -8,6 +8,7 @@ import '../../l10n/generated/app_localizations.dart';
 import '../../models/device.dart';
 import '../../services/desktop_notification_service.dart';
 import '../../services/file_storage_service.dart';
+import '../../services/pinned_devices_service.dart';
 import '../../services/settings_service.dart';
 import '../widgets/tabs/tv_files_tab.dart';
 import '../widgets/tabs/tv_receive_tab.dart';
@@ -45,6 +46,29 @@ class _TVHomeScreenState extends State<TVHomeScreen> {
   Device? _localDevice;
   bool _isRunning = false;
 
+  // ─── Pinned devices ────────────────────────────────────────────────────────
+  final _pinnedService = PinnedDevicesService();
+  List<Device> _pinnedDevices = [];
+
+  bool _isPinned(String deviceId) =>
+      _pinnedDevices.any((d) => d.id == deviceId);
+
+  Future<void> _pinDevice(Device device) async {
+    await _pinnedService.pin(device);
+    final updated = await _pinnedService.load();
+    if (mounted) {
+      setState(() => _pinnedDevices = updated);
+    }
+  }
+
+  Future<void> _unpinDevice(String deviceId) async {
+    await _pinnedService.unpin(deviceId);
+    final updated = await _pinnedService.load();
+    if (mounted) {
+      setState(() => _pinnedDevices = updated);
+    }
+  }
+
   @override
   void initState() {
     super.initState();
@@ -58,6 +82,11 @@ class _TVHomeScreenState extends State<TVHomeScreen> {
     _initializeSystem();
     WidgetsBinding.instance
         .addPostFrameCallback((_) => _sendFocus.requestFocus());
+    _pinnedService.load().then((list) {
+      if (mounted) {
+        setState(() => _pinnedDevices = list);
+      }
+    });
   }
 
   Future<void> _initializeSystem() async {
@@ -322,7 +351,11 @@ class _TVHomeScreenState extends State<TVHomeScreen> {
       case 0:
         return TVSendTab(
           devices: _devices,
+          pinnedDevices: _pinnedDevices,
           isRunning: _isRunning,
+          isPinned: _isPinned,
+          onPin: _pinDevice,
+          onUnpin: _unpinDevice,
           onBackToSidebar: _moveToSidebar,
           contentFocusNode: _sendContentFocus,
         );
