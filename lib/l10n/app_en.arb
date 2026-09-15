@@ -16,6 +16,10 @@
   "deviceType": "Device Type",
   "status": "Status",
   "ipAddress": "IP Address",
+  "hostname": "Computer Name",
+  "editDeviceName": "Edit Device Name",
+  "deviceNameUpdated": "Device name updated",
+  "device": "Device",
   "discovering": "Discovering...",
   "idle": "Idle",
   "unknown": "Unknown",
@@ -184,5 +188,30 @@
   "clipboardTypeText": "Text",
   "clipboardSendTooltip": "Send from clipboard",
   "pinnedDevices": "Pinned Devices",
-  "newDevices": "New Devices"
+  "newDevices": "New Devices",
+
+  "sharedFolder": "Shared Folder",
+  "openInExplorer": "Open in Explorer",
+  "uploadToSharedFolder": "Upload to Shared Folder",
+  "sharedFolderEmpty": "Shared folder is empty",
+  "sharedFolderEmptyHint": "Drop files here or use the upload button",
+  "sharedFolderDisabled": "Shared folder is disabled",
+  "allowShareUploads": "Allow uploads",
+  "allowShareUploadsDesc": "Allow other devices to upload files to this folder",
+  "enableSharedFolder": "Enable Shared Folder",
+  "enableSharedFolderDesc": "Share a folder on the network with nearby devices",
+  "downloadFromShare": "Download",
+  "uploadSuccess": "File uploaded successfully",
+  "uploadFailed": "Upload failed",
+  "downloadFailed": "Download failed",
+  "shareFileCount": "{count} file(s)",
+  "@shareFileCount": {
+    "placeholders": { "count": { "type": "int" } }
+  },
+  "browseSharedFolder": "Browse Shared Folder",
+  "deletedFromShare": "File deleted",
+  "confirmDeleteFromShare": "Delete this file from the shared folder?",
+  "shareNetworkError": "Device unreachable",
+  "uploading": "Uploading...",
+  "downloading": "Downloading..."
 }

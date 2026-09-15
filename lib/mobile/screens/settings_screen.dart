@@ -4,8 +4,10 @@ import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:permission_handler/permission_handler.dart';
 
+import '../../core/apex_core.dart';
 import '../../l10n/generated/app_localizations.dart';
 import '../../services/settings_service.dart';
+import '../../utils/platform_detector.dart';
 import 'settings_sheets.dart';
 import 'tour_screen.dart';
 
@@ -46,6 +48,26 @@ class SettingsScreen extends StatelessWidget {
       children: [
         _buildHeader(context, l10n),
         const SizedBox(height: 8),
+
+        // ─── Device ───────────────────────────────────────────────────
+        _sectionLabel(context, l10n.device),
+        _buildGroup(context, isDark, [
+          _SettingsTile(
+            icon: Icons.badge_rounded,
+            iconColor: const Color(0xFF007AFF),
+            title: l10n.deviceName,
+            subtitle: ApexCore.instance.localDevice?.name ?? '—',
+            trailing:
+                const Icon(Icons.edit_rounded, size: 16, color: Colors.grey),
+            onTap: () => SettingsSheets.showRenameDialog(context, l10n),
+          ),
+        ]),
+
+        // ─── Shared Folder (desktop only) ────────────────────────────
+        if (PlatformDetector.instance.isDesktop) ...[
+          _sectionLabel(context, l10n.sharedFolder),
+          _ShareSettingsSection(settings: settings),
+        ],
 
         // ─── Appearance ───────────────────────────────────────────────
         _sectionLabel(context, l10n.appearance),
@@ -332,4 +354,129 @@ class _SettingsTile {
     this.trailing,
     this.onTap,
   });
+}
+
+// ─── Share Settings Section ────────────────────────────────────────────────
+
+/// قسم إعدادات Shared Folder — StatefulWidget لأنه يعرض toggles تفاعلية.
+class _ShareSettingsSection extends StatefulWidget {
+  final SettingsService settings;
+  const _ShareSettingsSection({required this.settings});
+
+  @override
+  State<_ShareSettingsSection> createState() => _ShareSettingsSectionState();
+}
+
+class _ShareSettingsSectionState extends State<_ShareSettingsSection> {
+  @override
+  Widget build(BuildContext context) {
+    final l10n = AppLocalizations.of(context);
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+    const color = Color(0xFF5856D6);
+
+    return Padding(
+      padding: const EdgeInsets.symmetric(horizontal: 16),
+      child: Container(
+        decoration: BoxDecoration(
+          color: isDark ? const Color(0xFF1C1C1E) : Colors.white,
+          borderRadius: BorderRadius.circular(16),
+          boxShadow: [
+            BoxShadow(
+              color: Colors.black.withValues(alpha: isDark ? 0.2 : 0.04),
+              blurRadius: 8,
+              offset: const Offset(0, 2),
+            ),
+          ],
+        ),
+        child: Column(
+          children: [
+            // Enable shared folder
+            _ToggleTile(
+              icon: Icons.folder_shared_rounded,
+              iconColor: color,
+              title: l10n.enableSharedFolder,
+              subtitle: l10n.enableSharedFolderDesc,
+              value: widget.settings.sharedFolderEnabled,
+              isDark: isDark,
+              onChanged: (v) async {
+                await widget.settings.setSharedFolderEnabled(v);
+                // إعادة البث الفوري بالحالة الجديدة
+                ApexCore.instance.refreshDiscovery();
+                if (mounted) {
+                  setState(() {});
+                }
+              },
+            ),
+            if (widget.settings.sharedFolderEnabled) ...[
+              Divider(
+                height: 1,
+                indent: 16,
+                endIndent: 16,
+                color: (isDark ? Colors.white : Colors.black)
+                    .withValues(alpha: 0.08),
+              ),
+              // Allow uploads
+              _ToggleTile(
+                icon: Icons.upload_rounded,
+                iconColor: const Color(0xFF34C759),
+                title: l10n.allowShareUploads,
+                subtitle: l10n.allowShareUploadsDesc,
+                value: widget.settings.allowShareUploads,
+                isDark: isDark,
+                onChanged: (v) async {
+                  await widget.settings.setAllowShareUploads(v);
+                  if (mounted) {
+                    setState(() {});
+                  }
+                },
+              ),
+            ],
+          ],
+        ),
+      ),
+    );
+  }
+}
+
+class _ToggleTile extends StatelessWidget {
+  final IconData icon;
+  final Color iconColor;
+  final String title;
+  final String subtitle;
+  final bool value;
+  final bool isDark;
+  final ValueChanged<bool> onChanged;
+
+  const _ToggleTile({
+    required this.icon,
+    required this.iconColor,
+    required this.title,
+    required this.subtitle,
+    required this.value,
+    required this.isDark,
+    required this.onChanged,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    return ListTile(
+      contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 4),
+      leading: Container(
+        padding: const EdgeInsets.all(8),
+        decoration: BoxDecoration(
+          color: iconColor.withValues(alpha: 0.12),
+          borderRadius: BorderRadius.circular(10),
+        ),
+        child: Icon(icon, color: iconColor, size: 20),
+      ),
+      title: Text(title,
+          style: const TextStyle(fontWeight: FontWeight.w500, fontSize: 14)),
+      subtitle: Text(subtitle,
+          style: TextStyle(
+            fontSize: 12,
+            color: Theme.of(context).colorScheme.onSurfaceVariant,
+          )),
+      trailing: Switch(value: value, onChanged: onChanged),
+    );
+  }
 }

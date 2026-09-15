@@ -5,6 +5,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:url_launcher/url_launcher.dart';
 
+import '../../../core/apex_core.dart';
 import '../../../l10n/generated/app_localizations.dart';
 import '../../../models/device.dart';
 import '../../../models/transfer_progress.dart';
@@ -457,7 +458,22 @@ class _ReceiveTabState extends State<ReceiveTab>
             iconColor: const Color(0xFF007AFF),
             label: l10n.deviceName,
             value: device.name,
+            editable: true,
+            onEdit: () => _showRenameDialog(device.name, l10n),
           ),
+          if (device.hostname != null && device.hostname!.isNotEmpty) ...[
+            const Padding(
+              padding: EdgeInsets.symmetric(vertical: 8),
+              child: Divider(height: 1),
+            ),
+            _infoTile(
+              icon: Icons.computer_rounded,
+              iconColor: const Color(0xFF5856D6),
+              label: l10n.hostname,
+              value: device.hostname!,
+              copyable: true,
+            ),
+          ],
           if (device.ip.isNotEmpty) ...[
             const Padding(
               padding: EdgeInsets.symmetric(vertical: 8),
@@ -481,7 +497,9 @@ class _ReceiveTabState extends State<ReceiveTab>
       required Color iconColor,
       required String label,
       required String value,
-      bool copyable = false}) {
+      bool copyable = false,
+      bool editable = false,
+      VoidCallback? onEdit}) {
     return Row(
       children: [
         Container(
@@ -508,6 +526,13 @@ class _ReceiveTabState extends State<ReceiveTab>
             ],
           ),
         ),
+        if (editable)
+          IconButton(
+            icon: Icon(Icons.edit_rounded,
+                size: 18, color: Theme.of(context).colorScheme.primary),
+            tooltip: AppLocalizations.of(context).editDeviceName,
+            onPressed: onEdit,
+          ),
         if (copyable)
           IconButton(
             icon: Icon(Icons.copy_rounded,
@@ -521,6 +546,66 @@ class _ReceiveTabState extends State<ReceiveTab>
           ),
       ],
     );
+  }
+
+  /// Dialog تغيير اسم الجهاز
+  Future<void> _showRenameDialog(
+      String currentName, AppLocalizations l10n) async {
+    final controller = TextEditingController(text: currentName);
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+
+    final newName = await showDialog<String>(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        backgroundColor: isDark ? const Color(0xFF1E1E1E) : Colors.white,
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
+        title: Text(l10n.editDeviceName,
+            style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 17)),
+        content: TextField(
+          controller: controller,
+          autofocus: true,
+          maxLength: 32,
+          textCapitalization: TextCapitalization.words,
+          decoration: InputDecoration(
+            hintText: l10n.deviceName,
+            counterText: '',
+            border: OutlineInputBorder(
+              borderRadius: BorderRadius.circular(12),
+              borderSide: BorderSide.none,
+            ),
+            filled: true,
+            fillColor: isDark
+                ? Colors.white.withValues(alpha: 0.07)
+                : Colors.black.withValues(alpha: 0.05),
+            contentPadding:
+                const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
+          ),
+          onSubmitted: (v) => Navigator.of(ctx).pop(v.trim()),
+        ),
+        actionsPadding:
+            const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.of(ctx).pop(),
+            child: Text(l10n.cancel,
+                style: TextStyle(
+                    color: Theme.of(ctx).colorScheme.onSurfaceVariant)),
+          ),
+          FilledButton(
+            onPressed: () => Navigator.of(ctx).pop(controller.text.trim()),
+            child: Text(l10n.save),
+          ),
+        ],
+      ),
+    );
+
+    if (newName != null && newName.isNotEmpty && newName != currentName) {
+      await ApexCore.instance.updateDeviceName(newName);
+      if (mounted) {
+        setState(() {});
+        ApexSnackBar.info(context, l10n.deviceNameUpdated);
+      }
+    }
   }
 
   Widget _buildPcBanner() {

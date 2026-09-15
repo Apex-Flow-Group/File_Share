@@ -14,6 +14,10 @@
   "deviceType": "نوع الجهاز",
   "status": "الحالة",
   "ipAddress": "عنوان IP",
+  "hostname": "اسم الكمبيوتر",
+  "editDeviceName": "تعديل اسم الجهاز",
+  "deviceNameUpdated": "تم تحديث اسم الجهاز",
+  "device": "الجهاز",
   "discovering": "يبحث...",
   "idle": "خامل",
   "unknown": "غير معروف",
@@ -181,5 +185,30 @@
   "clipboardTypeText": "نص",
   "clipboardSendTooltip": "إرسال من الحافظة",
   "pinnedDevices": "الأجهزة المثبتة",
-  "newDevices": "أجهزة جديدة"
+  "newDevices": "أجهزة جديدة",
+
+  "sharedFolder": "المجلد المشترك",
+  "openInExplorer": "فتح في المستكشف",
+  "uploadToSharedFolder": "رفع إلى المجلد المشترك",
+  "sharedFolderEmpty": "المجلد المشترك فارغ",
+  "sharedFolderEmptyHint": "أسقط الملفات هنا أو استخدم زر الرفع",
+  "sharedFolderDisabled": "المجلد المشترك معطّل",
+  "allowShareUploads": "السماح بالرفع",
+  "allowShareUploadsDesc": "السماح للأجهزة الأخرى برفع الملفات إلى هذا المجلد",
+  "enableSharedFolder": "تفعيل المجلد المشترك",
+  "enableSharedFolderDesc": "مشاركة مجلد على الشبكة مع الأجهزة القريبة",
+  "downloadFromShare": "تنزيل",
+  "uploadSuccess": "تم رفع الملف بنجاح",
+  "uploadFailed": "فشل الرفع",
+  "downloadFailed": "فشل التنزيل",
+  "shareFileCount": "{count} ملف",
+  "@shareFileCount": {
+    "placeholders": { "count": { "type": "int" } }
+  },
+  "browseSharedFolder": "تصفح المجلد المشترك",
+  "deletedFromShare": "تم حذف الملف",
+  "confirmDeleteFromShare": "هل تريد حذف هذا الملف من المجلد المشترك؟",
+  "shareNetworkError": "الجهاز غير متاح",
+  "uploading": "جاري الرفع...",
+  "downloading": "جاري التنزيل..."
 }

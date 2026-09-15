@@ -48,6 +48,18 @@ class AppLocalizationsAr extends AppLocalizations {
   String get ipAddress => 'عنوان IP';
 
   @override
+  String get hostname => 'اسم الكمبيوتر';
+
+  @override
+  String get editDeviceName => 'تعديل اسم الجهاز';
+
+  @override
+  String get deviceNameUpdated => 'تم تحديث اسم الجهاز';
+
+  @override
+  String get device => 'الجهاز';
+
+  @override
   String get discovering => 'يبحث...';
 
   @override
@@ -536,4 +548,72 @@ class AppLocalizationsAr extends AppLocalizations {
 
   @override
   String get newDevices => 'أجهزة جديدة';
+
+  @override
+  String get sharedFolder => 'المجلد المشترك';
+
+  @override
+  String get openInExplorer => 'فتح في المستكشف';
+
+  @override
+  String get uploadToSharedFolder => 'رفع إلى المجلد المشترك';
+
+  @override
+  String get sharedFolderEmpty => 'المجلد المشترك فارغ';
+
+  @override
+  String get sharedFolderEmptyHint => 'أسقط الملفات هنا أو استخدم زر الرفع';
+
+  @override
+  String get sharedFolderDisabled => 'المجلد المشترك معطّل';
+
+  @override
+  String get allowShareUploads => 'السماح بالرفع';
+
+  @override
+  String get allowShareUploadsDesc =>
+      'السماح للأجهزة الأخرى برفع الملفات إلى هذا المجلد';
+
+  @override
+  String get enableSharedFolder => 'تفعيل المجلد المشترك';
+
+  @override
+  String get enableSharedFolderDesc =>
+      'مشاركة مجلد على الشبكة مع الأجهزة القريبة';
+
+  @override
+  String get downloadFromShare => 'تنزيل';
+
+  @override
+  String get uploadSuccess => 'تم رفع الملف بنجاح';
+
+  @override
+  String get uploadFailed => 'فشل الرفع';
+
+  @override
+  String get downloadFailed => 'فشل التنزيل';
+
+  @override
+  String shareFileCount(int count) {
+    return '$count ملف';
+  }
+
+  @override
+  String get browseSharedFolder => 'تصفح المجلد المشترك';
+
+  @override
+  String get deletedFromShare => 'تم حذف الملف';
+
+  @override
+  String get confirmDeleteFromShare =>
+      'هل تريد حذف هذا الملف من المجلد المشترك؟';
+
+  @override
+  String get shareNetworkError => 'الجهاز غير متاح';
+
+  @override
+  String get uploading => 'جاري الرفع...';
+
+  @override
+  String get downloading => 'جاري التنزيل...';
 }

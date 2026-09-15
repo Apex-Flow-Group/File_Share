@@ -13,6 +13,7 @@ import '../utils/apex_logger.dart';
 import 'core_models.dart';
 import 'http_transfer.dart';
 import 'nearby_transfer.dart';
+import 'share_folder_http.dart';
 
 export 'core_models.dart';
 
@@ -46,6 +47,13 @@ class ApexCore {
     onConnectionRequest: _connectionRequestController.add,
   );
 
+  late final ShareFolderHttp _share = ShareFolderHttp(
+    isEnabled: () => _settings?.sharedFolderEnabled ?? true,
+    allowUploads: () => _settings?.allowShareUploads ?? true,
+    getLocalName: () => _localDevice?.name,
+  );
+  SettingsService? _settings;
+
   late final NearbyTransfer _nearby = NearbyTransfer(
     getLocalName: () => _localDevice?.name,
     onFileReceived: _fileReceivedController.add,
@@ -65,6 +73,9 @@ class ApexCore {
   void setNetworkMode(NetworkMode mode) => _networkMode = mode;
   bool get _isAndroid => !kIsWeb && Platform.isAndroid;
 
+  /// يُمرِّر SettingsService لقراءة إعدادات Share في runtime
+  void setSettings(SettingsService settings) => _settings = settings;
+
   // ─── Lifecycle ─────────────────────────────────────────────────────────────
 
   Future<void> initialize() async {
@@ -74,6 +85,7 @@ class ApexCore {
     final name = await DeviceManager.getDeviceName('Apex Device');
     final type = DeviceManager.getDeviceType();
     final ip = await _getLocalIp();
+    final hostname = await DeviceManager.getHostname();
     final prefs = await SharedPreferences.getInstance();
     var deviceId = prefs.getString('device_id');
     if (deviceId == null) {
@@ -85,6 +97,7 @@ class ApexCore {
       name: name,
       type: type,
       ip: ip,
+      hostname: hostname,
     );
   }
 
@@ -97,7 +110,9 @@ class ApexCore {
     }
     await _startHttpServer();
 
-    _discoveryService = DiscoveryService();
+    _discoveryService = DiscoveryService(
+      isShareEnabled: () => _settings?.sharedFolderEnabled ?? false,
+    );
     _discoveryService!.onDeviceFound.listen((device) {
       if (TransferProgressService().isTransferring) {
         return;
@@ -120,12 +135,15 @@ class ApexCore {
           _discoveredDevices[existingEntry.key] = existing.copyWith(
             ip: device.ip,
             port: device.port,
+            shareEnabled: device.shareEnabled,
             lastSeen: DateTime.now(),
           );
         } else {
-          // نفس النوع → حدّث lastSeen فقط
-          _discoveredDevices[existingEntry.key] =
-              existing.copyWith(lastSeen: DateTime.now());
+          // نفس النوع → حدّث lastSeen + shareEnabled
+          _discoveredDevices[existingEntry.key] = existing.copyWith(
+            shareEnabled: device.shareEnabled,
+            lastSeen: DateTime.now(),
+          );
         }
       } else {
         _discoveredDevices[device.id] = device;
@@ -190,6 +208,19 @@ class ApexCore {
     _discoveryService?.pingDevice(device);
   }
 
+  /// تحديث اسم الجهاز المحلي فوراً وحفظه في SharedPreferences
+  Future<void> updateDeviceName(String newName) async {
+    if (newName.trim().isEmpty) {
+      return;
+    }
+    final trimmed = newName.trim();
+    final prefs = await SharedPreferences.getInstance();
+    await prefs.setString('device_display_name', trimmed);
+    _localDevice = _localDevice?.copyWith(name: trimmed);
+    // إعادة البث فوراً بالاسم الجديد
+    _discoveryService?.forceBroadcast();
+  }
+
   // ─── HTTP Server ───────────────────────────────────────────────────────────
 
   Future<void> _startHttpServer() async {
@@ -212,6 +243,8 @@ class ApexCore {
         await _http.handlePermissionRequest(req);
       } else if (req.method == 'POST' && path == '/upload') {
         await _http.handleUpload(req);
+      } else if (await _share.handle(req)) {
+        // تم التعامل مع طلب Share
       } else {
         req.response.statusCode = HttpStatus.notFound;
         await req.response.close();

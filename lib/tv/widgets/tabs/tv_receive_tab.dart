@@ -198,7 +198,9 @@ class _TVReceiveTabState extends State<TVReceiveTab>
             ),
             const SizedBox(height: 8),
             Text(
-              isAr ? 'طھط£ظƒط¯ ظ…ظ† طھط´ط؛ظٹظ„ ط§ظ„ظ†ط¸ط§ظ…' : 'Make sure the system is running',
+              isAr
+                  ? 'طھط£ظƒط¯ ظ…ظ† طھط´ط؛ظٹظ„ ط§ظ„ظ†ط¸ط§ظ…'
+                  : 'Make sure the system is running',
               style: Theme.of(context).textTheme.bodyMedium?.copyWith(
                     color: Theme.of(context).colorScheme.onSurfaceVariant,
                   ),
@@ -443,6 +445,18 @@ class _TVReceiveTabState extends State<TVReceiveTab>
             label: l10n.deviceName,
             value: device.name,
           ),
+          if (device.hostname != null && device.hostname!.isNotEmpty) ...[
+            const Padding(
+              padding: EdgeInsets.symmetric(vertical: 8),
+              child: Divider(height: 1),
+            ),
+            _infoTileWithCopy(
+              icon: Icons.computer_rounded,
+              iconColor: const Color(0xFF5856D6),
+              label: l10n.hostname,
+              value: device.hostname!,
+            ),
+          ],
           if (device.ip.isNotEmpty) ...[
             const Padding(
               padding: EdgeInsets.symmetric(vertical: 8),

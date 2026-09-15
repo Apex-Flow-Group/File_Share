@@ -48,6 +48,18 @@ class AppLocalizationsEn extends AppLocalizations {
   String get ipAddress => 'IP Address';
 
   @override
+  String get hostname => 'Computer Name';
+
+  @override
+  String get editDeviceName => 'Edit Device Name';
+
+  @override
+  String get deviceNameUpdated => 'Device name updated';
+
+  @override
+  String get device => 'Device';
+
+  @override
   String get discovering => 'Discovering...';
 
   @override
@@ -539,4 +551,73 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get newDevices => 'New Devices';
+
+  @override
+  String get sharedFolder => 'Shared Folder';
+
+  @override
+  String get openInExplorer => 'Open in Explorer';
+
+  @override
+  String get uploadToSharedFolder => 'Upload to Shared Folder';
+
+  @override
+  String get sharedFolderEmpty => 'Shared folder is empty';
+
+  @override
+  String get sharedFolderEmptyHint =>
+      'Drop files here or use the upload button';
+
+  @override
+  String get sharedFolderDisabled => 'Shared folder is disabled';
+
+  @override
+  String get allowShareUploads => 'Allow uploads';
+
+  @override
+  String get allowShareUploadsDesc =>
+      'Allow other devices to upload files to this folder';
+
+  @override
+  String get enableSharedFolder => 'Enable Shared Folder';
+
+  @override
+  String get enableSharedFolderDesc =>
+      'Share a folder on the network with nearby devices';
+
+  @override
+  String get downloadFromShare => 'Download';
+
+  @override
+  String get uploadSuccess => 'File uploaded successfully';
+
+  @override
+  String get uploadFailed => 'Upload failed';
+
+  @override
+  String get downloadFailed => 'Download failed';
+
+  @override
+  String shareFileCount(int count) {
+    return '$count file(s)';
+  }
+
+  @override
+  String get browseSharedFolder => 'Browse Shared Folder';
+
+  @override
+  String get deletedFromShare => 'File deleted';
+
+  @override
+  String get confirmDeleteFromShare =>
+      'Delete this file from the shared folder?';
+
+  @override
+  String get shareNetworkError => 'Device unreachable';
+
+  @override
+  String get uploading => 'Uploading...';
+
+  @override
+  String get downloading => 'Downloading...';
 }

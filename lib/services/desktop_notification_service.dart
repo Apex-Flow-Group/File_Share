@@ -54,4 +54,15 @@ class DesktopNotificationService {
     );
     await n.show();
   }
+
+  Future<void> showShareUpload(String fileName, String fromDevice) async {
+    if (!_isDesktop) {
+      return;
+    }
+    final n = LocalNotification(
+      title: 'ملف رُفع إلى Share 📂',
+      body: '$fileName — من $fromDevice',
+    );
+    await n.show();
+  }
 }

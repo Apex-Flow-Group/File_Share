@@ -176,6 +176,30 @@ abstract class AppLocalizations {
   /// **'IP Address'**
   String get ipAddress;
 
+  /// No description provided for @hostname.
+  ///
+  /// In en, this message translates to:
+  /// **'Computer Name'**
+  String get hostname;
+
+  /// No description provided for @editDeviceName.
+  ///
+  /// In en, this message translates to:
+  /// **'Edit Device Name'**
+  String get editDeviceName;
+
+  /// No description provided for @deviceNameUpdated.
+  ///
+  /// In en, this message translates to:
+  /// **'Device name updated'**
+  String get deviceNameUpdated;
+
+  /// No description provided for @device.
+  ///
+  /// In en, this message translates to:
+  /// **'Device'**
+  String get device;
+
   /// No description provided for @discovering.
   ///
   /// In en, this message translates to:
@@ -1147,6 +1171,132 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'New Devices'**
   String get newDevices;
+
+  /// No description provided for @sharedFolder.
+  ///
+  /// In en, this message translates to:
+  /// **'Shared Folder'**
+  String get sharedFolder;
+
+  /// No description provided for @openInExplorer.
+  ///
+  /// In en, this message translates to:
+  /// **'Open in Explorer'**
+  String get openInExplorer;
+
+  /// No description provided for @uploadToSharedFolder.
+  ///
+  /// In en, this message translates to:
+  /// **'Upload to Shared Folder'**
+  String get uploadToSharedFolder;
+
+  /// No description provided for @sharedFolderEmpty.
+  ///
+  /// In en, this message translates to:
+  /// **'Shared folder is empty'**
+  String get sharedFolderEmpty;
+
+  /// No description provided for @sharedFolderEmptyHint.
+  ///
+  /// In en, this message translates to:
+  /// **'Drop files here or use the upload button'**
+  String get sharedFolderEmptyHint;
+
+  /// No description provided for @sharedFolderDisabled.
+  ///
+  /// In en, this message translates to:
+  /// **'Shared folder is disabled'**
+  String get sharedFolderDisabled;
+
+  /// No description provided for @allowShareUploads.
+  ///
+  /// In en, this message translates to:
+  /// **'Allow uploads'**
+  String get allowShareUploads;
+
+  /// No description provided for @allowShareUploadsDesc.
+  ///
+  /// In en, this message translates to:
+  /// **'Allow other devices to upload files to this folder'**
+  String get allowShareUploadsDesc;
+
+  /// No description provided for @enableSharedFolder.
+  ///
+  /// In en, this message translates to:
+  /// **'Enable Shared Folder'**
+  String get enableSharedFolder;
+
+  /// No description provided for @enableSharedFolderDesc.
+  ///
+  /// In en, this message translates to:
+  /// **'Share a folder on the network with nearby devices'**
+  String get enableSharedFolderDesc;
+
+  /// No description provided for @downloadFromShare.
+  ///
+  /// In en, this message translates to:
+  /// **'Download'**
+  String get downloadFromShare;
+
+  /// No description provided for @uploadSuccess.
+  ///
+  /// In en, this message translates to:
+  /// **'File uploaded successfully'**
+  String get uploadSuccess;
+
+  /// No description provided for @uploadFailed.
+  ///
+  /// In en, this message translates to:
+  /// **'Upload failed'**
+  String get uploadFailed;
+
+  /// No description provided for @downloadFailed.
+  ///
+  /// In en, this message translates to:
+  /// **'Download failed'**
+  String get downloadFailed;
+
+  /// No description provided for @shareFileCount.
+  ///
+  /// In en, this message translates to:
+  /// **'{count} file(s)'**
+  String shareFileCount(int count);
+
+  /// No description provided for @browseSharedFolder.
+  ///
+  /// In en, this message translates to:
+  /// **'Browse Shared Folder'**
+  String get browseSharedFolder;
+
+  /// No description provided for @deletedFromShare.
+  ///
+  /// In en, this message translates to:
+  /// **'File deleted'**
+  String get deletedFromShare;
+
+  /// No description provided for @confirmDeleteFromShare.
+  ///
+  /// In en, this message translates to:
+  /// **'Delete this file from the shared folder?'**
+  String get confirmDeleteFromShare;
+
+  /// No description provided for @shareNetworkError.
+  ///
+  /// In en, this message translates to:
+  /// **'Device unreachable'**
+  String get shareNetworkError;
+
+  /// No description provided for @uploading.
+  ///
+  /// In en, this message translates to:
+  /// **'Uploading...'**
+  String get uploading;
+
+  /// No description provided for @downloading.
+  ///
+  /// In en, this message translates to:
+  /// **'Downloading...'**
+  String get downloading;
 }
 
 class _AppLocalizationsDelegate
