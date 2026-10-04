@@ -182,6 +182,24 @@ abstract class AppLocalizations {
   /// **'Computer Name'**
   String get hostname;
 
+  /// No description provided for @hostnamePhone.
+  ///
+  /// In en, this message translates to:
+  /// **'Phone Model'**
+  String get hostnamePhone;
+
+  /// No description provided for @hostnameTablet.
+  ///
+  /// In en, this message translates to:
+  /// **'Tablet Model'**
+  String get hostnameTablet;
+
+  /// No description provided for @hostnameTv.
+  ///
+  /// In en, this message translates to:
+  /// **'TV Model'**
+  String get hostnameTv;
+
   /// No description provided for @editDeviceName.
   ///
   /// In en, this message translates to:

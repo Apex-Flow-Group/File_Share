@@ -83,7 +83,7 @@ class ApexCore {
       return;
     }
     final name = await DeviceManager.getDeviceName('Apex Device');
-    final type = DeviceManager.getDeviceType();
+    final type = await DeviceManager.getDeviceTypePrecise();
     final ip = await _getLocalIp();
     final hostname = await DeviceManager.getHostname();
     final prefs = await SharedPreferences.getInstance();

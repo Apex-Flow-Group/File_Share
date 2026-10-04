@@ -467,9 +467,9 @@ class _ReceiveTabState extends State<ReceiveTab>
               child: Divider(height: 1),
             ),
             _infoTile(
-              icon: Icons.computer_rounded,
-              iconColor: const Color(0xFF5856D6),
-              label: l10n.hostname,
+              icon: _hostnameIcon(device.type),
+              iconColor: _hostnameColor(device.type),
+              label: _hostnameLabel(device.type, l10n),
               value: device.hostname!,
               copyable: true,
             ),
@@ -605,6 +605,50 @@ class _ReceiveTabState extends State<ReceiveTab>
         setState(() {});
         ApexSnackBar.info(context, l10n.deviceNameUpdated);
       }
+    }
+  }
+
+  // ─── hostname helpers ──────────────────────────────────────────────────────
+
+  /// الأيقونة المناسبة حسب نوع الجهاز
+  static IconData _hostnameIcon(String type) {
+    switch (type) {
+      case 'phone':
+        return Icons.smartphone_rounded;
+      case 'tablet':
+        return Icons.tablet_android_rounded;
+      case 'tv':
+        return Icons.tv_rounded;
+      default:
+        return Icons.computer_rounded; // desktop / unknown
+    }
+  }
+
+  /// لون الأيقونة حسب النوع
+  static Color _hostnameColor(String type) {
+    switch (type) {
+      case 'phone':
+        return const Color(0xFF34C759); // أخضر
+      case 'tablet':
+        return const Color(0xFF5856D6); // بنفسجي
+      case 'tv':
+        return const Color(0xFFFF9500); // برتقالي
+      default:
+        return const Color(0xFF5856D6); // desktop
+    }
+  }
+
+  /// التسمية المناسبة حسب نوع الجهاز
+  String _hostnameLabel(String type, AppLocalizations l10n) {
+    switch (type) {
+      case 'phone':
+        return l10n.hostnamePhone;
+      case 'tablet':
+        return l10n.hostnameTablet;
+      case 'tv':
+        return l10n.hostnameTv;
+      default:
+        return l10n.hostname; // desktop
     }
   }
 

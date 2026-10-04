@@ -51,6 +51,15 @@ class AppLocalizationsAr extends AppLocalizations {
   String get hostname => 'اسم الكمبيوتر';
 
   @override
+  String get hostnamePhone => 'موديل الهاتف';
+
+  @override
+  String get hostnameTablet => 'موديل التابلت';
+
+  @override
+  String get hostnameTv => 'موديل التلفزيون';
+
+  @override
   String get editDeviceName => 'تعديل اسم الجهاز';
 
   @override

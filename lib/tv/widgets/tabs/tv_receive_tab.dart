@@ -451,9 +451,9 @@ class _TVReceiveTabState extends State<TVReceiveTab>
               child: Divider(height: 1),
             ),
             _infoTileWithCopy(
-              icon: Icons.computer_rounded,
-              iconColor: const Color(0xFF5856D6),
-              label: l10n.hostname,
+              icon: Icons.tv_rounded,
+              iconColor: const Color(0xFFFF9500),
+              label: l10n.hostnameTv,
               value: device.hostname!,
             ),
           ],

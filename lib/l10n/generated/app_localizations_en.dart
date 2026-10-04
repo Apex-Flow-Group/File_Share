@@ -51,6 +51,15 @@ class AppLocalizationsEn extends AppLocalizations {
   String get hostname => 'Computer Name';
 
   @override
+  String get hostnamePhone => 'Phone Model';
+
+  @override
+  String get hostnameTablet => 'Tablet Model';
+
+  @override
+  String get hostnameTv => 'TV Model';
+
+  @override
   String get editDeviceName => 'Edit Device Name';
 
   @override

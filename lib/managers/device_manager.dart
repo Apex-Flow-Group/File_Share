@@ -5,7 +5,12 @@ import 'package:flutter/foundation.dart' show kIsWeb;
 import 'package:shared_preferences/shared_preferences.dart';
 
 class DeviceManager {
-  /// يجلب hostname الجهاز على الشبكة (computer name / model name)
+  /// يجلب اسم الجهاز على الشبكة أو موديله حسب المنصة.
+  ///
+  /// Desktop → hostname الفعلي (computer name)
+  /// Android → model الجهاز (Pixel 8 Pro, Samsung Galaxy S24...)
+  ///            لأن `androidInfo.host` هو hostname مكينة البناء وليس له قيمة
+  /// iOS     → null (device.name يُغطي نفس المعلومة)
   static Future<String?> getHostname() async {
     try {
       if (kIsWeb) {
@@ -24,12 +29,13 @@ class DeviceManager {
         return info.hostName.isNotEmpty ? info.hostName : info.computerName;
       } else if (Platform.isAndroid) {
         final info = await DeviceInfoPlugin().androidInfo;
-        // host هو hostname الجهاز على الشبكة، model هو اسم الموديل
-        final host = info.host;
-        return host.isNotEmpty ? host : info.model;
+        // model هو الاسم التجاري للجهاز (Pixel 8 Pro، Samsung Galaxy S24، إلخ)
+        // host هو hostname مكينة البناء — لا قيمة له للمستخدم
+        final model = info.model.trim();
+        return model.isNotEmpty ? model : null;
       } else if (Platform.isIOS) {
-        final info = await DeviceInfoPlugin().iosInfo;
-        return info.name;
+        // device.name يحمل نفس المعلومة (اسم الجهاز المعيَّن من إعدادات iOS)
+        return null;
       }
     } catch (_) {}
     return null;
@@ -77,25 +83,59 @@ class DeviceManager {
     }
   }
 
+  /// يُحدد نوع الجهاز بدقة — TV / tablet / phone / desktop / web
+  /// يستخدم Feature Flags الرسمية من Android CDD وiOS SDK
+  static Future<String> getDeviceTypePrecise() async {
+    if (kIsWeb) {
+      return 'web';
+    }
+    if (Platform.isWindows || Platform.isLinux || Platform.isMacOS) {
+      return 'desktop';
+    }
+    if (Platform.isAndroid) {
+      try {
+        final info = await DeviceInfoPlugin().androidInfo;
+        final features = info.systemFeatures;
+        // TV: android.software.leanback أو android.hardware.type.television
+        if (features.contains('android.software.leanback') ||
+            features.contains('android.hardware.type.television')) {
+          return 'tv';
+        }
+        // Tablet: android.hardware.type.tablet (من Android CDD)
+        if (features.contains('android.hardware.type.tablet')) {
+          return 'tablet';
+        }
+        return 'phone';
+      } catch (_) {
+        return 'phone';
+      }
+    }
+    if (Platform.isIOS) {
+      try {
+        final info = await DeviceInfoPlugin().iosInfo;
+        // iPadOS يُعرِّف نفسه بـ 'iPadOS' أو model يبدأ بـ 'iPad'
+        if (info.systemName == 'iPadOS' ||
+            info.model.toLowerCase().startsWith('ipad')) {
+          return 'tablet';
+        }
+        return 'phone';
+      } catch (_) {
+        return 'phone';
+      }
+    }
+    return 'unknown';
+  }
+
   static String getDeviceType() {
     if (kIsWeb) {
       return 'web';
     } else if (Platform.isAndroid) {
-      return _isAndroidTV() ? 'tv' : 'phone';
+      return 'phone'; // سيُحدَّث بعد initialize عبر getDeviceTypePrecise
     } else if (Platform.isIOS) {
       return 'phone';
     } else if (Platform.isWindows || Platform.isLinux || Platform.isMacOS) {
       return 'desktop';
     }
     return 'unknown';
-  }
-
-  static bool _isAndroidTV() {
-    try {
-      // سيتم التحقق من TV في runtime
-      return false;
-    } catch (e) {
-      return false;
-    }
   }
 }
