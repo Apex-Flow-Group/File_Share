@@ -4,14 +4,19 @@ import 'dart:io';
 import 'package:flutter/foundation.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
+import '../features/receive/data/receive_http.dart';
+import '../features/receive/data/receive_store.dart';
+import '../features/receive/logic/receive_gate.dart';
+import '../features/send/data/send_http.dart';
 import '../managers/device_manager.dart';
 import '../models/device.dart';
 import '../services/discovery_service.dart';
 import '../services/settings_service.dart';
 import '../services/transfer_progress_service.dart';
 import '../utils/apex_logger.dart';
+import '../utils/path_utils.dart';
 import 'core_models.dart';
-import 'http_transfer.dart';
+import 'files/move_into_folder.dart';
 import 'nearby_transfer.dart';
 import 'share_folder_http.dart';
 
@@ -40,12 +45,17 @@ class ApexCore {
   final _connectionRequestController =
       StreamController<ConnectionRequest>.broadcast();
 
-  late final HttpTransfer _http = HttpTransfer(
-    getLocalName: () => _localDevice?.name,
-    getLocalIp: () => _localDevice?.ip,
-    onFileReceived: _fileReceivedController.add,
+  late final ReceiveHttp _receive = ReceiveHttp(
+    gate: ReceiveGate(),
+    store: ReceiveStore(
+      tempFolder: () async => Directory(await PathUtils.getTempCachePath()),
+      place: _placeReceived,
+    ),
     onConnectionRequest: _connectionRequestController.add,
+    onFileReceived: _fileReceivedController.add,
   );
+
+  late final SendHttp _send = SendHttp(getLocalName: () => _localDevice?.name);
 
   late final ShareFolderHttp _share = ShareFolderHttp(
     isEnabled: () => _settings?.sharedFolderEnabled ?? true,
@@ -233,16 +243,8 @@ class ApexCore {
 
   Future<void> _handleRequest(HttpRequest req) async {
     try {
-      final path = req.uri.path;
-      if (req.method == 'GET' && path == '/ping') {
-        req.response
-          ..statusCode = HttpStatus.ok
-          ..write('pong');
-        await req.response.close();
-      } else if (req.method == 'POST' && path == '/request') {
-        await _http.handlePermissionRequest(req);
-      } else if (req.method == 'POST' && path == '/upload') {
-        await _http.handleUpload(req);
+      if (await _receive.handle(req)) {
+        // تم التعامل مع طلب استقبال
       } else if (await _share.handle(req)) {
         // تم التعامل مع طلب Share
       } else {
@@ -272,8 +274,8 @@ class ApexCore {
       return false;
     }
     final size = await f.length();
-    return _http
-        .sendFiles([(path: filePath, name: fileName, size: size)], target);
+    return await _send.sendFiles([(path: filePath, name: fileName, size: size)], target) ==
+        SendOutcome.sent;
   }
 
   Future<bool> sendFiles(List<String> filePaths, Device target) async {
@@ -298,7 +300,24 @@ class ApexCore {
       return _nearby.sendBatchFiles(files, target);
     }
 
-    return _http.sendFiles(files, target);
+    return await _send.sendFiles(files, target) == SendOutcome.sent;
+  }
+
+  /// Android saves through MediaStore; other systems move the file into the
+  /// category folder without replacing an existing one.
+  Future<String> _placeReceived(File temp, String name) async {
+    if (_isAndroid) {
+      final saved = await PathUtils.saveToPublicDownloads(name, temp.path);
+      if (saved == null) {
+        throw FileSystemException('Could not save to Downloads', name);
+      }
+      try {
+        await temp.delete();
+      } catch (_) {}
+      return saved;
+    }
+    final folder = Directory(await PathUtils.getCategoryPath(name));
+    return (await moveIntoFolder(temp, folder, name)).path;
   }
 
   // ─── Nearby incoming connection ────────────────────────────────────────────

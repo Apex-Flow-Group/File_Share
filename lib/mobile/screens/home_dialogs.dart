@@ -229,8 +229,24 @@ mixin HomeDialogs<T extends StatefulWidget> on State<T> {
                 child: const Icon(Icons.smartphone_rounded,
                     color: Colors.blue, size: 16)),
             const SizedBox(width: 10),
-            Text(request.device.name,
-                style: const TextStyle(fontWeight: FontWeight.bold)),
+            Expanded(
+              child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(request.device.name,
+                        overflow: TextOverflow.ellipsis,
+                        style: const TextStyle(fontWeight: FontWeight.bold)),
+                    // The address comes from the connection, so a device
+                    // cannot pose as another by claiming its name alone.
+                    if (request.device.ip.isNotEmpty)
+                      Directionality(
+                        textDirection: TextDirection.ltr,
+                        child: Text(request.device.ip,
+                            style: TextStyle(
+                                fontSize: 12, color: Colors.grey[600])),
+                      ),
+                  ]),
+            ),
           ]),
           const SizedBox(height: 10),
           if (isBatch) ...[

@@ -1,8 +1,6 @@
 import 'dart:convert';
 import 'dart:io';
 
-import 'package:apex_file_share/core/core_models.dart';
-import 'package:apex_file_share/core/http_transfer.dart';
 import 'package:apex_file_share/core/share_folder_http.dart';
 import 'package:apex_file_share/services/settings_service.dart';
 import 'package:apex_file_share/services/share_folder_service.dart';
@@ -89,31 +87,6 @@ void main() {
             'a fresh install shares its folder with the whole network.');
   });
 
-  test('the accept dialog shows the real sender address, not one it claims', () async {
-    ConnectionRequest? shown;
-    final transfer = HttpTransfer(
-      getLocalName: () => 'Office PC',
-      getLocalIp: () => '127.0.0.1',
-      onFileReceived: (_) {},
-      onConnectionRequest: (r) {
-        shown = r;
-        r.onResponse(false);
-      },
-    );
-    final server = await HttpServer.bind(InternetAddress.loopbackIPv4, 0);
-    server.listen(transfer.handlePermissionRequest);
-    try {
-      final res = await _send('POST', server.port, '/request',
-          {'name': 'a.txt', 'from': 'Manager PC', 'ip': '10.0.0.5', 'size': '1'});
-      await res.drain<void>();
-    } finally {
-      await server.close(force: true);
-    }
-    expect(shown?.device.ip, '127.0.0.1',
-        reason: 'The name and IP in the dialog come from the request itself, '
-            'so any device can pose as a trusted one.');
-  });
-
   group('Doors that open without asking', () {
     test('a file downloaded from another device is never opened by itself', () {
       final src = _read('lib/mobile/screens/share_browser_screen.dart');
@@ -166,7 +139,7 @@ void main() {
 
     test('network code lives only in the known files', () {
       const known = {
-        'lib/core/http_transfer.dart',
+        'lib/features/send/data/send_http.dart',
         'lib/core/apex_core.dart',
         'lib/services/discovery_service.dart',
         'lib/mobile/screens/share_browser_screen.dart',

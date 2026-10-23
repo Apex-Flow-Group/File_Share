@@ -10,7 +10,6 @@ import 'package:flutter_test/flutter_test.dart';
 /// When you move code out of a file, lower its number (or delete the line).
 const _legacyOsCode = <String, int>{
   'lib/core/apex_core.dart': 6,
-  'lib/core/http_transfer.dart': 1,
   'lib/main.dart': 2,
   'lib/managers/device_manager.dart': 20,
   'lib/managers/permission_manager.dart': 2,
@@ -36,7 +35,6 @@ const _legacyOsCode = <String, int>{
 
 /// TV checks belong in lib/tv/, the router (main.dart) and the detector itself.
 const _legacyTvChecks = <String, int>{
-  'lib/core/http_transfer.dart': 1,
   'lib/core/nearby_transfer_receive.dart': 2,
   'lib/screens/splash_screen.dart': 1,
 };
