@@ -1,3 +1,4 @@
+import 'dart:async';
 import 'dart:io';
 
 import 'package:flutter/foundation.dart';
@@ -7,6 +8,7 @@ import 'package:qr_flutter/qr_flutter.dart';
 import 'package:url_launcher/url_launcher.dart';
 
 import '../l10n/generated/app_localizations.dart';
+import '../services/update_service.dart';
 
 const _kPlayStoreUrl =
     'https://play.google.com/store/apps/dev?id=5409981776310932919';
@@ -21,11 +23,28 @@ class AboutScreen extends StatefulWidget {
 
 class _AboutScreenState extends State<AboutScreen> {
   String _version = '';
+  _CheckState _checkState = _CheckState.idle;
+  StreamSubscription<UpdateState>? _updateSub;
 
   @override
   void initState() {
     super.initState();
     _loadVersion();
+    // إذا كان هناك تحديث جاهز قبل فتح الشاشة — اعكسه مباشرة
+    if (!kIsWeb && Platform.isAndroid) {
+      final svc = UpdateService.instance;
+      if (svc.updateDownloaded) {
+        _checkState = _CheckState.readyToInstall;
+      } else if (svc.updateAvailable) {
+        _checkState = _CheckState.available;
+      }
+    }
+  }
+
+  @override
+  void dispose() {
+    _updateSub?.cancel();
+    super.dispose();
   }
 
   Future<void> _loadVersion() async {
@@ -41,6 +60,58 @@ class _AboutScreenState extends State<AboutScreen> {
     final uri = Uri.parse(url);
     if (await canLaunchUrl(uri)) {
       await launchUrl(uri, mode: LaunchMode.externalApplication);
+    }
+  }
+
+  // ─── منطق التحديث ──────────────────────────────────────────────────────────
+
+  Future<void> _checkForUpdate() async {
+    if (_checkState == _CheckState.checking ||
+        _checkState == _CheckState.downloading) {
+      return;
+    }
+    setState(() => _checkState = _CheckState.checking);
+
+    await UpdateService.instance.checkForUpdate();
+    if (!mounted) {
+      return;
+    }
+
+    final svc = UpdateService.instance;
+    if (svc.updateDownloaded) {
+      setState(() => _checkState = _CheckState.readyToInstall);
+    } else if (svc.state == UpdateState.available) {
+      setState(() => _checkState = _CheckState.available);
+    } else {
+      setState(() => _checkState = _CheckState.upToDate);
+    }
+  }
+
+  Future<void> _downloadUpdate() async {
+    setState(() => _checkState = _CheckState.downloading);
+    // اشتراك واحد مُخزَّن — يُلغى عند dispose أو الانتهاء
+    await _updateSub?.cancel();
+    _updateSub = UpdateService.instance.stateStream.listen((s) {
+      if (!mounted) {
+        return;
+      }
+      if (s == UpdateState.readyToInstall || s == UpdateState.waitingForIdle) {
+        setState(() => _checkState = _CheckState.readyToInstall);
+        unawaited(_updateSub?.cancel());
+      } else if (s == UpdateState.idle) {
+        // فشل التحميل — عودة لحالة available ليتمكن من المحاولة مجدداً
+        setState(() => _checkState = _CheckState.available);
+        unawaited(_updateSub?.cancel());
+      }
+    });
+    await UpdateService.instance.startFlexibleDownload();
+  }
+
+  Future<void> _installUpdate() async {
+    await UpdateService.instance.completeUpdate();
+    // التطبيق سيُعاد تشغيله — لكن كحماية إذا لم يحدث ذلك
+    if (mounted) {
+      setState(() => _checkState = _CheckState.idle);
     }
   }
 
@@ -81,7 +152,12 @@ class _AboutScreenState extends State<AboutScreen> {
         const Text('Apex Transfer',
             style: TextStyle(fontSize: 22, fontWeight: FontWeight.bold)),
         Text(_version, style: const TextStyle(color: Colors.grey)),
-        const SizedBox(height: 6),
+        const SizedBox(height: 12),
+        // ─── زر التحديث — Android فقط (Desktop يستخدم QR card) ──────────────
+        if (!kIsWeb && Platform.isAndroid) ...[
+          _buildUpdateButton(context, isAr),
+          const SizedBox(height: 6),
+        ],
         Text(l10n.appDescription,
             textAlign: TextAlign.center,
             style: TextStyle(color: Colors.grey[600])),
@@ -279,6 +355,180 @@ class _AboutScreenState extends State<AboutScreen> {
           Text(content,
               style: const TextStyle(fontSize: 12, color: Colors.grey)),
         ],
+      ),
+    );
+  }
+
+  // ─── زر التحقق من التحديث ──────────────────────────────────────────────────
+  // يظهر على Android فقط — Desktop يستخدم QR card أدناه بدلاً منه
+
+  Widget _buildUpdateButton(BuildContext context, bool isAr) {
+    switch (_checkState) {
+      case _CheckState.idle:
+        return _UpdateTile(
+          icon: Icons.system_update_rounded,
+          color: Theme.of(context).colorScheme.primary,
+          label: isAr ? 'التحقق من التحديثات' : 'Check for Updates',
+          onTap: _checkForUpdate,
+        );
+      case _CheckState.checking:
+        return _UpdateTile(
+          icon: Icons.sync_rounded,
+          color: Theme.of(context).colorScheme.primary,
+          label: isAr ? 'جاري التحقق...' : 'Checking...',
+          loading: true,
+        );
+      case _CheckState.upToDate:
+        return _UpdateTile(
+          icon: Icons.check_circle_rounded,
+          color: Colors.green,
+          label: isAr ? 'التطبيق محدّث ✓' : 'Up to date ✓',
+          subtitle: isAr ? 'لديك أحدث إصدار' : 'You have the latest version',
+          onTap: _checkForUpdate, // يتيح إعادة التحقق
+        );
+      case _CheckState.available:
+        return _UpdateTile(
+          icon: Icons.new_releases_rounded,
+          color: const Color(0xFFFF9500),
+          label: isAr ? 'تحديث جديد متاح!' : 'New update available!',
+          subtitle: isAr ? 'اضغط لتحميل التحديث' : 'Tap to download',
+          onTap: _downloadUpdate,
+          badge: true,
+        );
+      case _CheckState.downloading:
+        return _UpdateTile(
+          icon: Icons.download_rounded,
+          color: Theme.of(context).colorScheme.primary,
+          label: isAr ? 'جاري التحميل...' : 'Downloading...',
+          loading: true,
+        );
+      case _CheckState.readyToInstall:
+        return _UpdateTile(
+          icon: Icons.install_mobile_rounded,
+          color: Colors.green,
+          label: isAr ? 'جاهز للتثبيت' : 'Ready to install',
+          subtitle: isAr
+              ? 'اضغط لإعادة التشغيل وتثبيت التحديث'
+              : 'Tap to restart & install',
+          onTap: _installUpdate,
+          badge: true,
+        );
+    }
+  }
+} // end _AboutScreenState
+
+// ─── حالات التحديث ──────────────────────────────────────────────────────────
+
+enum _CheckState {
+  idle,
+  checking,
+  upToDate,
+  available,
+  downloading,
+  readyToInstall
+}
+
+// ─── Tile التحديث ───────────────────────────────────────────────────────────
+
+class _UpdateTile extends StatelessWidget {
+  final IconData icon;
+  final Color color;
+  final String label;
+  final String? subtitle;
+  final VoidCallback? onTap;
+  final bool loading;
+  final bool badge;
+
+  const _UpdateTile({
+    required this.icon,
+    required this.color,
+    required this.label,
+    this.subtitle,
+    this.onTap,
+    this.loading = false,
+    this.badge = false,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+
+    return GestureDetector(
+      onTap: onTap,
+      child: AnimatedContainer(
+        duration: const Duration(milliseconds: 250),
+        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+        decoration: BoxDecoration(
+          color: isDark
+              ? color.withValues(alpha: 0.12)
+              : color.withValues(alpha: 0.07),
+          borderRadius: BorderRadius.circular(14),
+          border: Border.all(color: color.withValues(alpha: 0.3)),
+        ),
+        child: Row(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            // أيقونة أو مؤشر تحميل
+            loading
+                ? SizedBox(
+                    width: 20,
+                    height: 20,
+                    child: CircularProgressIndicator(
+                      strokeWidth: 2.2,
+                      color: color,
+                    ),
+                  )
+                : Stack(
+                    clipBehavior: Clip.none,
+                    children: [
+                      Icon(icon, size: 20, color: color),
+                      if (badge)
+                        Positioned(
+                          top: -3,
+                          right: -3,
+                          child: Container(
+                            width: 8,
+                            height: 8,
+                            decoration: const BoxDecoration(
+                              color: Color(0xFFFF3B30),
+                              shape: BoxShape.circle,
+                            ),
+                          ),
+                        ),
+                    ],
+                  ),
+            const SizedBox(width: 10),
+            Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                Text(
+                  label,
+                  style: TextStyle(
+                    fontSize: 13,
+                    fontWeight: FontWeight.w600,
+                    color: color,
+                  ),
+                ),
+                if (subtitle != null) ...[
+                  const SizedBox(height: 1),
+                  Text(
+                    subtitle!,
+                    style: TextStyle(
+                      fontSize: 11,
+                      color: color.withValues(alpha: 0.75),
+                    ),
+                  ),
+                ],
+              ],
+            ),
+            if (onTap != null && !loading) ...[
+              const SizedBox(width: 6),
+              Icon(Icons.chevron_right_rounded,
+                  size: 16, color: color.withValues(alpha: 0.6)),
+            ],
+          ],
+        ),
       ),
     );
   }

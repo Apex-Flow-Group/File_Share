@@ -8,11 +8,15 @@ class SettingsService extends ChangeNotifier {
   ThemeMode _themeMode = ThemeMode.system;
   bool _hasSeenIntro = false;
   NetworkMode _networkMode = NetworkMode.wifi;
+  bool _sharedFolderEnabled = true;
+  bool _allowShareUploads = true;
 
   Locale? get locale => _locale;
   ThemeMode get themeMode => _themeMode;
   bool get hasSeenIntro => _hasSeenIntro;
   NetworkMode get networkMode => _networkMode;
+  bool get sharedFolderEnabled => _sharedFolderEnabled;
+  bool get allowShareUploads => _allowShareUploads;
 
   Future<void> loadSettings() async {
     final prefs = await SharedPreferences.getInstance();
@@ -37,9 +41,13 @@ class SettingsService extends ChangeNotifier {
     final networkIndex = prefs.getInt('network_mode') ?? 0;
     _networkMode = NetworkMode.values[networkIndex];
 
+    // Load share folder settings
+    _sharedFolderEnabled = prefs.getBool('share_folder_enabled') ?? true;
+    _allowShareUploads = prefs.getBool('share_allow_uploads') ?? true;
+
     notifyListeners();
   }
-  
+
   Future<void> setLocale(Locale? locale) async {
     _locale = locale;
     final prefs = await SharedPreferences.getInstance();
@@ -66,6 +74,20 @@ class SettingsService extends ChangeNotifier {
     _networkMode = mode;
     final prefs = await SharedPreferences.getInstance();
     await prefs.setInt('network_mode', mode.index);
+    notifyListeners();
+  }
+
+  Future<void> setSharedFolderEnabled(bool value) async {
+    _sharedFolderEnabled = value;
+    final prefs = await SharedPreferences.getInstance();
+    await prefs.setBool('share_folder_enabled', value);
+    notifyListeners();
+  }
+
+  Future<void> setAllowShareUploads(bool value) async {
+    _allowShareUploads = value;
+    final prefs = await SharedPreferences.getInstance();
+    await prefs.setBool('share_allow_uploads', value);
     notifyListeners();
   }
 

@@ -75,6 +75,24 @@ class PathUtils {
     return dir.path;
   }
 
+  /// مسار مجلد Share المشترك — خاص بـ desktop فقط.
+  /// Windows/macOS: <Documents>/ApexShare/Share
+  /// Linux:         ~/Downloads/ApexShare/Share
+  /// يُنشئ المجلد إن لم يوجد.
+  static Future<String> getShareFolderPath() async {
+    final String base;
+    if (Platform.isLinux) {
+      final home = Platform.environment['HOME'] ?? '/tmp';
+      base = '$home/Downloads/ApexShare';
+    } else {
+      final docDir = await getApplicationDocumentsDirectory();
+      base = '${docDir.path}/ApexShare';
+    }
+    final dir = Directory('$base/Share');
+    await dir.create(recursive: true);
+    return dir.path;
+  }
+
   /// Save a file to public Downloads using MediaStore API (Android 10+).
   /// Returns the final path of the saved file.
   /// This method is Google Play compliant — no MANAGE_EXTERNAL_STORAGE needed.

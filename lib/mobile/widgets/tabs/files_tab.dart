@@ -5,8 +5,10 @@ import 'package:flutter/material.dart';
 import '../../../l10n/generated/app_localizations.dart';
 import '../../../shared/apex_bottom_sheet.dart';
 import '../../../shared/apex_snackbar.dart';
+import '../../../utils/platform_detector.dart';
 import '../delete_files_sheet.dart';
 import 'file_tile.dart';
+import 'shared_folder_section.dart';
 
 class FilesTab extends StatefulWidget {
   final bool isSelectionMode;
@@ -360,6 +362,45 @@ class _FilesTabState extends State<FilesTab>
         MediaQuery.of(context).padding.bottom + kBottomNavigationBarHeight + 16;
 
     if (_files == null || _files!.isEmpty) {
+      // على desktop: اعرض SharedFolderSection حتى لو لا توجد ملفات استقبال
+      if (PlatformDetector.instance.isDesktop) {
+        return ListView(
+          padding: EdgeInsets.fromLTRB(16, 8, 16, bottomPadding),
+          children: [
+            const SharedFolderSection(),
+            const SizedBox(height: 16),
+            Center(
+              child: Column(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  Container(
+                    padding: const EdgeInsets.all(28),
+                    decoration: BoxDecoration(
+                      color: const Color(0xFFFF9500).withValues(alpha: 0.1),
+                      borderRadius: BorderRadius.circular(32),
+                    ),
+                    child: const Icon(Icons.folder_open_rounded,
+                        size: 64, color: Color(0xFFFF9500)),
+                  ),
+                  const SizedBox(height: 20),
+                  Text(l10n.noFiles,
+                      style: Theme.of(context).textTheme.titleMedium?.copyWith(
+                            fontWeight: FontWeight.bold,
+                          )),
+                  const SizedBox(height: 6),
+                  Text(
+                    l10n.noFilesHint,
+                    style: TextStyle(
+                      color: Theme.of(context).colorScheme.onSurfaceVariant,
+                      fontSize: 13,
+                    ),
+                  ),
+                ],
+              ),
+            ),
+          ],
+        );
+      }
       return SingleChildScrollView(
         physics: const AlwaysScrollableScrollPhysics(),
         child: SizedBox(
@@ -399,25 +440,40 @@ class _FilesTabState extends State<FilesTab>
 
     final sorted = _sort(_files!);
 
-    return ListView.separated(
+    // على desktop: SharedFolderSection + ملفات الاستقبال في ListView واحد
+    final isDesktop = PlatformDetector.instance.isDesktop;
+
+    return ListView.builder(
       padding: EdgeInsets.fromLTRB(16, 8, 16, bottomPadding),
-      itemCount: sorted.length,
-      separatorBuilder: (_, __) => const SizedBox(height: 8),
+      itemCount: sorted.length + (isDesktop ? 2 : 0),
       itemBuilder: (context, i) {
-        final file = File(sorted[i].path);
-        final name = file.path.split('/').last;
+        // على desktop: أول عنصر هو SharedFolderSection، ثاني عنصر فاصل
+        if (isDesktop && i == 0) {
+          return const SharedFolderSection();
+        }
+        if (isDesktop && i == 1) {
+          return const SizedBox(height: 8);
+        }
+        final index = isDesktop ? i - 2 : i;
+        final file = File(sorted[index].path);
+        final name = file.path.split(Platform.pathSeparator).last.isNotEmpty
+            ? file.path.split(Platform.pathSeparator).last
+            : file.path.split('/').last;
         final isSelected = widget.selectedFiles.contains(file.path);
-        return FileTile(
-          file: file,
-          name: name,
-          isSelected: isSelected,
-          isSelectionMode: widget.isSelectionMode,
-          onTap: () => widget.isSelectionMode
-              ? widget.onToggleFileSelection(file.path)
-              : widget.onOpenFile(file),
-          onLongPress: () => widget.onLongPress(file.path),
-          onOpenFile: () => widget.onOpenFile(file),
-          onOpenLocation: () => widget.onOpenFileLocation(file),
+        return Padding(
+          padding: const EdgeInsets.only(bottom: 8),
+          child: FileTile(
+            file: file,
+            name: name,
+            isSelected: isSelected,
+            isSelectionMode: widget.isSelectionMode,
+            onTap: () => widget.isSelectionMode
+                ? widget.onToggleFileSelection(file.path)
+                : widget.onOpenFile(file),
+            onLongPress: () => widget.onLongPress(file.path),
+            onOpenFile: () => widget.onOpenFile(file),
+            onOpenLocation: () => widget.onOpenFileLocation(file),
+          ),
         );
       },
     );

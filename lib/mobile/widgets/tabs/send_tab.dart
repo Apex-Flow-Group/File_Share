@@ -76,8 +76,7 @@ class _SendTabState extends State<SendTab> with TickerProviderStateMixin {
   @override
   Widget build(BuildContext context) {
     final isDesktop = MediaQuery.of(context).size.width >= 900;
-    final hasAny =
-        widget.devices.isNotEmpty || widget.pinnedDevices.isNotEmpty;
+    final hasAny = widget.devices.isNotEmpty || widget.pinnedDevices.isNotEmpty;
     return SafeArea(
       bottom: false,
       child: !hasAny
@@ -284,8 +283,14 @@ class _SendTabState extends State<SendTab> with TickerProviderStateMixin {
 
   Widget _buildDeviceList() {
     final l10n = AppLocalizations.of(context);
+    final isDark = Theme.of(context).brightness == Brightness.dark;
     final bottomPadding =
         MediaQuery.of(context).padding.bottom + kBottomNavigationBarHeight + 16;
+
+    // الأجهزة الجديدة = المكتشفة وليست مثبتة
+    final newDevices =
+        widget.devices.where((d) => !widget.isPinned(d.id)).toList();
+
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
@@ -296,31 +301,65 @@ class _SendTabState extends State<SendTab> with TickerProviderStateMixin {
             builder: (context, snapshot) {
               final svc = TransferProgressService();
               final isTransferring = svc.isTransferring;
-              return ListView.builder(
+              return ListView(
                 physics: isTransferring
                     ? const NeverScrollableScrollPhysics()
                     : const AlwaysScrollableScrollPhysics(),
                 padding: EdgeInsets.fromLTRB(16, 8, 16, bottomPadding),
-                itemCount: widget.devices.length,
-                itemBuilder: (context, i) {
-                  final device = widget.devices[i];
-                  final isTarget =
-                      isTransferring && svc.targetDeviceId == device.id;
-                  return ConnectionWidget(
-                    device: device,
-                    isActive: true,
-                    isPinned: widget.isPinned(device.id),
-                    onPin: () => widget.onPin(device),
-                    onUnpin: () => widget.onUnpin(device.id),
-                    pendingFilePath: widget.pendingFilePath,
-                    onPendingFileSent: widget.onPendingFileSent,
-                    pendingSharedFiles: widget.pendingSharedFiles,
-                    onSharedFilesSent: widget.onSharedFilesSent,
-                    pendingClipboardItem: widget.pendingClipboardItem,
-                    onClipboardItemSent: widget.onClipboardItemSent,
-                    isGloballyBusy: isTransferring && !isTarget,
-                  );
-                },
+                children: [
+                  // ─── الأجهزة المثبتة
+                  if (widget.pinnedDevices.isNotEmpty) ...[
+                    _SectionHeader(
+                      icon: Icons.push_pin_rounded,
+                      label: l10n.pinnedDevices,
+                      isDark: isDark,
+                    ),
+                    ...widget.pinnedDevices.map((pinned) {
+                      final active = widget.devices
+                          .where((d) => d.id == pinned.id)
+                          .firstOrNull;
+                      return ConnectionWidget(
+                        device: active ?? pinned,
+                        isActive: active != null,
+                        isPinned: true,
+                        onPin: () => widget.onPin(active ?? pinned),
+                        onUnpin: () => widget.onUnpin(pinned.id),
+                        pendingFilePath: widget.pendingFilePath,
+                        onPendingFileSent: widget.onPendingFileSent,
+                        pendingSharedFiles: widget.pendingSharedFiles,
+                        onSharedFilesSent: widget.onSharedFilesSent,
+                        pendingClipboardItem: widget.pendingClipboardItem,
+                        onClipboardItemSent: widget.onClipboardItemSent,
+                        isGloballyBusy: isTransferring &&
+                            svc.targetDeviceId != (active?.id ?? pinned.id),
+                      );
+                    }),
+                    const SizedBox(height: 8),
+                  ],
+                  // ─── الأجهزة الجديدة
+                  if (newDevices.isNotEmpty) ...[
+                    _SectionHeader(
+                      icon: Icons.devices_rounded,
+                      label: l10n.newDevices,
+                      isDark: isDark,
+                    ),
+                    ...newDevices.map((device) => ConnectionWidget(
+                          device: device,
+                          isActive: true,
+                          isPinned: false,
+                          onPin: () => widget.onPin(device),
+                          onUnpin: () => widget.onUnpin(device.id),
+                          pendingFilePath: widget.pendingFilePath,
+                          onPendingFileSent: widget.onPendingFileSent,
+                          pendingSharedFiles: widget.pendingSharedFiles,
+                          onSharedFilesSent: widget.onSharedFilesSent,
+                          pendingClipboardItem: widget.pendingClipboardItem,
+                          onClipboardItemSent: widget.onClipboardItemSent,
+                          isGloballyBusy:
+                              isTransferring && svc.targetDeviceId != device.id,
+                        )),
+                  ],
+                ],
               );
             },
           ),
@@ -422,9 +461,7 @@ class _SectionHeader extends StatelessWidget {
     return Padding(
       padding: const EdgeInsets.only(bottom: 8, top: 4),
       child: Row(children: [
-        Icon(icon,
-            size: 14,
-            color: isDark ? Colors.white38 : Colors.black38),
+        Icon(icon, size: 14, color: isDark ? Colors.white38 : Colors.black38),
         const SizedBox(width: 6),
         Text(
           label,

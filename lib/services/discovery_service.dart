@@ -18,6 +18,12 @@ class DiscoveryService {
   Stream<Device> get onDeviceFound => _deviceFoundController.stream;
   Stream<String> get onDeviceLost => _deviceLostController.stream;
 
+  /// callback يُسأل عنه عند كل بث — هل Share مُفعَّل؟ (desktop فقط)
+  bool Function() isShareEnabled;
+
+  DiscoveryService({this.isShareEnabled = _defaultFalse});
+  static bool _defaultFalse() => false;
+
   // Nearby (Android phone ↔ phone)
   bool _nearbyAdvertising = false;
   bool _nearbyDiscovering = false;
@@ -57,6 +63,9 @@ class DiscoveryService {
           'name': d.name,
           'type': d.type,
           'port': d.port,
+          if (d.hostname != null && d.hostname!.isNotEmpty)
+            'hostname': d.hostname,
+          if (isShareEnabled()) 'share': true,
         })}';
     final data = utf8.encode(msg);
     try {
@@ -92,6 +101,8 @@ class DiscoveryService {
             type: json['type'] as String? ?? 'desktop',
             ip: dg.address.address,
             port: json['port'] as int? ?? 0,
+            hostname: json['hostname'] as String?,
+            shareEnabled: json['share'] == true,
             lastSeen: DateTime.now(),
           ));
         } catch (_) {}
@@ -118,6 +129,9 @@ class DiscoveryService {
           'name': d.name,
           'type': d.type,
           'port': d.port,
+          if (d.hostname != null && d.hostname!.isNotEmpty)
+            'hostname': d.hostname,
+          if (isShareEnabled()) 'share': true,
         })}';
     final data = utf8.encode(msg);
     // Send to both general broadcast and subnet broadcast

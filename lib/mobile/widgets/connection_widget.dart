@@ -9,6 +9,7 @@ import '../../services/clipboard_monitor_service.dart';
 import '../../services/desktop_notification_service.dart';
 import '../../services/transfer_progress_service.dart';
 import '../../shared/apex_snackbar.dart';
+import '../screens/share_browser_screen.dart';
 import 'connection_send_actions.dart';
 import 'transfer_progress_indicator.dart';
 
@@ -122,16 +123,19 @@ class _ConnectionWidgetState extends State<ConnectionWidget>
             children: [
               _buildHeader(isDark),
               const SizedBox(height: 14),
-              if (widget.isActive && widget.pendingSharedFiles != null &&
+              if (widget.isActive &&
+                  widget.pendingSharedFiles != null &&
                   widget.pendingSharedFiles!.isNotEmpty &&
                   _status == _Status.idle &&
                   !widget.isGloballyBusy)
                 _buildSharedFilesBanner(l10n),
-              if (widget.isActive && widget.pendingFilePath != null &&
+              if (widget.isActive &&
+                  widget.pendingFilePath != null &&
                   _status == _Status.idle &&
                   !widget.isGloballyBusy)
                 _buildPendingFileBanner(l10n),
-              if (widget.isActive && widget.pendingClipboardItem != null &&
+              if (widget.isActive &&
+                  widget.pendingClipboardItem != null &&
                   _status == _Status.idle &&
                   !widget.isGloballyBusy)
                 _ClipboardBanner(
@@ -181,6 +185,7 @@ class _ConnectionWidgetState extends State<ConnectionWidget>
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
+              // ─── اسم الجهاز (قابل للتغيير) — خط عريض
               Text(
                 widget.device.name,
                 style:
@@ -188,20 +193,46 @@ class _ConnectionWidgetState extends State<ConnectionWidget>
                 maxLines: 1,
                 overflow: TextOverflow.ellipsis,
               ),
-              const SizedBox(height: 4),
+              // ─── السطر الثاني: hostname (إن اختلف عن name) أو IP + badges
+              const SizedBox(height: 3),
+              if (widget.device.hostname != null &&
+                  widget.device.hostname!.isNotEmpty &&
+                  widget.device.hostname != widget.device.name) ...[
+                // hostname مختلف عن الاسم — اعرضه بخط أصغر
+                Text(
+                  widget.device.hostname!,
+                  style: TextStyle(
+                    fontSize: 11,
+                    fontWeight: FontWeight.w500,
+                    color: Theme.of(context)
+                        .colorScheme
+                        .onSurfaceVariant
+                        .withValues(alpha: 0.75),
+                  ),
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
+                ),
+                const SizedBox(height: 2),
+              ],
+              // ─── شارات النقل + IP
               Row(children: [
                 if (widget.isActive) ...[
                   _TransportBadge(
                     isNearby: widget.device.isNearby,
                     isWifi: widget.device.isMdns,
                   ),
-                  if (!widget.device.isNearby && widget.device.ip.isNotEmpty) ...[
+                  if (!widget.device.isNearby &&
+                      widget.device.ip.isNotEmpty) ...[
                     const SizedBox(width: 6),
-                    Text(
-                      widget.device.ip,
-                      style: TextStyle(
-                        fontSize: 11,
-                        color: Theme.of(context).colorScheme.onSurfaceVariant,
+                    Flexible(
+                      child: Text(
+                        widget.device.ip,
+                        style: TextStyle(
+                          fontSize: 11,
+                          color: Theme.of(context).colorScheme.onSurfaceVariant,
+                        ),
+                        maxLines: 1,
+                        overflow: TextOverflow.ellipsis,
                       ),
                     ),
                   ],
@@ -481,7 +512,28 @@ class _ConnectionWidgetState extends State<ConnectionWidget>
             isDark: isDark,
             onTap: sendFolder,
           )),
+        // زر المجلد المشترك — يظهر فقط إذا الجهاز desktop وأعلن عن Share
+        if (widget.device.hasShare) ...[
+          const SizedBox(width: 10),
+          Expanded(
+            child: _ActionButton(
+              icon: Icons.folder_shared_rounded,
+              label: l10n.sharedFolder,
+              color: const Color(0xFFFF9500),
+              isDark: isDark,
+              onTap: _openShareBrowser,
+            ),
+          ),
+        ],
       ],
+    );
+  }
+
+  void _openShareBrowser() {
+    Navigator.of(context).push(
+      MaterialPageRoute(
+        builder: (_) => ShareBrowserScreen(device: widget.device),
+      ),
     );
   }
 
@@ -814,20 +866,17 @@ class _ClipboardBannerState extends State<_ClipboardBanner> {
                       Expanded(
                         child: Text(
                           widget.item.displayName,
-                          maxLines:
-                              widget.item.type == ClipboardItemType.text
-                                  ? 2
-                                  : 1,
+                          maxLines: widget.item.type == ClipboardItemType.text
+                              ? 2
+                              : 1,
                           overflow: TextOverflow.ellipsis,
                           style: TextStyle(
-                            fontSize: widget.item.type ==
-                                    ClipboardItemType.text
+                            fontSize: widget.item.type == ClipboardItemType.text
                                 ? 12
                                 : 13,
                             fontWeight: FontWeight.w600,
-                            color: isDark
-                                ? Colors.white
-                                : const Color(0xFF1C1C1E),
+                            color:
+                                isDark ? Colors.white : const Color(0xFF1C1C1E),
                           ),
                         ),
                       ),

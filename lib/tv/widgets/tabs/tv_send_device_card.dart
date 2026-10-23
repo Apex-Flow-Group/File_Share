@@ -19,12 +19,20 @@ import '../tv_focusable_widgets.dart';
 /// TV device card that shows a device and handles send actions via remote.
 class TVDeviceCard extends StatefulWidget {
   final Device device;
+  final bool isActive;
+  final bool isPinned;
+  final VoidCallback? onPin;
+  final VoidCallback? onUnpin;
   final bool isGloballyBusy;
   final bool autofocus;
   final FocusNode? contentFocusNode;
   final VoidCallback? onBackToSidebar;
   const TVDeviceCard({
     required this.device,
+    this.isActive = true,
+    this.isPinned = false,
+    this.onPin,
+    this.onUnpin,
     this.isGloballyBusy = false,
     this.autofocus = false,
     this.contentFocusNode,
@@ -95,6 +103,10 @@ class _TVDeviceCardState extends State<TVDeviceCard> {
               : null,
           child: ConnectionWidget(
             device: widget.device,
+            isActive: widget.isActive,
+            isPinned: widget.isPinned,
+            onPin: widget.onPin,
+            onUnpin: widget.onUnpin,
             isGloballyBusy: widget.isGloballyBusy,
           ),
         );

@@ -50,6 +50,13 @@ app.*.map.json
 **/local.properties
 **/*.jks
 **/*.keystore
+**/google-services.json
+**/GoogleService-Info.plist
+apex-signing-backup/
+**/*.pem
+**/*.cer
+**/*.p12
+**/SIGNING_INFO.txt
 
 # Build outputs
 /debug_info/

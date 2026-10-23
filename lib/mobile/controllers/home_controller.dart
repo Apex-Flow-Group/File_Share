@@ -114,6 +114,7 @@ class HomeController extends ChangeNotifier {
   Future<void> _startSystem() async {
     try {
       ApexCore.instance.setNetworkMode(settings.networkMode);
+      ApexCore.instance.setSettings(settings);
       await ApexCore.instance.start();
       _isRunning = true;
       notifyListeners();
@@ -131,6 +132,7 @@ class HomeController extends ChangeNotifier {
 
   Future<void> restartSystem() async {
     ApexCore.instance.setNetworkMode(settings.networkMode);
+    ApexCore.instance.setSettings(settings);
     await stopSystem();
     await Future.delayed(const Duration(milliseconds: 400));
     await _startSystem();
