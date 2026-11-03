@@ -126,12 +126,9 @@ class MainActivity : FlutterActivity() {
     // معالجة ملف .sinan
     private fun handleSinanIntent(intent: Intent?) {
         if (intent?.action != Intent.ACTION_VIEW) return
-        val extraPath = intent.getStringExtra("sinan_file_path")
-        if (extraPath != null && File(extraPath).exists()) {
-            deliverOrStoreSinan(extraPath)
-            return
-        }
+        // No path extra: any app could name this app's private files with it.
         val uri = intent.data ?: return
+        if (uri.scheme != "content" || isOwnProvider(uri)) return
         try {
             val stream = contentResolver.openInputStream(uri) ?: return
             val tmpFile = File(cacheDir, "received.sinan")
