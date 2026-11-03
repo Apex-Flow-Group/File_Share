@@ -89,7 +89,18 @@ class ApexCore {
   bool get _isAndroid => !kIsWeb && Platform.isAndroid;
 
   /// يُمرِّر SettingsService لقراءة إعدادات Share في runtime
-  void setSettings(SettingsService settings) => _settings = settings;
+  void setSettings(SettingsService settings) {
+    if (identical(_settings, settings)) {
+      return;
+    }
+    _settings = settings;
+    // Turning the folder off ends every agreement at once, not at the next request.
+    settings.addListener(() {
+      if (!settings.sharedFolderEnabled) {
+        _share.revokeAll();
+      }
+    });
+  }
 
   // ─── Lifecycle ─────────────────────────────────────────────────────────────
 

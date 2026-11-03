@@ -47,6 +47,12 @@ class ShareFolderHttp {
   final ShareAccess _access;
   bool _asking = false;
 
+  /// Error code when the folder is off, so the asker is not told to update.
+  static const shareOff = 'share_off';
+
+  /// Call when the user turns the folder off: no earlier agreement survives.
+  void revokeAll() => _access.revokeAll();
+
   ShareFolderHttp({
     required this.isEnabled,
     required this.allowUploads,
@@ -74,8 +80,8 @@ class ShareFolderHttp {
 
     // ميزة مُعطَّلة
     if (!isEnabled()) {
-      _access.revokeAll();
-      await _notFound(req);
+      revokeAll();
+      await _json(req, HttpStatus.notFound, {'error': shareOff});
       return true;
     }
 
@@ -122,31 +128,38 @@ class ShareFolderHttp {
   Future<void> _handleAccess(HttpRequest req, String address) async {
     final name = cleanLabel(await _readName(req));
     final shown = name.isEmpty ? address : name;
-    if (!await _ask(shown, address)) {
-      await _json(req, HttpStatus.ok, {'accepted': false});
+    final uploads = allowUploads();
+    final answer = await _ask(shown, address, uploads);
+    if (answer != _Answer.accepted) {
+      await _json(req, HttpStatus.ok,
+          {'accepted': false, 'reason': answer == _Answer.refused ? 'refused' : 'no_answer'});
       return;
     }
-    await _json(req, HttpStatus.ok, {'accepted': true, 'token': _access.admit(address, shown)});
+    await _json(req, HttpStatus.ok,
+        {'accepted': true, 'token': _access.admit(address, shown, uploads: uploads)});
   }
 
   /// One question at a time: a new one must not appear under the finger that
   /// is about to press Accept on the last.
-  Future<bool> _ask(String name, String address) async {
+  /// Busy, nobody to ask and no answer in time are not a refusal: the asker
+  /// is told to try again, not that the owner said no.
+  Future<_Answer> _ask(String name, String address, bool uploads) async {
     final ask = onAccessRequest;
-    if (ask == null || _asking) return false;
+    if (ask == null || _asking) return _Answer.none;
     _asking = true;
-    final answer = Completer<bool>();
+    final answer = Completer<_Answer>();
     try {
       ask(ConnectionRequest(
         device: Device(id: 'http:$address', name: name, type: 'unknown', ip: address),
         fileName: '',
         fileCount: 0,
         kind: RequestKind.shareFolder,
+        allowsUploads: uploads,
         onResponse: (v) {
-          if (!answer.isCompleted) answer.complete(v);
+          if (!answer.isCompleted) answer.complete(v ? _Answer.accepted : _Answer.refused);
         },
       ));
-      return await answer.future.timeout(decisionTimeout, onTimeout: () => false);
+      return await answer.future.timeout(decisionTimeout, onTimeout: () => _Answer.none);
     } finally {
       _asking = false;
     }
@@ -219,7 +232,8 @@ class ShareFolderHttp {
   // ─── POST /share/upload?name= ─────────────────────────────────────────────
 
   Future<void> _handleUpload(HttpRequest req, ShareGrant grant) async {
-    if (!allowUploads()) {
+    // The user agreed to downloads only if uploads were off when asked.
+    if (!allowUploads() || !grant.uploads) {
       req.response.statusCode = HttpStatus.forbidden;
       req.response.write(jsonEncode({'error': 'uploads disabled'}));
       await req.response.close();
@@ -319,3 +333,5 @@ class ShareFolderHttp {
     await req.response.close();
   }
 }
+
+enum _Answer { accepted, refused, none }

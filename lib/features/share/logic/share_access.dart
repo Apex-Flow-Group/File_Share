@@ -2,11 +2,14 @@ import 'dart:convert';
 import 'dart:math';
 
 class ShareGrant {
-  ShareGrant(this.address, this.name, this.lastUse);
+  ShareGrant(this.address, this.name, this.uploads, this.lastUse);
   final String address;
 
   /// The name the device gave when the user agreed, already cleaned.
   final String name;
+
+  /// Whether the question the user answered included uploading.
+  final bool uploads;
   DateTime lastUse;
 }
 
@@ -24,13 +27,13 @@ class ShareAccess {
   final DateTime Function() _clock;
   final _grants = <String, ShareGrant>{};
 
-  String admit(String address, String name) {
+  String admit(String address, String name, {bool uploads = false}) {
     _dropExpired();
     String token;
     do {
       token = base64Url.encode(List.generate(24, (_) => _random.nextInt(256)));
     } while (_grants.containsKey(token));
-    _grants[token] = ShareGrant(address, name, _clock());
+    _grants[token] = ShareGrant(address, name, uploads, _clock());
     return token;
   }
 

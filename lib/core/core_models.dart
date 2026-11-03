@@ -38,6 +38,9 @@ class ConnectionRequest {
   final int fileCount;
   final List<String> fileNames;
   final RequestKind kind;
+
+  /// For [RequestKind.shareFolder]: the device could also upload.
+  final bool allowsUploads;
   final Function(bool) onResponse;
   ConnectionRequest({
     required this.device,
@@ -47,6 +50,7 @@ class ConnectionRequest {
     this.fileCount = 1,
     this.fileNames = const [],
     this.kind = RequestKind.files,
+    this.allowsUploads = false,
   });
 
   bool get asksToConnect => kind == RequestKind.connect;
