@@ -8,8 +8,10 @@ class SettingsService extends ChangeNotifier {
   ThemeMode _themeMode = ThemeMode.system;
   bool _hasSeenIntro = false;
   NetworkMode _networkMode = NetworkMode.wifi;
-  bool _sharedFolderEnabled = true;
-  bool _allowShareUploads = true;
+  // Off until the user turns them on: otherwise a fresh install shares its
+  // folder with the whole network.
+  bool _sharedFolderEnabled = false;
+  bool _allowShareUploads = false;
   bool _clipboardMonitorEnabled = false;
 
   Locale? get locale => _locale;
@@ -44,8 +46,8 @@ class SettingsService extends ChangeNotifier {
     _networkMode = NetworkMode.values[networkIndex];
 
     // Load share folder settings
-    _sharedFolderEnabled = prefs.getBool('share_folder_enabled') ?? true;
-    _allowShareUploads = prefs.getBool('share_allow_uploads') ?? true;
+    _sharedFolderEnabled = prefs.getBool('share_folder_enabled') ?? false;
+    _allowShareUploads = prefs.getBool('share_allow_uploads') ?? false;
 
     // Off unless the user turned it on: copied text includes passwords.
     _clipboardMonitorEnabled = prefs.getBool('clipboard_monitor_enabled') ?? false;

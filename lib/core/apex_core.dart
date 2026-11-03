@@ -59,9 +59,10 @@ class ApexCore {
   late final SendHttp _send = SendHttp(getLocalName: () => _localDevice?.name);
 
   late final ShareFolderHttp _share = ShareFolderHttp(
-    isEnabled: () => _settings?.sharedFolderEnabled ?? true,
-    allowUploads: () => _settings?.allowShareUploads ?? true,
+    isEnabled: () => _settings?.sharedFolderEnabled ?? false,
+    allowUploads: () => _settings?.allowShareUploads ?? false,
     getLocalName: () => _localDevice?.name,
+    onAccessRequest: _connectionRequestController.add,
   );
   SettingsService? _settings;
 

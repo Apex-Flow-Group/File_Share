@@ -52,7 +52,7 @@ class NearbyDoor {
           device: _device(endpointId),
           fileName: '',
           fileCount: 0,
-          asksToConnect: true,
+          kind: RequestKind.connect,
           onResponse: respond,
         ));
   }

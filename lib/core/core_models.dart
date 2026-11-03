@@ -19,15 +19,25 @@ class FileReceivedEvent {
   });
 }
 
+/// What the user is asked to allow.
+enum RequestKind {
+  /// Receive the listed files.
+  files,
+
+  /// Let a nearby phone connect, before it can offer any file.
+  connect,
+
+  /// Let a device open the shared folder.
+  shareFolder,
+}
+
 class ConnectionRequest {
   final Device device;
   final String fileName;
   final int fileSize;
   final int fileCount;
   final List<String> fileNames;
-
-  /// True when a nearby phone asks to connect, before it can offer any file.
-  final bool asksToConnect;
+  final RequestKind kind;
   final Function(bool) onResponse;
   ConnectionRequest({
     required this.device,
@@ -36,6 +46,8 @@ class ConnectionRequest {
     this.fileSize = 0,
     this.fileCount = 1,
     this.fileNames = const [],
-    this.asksToConnect = false,
+    this.kind = RequestKind.files,
   });
+
+  bool get asksToConnect => kind == RequestKind.connect;
 }
