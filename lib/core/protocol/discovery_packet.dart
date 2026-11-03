@@ -64,4 +64,38 @@ class DiscoveryPacket {
       lastSeen: DateTime.now(),
     );
   }
+
+  /// A device on another version, or one so old its packet has no version:
+  /// shown disabled with the name and address as received, with no port and
+  /// no shared folder, so nothing can reach it. Null for a current packet
+  /// (read it with [decode]), our own, or anything malformed.
+  static Device? otherVersion(String text, {required String from, required String selfId}) {
+    if (!text.startsWith(magic)) {
+      return null;
+    }
+    final Object? json;
+    try {
+      json = jsonDecode(text.substring(magic.length));
+    } on FormatException {
+      return null;
+    }
+    if (json is! Map || json['version'] == ApexProtocol.version) {
+      return null;
+    }
+    final id = json['id'];
+    final name = json['name'];
+    if (id is! String || id.isEmpty || id == selfId || name is! String) {
+      return null;
+    }
+    final type = json['type'];
+    final shown = cleanLabel(name);
+    return Device(
+      id: id,
+      name: shown.isEmpty ? from : shown,
+      type: type is String ? cleanLabel(type) : 'desktop',
+      ip: from,
+      versionMismatch: true,
+      lastSeen: DateTime.now(),
+    );
+  }
 }

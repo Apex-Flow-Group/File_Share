@@ -700,6 +700,9 @@ class AppLocalizationsAr extends AppLocalizations {
       'إصدار التطبيق مختلف بين الجهازين. حدّثه على الجهازين';
 
   @override
+  String get versionDiffers => 'إصدار التطبيق مختلف';
+
+  @override
   String get uploading => 'جاري الرفع...';
 
   @override

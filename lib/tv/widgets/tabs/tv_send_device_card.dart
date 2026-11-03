@@ -116,7 +116,7 @@ class _TVDeviceCardState extends State<TVDeviceCard> {
     }
     // Nothing to send to an offline device, but pinning stays reachable, so an
     // old device that never comes back can be unpinned.
-    final canSend = widget.isActive;
+    final canSend = widget.isActive && !widget.device.versionMismatch;
     final togglePin = widget.isPinned ? widget.onUnpin : widget.onPin;
     if (!canSend && togglePin == null) {
       return;
@@ -308,7 +308,7 @@ class _TVDeviceTile extends StatelessWidget {
         borderRadius: BorderRadius.circular(20),
       ),
       child: Opacity(
-        opacity: isActive ? 1.0 : 0.45,
+        opacity: isActive && !device.versionMismatch ? 1.0 : 0.45,
         child: Row(children: [
           Container(
             width: 52,
@@ -337,9 +337,11 @@ class _TVDeviceTile extends StatelessWidget {
                 Text(
                   !isActive
                       ? l10n.deviceOffline
-                      : device.isNearby
-                          ? l10n.directConnection
-                          : device.ip,
+                      : device.versionMismatch
+                          ? l10n.versionDiffers
+                          : device.isNearby
+                              ? l10n.directConnection
+                              : device.ip,
                   style: TextStyle(fontSize: 12, color: muted),
                 ),
               ],
@@ -351,7 +353,7 @@ class _TVDeviceTile extends StatelessWidget {
             width: 10,
             height: 10,
             decoration: BoxDecoration(
-              color: isActive ? Colors.green : Colors.grey,
+              color: isActive && !device.versionMismatch ? Colors.green : Colors.grey,
               shape: BoxShape.circle,
             ),
           ),

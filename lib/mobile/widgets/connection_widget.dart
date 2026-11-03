@@ -103,6 +103,8 @@ class _ConnectionWidgetState extends State<ConnectionWidget>
   Widget build(BuildContext context) {
     final isDark = Theme.of(context).brightness == Brightness.dark;
     final l10n = AppLocalizations.of(context);
+    // Another version is listed but nothing is sent to it.
+    final usable = widget.isActive && !widget.device.versionMismatch;
 
     return Container(
       margin: const EdgeInsets.only(bottom: 12),
@@ -118,7 +120,7 @@ class _ConnectionWidgetState extends State<ConnectionWidget>
         ],
       ),
       child: Opacity(
-        opacity: widget.isActive ? 1.0 : 0.45,
+        opacity: usable ? 1.0 : 0.45,
         child: Padding(
           padding: const EdgeInsets.all(16),
           child: Column(
@@ -126,18 +128,18 @@ class _ConnectionWidgetState extends State<ConnectionWidget>
             children: [
               _buildHeader(isDark),
               const SizedBox(height: 14),
-              if (widget.isActive &&
+              if (usable &&
                   widget.pendingSharedFiles != null &&
                   widget.pendingSharedFiles!.isNotEmpty &&
                   _status == _Status.idle &&
                   !widget.isGloballyBusy)
                 _buildSharedFilesBanner(l10n),
-              if (widget.isActive &&
+              if (usable &&
                   widget.pendingFilePath != null &&
                   _status == _Status.idle &&
                   !widget.isGloballyBusy)
                 _buildPendingFileBanner(l10n),
-              if (widget.isActive &&
+              if (usable &&
                   widget.pendingClipboardItem != null &&
                   _status == _Status.idle &&
                   !widget.isGloballyBusy)
@@ -146,8 +148,11 @@ class _ConnectionWidgetState extends State<ConnectionWidget>
                   onSend: _sendClipboardItem,
                   onDismiss: widget.onClipboardItemSent,
                 ),
+              // Offline first, as on the TV: it is what the device is now.
               if (!widget.isActive)
                 _buildOfflineBar(l10n)
+              else if (widget.device.versionMismatch)
+                _buildVersionBar(l10n)
               else
                 _status == _Status.sending
                     ? _buildSendingState()
@@ -219,7 +224,8 @@ class _ConnectionWidgetState extends State<ConnectionWidget>
               ],
               // ─── شارات النقل + IP
               Row(children: [
-                if (widget.isActive) ...[
+                // Another version gets its address only: no transport to offer.
+                if (widget.isActive && !widget.device.versionMismatch) ...[
                   // Shrinks instead of overflowing with large system fonts.
                   Flexible(
                     child: FittedBox(
@@ -288,11 +294,38 @@ class _ConnectionWidgetState extends State<ConnectionWidget>
           width: 10,
           height: 10,
           decoration: BoxDecoration(
-            color: widget.isActive ? Colors.green : Colors.grey,
+            color: widget.isActive && !widget.device.versionMismatch
+                ? Colors.green
+                : Colors.grey,
             shape: BoxShape.circle,
           ),
         ),
       ],
+    );
+  }
+
+  Widget _buildVersionBar(AppLocalizations l10n) {
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
+      decoration: BoxDecoration(
+        color: Colors.orange.withValues(alpha: 0.08),
+        borderRadius: BorderRadius.circular(12),
+        border: Border.all(color: Colors.orange.withValues(alpha: 0.3)),
+      ),
+      child: Row(children: [
+        const Icon(Icons.system_update_rounded, size: 16, color: Colors.orange),
+        const SizedBox(width: 8),
+        Expanded(
+          child: Text(
+            l10n.versionDiffers,
+            style: const TextStyle(
+              fontSize: 12,
+              color: Colors.orange,
+              fontWeight: FontWeight.w500,
+            ),
+          ),
+        ),
+      ]),
     );
   }
 

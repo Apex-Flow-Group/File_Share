@@ -143,6 +143,12 @@ class ApexCore {
       if (TransferProgressService().isTransferring) {
         return;
       }
+      // Never merged by name: its address must not reach a working record.
+      if (device.versionMismatch) {
+        _discoveredDevices[device.id] = device;
+        _devicesController.add(devices);
+        return;
+      }
       // deduplication بالاسم — ادمج Nearby + WiFi في سجل واحد
       final existingEntry = _discoveredDevices.entries
           .where((e) => e.value.name.toLowerCase() == device.name.toLowerCase())
@@ -282,6 +288,9 @@ class ApexCore {
 
   Future<SendOutcome> sendFileWithName(
       String filePath, String fileName, Device target) async {
+    if (target.versionMismatch) {
+      return SendOutcome.updateRequired;
+    }
     final f = File(filePath);
     if (!await f.exists()) {
       return SendOutcome.failed;
@@ -294,6 +303,9 @@ class ApexCore {
   }
 
   Future<SendOutcome> sendFiles(List<String> filePaths, Device target) async {
+    if (target.versionMismatch) {
+      return SendOutcome.updateRequired;
+    }
     if (filePaths.isEmpty) {
       return SendOutcome.failed;
     }

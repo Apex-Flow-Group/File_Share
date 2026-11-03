@@ -244,6 +244,7 @@
   "shareOffRemote": "The shared folder is not enabled on the other device",
   "retry": "Try again",
   "updateRequired": "The app version differs between the two devices. Update it on both",
+  "versionDiffers": "Different app version",
   "uploading": "Uploading...",
   "downloading": "Downloading...",
   "sendDeclined": "The other device declined",

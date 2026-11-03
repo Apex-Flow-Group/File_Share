@@ -1424,6 +1424,12 @@ abstract class AppLocalizations {
   /// **'The app version differs between the two devices. Update it on both'**
   String get updateRequired;
 
+  /// No description provided for @versionDiffers.
+  ///
+  /// In en, this message translates to:
+  /// **'Different app version'**
+  String get versionDiffers;
+
   /// No description provided for @uploading.
   ///
   /// In en, this message translates to:

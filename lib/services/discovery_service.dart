@@ -81,8 +81,10 @@ class DiscoveryService {
         if (dg == null) return;
         if (dg.address.address == localDevice.ip) return; // ignore self by IP
         try {
-          final device = DiscoveryPacket.decode(utf8.decode(dg.data),
-              from: dg.address.address, selfId: localDevice.id);
+          final text = utf8.decode(dg.data);
+          final from = dg.address.address;
+          final device = DiscoveryPacket.decode(text, from: from, selfId: localDevice.id) ??
+              DiscoveryPacket.otherVersion(text, from: from, selfId: localDevice.id);
           if (device != null) _deviceFoundController.add(device);
         } catch (_) {}
       });

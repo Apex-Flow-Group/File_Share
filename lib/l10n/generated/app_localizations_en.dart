@@ -703,6 +703,9 @@ class AppLocalizationsEn extends AppLocalizations {
       'The app version differs between the two devices. Update it on both';
 
   @override
+  String get versionDiffers => 'Different app version';
+
+  @override
   String get uploading => 'Uploading...';
 
   @override
