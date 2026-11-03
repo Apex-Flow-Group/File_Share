@@ -136,7 +136,7 @@ class ShareFolderHttp {
       return;
     }
     await _json(req, HttpStatus.ok,
-        {'accepted': true, 'token': _access.admit(address, shown, uploads: uploads)});
+        {'accepted': true, 'uploads': uploads, 'token': _access.admit(address, shown, uploads: uploads)});
   }
 
   /// One question at a time: a new one must not appear under the finger that
