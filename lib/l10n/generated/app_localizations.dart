@@ -1465,6 +1465,18 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Sending was cancelled'**
   String get sendCancelled;
+
+  /// No description provided for @sendTooManyFiles.
+  ///
+  /// In en, this message translates to:
+  /// **'You can send at most {max} files at a time'**
+  String sendTooManyFiles(int max);
+
+  /// No description provided for @sendNoSpace.
+  ///
+  /// In en, this message translates to:
+  /// **'Not enough space on the other device'**
+  String get sendNoSpace;
 }
 
 class _AppLocalizationsDelegate

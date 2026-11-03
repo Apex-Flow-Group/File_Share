@@ -719,4 +719,19 @@ class AppLocalizationsAr extends AppLocalizations {
 
   @override
   String get sendCancelled => 'أُلغي الإرسال';
+
+  @override
+  String sendTooManyFiles(int max) {
+    String _temp0 = intl.Intl.pluralLogic(
+      max,
+      locale: localeName,
+      other: 'يمكن إرسال $max ملف في المرة الواحدة على الأكثر',
+      many: 'يمكن إرسال $max ملفاً في المرة الواحدة على الأكثر',
+      few: 'يمكن إرسال $max ملفات في المرة الواحدة على الأكثر',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String get sendNoSpace => 'لا توجد مساحة كافية على الجهاز الآخر';
 }

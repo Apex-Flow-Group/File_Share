@@ -10,7 +10,7 @@ import '../../../models/transfer_progress.dart';
 import '../../../services/transfer_progress_service.dart';
 import '../../../utils/apex_logger.dart';
 
-enum SendOutcome { sent, declined, noAnswer, updateRequired, busy, failed, cancelled }
+enum SendOutcome { sent, declined, noAnswer, updateRequired, busy, tooManyFiles, noSpace, failed, cancelled }
 
 typedef OutgoingFile = ({String path, String name, int size});
 
@@ -27,6 +27,11 @@ class SendHttp {
   TransferProgressService get _progress => TransferProgressService();
 
   Future<SendOutcome> sendFiles(List<OutgoingFile> files, Device target) async {
+    // Checked here first, so the user hears why at once; the receiver checks
+    // again and refuses with 422.
+    if (files.length > TransferRules.maxFilesPerBatch) {
+      return SendOutcome.tooManyFiles;
+    }
     final progress = _progress..startBatch(files.length, targetDeviceId: target.id);
     try {
       final offer = await _offer(files, target);
@@ -77,6 +82,18 @@ class SendHttp {
       // The receiver is already asking its user about another offer.
       if (res.statusCode == HttpStatus.tooManyRequests) {
         return (outcome: SendOutcome.busy, tokens: null);
+      }
+      // The receiver refused the batch before asking its user.
+      if (res.statusCode == HttpStatus.unprocessableEntity) {
+        final error = (jsonDecode(text) as Map?)?['error'];
+        return (
+          outcome: switch (error) {
+            'tooManyFiles' => SendOutcome.tooManyFiles,
+            'notEnoughSpace' => SendOutcome.noSpace,
+            _ => SendOutcome.failed,
+          },
+          tokens: null,
+        );
       }
       if (res.statusCode != HttpStatus.ok) {
         return failed;

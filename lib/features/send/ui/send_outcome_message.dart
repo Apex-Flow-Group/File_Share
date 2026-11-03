@@ -1,5 +1,6 @@
 import 'package:flutter/widgets.dart';
 
+import '../../../core/protocol/transfer_rules.dart';
 import '../../../l10n/generated/app_localizations.dart';
 import '../../../shared/apex_snackbar.dart';
 import '../data/send_http.dart';
@@ -19,6 +20,8 @@ String sendOutcomeMessage(
       SendOutcome.declined => l10n.sendDeclined,
       SendOutcome.noAnswer => l10n.sendNoAnswer,
       SendOutcome.busy => l10n.sendReceiverBusy,
+      SendOutcome.tooManyFiles => l10n.sendTooManyFiles(TransferRules.maxFilesPerBatch),
+      SendOutcome.noSpace => l10n.sendNoSpace,
       SendOutcome.cancelled => l10n.sendCancelled,
     };
 

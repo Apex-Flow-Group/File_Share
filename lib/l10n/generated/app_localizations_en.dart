@@ -723,4 +723,12 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get sendCancelled => 'Sending was cancelled';
+
+  @override
+  String sendTooManyFiles(int max) {
+    return 'You can send at most $max files at a time';
+  }
+
+  @override
+  String get sendNoSpace => 'Not enough space on the other device';
 }
