@@ -205,10 +205,17 @@ mixin HomeDialogs<T extends StatefulWidget> on State<T> {
 
     ApexBottomSheet.showStyled(
       context,
-      headerIcon: Icons.file_download_rounded,
+      // Connecting and receiving are two answers, so they never share a title.
+      headerIcon: request.asksToConnect
+          ? Icons.link_rounded
+          : Icons.file_download_rounded,
       headerColor: Colors.blue,
-      headerTitle: l10n.connectionRequest,
-      headerSubtitle: l10n.acceptConnection,
+      headerTitle: request.asksToConnect
+          ? l10n.connectionRequest
+          : l10n.incomingFilesTitle,
+      headerSubtitle: request.asksToConnect
+          ? l10n.acceptConnection
+          : l10n.receiveFilesQuestion(request.fileCount),
       isDismissible: false,
       enableDrag: false,
       content: Container(
@@ -251,16 +258,7 @@ mixin HomeDialogs<T extends StatefulWidget> on State<T> {
           if (request.asksToConnect)
             const SizedBox.shrink()
           else if (isBatch) ...[
-            Row(children: [
-              const Icon(Icons.folder_rounded, size: 15, color: Colors.blue),
-              const SizedBox(width: 6),
-              Text(
-                  '${request.fileCount} ${l10n.localeName == 'ar' ? 'ملفات' : 'files'}',
-                  style: const TextStyle(
-                      fontSize: 13, fontWeight: FontWeight.w600)),
-            ]),
             if (request.fileNames.isNotEmpty) ...[
-              const SizedBox(height: 6),
               ...request.fileNames.map((name) => Padding(
                     padding: const EdgeInsets.only(left: 21, bottom: 2),
                     child: Text(name.trim(),

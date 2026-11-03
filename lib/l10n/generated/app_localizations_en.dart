@@ -296,6 +296,20 @@ class AppLocalizationsEn extends AppLocalizations {
   String get acceptConnection => 'Do you want to accept the connection?';
 
   @override
+  String get incomingFilesTitle => 'Incoming files';
+
+  @override
+  String receiveFilesQuestion(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: 'Receive $count files?',
+      one: 'Receive 1 file?',
+    );
+    return '$_temp0';
+  }
+
+  @override
   String get ok => 'OK';
 
   @override

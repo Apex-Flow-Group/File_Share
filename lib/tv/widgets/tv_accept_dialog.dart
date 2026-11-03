@@ -25,12 +25,13 @@ class TVAcceptDialog extends StatelessWidget {
   Widget build(BuildContext context) {
     final l10n = AppLocalizations.of(context);
     final isDark = Theme.of(context).brightness == Brightness.dark;
+    // Connecting and receiving are two answers, so they never share a title.
     // A nearby phone asking to connect has offered no file yet.
-    final what = request.asksToConnect
+    final title = request.asksToConnect ? l10n.connectionRequest : l10n.incomingFilesTitle;
+    final question = request.asksToConnect
         ? l10n.acceptConnection
-        : request.fileCount > 1
-            ? '${request.fileCount} ${l10n.files}'
-            : request.fileName;
+        : l10n.receiveFilesQuestion(request.fileCount);
+    final singleName = !request.asksToConnect && request.fileCount == 1 ? request.fileName : '';
     return Dialog(
       backgroundColor: isDark ? const Color(0xFF2C2C2E) : Colors.white,
       shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
@@ -41,9 +42,10 @@ class TVAcceptDialog extends StatelessWidget {
           child: Column(
             mainAxisSize: MainAxisSize.min,
             children: [
-              const Icon(Icons.file_download_rounded, color: Colors.blue, size: 40),
+              Icon(request.asksToConnect ? Icons.link_rounded : Icons.file_download_rounded,
+                  color: Colors.blue, size: 40),
               const SizedBox(height: 12),
-              Text(l10n.connectionRequest,
+              Text(title,
                   style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 16)),
               const SizedBox(height: 16),
               Text(request.device.name,
@@ -57,11 +59,15 @@ class TVAcceptDialog extends StatelessWidget {
                       style: TextStyle(fontSize: 13, color: Colors.grey[600])),
                 ),
               const SizedBox(height: 12),
-              Text(what,
-                  maxLines: 2,
-                  overflow: TextOverflow.ellipsis,
+              Text(question,
                   textAlign: TextAlign.center,
-                  style: const TextStyle(fontSize: 14)),
+                  style: const TextStyle(fontWeight: FontWeight.w600, fontSize: 14)),
+              if (singleName.isNotEmpty)
+                Text(singleName,
+                    maxLines: 2,
+                    overflow: TextOverflow.ellipsis,
+                    textAlign: TextAlign.center,
+                    style: const TextStyle(fontSize: 14)),
               if (request.fileSize > 0)
                 Text(FileUiUtils.formatFileSize(request.fileSize),
                     style: const TextStyle(

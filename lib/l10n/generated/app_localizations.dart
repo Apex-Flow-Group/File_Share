@@ -668,6 +668,18 @@ abstract class AppLocalizations {
   /// **'Do you want to accept the connection?'**
   String get acceptConnection;
 
+  /// No description provided for @incomingFilesTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Incoming files'**
+  String get incomingFilesTitle;
+
+  /// No description provided for @receiveFilesQuestion.
+  ///
+  /// In en, this message translates to:
+  /// **'{count, plural, =1{Receive 1 file?} other{Receive {count} files?}}'**
+  String receiveFilesQuestion(int count);
+
   /// No description provided for @ok.
   ///
   /// In en, this message translates to:

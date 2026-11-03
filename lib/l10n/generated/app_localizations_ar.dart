@@ -295,6 +295,23 @@ class AppLocalizationsAr extends AppLocalizations {
   String get acceptConnection => 'هل تريد قبول الاتصال؟';
 
   @override
+  String get incomingFilesTitle => 'ملفات واردة';
+
+  @override
+  String receiveFilesQuestion(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: 'استقبال $count ملف؟',
+      many: 'استقبال $count ملفاً؟',
+      few: 'استقبال $count ملفات؟',
+      two: 'استقبال ملفين؟',
+      one: 'استقبال ملف واحد؟',
+    );
+    return '$_temp0';
+  }
+
+  @override
   String get ok => 'حسناً';
 
   @override

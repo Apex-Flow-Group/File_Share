@@ -98,6 +98,11 @@
   "connectionRequest": "Connection Request",
   "deviceWantsToConnect": "Device wants to connect:",
   "acceptConnection": "Do you want to accept the connection?",
+  "incomingFilesTitle": "Incoming files",
+  "receiveFilesQuestion": "{count, plural, =1{Receive 1 file?} other{Receive {count} files?}}",
+  "@receiveFilesQuestion": {
+    "placeholders": { "count": { "type": "int" } }
+  },
   "ok": "OK",
   "reconnectFailed": "Reconnect failed",
   "restartingSystem": "Refresh",
