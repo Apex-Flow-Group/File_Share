@@ -21,6 +21,9 @@ class SendHttp {
 
   final String? Function() getLocalName;
 
+  /// The receiver's answer when its user cancelled.
+  static const _cancelledStatus = 499;
+
   TransferProgressService get _progress => TransferProgressService();
 
   Future<SendOutcome> sendFiles(List<OutgoingFile> files, Device target) async {
@@ -31,18 +34,20 @@ class SendHttp {
       if (tokens == null) {
         return offer.outcome;
       }
-      var allSent = true;
       for (var i = 0; i < files.length; i++) {
         if (progress.isCancelled) {
           return SendOutcome.cancelled;
         }
-        allSent = await _upload(files[i], tokens[i], target) && allSent;
+        // One failed file ends the batch. When the receiver cancels mid-file,
+        // the connection closes before its 499 can be read, and the rest of
+        // the batch is refused anyway.
+        final outcome = await _upload(files[i], tokens[i], target);
         progress.nextFile();
+        if (outcome != SendOutcome.sent) {
+          return outcome;
+        }
       }
-      if (progress.isCancelled) {
-        return SendOutcome.cancelled;
-      }
-      return allSent ? SendOutcome.sent : SendOutcome.failed;
+      return progress.isCancelled ? SendOutcome.cancelled : SendOutcome.sent;
     } finally {
       progress.clearProgress();
     }
@@ -89,7 +94,7 @@ class SendHttp {
     }
   }
 
-  Future<bool> _upload(OutgoingFile file, String token, Device target) async {
+  Future<SendOutcome> _upload(OutgoingFile file, String token, Device target) async {
     final progress = _progress;
     final started = DateTime.now();
     void report(int sent) => progress.updateProgress(TransferProgress(
@@ -121,13 +126,13 @@ class SendHttp {
       while (sent < file.size) {
         if (progress.isCancelled) {
           req.abort();
-          return false;
+          return SendOutcome.cancelled;
         }
         final chunk = await source.read(min(chunkSize, file.size - sent));
         if (chunk.isEmpty) {
           // The file shrank since it was listed; the receiver refuses a short body.
           req.abort();
-          return false;
+          return SendOutcome.failed;
         }
         req.add(chunk);
         sent += chunk.length;
@@ -137,14 +142,20 @@ class SendHttp {
       }
       final res = await req.close();
       req = null;
-      final json = jsonDecode(await res.transform(utf8.decoder).join());
-      return res.statusCode == HttpStatus.ok && json is Map && json['success'] == true;
+      final text = await res.transform(utf8.decoder).join();
+      if (res.statusCode == _cancelledStatus) {
+        return SendOutcome.cancelled;
+      }
+      final json = jsonDecode(text);
+      return res.statusCode == HttpStatus.ok && json is Map && json['success'] == true
+          ? SendOutcome.sent
+          : SendOutcome.failed;
     } catch (e) {
       ApexLogger.instance.log('SEND', 'Upload failed: $e', LogLevel.error);
       try {
         req?.abort();
       } catch (_) {}
-      return false;
+      return SendOutcome.failed;
     } finally {
       await source?.close();
       client.close(force: true);

@@ -26,7 +26,10 @@ class ReceiveGate {
 
   /// The accepted file for [token], once. Null for a missing, unknown, used or
   /// expired token, or one sent from another address.
-  OfferedFile? claim(String? token, String senderAddress) {
+  OfferedFile? claim(String? token, String senderAddress) => take(token, senderAddress)?.file;
+
+  /// Like [claim], with a handle on the batch for the upload that follows.
+  Upload? take(String? token, String senderAddress) {
     final ticket = _tickets[token];
     if (ticket == null || ticket.batch.address != senderAddress) {
       return null;
@@ -37,8 +40,10 @@ class ReceiveGate {
     }
     _tickets.remove(token);
     ticket.batch.lastUse = _clock();
-    return ticket.file;
+    return Upload._(this, ticket.batch, ticket.file);
   }
+
+  void _revoke(_Batch batch) => _tickets.removeWhere((_, t) => identical(t.batch, batch));
 
   String _issue(_Ticket ticket) {
     String token;
@@ -52,6 +57,18 @@ class ReceiveGate {
   bool _isExpired(_Batch b) => _clock().difference(b.lastUse) > TransferRules.tokenIdleLimit;
 
   void _dropExpired() => _tickets.removeWhere((_, t) => _isExpired(t.batch));
+}
+
+/// One accepted file being received.
+class Upload {
+  Upload._(this._gate, this._batch, this.file);
+
+  final ReceiveGate _gate;
+  final _Batch _batch;
+  final OfferedFile file;
+
+  /// The receiving user cancelled: no other file of this batch is accepted.
+  void revokeBatch() => _gate._revoke(_batch);
 }
 
 class _Batch {

@@ -147,11 +147,12 @@ class ReceiveHttp {
 
   Future<void> _upload(HttpRequest req) async {
     final address = req.connectionInfo?.remoteAddress.address ?? '';
-    final file = gate.claim(req.headers.value(ApexProtocol.tokenHeader), address);
-    if (file == null) {
+    final upload = gate.take(req.headers.value(ApexProtocol.tokenHeader), address);
+    if (upload == null) {
       await _reply(req, HttpStatus.forbidden, {'error': 'not_accepted'});
       return;
     }
+    final file = upload.file;
     if (req.contentLength != file.size) {
       await _reply(req, HttpStatus.badRequest, {'error': 'size'});
       return;
@@ -164,9 +165,16 @@ class ReceiveHttp {
       sink = temp.openWrite();
       final started = DateTime.now();
       const progressStep = 256 * 1024;
+      if (_progress.isCancelledReceive) {
+        throw const _Cancelled();
+      }
       await for (final chunk in req) {
         if (_progress.isCancelledReceive) {
-          throw const _Cancelled();
+          // Answer inside the loop: leaving it closes the connection first,
+          // and the sender would never read the answer.
+          await _discard(sink, temp);
+          await _cancel(req, upload);
+          return;
         }
         written += chunk.length;
         if (written > file.size) {
@@ -192,17 +200,9 @@ class ReceiveHttp {
       await _reply(req, HttpStatus.ok, {'success': true});
       _finished(file, path, req);
     } catch (e) {
-      try {
-        await sink?.close();
-      } catch (_) {}
-      try {
-        if (await temp.exists()) {
-          await temp.delete();
-        }
-      } catch (_) {}
+      await _discard(sink, temp);
       if (e is _Cancelled) {
-        _progress.clearProgress();
-        await _reply(req, _cancelledStatus, {'error': 'cancelled'});
+        await _cancel(req, upload);
       } else if (e is _WrongSize) {
         await _reply(req, HttpStatus.badRequest, {'error': 'size'});
       } else {
@@ -210,6 +210,25 @@ class ReceiveHttp {
         await _reply(req, HttpStatus.internalServerError, {'error': 'failed'});
       }
     }
+  }
+
+  /// Cancel ends the whole batch, not only this file: the rest of its tokens
+  /// are revoked, so the sender cannot go on with the next file.
+  Future<void> _cancel(HttpRequest req, Upload upload) async {
+    upload.revokeBatch();
+    _progress.clearProgress();
+    await _reply(req, _cancelledStatus, {'error': 'cancelled'});
+  }
+
+  Future<void> _discard(IOSink? sink, File temp) async {
+    try {
+      await sink?.close();
+    } catch (_) {}
+    try {
+      if (await temp.exists()) {
+        await temp.delete();
+      }
+    } catch (_) {}
   }
 
   void _finished(OfferedFile file, String path, HttpRequest req) {
