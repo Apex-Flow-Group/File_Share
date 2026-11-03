@@ -5,6 +5,11 @@ class TransferRules {
   /// Owner decision (2026-10-23): a bigger batch is refused whole.
   static const maxFilesPerBatch = 1000;
 
+  /// Largest size one offered file may claim (1 PiB). No real file comes
+  /// near it; it keeps the sum of a full batch inside a 64-bit int, so huge
+  /// claimed sizes cannot wrap the total to zero and pass the space check.
+  static const maxFileBytes = 1 << 50;
+
   /// Largest offer body (the list of names and sizes) the receiver reads.
   static const offerBodyLimit = 1024 * 1024;
 

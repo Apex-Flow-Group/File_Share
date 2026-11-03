@@ -31,7 +31,7 @@ OfferProblem? checkOffer(Offer offer, {required int? freeBytes}) {
   if (offer.files.length > TransferRules.maxFilesPerBatch) {
     return OfferProblem.tooManyFiles;
   }
-  if (offer.files.any((f) => f.size < 0)) {
+  if (offer.files.any((f) => f.size < 0 || f.size > TransferRules.maxFileBytes)) {
     return OfferProblem.badSize;
   }
   if (freeBytes != null && offer.totalBytes > freeBytes) {
