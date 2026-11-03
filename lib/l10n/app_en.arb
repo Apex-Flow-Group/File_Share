@@ -98,15 +98,35 @@
   "connectionRequest": "Connection Request",
   "deviceWantsToConnect": "Device wants to connect:",
   "acceptConnection": "Do you want to accept the connection?",
+  "incomingFilesTitle": "Incoming files",
+  "shareAccessTitle": "Shared folder request",
+  "shareAccessDownload": "Let this device download files from your shared folder?",
+  "shareAccessDownloadUpload": "Let this device download files from your shared folder and upload to it?",
+  "receiveFilesQuestion": "{count, plural, =1{Receive 1 file?} other{Receive {count} files?}}",
+  "@receiveFilesQuestion": {
+    "placeholders": { "count": { "type": "int" } }
+  },
   "ok": "OK",
   "reconnectFailed": "Reconnect failed",
   "restartingSystem": "Refresh",
   "sendApp": "Send App",
   "sendFolder": "Send Folder",
+  "sendThisFolder": "Send this folder",
+  "pickFolder": "Choose a folder",
   "folderSent": "Folder sent",
-  "compressingFolder": "Compressing folder...",
+  "compressingFolder": "Compressing folder…",
   "installedApps": "Installed Apps",
   "noApps": "No apps",
+  "systemApps": "Show system apps",
+  "sendCount": "Send ({count})",
+  "@sendCount": {
+    "placeholders": { "count": { "type": "int" } }
+  },
+  "pinDevice": "Add to favorites",
+  "unpinDevice": "Remove from favorites",
+  "deviceOffline": "Currently offline",
+  "pickApp": "Choose an app",
+  "directConnection": "Nearby",
   "appSent": "App sent",
   "skip": "Skip",
   "next": "Next",
@@ -183,14 +203,16 @@
   "deleteWarning": "Files will be permanently deleted!",
   "filesCount": "Files Count",
   "fileSentSuccessfully": "File sent successfully",
-  "pickFile": "Pick File",
+  "pickFile": "Choose a file",
 
   "clipboardSend": "Send",
   "clipboardTypeImage": "Image",
-  "clipboardTypeFiles": "Files",
   "clipboardTypeText": "Text",
   "clipboardSendTooltip": "Send from clipboard",
-  "pinnedDevices": "Pinned Devices",
+  "clipboardSettings": "Clipboard",
+  "watchClipboard": "Offer to send what you copy",
+  "watchClipboardDesc": "Each time you copy, the app opens the Send tab and shows what you copied with a button to send it. It reads everything you copy, passwords included.",
+  "pinnedDevices": "Favorite Devices",
   "newDevices": "New Devices",
 
   "sharedFolder": "Shared Folder",
@@ -207,6 +229,10 @@
   "uploadSuccess": "File uploaded successfully",
   "uploadFailed": "Upload failed",
   "downloadFailed": "Download failed",
+  "downloadSaved": "Saved to {path}",
+  "@downloadSaved": {
+    "placeholders": { "path": { "type": "String" } }
+  },
   "shareFileCount": "{count} file(s)",
   "@shareFileCount": {
     "placeholders": { "count": { "type": "int" } }
@@ -215,6 +241,49 @@
   "deletedFromShare": "File deleted",
   "confirmDeleteFromShare": "Delete this file from the shared folder?",
   "shareNetworkError": "Device unreachable",
+  "shareAccessRefused": "The owner of the other device refused to open their shared folder",
+  "shareNoAnswer": "The owner of the other device did not answer",
+  "shareOffRemote": "The shared folder is not enabled on the other device",
+  "retry": "Try again",
+  "updateRequired": "The app version differs between the two devices. Update it on both",
+  "versionDiffers": "Different app version",
   "uploading": "Uploading...",
-  "downloading": "Downloading..."
+  "downloading": "Downloading...",
+  "sendDeclined": "The other device declined",
+  "sendNoAnswer": "The other device did not answer",
+  "sendReceiverBusy": "The other device is answering another request. Try again shortly",
+  "sendCancelled": "Sending was cancelled",
+  "sendTooManyFiles": "You can send at most {max} files at a time",
+  "@sendTooManyFiles": {
+    "placeholders": {
+      "max": {
+        "type": "int"
+      }
+    }
+  },
+  "sendNoSpace": "Not enough space on the other device",
+  "clipboardTextLength": "{count, plural, =1{Text (1 character)} other{Text ({count} characters)}}",
+  "@clipboardTextLength": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "clipboardCharCount": "{count, plural, =1{1 character} other{{count} characters}}",
+  "@clipboardCharCount": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "clipboardFileCount": "{count, plural, =1{1 file} other{{count} files}}",
+  "@clipboardFileCount": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  }
 }

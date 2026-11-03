@@ -293,14 +293,16 @@ class HomeController extends ChangeNotifier {
       return;
     }
     ClipboardMonitorService.instance.initialize();
+    _applyClipboardSetting();
+    settings.addListener(_applyClipboardSetting);
     _clipboardSub = ClipboardMonitorService.instance.stream.listen((item) {
       _pendingClipboardItem = item;
-      if (item != null) {
-        // انتقل تلقائياً لتبويب الإرسال لعرض البانر
-        _currentIndex = 0;
-      }
       notifyListeners();
     });
+  }
+
+  void _applyClipboardSetting() {
+    ClipboardMonitorService.instance.setEnabled(settings.clipboardMonitorEnabled);
   }
 
   void clearPendingClipboardItem() {
@@ -373,6 +375,7 @@ class HomeController extends ChangeNotifier {
   @override
   void dispose() {
     _clipboardSub?.cancel();
+    settings.removeListener(_applyClipboardSetting);
     filesRefreshNotifier.dispose();
     super.dispose();
   }

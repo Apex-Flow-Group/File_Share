@@ -16,6 +16,7 @@ import io.flutter.embedding.engine.FlutterEngine
 import io.flutter.plugin.common.MethodChannel
 import java.io.ByteArrayOutputStream
 import java.io.File
+import java.util.UUID
 
 class MainActivity : FlutterActivity() {
 
@@ -125,12 +126,9 @@ class MainActivity : FlutterActivity() {
     // معالجة ملف .sinan
     private fun handleSinanIntent(intent: Intent?) {
         if (intent?.action != Intent.ACTION_VIEW) return
-        val extraPath = intent.getStringExtra("sinan_file_path")
-        if (extraPath != null && File(extraPath).exists()) {
-            deliverOrStoreSinan(extraPath)
-            return
-        }
+        // No path extra: any app could name this app's private files with it.
         val uri = intent.data ?: return
+        if (uri.scheme != "content" || isOwnProvider(uri)) return
         try {
             val stream = contentResolver.openInputStream(uri) ?: return
             val tmpFile = File(cacheDir, "received.sinan")
@@ -175,11 +173,22 @@ class MainActivity : FlutterActivity() {
         }.start()
     }
 
+    // Only content:// from another app. A file:// URI is opened with this
+    // app's own rights, so file:///data/data/<this app>/... would put private
+    // files in the send list; this app's own providers would do the same.
+    // The activity is exported, and explicit intents skip the manifest filters.
+    private fun isOwnProvider(uri: Uri): Boolean = uri.authority?.startsWith(packageName) != false
+
     // نسخ content URI إلى مجلد مؤقت والحصول على المسار الحقيقي
     private fun copyUriToCache(uri: Uri): String? {
+        if (uri.scheme != "content" || isOwnProvider(uri)) {
+            Log.w(TAG, "Refused shared URI: ${uri.scheme}://${uri.authority}")
+            return null
+        }
         return try {
-            val fileName = getFileNameFromUri(uri) ?: "shared_file_${System.currentTimeMillis()}"
-            val destDir = File(cacheDir, "shared_files")
+            val fileName = safeFileName(getFileNameFromUri(uri))
+            // A fresh folder per file, so two shares with one name never overwrite.
+            val destDir = File(File(cacheDir, "shared_files"), UUID.randomUUID().toString())
             destDir.mkdirs()
             val destFile = File(destDir, fileName)
             contentResolver.openInputStream(uri)?.use { input ->

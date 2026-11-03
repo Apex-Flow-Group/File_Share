@@ -1,16 +1,9 @@
 <?xml version="1.0" encoding="utf-8"?>
 <network-security-config>
-    <!-- Allow cleartext traffic for local development -->
-    <domain-config cleartextTrafficPermitted="true">
-        <domain includeSubdomains="true">localhost</domain>
-        <domain includeSubdomains="true">127.0.0.1</domain>
-        <domain includeSubdomains="true">10.0.2.2</domain>
-        <domain includeSubdomains="true">192.168.0.0/16</domain>
-        <domain includeSubdomains="true">172.16.0.0/12</domain>
-    </domain-config>
-    
-    <!-- Base configuration for all domains -->
-    <base-config cleartextTrafficPermitted="true">
+    <!-- No plain HTTP from Java/Kotlin code. LAN transfers use dart:io,
+         which does not read this file. A <domain> entry cannot hold a CIDR
+         range such as 192.168.0.0/16: it matches nothing. -->
+    <base-config cleartextTrafficPermitted="false">
         <trust-anchors>
             <certificates src="system"/>
         </trust-anchors>

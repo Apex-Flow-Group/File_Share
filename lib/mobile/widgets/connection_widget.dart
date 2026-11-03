@@ -3,12 +3,15 @@ import 'dart:io';
 import 'package:flutter/material.dart';
 
 import '../../core/apex_core.dart';
+import '../../features/clipboard/ui/clipboard_label.dart';
+import '../../features/send/data/send_http.dart';
+import '../../features/send/ui/send_outcome_message.dart';
 import '../../l10n/generated/app_localizations.dart';
 import '../../models/device.dart';
 import '../../services/clipboard_monitor_service.dart';
 import '../../services/desktop_notification_service.dart';
 import '../../services/transfer_progress_service.dart';
-import '../../shared/apex_snackbar.dart';
+import '../../shared/device_look.dart';
 import '../screens/share_browser_screen.dart';
 import 'connection_send_actions.dart';
 import 'transfer_progress_indicator.dart';
@@ -100,6 +103,8 @@ class _ConnectionWidgetState extends State<ConnectionWidget>
   Widget build(BuildContext context) {
     final isDark = Theme.of(context).brightness == Brightness.dark;
     final l10n = AppLocalizations.of(context);
+    // Another version is listed but nothing is sent to it.
+    final usable = widget.isActive && !widget.device.versionMismatch;
 
     return Container(
       margin: const EdgeInsets.only(bottom: 12),
@@ -115,7 +120,7 @@ class _ConnectionWidgetState extends State<ConnectionWidget>
         ],
       ),
       child: Opacity(
-        opacity: widget.isActive ? 1.0 : 0.45,
+        opacity: usable ? 1.0 : 0.45,
         child: Padding(
           padding: const EdgeInsets.all(16),
           child: Column(
@@ -123,18 +128,18 @@ class _ConnectionWidgetState extends State<ConnectionWidget>
             children: [
               _buildHeader(isDark),
               const SizedBox(height: 14),
-              if (widget.isActive &&
+              if (usable &&
                   widget.pendingSharedFiles != null &&
                   widget.pendingSharedFiles!.isNotEmpty &&
                   _status == _Status.idle &&
                   !widget.isGloballyBusy)
                 _buildSharedFilesBanner(l10n),
-              if (widget.isActive &&
+              if (usable &&
                   widget.pendingFilePath != null &&
                   _status == _Status.idle &&
                   !widget.isGloballyBusy)
                 _buildPendingFileBanner(l10n),
-              if (widget.isActive &&
+              if (usable &&
                   widget.pendingClipboardItem != null &&
                   _status == _Status.idle &&
                   !widget.isGloballyBusy)
@@ -143,8 +148,11 @@ class _ConnectionWidgetState extends State<ConnectionWidget>
                   onSend: _sendClipboardItem,
                   onDismiss: widget.onClipboardItemSent,
                 ),
+              // Offline first, as on the TV: it is what the device is now.
               if (!widget.isActive)
                 _buildOfflineBar(l10n)
+              else if (widget.device.versionMismatch)
+                _buildVersionBar(l10n)
               else
                 _status == _Status.sending
                     ? _buildSendingState()
@@ -216,10 +224,18 @@ class _ConnectionWidgetState extends State<ConnectionWidget>
               ],
               // ─── شارات النقل + IP
               Row(children: [
-                if (widget.isActive) ...[
-                  _TransportBadge(
-                    isNearby: widget.device.isNearby,
-                    isWifi: widget.device.isMdns,
+                // Another version gets its address only: no transport to offer.
+                if (widget.isActive && !widget.device.versionMismatch) ...[
+                  // Shrinks instead of overflowing with large system fonts.
+                  Flexible(
+                    child: FittedBox(
+                      fit: BoxFit.scaleDown,
+                      alignment: AlignmentDirectional.centerStart,
+                      child: _TransportBadge(
+                        isNearby: widget.device.isNearby,
+                        isWifi: widget.device.isMdns,
+                      ),
+                    ),
                   ),
                   if (!widget.device.isNearby &&
                       widget.device.ip.isNotEmpty) ...[
@@ -248,29 +264,34 @@ class _ConnectionWidgetState extends State<ConnectionWidget>
             ],
           ),
         ),
-        // ─── زر الدبوس
+        // ─── زر المفضلة
         if (widget.onPin != null || widget.onUnpin != null)
-          GestureDetector(
-            onTap: widget.isPinned ? widget.onUnpin : widget.onPin,
-            child: Container(
-              width: 30,
-              height: 30,
-              margin: const EdgeInsets.only(right: 6),
-              decoration: BoxDecoration(
-                color: widget.isPinned
-                    ? color.withValues(alpha: isDark ? 0.25 : 0.15)
-                    : (isDark ? Colors.white : Colors.black)
-                        .withValues(alpha: 0.06),
-                borderRadius: BorderRadius.circular(9),
-              ),
-              child: Icon(
-                widget.isPinned
-                    ? Icons.push_pin_rounded
-                    : Icons.push_pin_outlined,
-                size: 16,
-                color: widget.isPinned
-                    ? color
-                    : (isDark ? Colors.white38 : Colors.black38),
+          Tooltip(
+            message: widget.isPinned
+                ? AppLocalizations.of(context).unpinDevice
+                : AppLocalizations.of(context).pinDevice,
+            child: GestureDetector(
+              onTap: widget.isPinned ? widget.onUnpin : widget.onPin,
+              child: Container(
+                width: 30,
+                height: 30,
+                margin: const EdgeInsets.only(right: 6),
+                decoration: BoxDecoration(
+                  color: widget.isPinned
+                      ? color.withValues(alpha: isDark ? 0.25 : 0.15)
+                      : (isDark ? Colors.white : Colors.black)
+                          .withValues(alpha: 0.06),
+                  borderRadius: BorderRadius.circular(9),
+                ),
+                child: Icon(
+                  widget.isPinned
+                      ? Icons.star_rounded
+                      : Icons.star_border_rounded,
+                  size: 16,
+                  color: widget.isPinned
+                      ? color
+                      : (isDark ? Colors.white38 : Colors.black38),
+                ),
               ),
             ),
           ),
@@ -278,11 +299,38 @@ class _ConnectionWidgetState extends State<ConnectionWidget>
           width: 10,
           height: 10,
           decoration: BoxDecoration(
-            color: widget.isActive ? Colors.green : Colors.grey,
+            color: widget.isActive && !widget.device.versionMismatch
+                ? Colors.green
+                : Colors.grey,
             shape: BoxShape.circle,
           ),
         ),
       ],
+    );
+  }
+
+  Widget _buildVersionBar(AppLocalizations l10n) {
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
+      decoration: BoxDecoration(
+        color: Colors.orange.withValues(alpha: 0.08),
+        borderRadius: BorderRadius.circular(12),
+        border: Border.all(color: Colors.orange.withValues(alpha: 0.3)),
+      ),
+      child: Row(children: [
+        const Icon(Icons.system_update_rounded, size: 16, color: Colors.orange),
+        const SizedBox(width: 8),
+        Expanded(
+          child: Text(
+            l10n.updateRequired,
+            style: const TextStyle(
+              fontSize: 12,
+              color: Colors.orange,
+              fontWeight: FontWeight.w500,
+            ),
+          ),
+        ),
+      ]),
     );
   }
 
@@ -387,12 +435,12 @@ class _ConnectionWidgetState extends State<ConnectionWidget>
     }
     setSending();
     try {
-      final ok = await ApexCore.instance.sendFile(path, widget.device);
+      final outcome = await ApexCore.instance.sendFile(path, widget.device);
+      final ok = outcome == SendOutcome.sent;
       if (mounted) {
-        ApexSnackBar.result(context,
-            ok: ok,
-            successMessage: AppLocalizations.of(context).fileSentSuccess,
-            failMessage: AppLocalizations.of(context).fileSendFailed);
+        showSendOutcome(context, outcome,
+            sent: AppLocalizations.of(context).fileSentSuccess,
+            failed: AppLocalizations.of(context).fileSendFailed);
         if (ok) {
           widget.onPendingFileSent?.call();
         }
@@ -412,12 +460,12 @@ class _ConnectionWidgetState extends State<ConnectionWidget>
     }
     setSending();
     try {
-      final ok = await ApexCore.instance.sendFiles(paths, widget.device);
+      final outcome = await ApexCore.instance.sendFiles(paths, widget.device);
+      final ok = outcome == SendOutcome.sent;
       if (mounted) {
-        ApexSnackBar.result(context,
-            ok: ok,
-            successMessage: AppLocalizations.of(context).fileSentSuccess,
-            failMessage: AppLocalizations.of(context).fileSendFailed);
+        showSendOutcome(context, outcome,
+            sent: AppLocalizations.of(context).fileSentSuccess,
+            failed: AppLocalizations.of(context).fileSendFailed);
         if (ok) {
           widget.onSharedFilesSent?.call();
         }
@@ -443,25 +491,22 @@ class _ConnectionWidgetState extends State<ConnectionWidget>
     if (item == null) {
       return;
     }
+    final label = clipboardLabel(AppLocalizations.of(context), item);
     setSending();
     try {
-      final ok = await ApexCore.instance.sendFiles(item.paths, widget.device);
+      final outcome = await ClipboardMonitorService.instance.withSendableFiles(
+          item, (paths) => ApexCore.instance.sendFiles(paths, widget.device));
+      final ok = outcome == SendOutcome.sent;
       if (mounted) {
-        ApexSnackBar.result(
-          context,
-          ok: ok,
-          successMessage: AppLocalizations.of(context).fileSentSuccess,
-          failMessage: AppLocalizations.of(context).fileSendFailed,
-        );
+        showSendOutcome(context, outcome,
+            sent: AppLocalizations.of(context).fileSentSuccess,
+            failed: AppLocalizations.of(context).fileSendFailed);
         if (ok) {
           widget.onClipboardItemSent?.call();
           // نظّف الصور المؤقتة بعد الإرسال الناجح
           await ClipboardMonitorService.instance.cleanupTempImages();
         }
       }
-      final label = item.paths.length == 1
-          ? item.displayName
-          : '${item.paths.length} files';
       if (ok) {
         await DesktopNotificationService.instance.showFileSent(label);
       } else {
@@ -571,31 +616,9 @@ class _ConnectionWidgetState extends State<ConnectionWidget>
     );
   }
 
-  IconData get _deviceIcon {
-    switch (widget.device.type.toLowerCase()) {
-      case 'tv':
-        return Icons.tv_rounded;
-      case 'desktop':
-        return Icons.computer_rounded;
-      case 'tablet':
-        return Icons.tablet_rounded;
-      default:
-        return Icons.smartphone_rounded;
-    }
-  }
+  IconData get _deviceIcon => deviceIcon(widget.device);
 
-  Color get _deviceColor {
-    switch (widget.device.type.toLowerCase()) {
-      case 'tv':
-        return const Color(0xFF5856D6);
-      case 'desktop':
-        return const Color(0xFF007AFF);
-      case 'tablet':
-        return const Color(0xFFFF9500);
-      default:
-        return const Color(0xFF34C759);
-    }
-  }
+  Color get _deviceColor => deviceColor(widget.device);
 }
 
 // ─── Action Button ────────────────────────────────────────────────────────────
@@ -657,15 +680,15 @@ class _TransportBadge extends StatelessWidget {
   Widget build(BuildContext context) {
     if (isNearby && isWifi) {
       return Row(mainAxisSize: MainAxisSize.min, children: [
-        _badge(
-            context, const Color(0xFF34C759), Icons.sensors_rounded, 'Nearby'),
+        _badge(context, const Color(0xFF34C759), Icons.sensors_rounded,
+            AppLocalizations.of(context).directConnection),
         const SizedBox(width: 4),
         _badge(context, const Color(0xFF007AFF), Icons.wifi_rounded, 'WiFi'),
       ]);
     }
     if (isNearby) {
-      return _badge(
-          context, const Color(0xFF34C759), Icons.sensors_rounded, 'Nearby');
+      return _badge(context, const Color(0xFF34C759), Icons.sensors_rounded,
+          AppLocalizations.of(context).directConnection);
     }
     return _badge(context, const Color(0xFF007AFF), Icons.wifi_rounded, 'WiFi');
   }
@@ -811,7 +834,7 @@ class _ClipboardBannerState extends State<_ClipboardBanner> {
       return l10n.clipboardTypeText;
     }
     if (widget.item.paths.length > 1) {
-      return '${widget.item.paths.length} ${l10n.clipboardTypeFiles}';
+      return l10n.clipboardFileCount(widget.item.paths.length);
     }
     return widget.item.extensionHint.toUpperCase();
   }
@@ -865,7 +888,8 @@ class _ClipboardBannerState extends State<_ClipboardBanner> {
                       const SizedBox(width: 4),
                       Expanded(
                         child: Text(
-                          widget.item.displayName,
+                          clipboardLabel(AppLocalizations.of(context), widget.item,
+                              typeShown: true),
                           maxLines: widget.item.type == ClipboardItemType.text
                               ? 2
                               : 1,

@@ -15,6 +15,16 @@ class PathUtils {
     return cacheDir.path;
   }
 
+  /// Files still arriving on desktop. Beside the save folder, so the final
+  /// move is a rename on the same disk: from /tmp (tmpfs on Fedora) it was a
+  /// copy, and a crash mid-copy left a cut file under its real name. Inside
+  /// the user's own folder, so no other user can create it first.
+  static Future<String> getReceivingPath() async {
+    final dir = Directory('${await getDownloadPath()}/.receiving');
+    await dir.create(recursive: true);
+    return dir.path;
+  }
+
   static Future<String> getDownloadPath() async {
     if (Platform.isAndroid) {
       try {

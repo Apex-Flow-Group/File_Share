@@ -1,8 +1,9 @@
 <?xml version="1.0" encoding="utf-8"?>
+<!-- Only the folders where received files are saved (PathUtils.getDownloadPath
+     and its fallbacks). path="." would let any granted URI reach all shared
+     storage or all of this app's private files. -->
 <paths>
-    <external-path name="external_files" path="." />
-    <external-files-path name="external_app_files" path="." />
-    <external-cache-path name="external_cache" path="." />
-    <files-path name="internal_files" path="." />
-    <cache-path name="internal_cache" path="." />
+    <external-path name="apex_share" path="Download/ApexShare/" />
+    <external-files-path name="apex_share_app" path="ApexShare/" />
+    <files-path name="apex_share_private" path="app_flutter/ApexShare/" />
 </paths>

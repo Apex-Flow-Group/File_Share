@@ -8,6 +8,14 @@ class FileUtils {
 
   static const _channel = MethodChannel('com.apex.core/file_ops');
 
+  /// A saved path as every screen shows it: without the Android storage root,
+  /// and isolated left-to-right so a leading "/" does not jump to the other
+  /// end of an Arabic sentence.
+  static String displayPath(String path) =>
+      '${String.fromCharCode(0x2066)}'
+      '${path.replaceFirst('/storage/emulated/0/', '')}'
+      '${String.fromCharCode(0x2069)}';
+
   static String formatSize(int bytes) {
     if (bytes < 1024) {
       return '$bytes B';
@@ -97,8 +105,9 @@ class FileUtils {
       }
     }
 
+    // Never through cmd: it runs "&" in a name, so "report&calc" starts calc.
     if (Platform.isWindows) {
-      await Process.run('cmd', ['/c', 'start', '', filePath]);
+      await Process.run('explorer.exe', [filePath]);
       return;
     }
 
@@ -139,16 +148,6 @@ class FileUtils {
       } else {
         throw Exception('المجلد فارغ');
       }
-    }
-  }
-  
-  static Future<void> shareFile(String filePath) async {
-    try {
-      if (Platform.isAndroid) {
-        await Process.run('am', ['start', '-a', 'android.intent.action.SEND', '-t', '*/*', '--eu', 'android.intent.extra.STREAM', 'file://$filePath']);
-      }
-    } catch (e) {
-      rethrow;
     }
   }
 }

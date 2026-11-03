@@ -13,6 +13,7 @@ import '../../services/settings_service.dart';
 import '../widgets/tabs/tv_files_tab.dart';
 import '../widgets/tabs/tv_receive_tab.dart';
 import '../widgets/tabs/tv_send_tab.dart';
+import '../widgets/tv_accept_dialog.dart';
 import '../widgets/tv_details_panel.dart';
 
 class TVHomeScreen extends StatefulWidget {
@@ -98,6 +99,13 @@ class _TVHomeScreenState extends State<TVHomeScreen> {
             ..clear()
             ..addAll(devices);
         });
+      }
+    });
+    core.connectionRequestStream.listen((r) {
+      if (mounted) {
+        TVAcceptDialog.ask(context, r);
+      } else {
+        r.onResponse(false);
       }
     });
     core.fileReceivedStream.listen((e) {

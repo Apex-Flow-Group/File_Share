@@ -1,5 +1,3 @@
-import 'dart:io';
-
 import 'package:flutter/material.dart';
 
 import 'core/apex_core.dart';
@@ -41,24 +39,10 @@ class _BootApp extends StatelessWidget {
     );
   }
 
+  // No firewall rule from here: it opened the app on company (domain)
+  // networks, was added on every launch and never removed. Windows asks the
+  // user itself the first time the app listens.
   Future<SettingsService> _initAll() async {
-    if (Platform.isWindows) {
-      try {
-        final exe = Platform.resolvedExecutable;
-        await Process.run('netsh', [
-          'advfirewall',
-          'firewall',
-          'add',
-          'rule',
-          'name=ApexFileShare',
-          'dir=in',
-          'action=allow',
-          'program=$exe',
-          'enable=yes',
-          'profile=private,domain',
-        ]);
-      } catch (_) {}
-    }
     await PlatformDetector.instance.initialize();
     await ApexCore.instance.initialize();
     await DesktopNotificationService.instance.initialize();

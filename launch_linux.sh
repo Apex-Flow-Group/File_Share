@@ -17,16 +17,7 @@ fi
 echo "✅ Flutter مثبت"
 echo ""
 
-# فتح المنافذ في جدار الحماية (يتطلب sudo)
-echo "🔓 فتح المنافذ المطلوبة..."
-if command -v firewall-cmd &> /dev/null; then
-    sudo firewall-cmd --add-port=8888/udp --permanent 2>/dev/null
-    sudo firewall-cmd --add-port=8080/tcp --permanent 2>/dev/null
-    sudo firewall-cmd --reload 2>/dev/null
-    echo "✅ تم فتح المنافذ 8888 (UDP) و 8080 (TCP)"
-else
-    echo "⚠️  firewall-cmd غير موجود، تخطي إعدادات الجدار الناري"
-fi
+# The firewall is set by install_linux.sh, which uninstall_linux.sh undoes.
 
 echo ""
 echo "📦 تحميل المكتبات..."

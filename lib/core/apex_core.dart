@@ -4,14 +4,20 @@ import 'dart:io';
 import 'package:flutter/foundation.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
+import '../features/receive/data/receive_http.dart';
+import '../features/receive/data/receive_store.dart';
+import '../features/receive/logic/receive_gate.dart';
+import '../features/send/data/send_http.dart';
 import '../managers/device_manager.dart';
 import '../models/device.dart';
+import '../platform/free_space.dart';
 import '../services/discovery_service.dart';
 import '../services/settings_service.dart';
 import '../services/transfer_progress_service.dart';
 import '../utils/apex_logger.dart';
+import '../utils/path_utils.dart';
 import 'core_models.dart';
-import 'http_transfer.dart';
+import 'files/move_into_folder.dart';
 import 'nearby_transfer.dart';
 import 'share_folder_http.dart';
 
@@ -40,17 +46,25 @@ class ApexCore {
   final _connectionRequestController =
       StreamController<ConnectionRequest>.broadcast();
 
-  late final HttpTransfer _http = HttpTransfer(
-    getLocalName: () => _localDevice?.name,
-    getLocalIp: () => _localDevice?.ip,
-    onFileReceived: _fileReceivedController.add,
+  late final ReceiveHttp _receive = ReceiveHttp(
+    gate: ReceiveGate(),
+    store: ReceiveStore(
+      tempFolder: () async => Directory(
+          _isAndroid ? await PathUtils.getTempCachePath() : await PathUtils.getReceivingPath()),
+      place: _placeReceived,
+    ),
     onConnectionRequest: _connectionRequestController.add,
+    onFileReceived: _fileReceivedController.add,
+    freeBytes: () async => freeBytesAt(await PathUtils.getDownloadPath()),
   );
 
+  late final SendHttp _send = SendHttp(getLocalName: () => _localDevice?.name);
+
   late final ShareFolderHttp _share = ShareFolderHttp(
-    isEnabled: () => _settings?.sharedFolderEnabled ?? true,
-    allowUploads: () => _settings?.allowShareUploads ?? true,
+    isEnabled: () => _settings?.sharedFolderEnabled ?? false,
+    allowUploads: () => _settings?.allowShareUploads ?? false,
     getLocalName: () => _localDevice?.name,
+    onAccessRequest: _connectionRequestController.add,
   );
   SettingsService? _settings;
 
@@ -58,6 +72,7 @@ class ApexCore {
     getLocalName: () => _localDevice?.name,
     onFileReceived: _fileReceivedController.add,
     onConnectionRequest: _connectionRequestController.add,
+    place: _placeReceived,
     discoveredDevices: _discoveredDevices,
   );
 
@@ -74,7 +89,18 @@ class ApexCore {
   bool get _isAndroid => !kIsWeb && Platform.isAndroid;
 
   /// يُمرِّر SettingsService لقراءة إعدادات Share في runtime
-  void setSettings(SettingsService settings) => _settings = settings;
+  void setSettings(SettingsService settings) {
+    if (identical(_settings, settings)) {
+      return;
+    }
+    _settings = settings;
+    // Turning the folder off ends every agreement at once, not at the next request.
+    settings.addListener(() {
+      if (!settings.sharedFolderEnabled) {
+        _share.revokeAll();
+      }
+    });
+  }
 
   // ─── Lifecycle ─────────────────────────────────────────────────────────────
 
@@ -117,6 +143,12 @@ class ApexCore {
       if (TransferProgressService().isTransferring) {
         return;
       }
+      // Never merged by name: its address must not reach a working record.
+      if (device.versionMismatch) {
+        _discoveredDevices[device.id] = device;
+        _devicesController.add(devices);
+        return;
+      }
       // deduplication بالاسم — ادمج Nearby + WiFi في سجل واحد
       final existingEntry = _discoveredDevices.entries
           .where((e) => e.value.name.toLowerCase() == device.name.toLowerCase())
@@ -155,7 +187,7 @@ class ApexCore {
         return;
       }
       _discoveredDevices.remove(id);
-      _nearby.connectedEndpoints.remove(id);
+      _nearby.forget(id);
       _devicesController.add(devices);
     });
 
@@ -233,16 +265,8 @@ class ApexCore {
 
   Future<void> _handleRequest(HttpRequest req) async {
     try {
-      final path = req.uri.path;
-      if (req.method == 'GET' && path == '/ping') {
-        req.response
-          ..statusCode = HttpStatus.ok
-          ..write('pong');
-        await req.response.close();
-      } else if (req.method == 'POST' && path == '/request') {
-        await _http.handlePermissionRequest(req);
-      } else if (req.method == 'POST' && path == '/upload') {
-        await _http.handleUpload(req);
+      if (await _receive.handle(req)) {
+        // تم التعامل مع طلب استقبال
       } else if (await _share.handle(req)) {
         // تم التعامل مع طلب Share
       } else {
@@ -259,26 +283,31 @@ class ApexCore {
 
   // ─── Send ──────────────────────────────────────────────────────────────────
 
-  Future<bool> sendFile(String filePath, Device target) =>
+  Future<SendOutcome> sendFile(String filePath, Device target) =>
       sendFileWithName(filePath, _extractFileName(filePath), target);
 
-  Future<bool> sendFileWithName(
+  Future<SendOutcome> sendFileWithName(
       String filePath, String fileName, Device target) async {
-    if (_isAndroid && target.isNearby) {
-      return _nearby.sendFile(filePath, fileName, target);
+    if (target.versionMismatch) {
+      return SendOutcome.updateRequired;
     }
     final f = File(filePath);
     if (!await f.exists()) {
-      return false;
+      return SendOutcome.failed;
     }
-    final size = await f.length();
-    return _http
-        .sendFiles([(path: filePath, name: fileName, size: size)], target);
+    final files = [(path: filePath, name: fileName, size: await f.length())];
+    if (_isAndroid && target.isNearby) {
+      return _nearby.sendBatch(files, target);
+    }
+    return _send.sendFiles(files, target);
   }
 
-  Future<bool> sendFiles(List<String> filePaths, Device target) async {
+  Future<SendOutcome> sendFiles(List<String> filePaths, Device target) async {
+    if (target.versionMismatch) {
+      return SendOutcome.updateRequired;
+    }
     if (filePaths.isEmpty) {
-      return false;
+      return SendOutcome.failed;
     }
 
     final files = <({String path, String name, int size})>[];
@@ -291,22 +320,39 @@ class ApexCore {
           (path: path, name: _extractFileName(path), size: await f.length()));
     }
     if (files.isEmpty) {
-      return false;
+      return SendOutcome.failed;
     }
 
     if (_isAndroid && target.isNearby) {
-      return _nearby.sendBatchFiles(files, target);
+      return _nearby.sendBatch(files, target);
     }
 
-    return _http.sendFiles(files, target);
+    return _send.sendFiles(files, target);
+  }
+
+  /// Android saves through MediaStore; other systems move the file into the
+  /// category folder without replacing an existing one.
+  Future<String> _placeReceived(File temp, String name) async {
+    if (_isAndroid) {
+      final saved = await PathUtils.saveToPublicDownloads(name, temp.path);
+      if (saved == null) {
+        throw FileSystemException('Could not save to Downloads', name);
+      }
+      try {
+        await temp.delete();
+      } catch (_) {}
+      return saved;
+    }
+    final folder = Directory(await PathUtils.getCategoryPath(name));
+    return (await moveIntoFolder(temp, folder, name)).path;
   }
 
   // ─── Nearby incoming connection ────────────────────────────────────────────
 
-  void handleIncomingConnectionInitiated(String endpointId) async {
-    await _nearby.acceptConnection(endpointId);
-    ApexLogger.instance
-        .log('NEARBY', '✅ Accepted: $endpointId', LogLevel.success);
+  void handleIncomingConnectionInitiated(String endpointId, String endpointName) async {
+    final accepted = await _nearby.answerConnection(endpointId, endpointName);
+    ApexLogger.instance.log('NEARBY', '${accepted ? 'Accepted' : 'Refused'}: $endpointId',
+        accepted ? LogLevel.success : LogLevel.warning);
   }
 
   // ─── Helpers ───────────────────────────────────────────────────────────────

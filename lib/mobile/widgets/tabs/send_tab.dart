@@ -221,7 +221,7 @@ class _SendTabState extends State<SendTab> with TickerProviderStateMixin {
                   // ─── الأجهزة المثبتة
                   if (widget.pinnedDevices.isNotEmpty) ...[
                     _SectionHeader(
-                      icon: Icons.push_pin_rounded,
+                      icon: Icons.star_rounded,
                       label: l10n.pinnedDevices,
                       isDark: isDark,
                     ),
@@ -310,7 +310,7 @@ class _SendTabState extends State<SendTab> with TickerProviderStateMixin {
                   // ─── الأجهزة المثبتة
                   if (widget.pinnedDevices.isNotEmpty) ...[
                     _SectionHeader(
-                      icon: Icons.push_pin_rounded,
+                      icon: Icons.star_rounded,
                       label: l10n.pinnedDevices,
                       isDark: isDark,
                     ),

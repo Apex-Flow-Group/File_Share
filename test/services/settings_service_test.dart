@@ -22,7 +22,7 @@ void main() {
       expect(service.locale, const Locale('ar'));
 
       final prefs = await SharedPreferences.getInstance();
-      expect(prefs.getString('locale'), 'ar');
+      expect(prefs.getString('locale_language'), 'ar');
     });
 
     test('setLocale with null removes locale', () async {
@@ -31,7 +31,7 @@ void main() {
       
       expect(service.locale, null);
       final prefs = await SharedPreferences.getInstance();
-      expect(prefs.containsKey('locale'), false);
+      expect(prefs.containsKey('locale_language'), false);
     });
 
     test('setThemeMode updates theme and persists', () async {
@@ -39,13 +39,13 @@ void main() {
       expect(service.themeMode, ThemeMode.dark);
 
       final prefs = await SharedPreferences.getInstance();
-      expect(prefs.getInt('themeMode'), ThemeMode.dark.index);
+      expect(prefs.getInt('theme_mode'), ThemeMode.dark.index);
     });
 
     test('loadSettings restores saved values', () async {
       final prefs = await SharedPreferences.getInstance();
-      await prefs.setString('locale', 'en');
-      await prefs.setInt('themeMode', ThemeMode.light.index);
+      await prefs.setString('locale_language', 'en');
+      await prefs.setInt('theme_mode', ThemeMode.light.index);
 
       await service.loadSettings();
 

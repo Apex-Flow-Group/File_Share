@@ -1,18 +1,18 @@
-import 'dart:io';
+import 'dart:async';
 
-import 'package:file_picker/file_picker.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 
 import '../../../core/apex_core.dart';
+import '../../../features/send/data/send_http.dart';
+import '../../../features/send/logic/send_folder.dart';
+import '../../../features/send/ui/send_outcome_message.dart';
 import '../../../l10n/generated/app_localizations.dart';
-import '../../../mobile/screens/apps_selection_screen.dart';
-import '../../../mobile/widgets/connection_widget.dart';
 import '../../../models/device.dart';
 import '../../../services/desktop_notification_service.dart';
-import '../../../services/folder_zip_service.dart';
 import '../../../services/transfer_progress_service.dart';
-import '../../../shared/apex_snackbar.dart';
+import '../../../shared/device_look.dart';
+import '../tv_apps_dialog.dart';
 import '../tv_file_browser.dart';
 import '../tv_focusable_widgets.dart';
 
@@ -101,13 +101,10 @@ class _TVDeviceCardState extends State<TVDeviceCard> {
                   ],
                 )
               : null,
-          child: ConnectionWidget(
+          child: _TVDeviceTile(
             device: widget.device,
             isActive: widget.isActive,
             isPinned: widget.isPinned,
-            onPin: widget.onPin,
-            onUnpin: widget.onUnpin,
-            isGloballyBusy: widget.isGloballyBusy,
           ),
         );
       }),
@@ -115,6 +112,18 @@ class _TVDeviceCardState extends State<TVDeviceCard> {
   }
 
   void _showSendOptions(BuildContext context) {
+    // One send at a time, like the phone card. A dialog with the send choices
+    // missing would not say why, so none opens until the other send ends.
+    if (widget.isActive && widget.isGloballyBusy) {
+      return;
+    }
+    // Nothing to send to an offline device, but pinning stays reachable, so an
+    // old device that never comes back can be unpinned.
+    final canSend = widget.isActive && !widget.device.versionMismatch;
+    final togglePin = widget.isPinned ? widget.onUnpin : widget.onPin;
+    if (!canSend && togglePin == null) {
+      return;
+    }
     final l10n = AppLocalizations.of(context);
     final isDark = Theme.of(context).brightness == Brightness.dark;
     final color = Theme.of(context).colorScheme.primary;
@@ -126,6 +135,7 @@ class _TVDeviceCardState extends State<TVDeviceCard> {
         isDark: isDark,
         color: color,
         l10n: l10n,
+        canSend: canSend,
         onSendFile: () {
           Navigator.pop(dialogContext);
           _sendFile();
@@ -138,6 +148,13 @@ class _TVDeviceCardState extends State<TVDeviceCard> {
           Navigator.pop(dialogContext);
           _sendFolder();
         },
+        isPinned: widget.isPinned,
+        onTogglePin: togglePin == null
+            ? null
+            : () {
+                Navigator.pop(dialogContext);
+                togglePin();
+              },
       ),
     );
   }
@@ -148,13 +165,13 @@ class _TVDeviceCardState extends State<TVDeviceCard> {
       return;
     }
 
-    final ok = await ApexCore.instance.sendFiles(paths, widget.device);
+    final outcome = await ApexCore.instance.sendFiles(paths, widget.device);
+    final ok = outcome == SendOutcome.sent;
     if (mounted) {
       final l10n = AppLocalizations.of(context);
-      ApexSnackBar.result(context,
-          ok: ok,
-          successMessage: l10n.fileSentSuccess,
-          failMessage: l10n.fileSendFailed);
+      showSendOutcome(context, outcome,
+          sent: l10n.fileSentSuccess,
+          failed: l10n.fileSendFailed);
     }
     final label = paths.length == 1
         ? paths.first.split('/').last
@@ -171,63 +188,77 @@ class _TVDeviceCardState extends State<TVDeviceCard> {
     if (!mounted) {
       return;
     }
-    await AppsSelectionSheet.show(
-      context,
-      onAppsSelected: (selectedApps) async {
-        if (!mounted || selectedApps.isEmpty) {
-          return;
-        }
-        bool ok;
-        if (selectedApps.length == 1) {
-          ok = await ApexCore.instance.sendFileWithName(
-              selectedApps.first.file.path,
-              '${selectedApps.first.name}.apk',
-              widget.device);
-        } else {
-          final paths = selectedApps.map((a) => a.file.path).toList();
-          ok = await ApexCore.instance.sendFiles(paths, widget.device);
-        }
-        if (!mounted) {
-          return;
-        }
-        final l10n = AppLocalizations.of(context);
-        ApexSnackBar.result(context,
-            ok: ok, successMessage: l10n.appSent, failMessage: l10n.sendFailed);
-        TransferProgressService().clearProgress();
-      },
-    );
+    final selectedApps = await showTVAppsDialog(context);
+    if (!mounted || selectedApps == null || selectedApps.isEmpty) {
+      return;
+    }
+    SendOutcome outcome;
+    if (selectedApps.length == 1) {
+      outcome = await ApexCore.instance.sendFileWithName(
+          selectedApps.first.file.path,
+          '${selectedApps.first.name}.apk',
+          widget.device);
+    } else {
+      final paths = selectedApps.map((a) => a.file.path).toList();
+      outcome = await ApexCore.instance.sendFiles(paths, widget.device);
+    }
+    if (!mounted) {
+      return;
+    }
+    final l10n = AppLocalizations.of(context);
+    showSendOutcome(context, outcome,
+        sent: l10n.appSent,
+        failed: l10n.sendFailed);
+    TransferProgressService().clearProgress();
   }
 
   Future<void> _sendFolder() async {
-    final folderPath = await FilePicker.platform.getDirectoryPath();
+    final folderPath = await showTVFolderBrowser(context);
     if (folderPath == null || !mounted) {
       return;
     }
+    // Zipping a big folder takes a while and shows no transfer progress yet.
+    var compressing = true;
+    final compressingText = AppLocalizations.of(context).compressingFolder;
+    // Held now: the card may leave the list while zipping, and the dialog
+    // cannot be closed with Back, so it must close even then.
+    final navigator = Navigator.of(context);
+    unawaited(showDialog<void>(
+      context: context,
+      barrierDismissible: false,
+      builder: (_) => PopScope(
+        canPop: false,
+        child: AlertDialog(
+          content: Row(children: [
+            const CircularProgressIndicator(),
+            const SizedBox(width: 16),
+            Expanded(child: Text(compressingText)),
+          ]),
+        ),
+      ),
+    ));
+    void closeCompressing() {
+      if (compressing) {
+        compressing = false;
+        navigator.pop();
+      }
+    }
 
-    String? zipPath;
     try {
-      zipPath = await FolderZipService.zipFolder(folderPath);
-      final folderName = folderPath.split(Platform.pathSeparator).last;
-
-      final ok = await ApexCore.instance
-          .sendFileWithName(zipPath, '$folderName.zip', widget.device);
+      final (:outcome, :label) =
+          await sendFolderZipped(folderPath, widget.device, onZipped: closeCompressing);
+      closeCompressing();
       if (mounted) {
         final l10n = AppLocalizations.of(context);
-        ApexSnackBar.result(context,
-            ok: ok,
-            successMessage: l10n.folderSent,
-            failMessage: l10n.sendFailed);
+        showSendOutcome(context, outcome, sent: l10n.folderSent, failed: l10n.sendFailed);
       }
-      final label = '$folderName.zip';
-      if (ok) {
+      if (outcome == SendOutcome.sent) {
         await DesktopNotificationService.instance.showFileSent(label);
       } else {
         await DesktopNotificationService.instance.showSendFailed(label);
       }
     } finally {
-      if (zipPath != null) {
-        await FolderZipService.cleanupTemp(zipPath);
-      }
+      closeCompressing();
       TransferProgressService().clearProgress();
     }
   }
@@ -240,18 +271,24 @@ class _TVSendOptionsDialog extends StatelessWidget {
   final bool isDark;
   final Color color;
   final AppLocalizations l10n;
+  final bool canSend;
   final VoidCallback onSendFile;
   final VoidCallback onSendApp;
   final VoidCallback onSendFolder;
+  final bool isPinned;
+  final VoidCallback? onTogglePin;
 
   const _TVSendOptionsDialog({
     required this.title,
     required this.isDark,
     required this.color,
     required this.l10n,
+    required this.canSend,
     required this.onSendFile,
     required this.onSendApp,
     required this.onSendFolder,
+    required this.isPinned,
+    required this.onTogglePin,
   });
 
   @override
@@ -268,23 +305,23 @@ class _TVSendOptionsDialog extends StatelessWidget {
                 style:
                     const TextStyle(fontWeight: FontWeight.bold, fontSize: 16)),
             const SizedBox(height: 16),
-            TVDialogOption(
-              icon: Icons.folder_open_rounded,
-              label: l10n.sendFile,
-              color: color,
-              autofocus: true,
-              onTap: onSendFile,
-            ),
-            const SizedBox(height: 8),
-            if (Platform.isAndroid)
+            if (canSend) ...[
+              TVDialogOption(
+                icon: Icons.folder_open_rounded,
+                label: l10n.sendFile,
+                color: color,
+                autofocus: true,
+                onTap: onSendFile,
+              ),
+              const SizedBox(height: 8),
               TVDialogOption(
                 icon: Icons.android_rounded,
                 label: l10n.sendApp,
                 color: const Color(0xFF34C759),
                 autofocus: false,
                 onTap: onSendApp,
-              )
-            else
+              ),
+              const SizedBox(height: 8),
               TVDialogOption(
                 icon: Icons.folder_zip_rounded,
                 label: l10n.sendFolder,
@@ -292,8 +329,102 @@ class _TVSendOptionsDialog extends StatelessWidget {
                 autofocus: false,
                 onTap: onSendFolder,
               ),
+            ],
+            if (onTogglePin != null) ...[
+              if (canSend) const SizedBox(height: 8),
+              // The phone card pins by touch; the remote reaches it only here.
+              TVDialogOption(
+                icon: isPinned ? Icons.star_border_rounded : Icons.star_rounded,
+                label: isPinned ? l10n.unpinDevice : l10n.pinDevice,
+                color: Colors.grey,
+                autofocus: !canSend,
+                onTap: onTogglePin!,
+              ),
+            ],
           ],
         ),
+      ),
+    );
+  }
+}
+
+// ─── Card body ────────────────────────────────────────────────────────────────
+
+class _TVDeviceTile extends StatelessWidget {
+  final Device device;
+  final bool isActive;
+  final bool isPinned;
+
+  const _TVDeviceTile({
+    required this.device,
+    required this.isActive,
+    required this.isPinned,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    final l10n = AppLocalizations.of(context);
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+    final muted = Theme.of(context).colorScheme.onSurfaceVariant;
+    final color = deviceColor(device);
+    final hostname = device.hostname;
+    return Container(
+      padding: const EdgeInsets.all(16),
+      decoration: BoxDecoration(
+        color: isDark ? const Color(0xFF1E1E1E) : Colors.white,
+        borderRadius: BorderRadius.circular(20),
+      ),
+      child: Opacity(
+        opacity: isActive && !device.versionMismatch ? 1.0 : 0.45,
+        child: Row(children: [
+          Container(
+            width: 52,
+            height: 52,
+            decoration: BoxDecoration(
+              color: color,
+              borderRadius: BorderRadius.circular(16),
+            ),
+            child: Icon(deviceIcon(device), color: Colors.white, size: 26),
+          ),
+          const SizedBox(width: 14),
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(device.name,
+                    style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 16),
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis),
+                if (hostname != null && hostname.isNotEmpty && hostname != device.name)
+                  Text(hostname,
+                      style: TextStyle(fontSize: 12, color: muted),
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis),
+                const SizedBox(height: 2),
+                Text(
+                  !isActive
+                      ? l10n.deviceOffline
+                      : device.versionMismatch
+                          ? l10n.versionDiffers
+                          : device.isNearby
+                              ? l10n.directConnection
+                              : device.ip,
+                  style: TextStyle(fontSize: 12, color: muted),
+                ),
+              ],
+            ),
+          ),
+          if (isPinned) Icon(Icons.star_rounded, size: 18, color: color),
+          const SizedBox(width: 8),
+          Container(
+            width: 10,
+            height: 10,
+            decoration: BoxDecoration(
+              color: isActive && !device.versionMismatch ? Colors.green : Colors.grey,
+              shape: BoxShape.circle,
+            ),
+          ),
+        ]),
       ),
     );
   }

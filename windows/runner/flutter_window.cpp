@@ -208,15 +208,25 @@ bool FlutterWindow::OnCreate() {
           flutter_controller_->engine()->messenger(), kClipboardChannel,
           &flutter::StandardMethodCodec::GetInstance());
 
+  // Nothing is watched until Dart sends "start" (the user turned it on).
   clipboard_channel_->SetMethodCallHandler(
-      [](const flutter::MethodCall<flutter::EncodableValue>& call,
-         std::unique_ptr<flutter::MethodResult<flutter::EncodableValue>> result) {
-        // Dart currently sends no calls to C++ on this channel.
-        result->NotImplemented();
+      [this](const flutter::MethodCall<flutter::EncodableValue>& call,
+             std::unique_ptr<flutter::MethodResult<flutter::EncodableValue>> result) {
+        if (call.method_name() == "start") {
+          if (!clipboard_listening_) {
+            clipboard_listening_ = AddClipboardFormatListener(GetHandle()) != FALSE;
+          }
+          result->Success();
+        } else if (call.method_name() == "stop") {
+          if (clipboard_listening_) {
+            RemoveClipboardFormatListener(GetHandle());
+            clipboard_listening_ = false;
+          }
+          result->Success();
+        } else {
+          result->NotImplemented();
+        }
       });
-
-  // ── Register this window to receive WM_CLIPBOARDUPDATE ──────────────────
-  AddClipboardFormatListener(GetHandle());
 
   // ── Initialize COM (needed for WIC PNG encoding) ─────────────────────────
   CoInitializeEx(nullptr, COINIT_APARTMENTTHREADED);
@@ -231,7 +241,10 @@ bool FlutterWindow::OnCreate() {
 }
 
 void FlutterWindow::OnDestroy() {
-  RemoveClipboardFormatListener(GetHandle());
+  if (clipboard_listening_) {
+    RemoveClipboardFormatListener(GetHandle());
+    clipboard_listening_ = false;
+  }
   CoUninitialize();
 
   if (flutter_controller_) {
@@ -333,50 +346,12 @@ FlutterWindow::MessageHandler(HWND hwnd, UINT const message,
             }
 
             if (hasContent) {
-              // Save as UTF-8 .txt in %TEMP%
-              wchar_t tempDir[MAX_PATH];
-              std::string txtPath;
-              if (GetTempPathW(MAX_PATH, tempDir)) {
-                ULONGLONG tick = GetTickCount64();
-                std::wostringstream oss;
-                oss << tempDir << L"apex_clip_" << tick << L".txt";
-                std::wstring wTxtPath = oss.str();
-
-                // Convert to UTF-8 and write
-                int utf8Size = WideCharToMultiByte(
-                    CP_UTF8, 0, wtext.c_str(),
-                    static_cast<int>(wtext.size()),
-                    nullptr, 0, nullptr, nullptr);
-                std::string utf8Text(utf8Size, '\0');
-                WideCharToMultiByte(
-                    CP_UTF8, 0, wtext.c_str(),
-                    static_cast<int>(wtext.size()),
-                    utf8Text.data(), utf8Size, nullptr, nullptr);
-
-                std::ofstream txtFile(wTxtPath, std::ios::binary);
-                if (txtFile.is_open()) {
-                  txtFile.write(utf8Text.data(), utf8Size);
-                  txtFile.close();
-                  txtPath = WideToUtf8(wTxtPath);
-                }
-              }
-
-              if (!txtPath.empty()) {
-                flutter::EncodableList paths;
-                paths.push_back(flutter::EncodableValue(txtPath));
-                args[flutter::EncodableValue("type")] =
-                    flutter::EncodableValue("text");
-                args[flutter::EncodableValue("paths")] =
-                    flutter::EncodableValue(paths);
-                // Send preview (first 100 chars) for display in UI
-                std::wstring preview = wtext.substr(0, 100);
-                if (wtext.size() > 100) {
-                  preview += L"...";
-                }
-                args[flutter::EncodableValue("textPreview")] =
-                    flutter::EncodableValue(WideToUtf8(preview));
-                shouldNotify = true;
-              }
+              // The text stays in memory: it may be a password.
+              args[flutter::EncodableValue("type")] =
+                  flutter::EncodableValue("text");
+              args[flutter::EncodableValue("text")] =
+                  flutter::EncodableValue(WideToUtf8(wtext));
+              shouldNotify = true;
             }
           } else {
             GlobalUnlock(hText);

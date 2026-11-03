@@ -6,6 +6,7 @@ import android.content.Intent
 import android.net.Uri
 import android.os.Build
 import android.os.Environment
+import android.os.StatFs
 import android.provider.MediaStore
 import android.webkit.MimeTypeMap
 import androidx.core.content.FileProvider
@@ -45,6 +46,11 @@ class FileOperationsHandler(private val context: Context) {
                 }
                 "getDownloadsPath" -> {
                     getDownloadsPath(result)
+                }
+                "getFreeBytes" -> {
+                    // Free space where received files are saved (Downloads).
+                    val downloads = Environment.getExternalStoragePublicDirectory(Environment.DIRECTORY_DOWNLOADS)
+                    result.success(StatFs(downloads.path).availableBytes)
                 }
                 else -> result.notImplemented()
             }
@@ -104,17 +110,29 @@ class FileOperationsHandler(private val context: Context) {
                 val uri = resolver.insert(MediaStore.Downloads.EXTERNAL_CONTENT_URI, contentValues)
                     ?: throw Exception("MediaStore insert returned null")
 
-                resolver.openOutputStream(uri)?.use { outputStream ->
-                    sourceFile.inputStream().use { it.copyTo(outputStream) }
-                } ?: throw Exception("Failed to open output stream")
+                try {
+                    resolver.openOutputStream(uri)?.use { outputStream ->
+                        sourceFile.inputStream().use { it.copyTo(outputStream) }
+                    } ?: throw Exception("Failed to open output stream")
 
-                // Mark as complete
-                contentValues.clear()
-                contentValues.put(MediaStore.Downloads.IS_PENDING, 0)
-                resolver.update(uri, contentValues, null, null)
+                    contentValues.clear()
+                    contentValues.put(MediaStore.Downloads.IS_PENDING, 0)
+                    resolver.update(uri, contentValues, null, null)
+                } catch (e: Exception) {
+                    // A pending entry would stay behind as a hidden, cut file.
+                    resolver.delete(uri, null, null)
+                    throw e
+                }
 
-                // Return the actual file path
-                val finalPath = "${Environment.getExternalStoragePublicDirectory(Environment.DIRECTORY_DOWNLOADS)}/ApexShare/$subFolder/$fileName"
+                // MediaStore renames on a clash ("report (1).txt") instead of
+                // replacing; the path must carry the name it really kept, or
+                // "open" shows the older file.
+                val savedName = resolver.query(
+                    uri, arrayOf(MediaStore.Downloads.DISPLAY_NAME), null, null, null
+                )?.use { c -> if (c.moveToFirst()) c.getString(0) else null } ?: fileName
+                val downloadsDir = Environment.getExternalStoragePublicDirectory(Environment.DIRECTORY_DOWNLOADS)
+                val savedDir = if (subFolder.isNotEmpty()) File(downloadsDir, "ApexShare/$subFolder") else File(downloadsDir, "ApexShare")
+                val finalPath = File(savedDir, savedName).absolutePath
                 runOnUiThread { result.success(finalPath) }
             } else {
                 // Android 9 and below — direct file write
@@ -126,15 +144,60 @@ class FileOperationsHandler(private val context: Context) {
                 }
                 destDir.mkdirs()
 
-                val destFile = File(destDir, fileName)
-                sourceFile.inputStream().use { input ->
-                    destFile.outputStream().use { input.copyTo(it) }
+                // Writing straight to destDir/fileName replaced a file the user
+                // already had, and an interrupted copy left a cut file under its
+                // real name. Copy to a temp name, then rename to a free name.
+                val part = File(destDir, ".${System.nanoTime()}.part")
+                val destFile: File
+                try {
+                    sourceFile.inputStream().use { input ->
+                        part.outputStream().use { input.copyTo(it) }
+                    }
+                    synchronized(nameLock) {
+                        destFile = freeFile(destDir, fileName)
+                        if (!part.renameTo(destFile)) {
+                            throw Exception("Rename failed")
+                        }
+                    }
+                } catch (e: Exception) {
+                    part.delete()
+                    throw e
                 }
                 runOnUiThread { result.success(destFile.absolutePath) }
             }
         } catch (e: Exception) {
             runOnUiThread { result.error("SAVE_FAILED", e.message, null) }
         }
+    }
+
+    private val nameLock = Any()
+
+    /**
+     * The app's one rule for a taken name (moveIntoFolder in Dart):
+     * "report.txt", then "report_1.txt", "report_2.txt", always within 255 bytes.
+     */
+    private fun freeFile(dir: File, name: String): File {
+        val dot = name.lastIndexOf('.')
+        val hasExt = dot > 0 && name.length - dot <= 16
+        val base = if (hasExt) name.substring(0, dot) else name
+        val ext = if (hasExt) name.substring(dot) else ""
+        var candidate = File(dir, name)
+        var n = 1
+        while (candidate.exists()) {
+            candidate = File(dir, fitName(base, "_$n$ext"))
+            n++
+        }
+        return candidate
+    }
+
+    /** [base] shortened by whole characters so that [base] + [tail] fits 255 bytes. */
+    private fun fitName(base: String, tail: String): String {
+        val room = 255 - tail.toByteArray(Charsets.UTF_8).size
+        var end = base.length
+        while (end > 0 && base.substring(0, end).toByteArray(Charsets.UTF_8).size > room) {
+            end = base.offsetByCodePoints(end, -1)
+        }
+        return base.substring(0, end) + tail
     }
 
     private fun runOnUiThread(action: () -> Unit) {

@@ -15,6 +15,9 @@ class Device {
   /// هل أعلن هذا الجهاز عن مجلد Share مشترك في آخر UDP broadcast؟
   final bool shareEnabled;
 
+  /// It announced another protocol version (or none): listed, but disabled.
+  final bool versionMismatch;
+
   const Device({
     required this.id,
     required this.name,
@@ -25,6 +28,7 @@ class Device {
     this.endpointId,
     this.lastSeen,
     this.shareEnabled = false,
+    this.versionMismatch = false,
   });
 
   bool get isNearby => endpointId != null;
@@ -56,6 +60,7 @@ class Device {
         endpointId: clearEndpointId ? null : (endpointId ?? this.endpointId),
         lastSeen: lastSeen ?? this.lastSeen,
         shareEnabled: shareEnabled ?? this.shareEnabled,
+        versionMismatch: versionMismatch,
       );
 
   Map<String, dynamic> toJson() => {

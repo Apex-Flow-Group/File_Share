@@ -295,6 +295,34 @@ class AppLocalizationsAr extends AppLocalizations {
   String get acceptConnection => 'هل تريد قبول الاتصال؟';
 
   @override
+  String get incomingFilesTitle => 'ملفات واردة';
+
+  @override
+  String get shareAccessTitle => 'طلب فتح المجلد المشترك';
+
+  @override
+  String get shareAccessDownload =>
+      'السماح لهذا الجهاز بتنزيل ملفات مجلدك المشترك؟';
+
+  @override
+  String get shareAccessDownloadUpload =>
+      'السماح لهذا الجهاز بتنزيل ملفات مجلدك المشترك والرفع إليه؟';
+
+  @override
+  String receiveFilesQuestion(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: 'استقبال $count ملف؟',
+      many: 'استقبال $count ملفاً؟',
+      few: 'استقبال $count ملفات؟',
+      two: 'استقبال ملفين؟',
+      one: 'استقبال ملف واحد؟',
+    );
+    return '$_temp0';
+  }
+
+  @override
   String get ok => 'حسناً';
 
   @override
@@ -310,16 +338,45 @@ class AppLocalizationsAr extends AppLocalizations {
   String get sendFolder => 'إرسال مجلد';
 
   @override
+  String get sendThisFolder => 'إرسال هذا المجلد';
+
+  @override
+  String get pickFolder => 'اختر مجلداً';
+
+  @override
   String get folderSent => 'تم إرسال المجلد';
 
   @override
-  String get compressingFolder => 'جاري ضغط المجلد...';
+  String get compressingFolder => 'جارٍ ضغط المجلد…';
 
   @override
   String get installedApps => 'التطبيقات المثبتة';
 
   @override
   String get noApps => 'لا توجد تطبيقات';
+
+  @override
+  String get systemApps => 'إظهار تطبيقات النظام';
+
+  @override
+  String sendCount(int count) {
+    return 'إرسال ($count)';
+  }
+
+  @override
+  String get pinDevice => 'إضافة إلى المفضلة';
+
+  @override
+  String get unpinDevice => 'إزالة من المفضلة';
+
+  @override
+  String get deviceOffline => 'غير متصل حالياً';
+
+  @override
+  String get pickApp => 'اختر تطبيقاً';
+
+  @override
+  String get directConnection => 'اتصال مباشر';
 
   @override
   String get appSent => 'تم إرسال التطبيق';
@@ -364,7 +421,7 @@ class AppLocalizationsAr extends AppLocalizations {
   String get from => 'من';
 
   @override
-  String get savedIn => 'تم الحفظ في';
+  String get savedIn => 'حُفظ في';
 
   @override
   String get receiving => 'جاري الاستقبال...';
@@ -535,7 +592,7 @@ class AppLocalizationsAr extends AppLocalizations {
   String get fileSentSuccessfully => 'تم إرسال الملف بنجاح';
 
   @override
-  String get pickFile => 'اختيار ملف';
+  String get pickFile => 'اختر ملفاً';
 
   @override
   String get clipboardSend => 'إرسال';
@@ -544,16 +601,23 @@ class AppLocalizationsAr extends AppLocalizations {
   String get clipboardTypeImage => 'صورة';
 
   @override
-  String get clipboardTypeFiles => 'ملفات';
-
-  @override
   String get clipboardTypeText => 'نص';
 
   @override
   String get clipboardSendTooltip => 'إرسال من الحافظة';
 
   @override
-  String get pinnedDevices => 'الأجهزة المثبتة';
+  String get clipboardSettings => 'الحافظة';
+
+  @override
+  String get watchClipboard => 'اقتراح إرسال ما تنسخه';
+
+  @override
+  String get watchClipboardDesc =>
+      'عند كل نسخ ينتقل التطبيق إلى تبويب الإرسال ويعرض ما نسخته مع زر لإرساله. ويقرأ كل ما تنسخه، ومنه كلمات المرور.';
+
+  @override
+  String get pinnedDevices => 'الأجهزة المفضلة';
 
   @override
   String get newDevices => 'أجهزة جديدة';
@@ -594,13 +658,18 @@ class AppLocalizationsAr extends AppLocalizations {
   String get downloadFromShare => 'تنزيل';
 
   @override
-  String get uploadSuccess => 'تم رفع الملف بنجاح';
+  String get uploadSuccess => 'رُفع الملف';
 
   @override
   String get uploadFailed => 'فشل الرفع';
 
   @override
   String get downloadFailed => 'فشل التنزيل';
+
+  @override
+  String downloadSaved(String path) {
+    return 'حُفظ الملف في $path';
+  }
 
   @override
   String shareFileCount(int count) {
@@ -621,8 +690,96 @@ class AppLocalizationsAr extends AppLocalizations {
   String get shareNetworkError => 'الجهاز غير متاح';
 
   @override
+  String get shareAccessRefused => 'رفض صاحب الجهاز الآخر فتح مجلده المشترك';
+
+  @override
+  String get shareNoAnswer => 'لم يُجب صاحب الجهاز الآخر';
+
+  @override
+  String get shareOffRemote => 'المجلد المشترك غير مفعّل على الجهاز الآخر';
+
+  @override
+  String get retry => 'إعادة المحاولة';
+
+  @override
+  String get updateRequired =>
+      'إصدار التطبيق مختلف بين الجهازين. حدّثه على الجهازين';
+
+  @override
+  String get versionDiffers => 'إصدار التطبيق مختلف';
+
+  @override
   String get uploading => 'جاري الرفع...';
 
   @override
   String get downloading => 'جاري التنزيل...';
+
+  @override
+  String get sendDeclined => 'رفض الجهاز الآخر الاستلام';
+
+  @override
+  String get sendNoAnswer => 'لم يُجب الجهاز الآخر';
+
+  @override
+  String get sendReceiverBusy => 'الجهاز الآخر مشغول بطلب آخر. حاول بعد قليل';
+
+  @override
+  String get sendCancelled => 'أُلغي الإرسال';
+
+  @override
+  String sendTooManyFiles(int max) {
+    String _temp0 = intl.Intl.pluralLogic(
+      max,
+      locale: localeName,
+      other: 'يمكن إرسال $max ملف في المرة الواحدة على الأكثر',
+      many: 'يمكن إرسال $max ملفاً في المرة الواحدة على الأكثر',
+      few: 'يمكن إرسال $max ملفات في المرة الواحدة على الأكثر',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String get sendNoSpace => 'لا توجد مساحة كافية على الجهاز الآخر';
+
+  @override
+  String clipboardTextLength(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: 'نص ($count حرف)',
+      many: 'نص ($count حرفاً)',
+      few: 'نص ($count أحرف)',
+      two: 'نص (حرفان)',
+      one: 'نص (حرف واحد)',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String clipboardCharCount(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '$count حرف',
+      many: '$count حرفاً',
+      few: '$count أحرف',
+      two: 'حرفان',
+      one: 'حرف واحد',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String clipboardFileCount(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '$count ملف',
+      many: '$count ملفاً',
+      few: '$count ملفات',
+      two: 'ملفان',
+      one: 'ملف واحد',
+    );
+    return '$_temp0';
+  }
 }

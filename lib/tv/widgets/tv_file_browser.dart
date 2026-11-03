@@ -3,25 +3,51 @@ import 'dart:io';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 
+import '../../l10n/generated/app_localizations.dart';
+
+const _storageRoot = '/storage/emulated/0';
+
+typedef FolderLister = Future<List<FileSystemEntity>> Function(Directory dir);
+
+Future<List<FileSystemEntity>> _list(Directory dir) => dir.list().toList();
+
 /// يعرض file browser مدمج للتلفاز بدون الحاجة لأي تطبيق خارجي
 /// يُرجع قائمة بمسارات الملفات المختارة
-Future<List<String>?> showTVFileBrowser(BuildContext context) {
-  return showDialog<List<String>>(
+Future<List<String>?> showTVFileBrowser(BuildContext context,
+    {String root = _storageRoot, FolderLister list = _list}) async {
+  final picked = await showDialog<Object>(
     context: context,
     barrierDismissible: true,
-    builder: (_) => const _TVFileBrowser(),
+    builder: (_) => _TVFileBrowser(root: root, pickFolder: false, list: list),
   );
+  return picked as List<String>?;
+}
+
+/// The same browser, choosing the folder that is open. [root] itself cannot
+/// be chosen: it is the whole storage.
+Future<String?> showTVFolderBrowser(BuildContext context,
+    {String root = _storageRoot, FolderLister list = _list}) async {
+  final picked = await showDialog<Object>(
+    context: context,
+    barrierDismissible: true,
+    builder: (_) => _TVFileBrowser(root: root, pickFolder: true, list: list),
+  );
+  return picked as String?;
 }
 
 class _TVFileBrowser extends StatefulWidget {
-  const _TVFileBrowser();
+  final String root;
+  final bool pickFolder;
+  final FolderLister list;
+
+  const _TVFileBrowser({required this.root, required this.pickFolder, required this.list});
 
   @override
   State<_TVFileBrowser> createState() => _TVFileBrowserState();
 }
 
 class _TVFileBrowserState extends State<_TVFileBrowser> {
-  final List<String> _pathStack = ['/storage/emulated/0'];
+  late final List<String> _pathStack = [widget.root];
   List<FileSystemEntity> _items = [];
   final Set<String> _selected = {};
   bool _loading = true;
@@ -29,6 +55,7 @@ class _TVFileBrowserState extends State<_TVFileBrowser> {
   final _scrollCtrl = ScrollController();
   final List<FocusNode> _focusNodes = [];
   final List<GlobalKey> _itemKeys = [];
+  final _mainButton = FocusNode();
 
   @override
   void initState() {
@@ -39,6 +66,7 @@ class _TVFileBrowserState extends State<_TVFileBrowser> {
   @override
   void dispose() {
     _scrollCtrl.dispose();
+    _mainButton.dispose();
     for (final n in _focusNodes) {
       n.dispose();
     }
@@ -51,7 +79,7 @@ class _TVFileBrowserState extends State<_TVFileBrowser> {
     });
     try {
       final dir = Directory(path);
-      final raw = await dir.list().toList();
+      final raw = await widget.list(dir);
       raw.sort((a, b) {
         final aDir = a is Directory;
         final bDir = b is Directory;
@@ -117,15 +145,18 @@ class _TVFileBrowserState extends State<_TVFileBrowser> {
     });
   }
 
+  bool get _canConfirm => widget.pickFolder ? _pathStack.length > 1 : _selected.isNotEmpty;
+
   void _confirm() {
-    if (_selected.isEmpty) {
+    if (!_canConfirm) {
       return;
     }
-    Navigator.of(context).pop(_selected.toList());
+    Navigator.of(context).pop(widget.pickFolder ? _pathStack.last : _selected.toList());
   }
 
-  String get _currentDir => _pathStack.last.split('/').last.isEmpty
-      ? 'Storage'
+  // At the root the last part of /storage/emulated/0 would read "0".
+  String get _currentDir => _pathStack.length == 1
+      ? AppLocalizations.of(context).storageLabel
       : _pathStack.last.split('/').last;
 
   @override
@@ -153,7 +184,16 @@ class _TVFileBrowserState extends State<_TVFileBrowser> {
       ));
     }
 
-    return Dialog(
+    // The remote's Back arrives as a route pop: inside a folder it goes up
+    // one level instead of closing the browser.
+    return PopScope(
+      canPop: !showBack,
+      onPopInvokedWithResult: (didPop, _) {
+        if (!didPop) {
+          _goBack();
+        }
+      },
+      child: Dialog(
       backgroundColor: isDark ? const Color(0xFF1C1C1E) : const Color(0xFFF5F5F7),
       shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
       insetPadding: const EdgeInsets.symmetric(horizontal: 80, vertical: 40),
@@ -220,6 +260,8 @@ class _TVFileBrowserState extends State<_TVFileBrowser> {
                           }
                           return _BrowserTile(
                             key: _itemKeys[i],
+                            // Files are shown so the folder's content is known, not picked.
+                            dimmed: widget.pickFolder && !item.isDir && !item.isBack,
                             item: item,
                             isSelected: isSelected,
                             focusNode: _focusNodes[i],
@@ -232,7 +274,10 @@ class _TVFileBrowserState extends State<_TVFileBrowser> {
                               }
                               if (event.logicalKey == LogicalKeyboardKey.arrowDown) {
                                 final next = i + 1;
-                                if (next < displayItems.length) {
+                                if (next >= displayItems.length) {
+                                  // The list leads down to the main button.
+                                  _mainButton.requestFocus();
+                                } else {
                                   _focusNodes[next].requestFocus();
                                   WidgetsBinding.instance.addPostFrameCallback((_) {
                                     final ctx = _itemKeys[next].currentContext;
@@ -266,7 +311,7 @@ class _TVFileBrowserState extends State<_TVFileBrowser> {
                                   _goBack();
                                 } else if (item.isDir) {
                                   _openDir(item.path);
-                                } else {
+                                } else if (!widget.pickFolder) {
                                   _toggleSelect(item.path);
                                 }
                                 return KeyEventResult.handled;
@@ -280,7 +325,7 @@ class _TVFileBrowserState extends State<_TVFileBrowser> {
                               final confirmKey = isRtl
                                   ? LogicalKeyboardKey.arrowLeft
                                   : LogicalKeyboardKey.arrowRight;
-                              if (event.logicalKey == confirmKey && _selected.isNotEmpty) {
+                              if (event.logicalKey == confirmKey && _canConfirm) {
                                 _confirm();
                                 return KeyEventResult.handled;
                               }
@@ -291,7 +336,7 @@ class _TVFileBrowserState extends State<_TVFileBrowser> {
                                 _goBack();
                               } else if (item.isDir) {
                                 _openDir(item.path);
-                              } else {
+                              } else if (!widget.pickFolder) {
                                 _toggleSelect(item.path);
                               }
                             },
@@ -315,7 +360,7 @@ class _TVFileBrowserState extends State<_TVFileBrowser> {
             child: Row(children: [
               Expanded(
                 child: _FooterButton(
-                  label: 'إلغاء',
+                  label: AppLocalizations.of(context).cancel,
                   color: Colors.grey,
                   onTap: () => Navigator.of(context).pop(null),
                 ),
@@ -323,17 +368,23 @@ class _TVFileBrowserState extends State<_TVFileBrowser> {
               const SizedBox(width: 12),
               Expanded(
                 child: _FooterButton(
-                  label: _selected.isEmpty
-                      ? 'اختر ملفاً'
-                      : 'إرسال (${_selected.length})',
-                  color: _selected.isEmpty ? Colors.grey : color,
-                  onTap: _selected.isEmpty ? null : _confirm,
+                  focusNode: _mainButton,
+                  label: widget.pickFolder
+                      ? _canConfirm
+                          ? AppLocalizations.of(context).sendThisFolder
+                          : AppLocalizations.of(context).pickFolder
+                      : _selected.isEmpty
+                          ? AppLocalizations.of(context).pickFile
+                          : AppLocalizations.of(context).sendCount(_selected.length),
+                  color: _canConfirm ? color : Colors.grey,
+                  onTap: _canConfirm ? _confirm : null,
                 ),
               ),
             ]),
           ),
         ],
       ),
+    ),
     );
   }
 }
@@ -342,6 +393,7 @@ class _TVFileBrowserState extends State<_TVFileBrowser> {
 
 class _BrowserTile extends StatelessWidget {
   final _BrowserItem item;
+  final bool dimmed;
   final bool isSelected;
   final FocusNode focusNode;
   final bool isDark;
@@ -351,7 +403,7 @@ class _BrowserTile extends StatelessWidget {
   final VoidCallback onTap;
 
   const _BrowserTile({
-    required this.item, required this.isSelected, required this.focusNode, required this.isDark, required this.color, required this.isRtl, required this.onKey, required this.onTap, super.key,
+    required this.item, required this.dimmed, required this.isSelected, required this.focusNode, required this.isDark, required this.color, required this.isRtl, required this.onKey, required this.onTap, super.key,
   });
 
   @override
@@ -363,7 +415,10 @@ class _BrowserTile extends StatelessWidget {
         final hasFocus = Focus.of(ctx).hasFocus;
         return GestureDetector(
           onTap: onTap,
-          child: AnimatedContainer(
+          child: AnimatedOpacity(
+            duration: const Duration(milliseconds: 140),
+            opacity: dimmed ? 0.45 : 1,
+            child: AnimatedContainer(
             duration: const Duration(milliseconds: 140),
             margin: const EdgeInsets.symmetric(vertical: 2),
             padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 11),
@@ -414,6 +469,7 @@ class _BrowserTile extends StatelessWidget {
                   color: Theme.of(context).colorScheme.onSurfaceVariant.withValues(alpha: 0.5),
                 ),
             ]),
+          ),
           ),
         );
       }),
@@ -485,18 +541,20 @@ class _FooterButton extends StatefulWidget {
   final String label;
   final Color color;
   final VoidCallback? onTap;
-  const _FooterButton({required this.label, required this.color, this.onTap});
+  final FocusNode? focusNode;
+  const _FooterButton({required this.label, required this.color, this.onTap, this.focusNode});
 
   @override
   State<_FooterButton> createState() => _FooterButtonState();
 }
 
 class _FooterButtonState extends State<_FooterButton> {
-  final _focus = FocusNode();
+  final _ownFocus = FocusNode();
+  FocusNode get _focus => widget.focusNode ?? _ownFocus;
 
   @override
   void dispose() {
-    _focus.dispose();
+    _ownFocus.dispose();
     super.dispose();
   }
 

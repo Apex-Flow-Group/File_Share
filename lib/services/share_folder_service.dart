@@ -4,6 +4,7 @@ import 'dart:io';
 
 import 'package:flutter/foundation.dart';
 
+import '../core/files/safe_file_name.dart';
 import '../utils/apex_logger.dart';
 import '../utils/file_utils.dart';
 import '../utils/path_utils.dart';
@@ -117,6 +118,7 @@ class ShareFolderService {
   /// يكتب أولاً في ملف مؤقت ثم يُعيد تسميته داخل Share.
   /// إذا كان الاسم موجوداً → name (1).ext وليس overwrite.
   /// يرجع المسار النهائي.
+  /// Exactly [contentLength] bytes or nothing: the declared size may lie.
   Future<String> saveUpload({
     required String rawName,
     required Stream<List<int>> data,
@@ -124,7 +126,7 @@ class ShareFolderService {
     void Function(int received)? onProgress,
   }) async {
     final folder = await getFolderPath();
-    final safeName = _sanitizeName(rawName);
+    final safeName = safeFileName(rawName);
     final finalPath = _resolveUniquePath(folder, safeName);
 
     // اكتب في temp داخل نفس المجلد لضمان atomic rename
@@ -134,13 +136,15 @@ class ShareFolderService {
       sink = File(tempPath).openWrite(mode: FileMode.write);
       int received = 0;
       await for (final chunk in data) {
-        sink.add(chunk);
         received += chunk.length;
+        if (received > contentLength) throw const UploadSizeMismatch();
+        sink.add(chunk);
         onProgress?.call(received);
       }
       await sink.flush();
       await sink.close();
       sink = null;
+      if (received != contentLength) throw const UploadSizeMismatch();
 
       await File(tempPath).rename(finalPath);
       ApexLogger.instance.log('SHARE', '✅ Saved: $finalPath', LogLevel.success);
@@ -187,18 +191,6 @@ class ShareFolderService {
 
   // ─── مساعدات ──────────────────────────────────────────────────────────────
 
-  /// ينظّف اسم الملف من الأحرف غير المسموح بها.
-  static String _sanitizeName(String raw) {
-    var name = raw
-        .replaceAll('\x00', '')
-        .replaceAll('..', '_')
-        .replaceAll('/', '_')
-        .replaceAll('\\', '_')
-        .replaceAll(RegExp(r'[<>:"|?*]'), '_')
-        .trim();
-    return name.isEmpty ? 'upload' : name;
-  }
-
   /// يُعيد مساراً فريداً — إذا وجد name.ext يجرب name (1).ext وهكذا.
   static String _resolveUniquePath(String folder, String fileName) {
     var candidate = '$folder${Platform.pathSeparator}$fileName';
@@ -244,4 +236,9 @@ class ShareFolderService {
     };
     return map[ext];
   }
+}
+
+/// The body was longer or shorter than the size it declared.
+class UploadSizeMismatch implements Exception {
+  const UploadSizeMismatch();
 }

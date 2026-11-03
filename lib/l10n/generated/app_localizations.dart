@@ -668,6 +668,36 @@ abstract class AppLocalizations {
   /// **'Do you want to accept the connection?'**
   String get acceptConnection;
 
+  /// No description provided for @incomingFilesTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Incoming files'**
+  String get incomingFilesTitle;
+
+  /// No description provided for @shareAccessTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Shared folder request'**
+  String get shareAccessTitle;
+
+  /// No description provided for @shareAccessDownload.
+  ///
+  /// In en, this message translates to:
+  /// **'Let this device download files from your shared folder?'**
+  String get shareAccessDownload;
+
+  /// No description provided for @shareAccessDownloadUpload.
+  ///
+  /// In en, this message translates to:
+  /// **'Let this device download files from your shared folder and upload to it?'**
+  String get shareAccessDownloadUpload;
+
+  /// No description provided for @receiveFilesQuestion.
+  ///
+  /// In en, this message translates to:
+  /// **'{count, plural, =1{Receive 1 file?} other{Receive {count} files?}}'**
+  String receiveFilesQuestion(int count);
+
   /// No description provided for @ok.
   ///
   /// In en, this message translates to:
@@ -698,6 +728,18 @@ abstract class AppLocalizations {
   /// **'Send Folder'**
   String get sendFolder;
 
+  /// No description provided for @sendThisFolder.
+  ///
+  /// In en, this message translates to:
+  /// **'Send this folder'**
+  String get sendThisFolder;
+
+  /// No description provided for @pickFolder.
+  ///
+  /// In en, this message translates to:
+  /// **'Choose a folder'**
+  String get pickFolder;
+
   /// No description provided for @folderSent.
   ///
   /// In en, this message translates to:
@@ -707,7 +749,7 @@ abstract class AppLocalizations {
   /// No description provided for @compressingFolder.
   ///
   /// In en, this message translates to:
-  /// **'Compressing folder...'**
+  /// **'Compressing folder…'**
   String get compressingFolder;
 
   /// No description provided for @installedApps.
@@ -721,6 +763,48 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'No apps'**
   String get noApps;
+
+  /// No description provided for @systemApps.
+  ///
+  /// In en, this message translates to:
+  /// **'Show system apps'**
+  String get systemApps;
+
+  /// No description provided for @sendCount.
+  ///
+  /// In en, this message translates to:
+  /// **'Send ({count})'**
+  String sendCount(int count);
+
+  /// No description provided for @pinDevice.
+  ///
+  /// In en, this message translates to:
+  /// **'Add to favorites'**
+  String get pinDevice;
+
+  /// No description provided for @unpinDevice.
+  ///
+  /// In en, this message translates to:
+  /// **'Remove from favorites'**
+  String get unpinDevice;
+
+  /// No description provided for @deviceOffline.
+  ///
+  /// In en, this message translates to:
+  /// **'Currently offline'**
+  String get deviceOffline;
+
+  /// No description provided for @pickApp.
+  ///
+  /// In en, this message translates to:
+  /// **'Choose an app'**
+  String get pickApp;
+
+  /// No description provided for @directConnection.
+  ///
+  /// In en, this message translates to:
+  /// **'Nearby'**
+  String get directConnection;
 
   /// No description provided for @appSent.
   ///
@@ -1145,7 +1229,7 @@ abstract class AppLocalizations {
   /// No description provided for @pickFile.
   ///
   /// In en, this message translates to:
-  /// **'Pick File'**
+  /// **'Choose a file'**
   String get pickFile;
 
   /// No description provided for @clipboardSend.
@@ -1160,12 +1244,6 @@ abstract class AppLocalizations {
   /// **'Image'**
   String get clipboardTypeImage;
 
-  /// No description provided for @clipboardTypeFiles.
-  ///
-  /// In en, this message translates to:
-  /// **'Files'**
-  String get clipboardTypeFiles;
-
   /// No description provided for @clipboardTypeText.
   ///
   /// In en, this message translates to:
@@ -1178,10 +1256,28 @@ abstract class AppLocalizations {
   /// **'Send from clipboard'**
   String get clipboardSendTooltip;
 
+  /// No description provided for @clipboardSettings.
+  ///
+  /// In en, this message translates to:
+  /// **'Clipboard'**
+  String get clipboardSettings;
+
+  /// No description provided for @watchClipboard.
+  ///
+  /// In en, this message translates to:
+  /// **'Offer to send what you copy'**
+  String get watchClipboard;
+
+  /// No description provided for @watchClipboardDesc.
+  ///
+  /// In en, this message translates to:
+  /// **'Each time you copy, the app opens the Send tab and shows what you copied with a button to send it. It reads everything you copy, passwords included.'**
+  String get watchClipboardDesc;
+
   /// No description provided for @pinnedDevices.
   ///
   /// In en, this message translates to:
-  /// **'Pinned Devices'**
+  /// **'Favorite Devices'**
   String get pinnedDevices;
 
   /// No description provided for @newDevices.
@@ -1274,6 +1370,12 @@ abstract class AppLocalizations {
   /// **'Download failed'**
   String get downloadFailed;
 
+  /// No description provided for @downloadSaved.
+  ///
+  /// In en, this message translates to:
+  /// **'Saved to {path}'**
+  String downloadSaved(String path);
+
   /// No description provided for @shareFileCount.
   ///
   /// In en, this message translates to:
@@ -1304,6 +1406,42 @@ abstract class AppLocalizations {
   /// **'Device unreachable'**
   String get shareNetworkError;
 
+  /// No description provided for @shareAccessRefused.
+  ///
+  /// In en, this message translates to:
+  /// **'The owner of the other device refused to open their shared folder'**
+  String get shareAccessRefused;
+
+  /// No description provided for @shareNoAnswer.
+  ///
+  /// In en, this message translates to:
+  /// **'The owner of the other device did not answer'**
+  String get shareNoAnswer;
+
+  /// No description provided for @shareOffRemote.
+  ///
+  /// In en, this message translates to:
+  /// **'The shared folder is not enabled on the other device'**
+  String get shareOffRemote;
+
+  /// No description provided for @retry.
+  ///
+  /// In en, this message translates to:
+  /// **'Try again'**
+  String get retry;
+
+  /// No description provided for @updateRequired.
+  ///
+  /// In en, this message translates to:
+  /// **'The app version differs between the two devices. Update it on both'**
+  String get updateRequired;
+
+  /// No description provided for @versionDiffers.
+  ///
+  /// In en, this message translates to:
+  /// **'Different app version'**
+  String get versionDiffers;
+
   /// No description provided for @uploading.
   ///
   /// In en, this message translates to:
@@ -1315,6 +1453,60 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Downloading...'**
   String get downloading;
+
+  /// No description provided for @sendDeclined.
+  ///
+  /// In en, this message translates to:
+  /// **'The other device declined'**
+  String get sendDeclined;
+
+  /// No description provided for @sendNoAnswer.
+  ///
+  /// In en, this message translates to:
+  /// **'The other device did not answer'**
+  String get sendNoAnswer;
+
+  /// No description provided for @sendReceiverBusy.
+  ///
+  /// In en, this message translates to:
+  /// **'The other device is answering another request. Try again shortly'**
+  String get sendReceiverBusy;
+
+  /// No description provided for @sendCancelled.
+  ///
+  /// In en, this message translates to:
+  /// **'Sending was cancelled'**
+  String get sendCancelled;
+
+  /// No description provided for @sendTooManyFiles.
+  ///
+  /// In en, this message translates to:
+  /// **'You can send at most {max} files at a time'**
+  String sendTooManyFiles(int max);
+
+  /// No description provided for @sendNoSpace.
+  ///
+  /// In en, this message translates to:
+  /// **'Not enough space on the other device'**
+  String get sendNoSpace;
+
+  /// No description provided for @clipboardTextLength.
+  ///
+  /// In en, this message translates to:
+  /// **'{count, plural, =1{Text (1 character)} other{Text ({count} characters)}}'**
+  String clipboardTextLength(int count);
+
+  /// No description provided for @clipboardCharCount.
+  ///
+  /// In en, this message translates to:
+  /// **'{count, plural, =1{1 character} other{{count} characters}}'**
+  String clipboardCharCount(int count);
+
+  /// No description provided for @clipboardFileCount.
+  ///
+  /// In en, this message translates to:
+  /// **'{count, plural, =1{1 file} other{{count} files}}'**
+  String clipboardFileCount(int count);
 }
 
 class _AppLocalizationsDelegate

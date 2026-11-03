@@ -8,8 +8,11 @@ class SettingsService extends ChangeNotifier {
   ThemeMode _themeMode = ThemeMode.system;
   bool _hasSeenIntro = false;
   NetworkMode _networkMode = NetworkMode.wifi;
-  bool _sharedFolderEnabled = true;
-  bool _allowShareUploads = true;
+  // Off until the user turns them on: otherwise a fresh install shares its
+  // folder with the whole network.
+  bool _sharedFolderEnabled = false;
+  bool _allowShareUploads = false;
+  bool _clipboardMonitorEnabled = false;
 
   Locale? get locale => _locale;
   ThemeMode get themeMode => _themeMode;
@@ -17,6 +20,7 @@ class SettingsService extends ChangeNotifier {
   NetworkMode get networkMode => _networkMode;
   bool get sharedFolderEnabled => _sharedFolderEnabled;
   bool get allowShareUploads => _allowShareUploads;
+  bool get clipboardMonitorEnabled => _clipboardMonitorEnabled;
 
   Future<void> loadSettings() async {
     final prefs = await SharedPreferences.getInstance();
@@ -42,8 +46,11 @@ class SettingsService extends ChangeNotifier {
     _networkMode = NetworkMode.values[networkIndex];
 
     // Load share folder settings
-    _sharedFolderEnabled = prefs.getBool('share_folder_enabled') ?? true;
-    _allowShareUploads = prefs.getBool('share_allow_uploads') ?? true;
+    _sharedFolderEnabled = prefs.getBool('share_folder_enabled') ?? false;
+    _allowShareUploads = prefs.getBool('share_allow_uploads') ?? false;
+
+    // Off unless the user turned it on: copied text includes passwords.
+    _clipboardMonitorEnabled = prefs.getBool('clipboard_monitor_enabled') ?? false;
 
     notifyListeners();
   }
@@ -88,6 +95,13 @@ class SettingsService extends ChangeNotifier {
     _allowShareUploads = value;
     final prefs = await SharedPreferences.getInstance();
     await prefs.setBool('share_allow_uploads', value);
+    notifyListeners();
+  }
+
+  Future<void> setClipboardMonitorEnabled(bool value) async {
+    _clipboardMonitorEnabled = value;
+    final prefs = await SharedPreferences.getInstance();
+    await prefs.setBool('clipboard_monitor_enabled', value);
     notifyListeners();
   }
 

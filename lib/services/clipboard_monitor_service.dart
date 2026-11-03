@@ -4,6 +4,8 @@ import 'dart:io';
 import 'package:flutter/foundation.dart';
 import 'package:flutter/services.dart';
 
+import '../platform/private_temp.dart';
+
 // ─── Model ────────────────────────────────────────────────────────────────────
 
 enum ClipboardItemType { image, files, text }
@@ -11,26 +13,15 @@ enum ClipboardItemType { image, files, text }
 class ClipboardItem {
   final List<String> paths;
   final ClipboardItemType type;
-  /// معاينة النص — مملوء فقط عندما type == text
-  final String? textPreview;
+
+  /// The copied text, kept in memory only. Empty [paths] when type == text.
+  final String? text;
 
   const ClipboardItem({
     required this.paths,
     required this.type,
-    this.textPreview,
+    this.text,
   });
-
-  /// اسم العرض: للنص يعرض المعاينة، للصورة اسم الملف، للملفات الاسم الأول
-  String get displayName {
-    if (type == ClipboardItemType.text && textPreview != null) {
-      return textPreview!;
-    }
-    if (paths.isEmpty) {
-      return '';
-    }
-    final name = paths.first.replaceAll('\\', '/').split('/').last;
-    return name;
-  }
 
   /// حجم إجمالي لكل الملفات (بايت)
   Future<int> get totalSize async {
@@ -60,12 +51,17 @@ class ClipboardItem {
 
 /// يستمع لأحداث الـ clipboard القادمة من C++ عبر MethodChannel.
 /// يُطلق stream بـ ClipboardItem جديد عند كل تغيير.
-/// يعمل على Windows فقط — على باقي المنصات يبقى صامتاً.
+/// Windows and Linux only. The runners watch nothing until [setEnabled]
+/// sends "start": copied text includes passwords, so watching is the
+/// user's choice and off by default.
 class ClipboardMonitorService {
   static final ClipboardMonitorService _instance =
       ClipboardMonitorService._();
   static ClipboardMonitorService get instance => _instance;
   ClipboardMonitorService._();
+
+  @visibleForTesting
+  ClipboardMonitorService.forTesting();
 
   static const _channel = MethodChannel('com.apex.core/clipboard');
 
@@ -88,8 +84,21 @@ class ClipboardMonitorService {
     _channel.setMethodCallHandler(_handleMethodCall);
   }
 
+  bool _enabled = false;
+
+  Future<void> setEnabled(bool on) async {
+    if (!_isDesktop || on == _enabled) {
+      return;
+    }
+    _enabled = on;
+    await _channel.invokeMethod<void>(on ? 'start' : 'stop');
+    if (!on) {
+      clearItem();
+    }
+  }
+
   Future<dynamic> _handleMethodCall(MethodCall call) async {
-    if (call.method != 'onClipboardChanged') {
+    if (call.method != 'onClipboardChanged' || !_enabled) {
       return;
     }
 
@@ -99,6 +108,13 @@ class ClipboardMonitorService {
     }
 
     final type = args['type'] as String?;
+    if (type == 'text') {
+      final text = args['text'] as String?;
+      if (text != null && text.trim().isNotEmpty) {
+        _controller.add(ClipboardItem(paths: const [], type: ClipboardItemType.text, text: text));
+      }
+      return;
+    }
     final rawPaths = args['paths'];
 
     if (type == null || rawPaths == null) {
@@ -121,26 +137,40 @@ class ClipboardMonitorService {
       return;
     }
 
-    final itemType = type == 'image'
-        ? ClipboardItemType.image
-        : type == 'text'
-            ? ClipboardItemType.text
-            : ClipboardItemType.files;
-
-    final textPreview = args['textPreview'] as String?;
+    final itemType =
+        type == 'image' ? ClipboardItemType.image : ClipboardItemType.files;
 
     if (itemType == ClipboardItemType.image) {
       _tempImagePaths.add(existing.first);
     }
-    if (itemType == ClipboardItemType.text) {
-      _tempImagePaths.add(existing.first); // نستخدم نفس قائمة التنظيف
-    }
 
-    _controller.add(ClipboardItem(
-      paths: existing,
-      type: itemType,
-      textPreview: textPreview,
-    ));
+    _controller.add(ClipboardItem(paths: existing, type: itemType));
+  }
+
+  /// Runs [send] with file paths for [item]. Text exists as a file only for
+  /// the length of the send, in a fresh owner-only folder under [tempRoot]
+  /// (the system temp folder by default), removed whatever the outcome.
+  Future<T> withSendableFiles<T>(
+      ClipboardItem item, Future<T> Function(List<String> paths) send,
+      {Directory? tempRoot}) async {
+    final text = item.text;
+    if (item.type != ClipboardItemType.text || text == null) {
+      return send(item.paths);
+    }
+    final work = await createPrivateTemp(tempRoot ?? Directory.systemTemp, 'apex_clip_');
+    try {
+      final file = File('${work.path}${Platform.pathSeparator}clipboard_${_stamp()}.txt');
+      await file.writeAsString(text, flush: true);
+      return await send([file.path]);
+    } finally {
+      await work.delete(recursive: true);
+    }
+  }
+
+  static String _stamp() {
+    final t = DateTime.now();
+    String two(int n) => n.toString().padLeft(2, '0');
+    return '${t.year}${two(t.month)}${two(t.day)}_${two(t.hour)}${two(t.minute)}${two(t.second)}';
   }
 
   // ─── بعد الإرسال — نظّف الملفات المؤقتة ─────────────────────────────────

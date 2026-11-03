@@ -296,6 +296,31 @@ class AppLocalizationsEn extends AppLocalizations {
   String get acceptConnection => 'Do you want to accept the connection?';
 
   @override
+  String get incomingFilesTitle => 'Incoming files';
+
+  @override
+  String get shareAccessTitle => 'Shared folder request';
+
+  @override
+  String get shareAccessDownload =>
+      'Let this device download files from your shared folder?';
+
+  @override
+  String get shareAccessDownloadUpload =>
+      'Let this device download files from your shared folder and upload to it?';
+
+  @override
+  String receiveFilesQuestion(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: 'Receive $count files?',
+      one: 'Receive 1 file?',
+    );
+    return '$_temp0';
+  }
+
+  @override
   String get ok => 'OK';
 
   @override
@@ -311,16 +336,45 @@ class AppLocalizationsEn extends AppLocalizations {
   String get sendFolder => 'Send Folder';
 
   @override
+  String get sendThisFolder => 'Send this folder';
+
+  @override
+  String get pickFolder => 'Choose a folder';
+
+  @override
   String get folderSent => 'Folder sent';
 
   @override
-  String get compressingFolder => 'Compressing folder...';
+  String get compressingFolder => 'Compressing folder…';
 
   @override
   String get installedApps => 'Installed Apps';
 
   @override
   String get noApps => 'No apps';
+
+  @override
+  String get systemApps => 'Show system apps';
+
+  @override
+  String sendCount(int count) {
+    return 'Send ($count)';
+  }
+
+  @override
+  String get pinDevice => 'Add to favorites';
+
+  @override
+  String get unpinDevice => 'Remove from favorites';
+
+  @override
+  String get deviceOffline => 'Currently offline';
+
+  @override
+  String get pickApp => 'Choose an app';
+
+  @override
+  String get directConnection => 'Nearby';
 
   @override
   String get appSent => 'App sent';
@@ -538,7 +592,7 @@ class AppLocalizationsEn extends AppLocalizations {
   String get fileSentSuccessfully => 'File sent successfully';
 
   @override
-  String get pickFile => 'Pick File';
+  String get pickFile => 'Choose a file';
 
   @override
   String get clipboardSend => 'Send';
@@ -547,16 +601,23 @@ class AppLocalizationsEn extends AppLocalizations {
   String get clipboardTypeImage => 'Image';
 
   @override
-  String get clipboardTypeFiles => 'Files';
-
-  @override
   String get clipboardTypeText => 'Text';
 
   @override
   String get clipboardSendTooltip => 'Send from clipboard';
 
   @override
-  String get pinnedDevices => 'Pinned Devices';
+  String get clipboardSettings => 'Clipboard';
+
+  @override
+  String get watchClipboard => 'Offer to send what you copy';
+
+  @override
+  String get watchClipboardDesc =>
+      'Each time you copy, the app opens the Send tab and shows what you copied with a button to send it. It reads everything you copy, passwords included.';
+
+  @override
+  String get pinnedDevices => 'Favorite Devices';
 
   @override
   String get newDevices => 'New Devices';
@@ -607,6 +668,11 @@ class AppLocalizationsEn extends AppLocalizations {
   String get downloadFailed => 'Download failed';
 
   @override
+  String downloadSaved(String path) {
+    return 'Saved to $path';
+  }
+
+  @override
   String shareFileCount(int count) {
     return '$count file(s)';
   }
@@ -625,8 +691,83 @@ class AppLocalizationsEn extends AppLocalizations {
   String get shareNetworkError => 'Device unreachable';
 
   @override
+  String get shareAccessRefused =>
+      'The owner of the other device refused to open their shared folder';
+
+  @override
+  String get shareNoAnswer => 'The owner of the other device did not answer';
+
+  @override
+  String get shareOffRemote =>
+      'The shared folder is not enabled on the other device';
+
+  @override
+  String get retry => 'Try again';
+
+  @override
+  String get updateRequired =>
+      'The app version differs between the two devices. Update it on both';
+
+  @override
+  String get versionDiffers => 'Different app version';
+
+  @override
   String get uploading => 'Uploading...';
 
   @override
   String get downloading => 'Downloading...';
+
+  @override
+  String get sendDeclined => 'The other device declined';
+
+  @override
+  String get sendNoAnswer => 'The other device did not answer';
+
+  @override
+  String get sendReceiverBusy =>
+      'The other device is answering another request. Try again shortly';
+
+  @override
+  String get sendCancelled => 'Sending was cancelled';
+
+  @override
+  String sendTooManyFiles(int max) {
+    return 'You can send at most $max files at a time';
+  }
+
+  @override
+  String get sendNoSpace => 'Not enough space on the other device';
+
+  @override
+  String clipboardTextLength(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: 'Text ($count characters)',
+      one: 'Text (1 character)',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String clipboardCharCount(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '$count characters',
+      one: '1 character',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String clipboardFileCount(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '$count files',
+      one: '1 file',
+    );
+    return '$_temp0';
+  }
 }

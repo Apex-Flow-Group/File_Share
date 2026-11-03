@@ -34,6 +34,9 @@ class FlutterWindow : public Win32Window {
   // MethodChannel for clipboard events sent to Dart.
   std::unique_ptr<flutter::MethodChannel<flutter::EncodableValue>>
       clipboard_channel_;
+
+  // True between Dart's "start" and "stop" on the clipboard channel.
+  bool clipboard_listening_ = false;
 };
 
 #endif  // RUNNER_FLUTTER_WINDOW_H_
