@@ -192,7 +192,7 @@ HTTP POST /upload  ──────────►  Stream to disk (chunked, c
 
 - **Desktop ↔ any**: HTTP over TCP port `45678`
 - **Android ↔ Android**: Google Nearby Connections (Bluetooth/WiFi Direct)
-- **Discovery**: mDNS via Bonsoir + UDP broadcast fallback
+- **Discovery**: UDP broadcast on the local network
 
 ### Clipboard (Windows & Linux)
 

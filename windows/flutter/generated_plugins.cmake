@@ -3,7 +3,6 @@
 #
 
 list(APPEND FLUTTER_PLUGIN_LIST
-  bonsoir_windows
   local_notifier
   permission_handler_windows
   url_launcher_windows
