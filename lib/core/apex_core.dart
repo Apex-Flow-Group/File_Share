@@ -48,7 +48,8 @@ class ApexCore {
   late final ReceiveHttp _receive = ReceiveHttp(
     gate: ReceiveGate(),
     store: ReceiveStore(
-      tempFolder: () async => Directory(await PathUtils.getTempCachePath()),
+      tempFolder: () async => Directory(
+          _isAndroid ? await PathUtils.getTempCachePath() : await PathUtils.getReceivingPath()),
       place: _placeReceived,
     ),
     onConnectionRequest: _connectionRequestController.add,
