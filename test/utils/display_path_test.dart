@@ -11,7 +11,7 @@ void main() {
   });
 
   test('a path keeps left-to-right order inside an Arabic sentence', () {
-    final shown = FileUtils.displayPath('/home/u/Documents/ApexShare/Downloads/a.txt');
+    final shown = FileUtils.displayPath('/srv/ApexShare/Downloads/a.txt');
     expect(shown.startsWith(lri) && shown.endsWith(pdi), isTrue,
         reason: 'Without the isolate the leading "/" jumps to the other end in RTL text.');
   });
