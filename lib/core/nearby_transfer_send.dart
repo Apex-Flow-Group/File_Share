@@ -2,18 +2,6 @@ part of 'nearby_transfer.dart';
 
 /// Send-related methods for [NearbyTransfer].
 extension NearbyTransferSend on NearbyTransfer {
-  Future<bool> sendFile(String filePath, String fileName, Device target) async {
-    final file = File(filePath);
-    if (!await file.exists()) {
-      return false;
-    }
-    final files = [(path: filePath, name: fileName, size: await file.length())];
-    return await sendBatch(files, target) == SendOutcome.sent;
-  }
-
-  Future<bool> sendBatchFiles(List<OutgoingFile> files, Device target) async =>
-      await sendBatch(files, target) == SendOutcome.sent;
-
   /// One offer for the whole batch, then each file announced with the token
   /// the receiver issued when its user accepted.
   Future<SendOutcome> sendBatch(List<OutgoingFile> files, Device target) async {
