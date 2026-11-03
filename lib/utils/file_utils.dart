@@ -97,8 +97,9 @@ class FileUtils {
       }
     }
 
+    // Never through cmd: it runs "&" in a name, so "report&calc" starts calc.
     if (Platform.isWindows) {
-      await Process.run('cmd', ['/c', 'start', '', filePath]);
+      await Process.run('explorer.exe', [filePath]);
       return;
     }
 
