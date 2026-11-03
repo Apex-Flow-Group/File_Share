@@ -115,6 +115,16 @@
   "compressingFolder": "Compressing folder...",
   "installedApps": "Installed Apps",
   "noApps": "No apps",
+  "systemApps": "Show system apps",
+  "sendCount": "Send ({count})",
+  "@sendCount": {
+    "placeholders": { "count": { "type": "int" } }
+  },
+  "pinDevice": "Pin device",
+  "unpinDevice": "Unpin device",
+  "deviceOffline": "Currently offline",
+  "pickApp": "Choose an app",
+  "directConnection": "Nearby",
   "appSent": "App sent",
   "skip": "Skip",
   "next": "Next",
@@ -191,7 +201,7 @@
   "deleteWarning": "Files will be permanently deleted!",
   "filesCount": "Files Count",
   "fileSentSuccessfully": "File sent successfully",
-  "pickFile": "Pick File",
+  "pickFile": "Choose a file",
 
   "clipboardSend": "Send",
   "clipboardTypeImage": "Image",

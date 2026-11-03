@@ -350,6 +350,29 @@ class AppLocalizationsAr extends AppLocalizations {
   String get noApps => 'لا توجد تطبيقات';
 
   @override
+  String get systemApps => 'إظهار تطبيقات النظام';
+
+  @override
+  String sendCount(int count) {
+    return 'إرسال ($count)';
+  }
+
+  @override
+  String get pinDevice => 'تثبيت الجهاز';
+
+  @override
+  String get unpinDevice => 'إلغاء تثبيت الجهاز';
+
+  @override
+  String get deviceOffline => 'غير متصل حالياً';
+
+  @override
+  String get pickApp => 'اختر تطبيقاً';
+
+  @override
+  String get directConnection => 'اتصال مباشر';
+
+  @override
   String get appSent => 'تم إرسال التطبيق';
 
   @override
@@ -563,7 +586,7 @@ class AppLocalizationsAr extends AppLocalizations {
   String get fileSentSuccessfully => 'تم إرسال الملف بنجاح';
 
   @override
-  String get pickFile => 'اختيار ملف';
+  String get pickFile => 'اختر ملفاً';
 
   @override
   String get clipboardSend => 'إرسال';

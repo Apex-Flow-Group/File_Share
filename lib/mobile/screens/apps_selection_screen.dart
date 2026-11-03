@@ -176,7 +176,7 @@ class _AppsSelectionSheetState extends State<AppsSelectionSheet> {
                     const SizedBox(width: 8),
                     Expanded(
                       child: Text(
-                        isAr ? 'تطبيقات النظام' : 'System apps',
+                        l10n.systemApps,
                         style: TextStyle(
                           fontSize: 13,
                           color: isDark ? Colors.white70 : Colors.black87,

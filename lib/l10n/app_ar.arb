@@ -113,6 +113,16 @@
   "compressingFolder": "جاري ضغط المجلد...",
   "installedApps": "التطبيقات المثبتة",
   "noApps": "لا توجد تطبيقات",
+  "systemApps": "إظهار تطبيقات النظام",
+  "sendCount": "إرسال ({count})",
+  "@sendCount": {
+    "placeholders": { "count": { "type": "int" } }
+  },
+  "pinDevice": "تثبيت الجهاز",
+  "unpinDevice": "إلغاء تثبيت الجهاز",
+  "deviceOffline": "غير متصل حالياً",
+  "pickApp": "اختر تطبيقاً",
+  "directConnection": "اتصال مباشر",
   "appSent": "تم إرسال التطبيق",
   "skip": "تخطي",
   "next": "التالي",
@@ -188,7 +198,7 @@
   "deleteWarning": "سيتم حذف الملفات نهائياً!",
   "filesCount": "عدد الملفات",
   "fileSentSuccessfully": "تم إرسال الملف بنجاح",
-  "pickFile": "اختيار ملف",
+  "pickFile": "اختر ملفاً",
 
   "clipboardSend": "إرسال",
   "clipboardTypeImage": "صورة",

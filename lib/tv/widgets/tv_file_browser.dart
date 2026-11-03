@@ -3,6 +3,8 @@ import 'dart:io';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 
+import '../../l10n/generated/app_localizations.dart';
+
 /// يعرض file browser مدمج للتلفاز بدون الحاجة لأي تطبيق خارجي
 /// يُرجع قائمة بمسارات الملفات المختارة
 Future<List<String>?> showTVFileBrowser(BuildContext context) {
@@ -315,7 +317,7 @@ class _TVFileBrowserState extends State<_TVFileBrowser> {
             child: Row(children: [
               Expanded(
                 child: _FooterButton(
-                  label: 'إلغاء',
+                  label: AppLocalizations.of(context).cancel,
                   color: Colors.grey,
                   onTap: () => Navigator.of(context).pop(null),
                 ),
@@ -324,8 +326,8 @@ class _TVFileBrowserState extends State<_TVFileBrowser> {
               Expanded(
                 child: _FooterButton(
                   label: _selected.isEmpty
-                      ? 'اختر ملفاً'
-                      : 'إرسال (${_selected.length})',
+                      ? AppLocalizations.of(context).pickFile
+                      : AppLocalizations.of(context).sendCount(_selected.length),
                   color: _selected.isEmpty ? Colors.grey : color,
                   onTap: _selected.isEmpty ? null : _confirm,
                 ),

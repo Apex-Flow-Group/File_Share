@@ -10,6 +10,7 @@ import '../../models/device.dart';
 import '../../services/clipboard_monitor_service.dart';
 import '../../services/desktop_notification_service.dart';
 import '../../services/transfer_progress_service.dart';
+import '../../shared/device_look.dart';
 import '../screens/share_browser_screen.dart';
 import 'connection_send_actions.dart';
 import 'transfer_progress_indicator.dart';
@@ -218,9 +219,16 @@ class _ConnectionWidgetState extends State<ConnectionWidget>
               // ─── شارات النقل + IP
               Row(children: [
                 if (widget.isActive) ...[
-                  _TransportBadge(
-                    isNearby: widget.device.isNearby,
-                    isWifi: widget.device.isMdns,
+                  // Shrinks instead of overflowing with large system fonts.
+                  Flexible(
+                    child: FittedBox(
+                      fit: BoxFit.scaleDown,
+                      alignment: AlignmentDirectional.centerStart,
+                      child: _TransportBadge(
+                        isNearby: widget.device.isNearby,
+                        isWifi: widget.device.isMdns,
+                      ),
+                    ),
                   ),
                   if (!widget.device.isNearby &&
                       widget.device.ip.isNotEmpty) ...[
@@ -571,31 +579,9 @@ class _ConnectionWidgetState extends State<ConnectionWidget>
     );
   }
 
-  IconData get _deviceIcon {
-    switch (widget.device.type.toLowerCase()) {
-      case 'tv':
-        return Icons.tv_rounded;
-      case 'desktop':
-        return Icons.computer_rounded;
-      case 'tablet':
-        return Icons.tablet_rounded;
-      default:
-        return Icons.smartphone_rounded;
-    }
-  }
+  IconData get _deviceIcon => deviceIcon(widget.device);
 
-  Color get _deviceColor {
-    switch (widget.device.type.toLowerCase()) {
-      case 'tv':
-        return const Color(0xFF5856D6);
-      case 'desktop':
-        return const Color(0xFF007AFF);
-      case 'tablet':
-        return const Color(0xFFFF9500);
-      default:
-        return const Color(0xFF34C759);
-    }
-  }
+  Color get _deviceColor => deviceColor(widget.device);
 }
 
 // ─── Action Button ────────────────────────────────────────────────────────────
@@ -657,15 +643,15 @@ class _TransportBadge extends StatelessWidget {
   Widget build(BuildContext context) {
     if (isNearby && isWifi) {
       return Row(mainAxisSize: MainAxisSize.min, children: [
-        _badge(
-            context, const Color(0xFF34C759), Icons.sensors_rounded, 'Nearby'),
+        _badge(context, const Color(0xFF34C759), Icons.sensors_rounded,
+            AppLocalizations.of(context).directConnection),
         const SizedBox(width: 4),
         _badge(context, const Color(0xFF007AFF), Icons.wifi_rounded, 'WiFi'),
       ]);
     }
     if (isNearby) {
-      return _badge(
-          context, const Color(0xFF34C759), Icons.sensors_rounded, 'Nearby');
+      return _badge(context, const Color(0xFF34C759), Icons.sensors_rounded,
+          AppLocalizations.of(context).directConnection);
     }
     return _badge(context, const Color(0xFF007AFF), Icons.wifi_rounded, 'WiFi');
   }

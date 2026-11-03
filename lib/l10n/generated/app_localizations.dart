@@ -752,6 +752,48 @@ abstract class AppLocalizations {
   /// **'No apps'**
   String get noApps;
 
+  /// No description provided for @systemApps.
+  ///
+  /// In en, this message translates to:
+  /// **'Show system apps'**
+  String get systemApps;
+
+  /// No description provided for @sendCount.
+  ///
+  /// In en, this message translates to:
+  /// **'Send ({count})'**
+  String sendCount(int count);
+
+  /// No description provided for @pinDevice.
+  ///
+  /// In en, this message translates to:
+  /// **'Pin device'**
+  String get pinDevice;
+
+  /// No description provided for @unpinDevice.
+  ///
+  /// In en, this message translates to:
+  /// **'Unpin device'**
+  String get unpinDevice;
+
+  /// No description provided for @deviceOffline.
+  ///
+  /// In en, this message translates to:
+  /// **'Currently offline'**
+  String get deviceOffline;
+
+  /// No description provided for @pickApp.
+  ///
+  /// In en, this message translates to:
+  /// **'Choose an app'**
+  String get pickApp;
+
+  /// No description provided for @directConnection.
+  ///
+  /// In en, this message translates to:
+  /// **'Nearby'**
+  String get directConnection;
+
   /// No description provided for @appSent.
   ///
   /// In en, this message translates to:
@@ -1175,7 +1217,7 @@ abstract class AppLocalizations {
   /// No description provided for @pickFile.
   ///
   /// In en, this message translates to:
-  /// **'Pick File'**
+  /// **'Choose a file'**
   String get pickFile;
 
   /// No description provided for @clipboardSend.

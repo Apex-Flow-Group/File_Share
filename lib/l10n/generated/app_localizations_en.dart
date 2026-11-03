@@ -348,6 +348,29 @@ class AppLocalizationsEn extends AppLocalizations {
   String get noApps => 'No apps';
 
   @override
+  String get systemApps => 'Show system apps';
+
+  @override
+  String sendCount(int count) {
+    return 'Send ($count)';
+  }
+
+  @override
+  String get pinDevice => 'Pin device';
+
+  @override
+  String get unpinDevice => 'Unpin device';
+
+  @override
+  String get deviceOffline => 'Currently offline';
+
+  @override
+  String get pickApp => 'Choose an app';
+
+  @override
+  String get directConnection => 'Nearby';
+
+  @override
   String get appSent => 'App sent';
 
   @override
@@ -563,7 +586,7 @@ class AppLocalizationsEn extends AppLocalizations {
   String get fileSentSuccessfully => 'File sent successfully';
 
   @override
-  String get pickFile => 'Pick File';
+  String get pickFile => 'Choose a file';
 
   @override
   String get clipboardSend => 'Send';
