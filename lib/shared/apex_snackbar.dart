@@ -5,13 +5,14 @@ class ApexSnackBar {
   ApexSnackBar._();
 
   /// إظهار SnackBar نجاح
-  static void success(BuildContext context, String message) {
+  static void success(BuildContext context, String message,
+      {Duration duration = const Duration(seconds: 2)}) {
     ScaffoldMessenger.of(context).showSnackBar(SnackBar(
       content: Text(message),
       backgroundColor: Colors.green,
       behavior: SnackBarBehavior.floating,
       shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
-      duration: const Duration(seconds: 2),
+      duration: duration,
     ));
   }
 

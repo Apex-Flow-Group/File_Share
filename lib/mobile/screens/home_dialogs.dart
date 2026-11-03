@@ -6,6 +6,7 @@ import '../../services/transfer_progress_service.dart';
 import '../../services/update_service.dart';
 import '../../shared/apex_bottom_sheet.dart';
 import '../../shared/file_ui_utils.dart';
+import '../../utils/file_utils.dart';
 
 /// Contains all bottom-sheet dialogs used by HomeScreen.
 mixin HomeDialogs<T extends StatefulWidget> on State<T> {
@@ -36,11 +37,8 @@ mixin HomeDialogs<T extends StatefulWidget> on State<T> {
   void _showFileReceivedSheetInternal(FileReceivedEvent event) {
     final l10n = AppLocalizations.of(context);
     final sepIndex = event.filePath.lastIndexOf(RegExp(r'[/\\]'));
-    final displayPath = sepIndex == -1
-        ? event.filePath
-        : event.filePath
-            .substring(0, sepIndex)
-            .replaceAll('/storage/emulated/0/', '');
+    final displayPath = FileUtils.displayPath(
+        sepIndex == -1 ? event.filePath : event.filePath.substring(0, sepIndex));
 
     _isFileReceivedSheetOpen = true;
     _fileReceivedSheetGeneration++;
