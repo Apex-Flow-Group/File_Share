@@ -27,6 +27,7 @@ class ReceiveHttp {
     required this.onFileReceived,
     this.freeBytes,
     this.decisionTimeout = TransferRules.decisionTimeout,
+    this.bodyIdleLimit = TransferRules.bodyIdleLimit,
   });
 
   final ReceiveGate gate;
@@ -37,8 +38,13 @@ class ReceiveHttp {
   /// Free space where files are saved; null when it cannot be read.
   final Future<int?> Function()? freeBytes;
   final Duration decisionTimeout;
+  final Duration bodyIdleLimit;
 
   final _random = Random();
+
+  /// One offer waits for the user at a time. Others are refused, so dialogs
+  /// never pile up and a new one cannot appear under the finger mid-tap.
+  bool _asking = false;
 
   TransferProgressService get _progress => TransferProgressService();
 
@@ -73,7 +79,14 @@ class ReceiveHttp {
 
   Future<void> _offer(HttpRequest req) async {
     final address = req.connectionInfo?.remoteAddress.address;
-    final text = await _readLimited(req, TransferRules.offerBodyLimit);
+    final String? text;
+    try {
+      text = await _readLimited(req, TransferRules.offerBodyLimit);
+    } on TimeoutException {
+      // Leaving the body loop early closes the connection; a stalled sender
+      // is not reading, so it gets no answer.
+      return;
+    }
     final offer = address == null || text == null ? null : _parseOffer(text, address);
     if (offer == null) {
       await _reply(req, HttpStatus.badRequest, {'error': 'bad_offer'});
@@ -84,7 +97,18 @@ class ReceiveHttp {
       await _reply(req, HttpStatus.unprocessableEntity, {'error': problem.name});
       return;
     }
-    if (!await _ask(offer)) {
+    if (_asking) {
+      await _reply(req, HttpStatus.tooManyRequests, {'error': 'busy'});
+      return;
+    }
+    _asking = true;
+    final bool accepted;
+    try {
+      accepted = await _ask(offer);
+    } finally {
+      _asking = false;
+    }
+    if (!accepted) {
       await _reply(req, HttpStatus.ok, {'accepted': false});
       return;
     }
@@ -176,7 +200,7 @@ class ReceiveHttp {
       if (_progress.isCancelledReceive) {
         throw const _Cancelled();
       }
-      await for (final chunk in req) {
+      await for (final chunk in req.timeout(bodyIdleLimit)) {
         if (_progress.isCancelledReceive) {
           // Answer inside the loop: leaving it closes the connection first,
           // and the sender would never read the answer.
@@ -209,7 +233,9 @@ class ReceiveHttp {
       _finished(file, path, req);
     } catch (e) {
       await _discard(sink, temp);
-      if (e is _Cancelled) {
+      if (e is TimeoutException) {
+        // The connection is already closed, as for the offer above.
+      } else if (e is _Cancelled) {
         await _cancel(req, upload);
       } else if (e is _WrongSize) {
         await _reply(req, HttpStatus.badRequest, {'error': 'size'});
@@ -272,7 +298,7 @@ class ReceiveHttp {
       return null;
     }
     final bytes = <int>[];
-    await for (final chunk in req) {
+    await for (final chunk in req.timeout(bodyIdleLimit)) {
       bytes.addAll(chunk);
       if (bytes.length > limit) {
         return null;

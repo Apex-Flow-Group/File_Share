@@ -2,26 +2,34 @@ import 'dart:async';
 import 'dart:convert';
 import 'dart:io';
 
+import 'package:apex_file_share/core/core_models.dart';
 import 'package:apex_file_share/core/files/move_into_folder.dart';
 import 'package:apex_file_share/core/protocol/apex_protocol.dart';
+import 'package:apex_file_share/core/protocol/transfer_rules.dart';
 import 'package:apex_file_share/features/receive/data/receive_http.dart';
 import 'package:apex_file_share/features/receive/data/receive_store.dart';
 import 'package:apex_file_share/features/receive/logic/receive_gate.dart';
 import 'package:apex_file_share/services/transfer_progress_service.dart';
 
 /// The real receive code behind a real server on 127.0.0.1, with its own
-/// folders, every offer accepted, and a gate clock the test moves.
+/// folders and a gate clock the test moves. Every offer is accepted unless
+/// [decide] says otherwise (null: the user never answers).
 class ReceiveTestServer {
   ReceiveTestServer._(this._root, this._server);
 
   final Directory _root;
   final HttpServer _server;
   DateTime now = DateTime(2026, 11, 3, 12);
+  final shown = <ConnectionRequest>[];
+  int get port => _server.port;
 
   Directory get saveDir => Directory('${_root.path}/save');
   Directory get tempDir => Directory('${_root.path}/tmp');
 
-  static Future<ReceiveTestServer> start() async {
+  static Future<ReceiveTestServer> start({
+    bool? Function(ConnectionRequest)? decide,
+    Duration? bodyIdleLimit,
+  }) async {
     TransferProgressService().clearProgress();
     final root = await Directory.systemTemp.createTemp('apex_receive_server_');
     Directory('${root.path}/tmp').createSync();
@@ -33,8 +41,15 @@ class ReceiveTestServer {
         tempFolder: () async => s.tempDir,
         place: (temp, name) async => (await moveIntoFolder(temp, s.saveDir, name)).path,
       ),
-      onConnectionRequest: (r) => r.onResponse(true),
+      onConnectionRequest: (r) {
+        s.shown.add(r);
+        final answer = decide == null ? true : decide(r);
+        if (answer != null) {
+          r.onResponse(answer);
+        }
+      },
       onFileReceived: (_) {},
+      bodyIdleLimit: bodyIdleLimit ?? TransferRules.bodyIdleLimit,
     );
     server.listen((req) async {
       if (!await receive.handle(req)) {

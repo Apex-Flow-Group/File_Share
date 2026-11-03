@@ -16,6 +16,10 @@ class TransferRules {
   /// How long the receiver waits for the user to accept or refuse.
   static const decisionTimeout = Duration(seconds: 30);
 
+  /// A request body (offer or file) that sends nothing for this long is
+  /// dropped, so a stalled sender cannot hold the door or its batch open.
+  static const bodyIdleLimit = Duration(seconds: 60);
+
   /// Tokens of an accepted batch expire when no file starts for this long.
   static const tokenIdleLimit = Duration(minutes: 5);
 }
