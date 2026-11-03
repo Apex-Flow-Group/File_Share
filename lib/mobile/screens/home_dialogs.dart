@@ -11,18 +11,25 @@ import '../../utils/file_utils.dart';
 
 /// Contains all bottom-sheet dialogs used by HomeScreen.
 mixin HomeDialogs<T extends StatefulWidget> on State<T> {
-  bool _isFileReceivedSheetOpen = false;
+  /// The open "file received" sheet: a newer one removes exactly this route,
+  /// not whatever is on top (Settings opened over it used to close instead).
+  Route<dynamic>? _fileReceivedRoute;
   int _fileReceivedSheetGeneration = 0;
+
+  Widget _rememberRoute(Widget child) => Builder(builder: (ctx) {
+        _fileReceivedRoute = ModalRoute.of(ctx);
+        return child;
+      });
 
   // ─── Batch accumulator ─────────────────────────────────────────────────────
 
   // ─── File Received Sheet ───────────────────────────────────────────────────
 
   void showFileReceivedSheet(FileReceivedEvent event) {
-    // أغلق أي sheet مفتوح
-    if (_isFileReceivedSheetOpen) {
-      _isFileReceivedSheetOpen = false;
-      Navigator.of(context).pop();
+    final old = _fileReceivedRoute;
+    _fileReceivedRoute = null;
+    if (old != null && old.isActive) {
+      Navigator.of(context).removeRoute(old);
     }
 
     if (event.batchTotal > 1) {
@@ -41,7 +48,6 @@ mixin HomeDialogs<T extends StatefulWidget> on State<T> {
     final displayPath = FileUtils.displayPath(
         sepIndex == -1 ? event.filePath : event.filePath.substring(0, sepIndex));
 
-    _isFileReceivedSheetOpen = true;
     _fileReceivedSheetGeneration++;
     final myGeneration = _fileReceivedSheetGeneration;
 
@@ -52,7 +58,7 @@ mixin HomeDialogs<T extends StatefulWidget> on State<T> {
       headerTitle: l10n.fileReceived,
       isDismissible: true,
       enableDrag: false,
-      content: Column(mainAxisSize: MainAxisSize.min, children: [
+      content: _rememberRoute(Column(mainAxisSize: MainAxisSize.min, children: [
         Container(
           width: double.infinity,
           padding: const EdgeInsets.all(14),
@@ -83,7 +89,7 @@ mixin HomeDialogs<T extends StatefulWidget> on State<T> {
             maxLines: 1,
             overflow: TextOverflow.ellipsis,
             style: TextStyle(fontSize: 12, color: Colors.grey[500])),
-      ]),
+      ])),
       actions: [
         Expanded(
             child: FilledButton.icon(
@@ -115,7 +121,7 @@ mixin HomeDialogs<T extends StatefulWidget> on State<T> {
       ],
     ).whenComplete(() {
       if (myGeneration == _fileReceivedSheetGeneration) {
-        _isFileReceivedSheetOpen = false;
+        _fileReceivedRoute = null;
       }
     });
   }
@@ -127,7 +133,6 @@ mixin HomeDialogs<T extends StatefulWidget> on State<T> {
     final fromDevice = lastEvent.fromDevice;
     final totalFiles = lastEvent.batchTotal;
 
-    _isFileReceivedSheetOpen = true;
     _fileReceivedSheetGeneration++;
     final myGeneration = _fileReceivedSheetGeneration;
 
@@ -138,7 +143,7 @@ mixin HomeDialogs<T extends StatefulWidget> on State<T> {
       headerTitle: '${l10n.fileReceived} ($totalFiles)',
       isDismissible: true,
       enableDrag: false,
-      content: Column(mainAxisSize: MainAxisSize.min, children: [
+      content: _rememberRoute(Column(mainAxisSize: MainAxisSize.min, children: [
         Container(
           width: double.infinity,
           padding: const EdgeInsets.all(14),
@@ -161,7 +166,7 @@ mixin HomeDialogs<T extends StatefulWidget> on State<T> {
             maxLines: 1,
             overflow: TextOverflow.ellipsis,
             style: TextStyle(color: Colors.grey[600])),
-      ]),
+      ])),
       actions: [
         Expanded(
             child: FilledButton.icon(
@@ -190,7 +195,7 @@ mixin HomeDialogs<T extends StatefulWidget> on State<T> {
       ],
     ).whenComplete(() {
       if (myGeneration == _fileReceivedSheetGeneration) {
-        _isFileReceivedSheetOpen = false;
+        _fileReceivedRoute = null;
       }
     });
   }
