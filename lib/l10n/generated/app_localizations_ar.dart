@@ -298,6 +298,17 @@ class AppLocalizationsAr extends AppLocalizations {
   String get incomingFilesTitle => 'ملفات واردة';
 
   @override
+  String get shareAccessTitle => 'طلب فتح المجلد المشترك';
+
+  @override
+  String get shareAccessDownload =>
+      'السماح لهذا الجهاز بتنزيل ملفات مجلدك المشترك؟';
+
+  @override
+  String get shareAccessDownloadUpload =>
+      'السماح لهذا الجهاز بتنزيل ملفات مجلدك المشترك والرفع إليه؟';
+
+  @override
   String receiveFilesQuestion(int count) {
     String _temp0 = intl.Intl.pluralLogic(
       count,
@@ -651,6 +662,22 @@ class AppLocalizationsAr extends AppLocalizations {
 
   @override
   String get shareNetworkError => 'الجهاز غير متاح';
+
+  @override
+  String get shareAccessRefused => 'رفض صاحب الجهاز الآخر فتح مجلده المشترك';
+
+  @override
+  String get shareNoAnswer => 'لم يُجب صاحب الجهاز الآخر';
+
+  @override
+  String get shareOffRemote => 'المجلد المشترك غير مفعّل على الجهاز الآخر';
+
+  @override
+  String get retry => 'إعادة المحاولة';
+
+  @override
+  String get updateRequired =>
+      'إصدار التطبيق مختلف بين الجهازين. حدّثه على الجهازين';
 
   @override
   String get uploading => 'جاري الرفع...';

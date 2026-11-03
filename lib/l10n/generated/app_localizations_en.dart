@@ -299,6 +299,17 @@ class AppLocalizationsEn extends AppLocalizations {
   String get incomingFilesTitle => 'Incoming files';
 
   @override
+  String get shareAccessTitle => 'Shared folder request';
+
+  @override
+  String get shareAccessDownload =>
+      'Let this device download files from your shared folder?';
+
+  @override
+  String get shareAccessDownloadUpload =>
+      'Let this device download files from your shared folder and upload to it?';
+
+  @override
   String receiveFilesQuestion(int count) {
     String _temp0 = intl.Intl.pluralLogic(
       count,
@@ -652,6 +663,24 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get shareNetworkError => 'Device unreachable';
+
+  @override
+  String get shareAccessRefused =>
+      'The owner of the other device refused to open their shared folder';
+
+  @override
+  String get shareNoAnswer => 'The owner of the other device did not answer';
+
+  @override
+  String get shareOffRemote =>
+      'The shared folder is not enabled on the other device';
+
+  @override
+  String get retry => 'Try again';
+
+  @override
+  String get updateRequired =>
+      'The app version differs between the two devices. Update it on both';
 
   @override
   String get uploading => 'Uploading...';

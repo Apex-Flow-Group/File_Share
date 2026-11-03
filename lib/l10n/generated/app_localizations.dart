@@ -674,6 +674,24 @@ abstract class AppLocalizations {
   /// **'Incoming files'**
   String get incomingFilesTitle;
 
+  /// No description provided for @shareAccessTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Shared folder request'**
+  String get shareAccessTitle;
+
+  /// No description provided for @shareAccessDownload.
+  ///
+  /// In en, this message translates to:
+  /// **'Let this device download files from your shared folder?'**
+  String get shareAccessDownload;
+
+  /// No description provided for @shareAccessDownloadUpload.
+  ///
+  /// In en, this message translates to:
+  /// **'Let this device download files from your shared folder and upload to it?'**
+  String get shareAccessDownloadUpload;
+
   /// No description provided for @receiveFilesQuestion.
   ///
   /// In en, this message translates to:
@@ -1339,6 +1357,36 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Device unreachable'**
   String get shareNetworkError;
+
+  /// No description provided for @shareAccessRefused.
+  ///
+  /// In en, this message translates to:
+  /// **'The owner of the other device refused to open their shared folder'**
+  String get shareAccessRefused;
+
+  /// No description provided for @shareNoAnswer.
+  ///
+  /// In en, this message translates to:
+  /// **'The owner of the other device did not answer'**
+  String get shareNoAnswer;
+
+  /// No description provided for @shareOffRemote.
+  ///
+  /// In en, this message translates to:
+  /// **'The shared folder is not enabled on the other device'**
+  String get shareOffRemote;
+
+  /// No description provided for @retry.
+  ///
+  /// In en, this message translates to:
+  /// **'Try again'**
+  String get retry;
+
+  /// No description provided for @updateRequired.
+  ///
+  /// In en, this message translates to:
+  /// **'The app version differs between the two devices. Update it on both'**
+  String get updateRequired;
 
   /// No description provided for @uploading.
   ///

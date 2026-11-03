@@ -25,13 +25,25 @@ class TVAcceptDialog extends StatelessWidget {
   Widget build(BuildContext context) {
     final l10n = AppLocalizations.of(context);
     final isDark = Theme.of(context).brightness == Brightness.dark;
-    // Connecting and receiving are two answers, so they never share a title.
-    // A nearby phone asking to connect has offered no file yet.
-    final title = request.asksToConnect ? l10n.connectionRequest : l10n.incomingFilesTitle;
-    final question = request.asksToConnect
-        ? l10n.acceptConnection
-        : l10n.receiveFilesQuestion(request.fileCount);
-    final singleName = !request.asksToConnect && request.fileCount == 1 ? request.fileName : '';
+    // Connecting, opening the folder and receiving are separate answers, so
+    // they never share a title.
+    final (icon, title, question) = switch (request.kind) {
+      RequestKind.connect => (Icons.link_rounded, l10n.connectionRequest, l10n.acceptConnection),
+      RequestKind.shareFolder => (
+          Icons.folder_shared_rounded,
+          l10n.shareAccessTitle,
+          request.allowsUploads
+              ? l10n.shareAccessDownloadUpload
+              : l10n.shareAccessDownload
+        ),
+      RequestKind.files => (
+          Icons.file_download_rounded,
+          l10n.incomingFilesTitle,
+          l10n.receiveFilesQuestion(request.fileCount)
+        ),
+    };
+    final singleName =
+        request.kind == RequestKind.files && request.fileCount == 1 ? request.fileName : '';
     return Dialog(
       backgroundColor: isDark ? const Color(0xFF2C2C2E) : Colors.white,
       shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
@@ -42,8 +54,7 @@ class TVAcceptDialog extends StatelessWidget {
           child: Column(
             mainAxisSize: MainAxisSize.min,
             children: [
-              Icon(request.asksToConnect ? Icons.link_rounded : Icons.file_download_rounded,
-                  color: Colors.blue, size: 40),
+              Icon(icon, color: Colors.blue, size: 40),
               const SizedBox(height: 12),
               Text(title,
                   style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 16)),

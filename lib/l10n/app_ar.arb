@@ -97,6 +97,9 @@
   "deviceWantsToConnect": "يريد الجهاز الاتصال بك:",
   "acceptConnection": "هل تريد قبول الاتصال؟",
   "incomingFilesTitle": "ملفات واردة",
+  "shareAccessTitle": "طلب فتح المجلد المشترك",
+  "shareAccessDownload": "السماح لهذا الجهاز بتنزيل ملفات مجلدك المشترك؟",
+  "shareAccessDownloadUpload": "السماح لهذا الجهاز بتنزيل ملفات مجلدك المشترك والرفع إليه؟",
   "receiveFilesQuestion": "{count, plural, =1{استقبال ملف واحد؟} =2{استقبال ملفين؟} few{استقبال {count} ملفات؟} many{استقبال {count} ملفاً؟} other{استقبال {count} ملف؟}}",
   "@receiveFilesQuestion": {
     "placeholders": { "count": { "type": "int" } }
@@ -224,6 +227,11 @@
   "deletedFromShare": "تم حذف الملف",
   "confirmDeleteFromShare": "هل تريد حذف هذا الملف من المجلد المشترك؟",
   "shareNetworkError": "الجهاز غير متاح",
+  "shareAccessRefused": "رفض صاحب الجهاز الآخر فتح مجلده المشترك",
+  "shareNoAnswer": "لم يُجب صاحب الجهاز الآخر",
+  "shareOffRemote": "المجلد المشترك غير مفعّل على الجهاز الآخر",
+  "retry": "إعادة المحاولة",
+  "updateRequired": "إصدار التطبيق مختلف بين الجهازين. حدّثه على الجهازين",
   "uploading": "جاري الرفع...",
   "downloading": "جاري التنزيل...",
   "updateRequired": "إصدار التطبيق مختلف بين الجهازين. حدّثه على الجهازين",

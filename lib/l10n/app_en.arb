@@ -99,6 +99,9 @@
   "deviceWantsToConnect": "Device wants to connect:",
   "acceptConnection": "Do you want to accept the connection?",
   "incomingFilesTitle": "Incoming files",
+  "shareAccessTitle": "Shared folder request",
+  "shareAccessDownload": "Let this device download files from your shared folder?",
+  "shareAccessDownloadUpload": "Let this device download files from your shared folder and upload to it?",
   "receiveFilesQuestion": "{count, plural, =1{Receive 1 file?} other{Receive {count} files?}}",
   "@receiveFilesQuestion": {
     "placeholders": { "count": { "type": "int" } }
@@ -227,6 +230,11 @@
   "deletedFromShare": "File deleted",
   "confirmDeleteFromShare": "Delete this file from the shared folder?",
   "shareNetworkError": "Device unreachable",
+  "shareAccessRefused": "The owner of the other device refused to open their shared folder",
+  "shareNoAnswer": "The owner of the other device did not answer",
+  "shareOffRemote": "The shared folder is not enabled on the other device",
+  "retry": "Try again",
+  "updateRequired": "The app version differs between the two devices. Update it on both",
   "uploading": "Uploading...",
   "downloading": "Downloading...",
   "updateRequired": "The app version differs between the two devices. Update it on both",

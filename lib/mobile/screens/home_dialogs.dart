@@ -202,20 +202,34 @@ mixin HomeDialogs<T extends StatefulWidget> on State<T> {
         ? FileUiUtils.formatFileSize(request.fileSize)
         : '';
     final isBatch = request.fileCount > 1;
+    // Connecting, opening the folder and receiving are separate answers, so
+    // they never share a title.
+    final (icon, title, question) = switch (request.kind) {
+      RequestKind.connect => (
+          Icons.link_rounded,
+          l10n.connectionRequest,
+          l10n.acceptConnection
+        ),
+      RequestKind.shareFolder => (
+          Icons.folder_shared_rounded,
+          l10n.shareAccessTitle,
+          request.allowsUploads
+              ? l10n.shareAccessDownloadUpload
+              : l10n.shareAccessDownload
+        ),
+      RequestKind.files => (
+          Icons.file_download_rounded,
+          l10n.incomingFilesTitle,
+          l10n.receiveFilesQuestion(request.fileCount)
+        ),
+    };
 
     ApexBottomSheet.showStyled(
       context,
-      // Connecting and receiving are two answers, so they never share a title.
-      headerIcon: request.asksToConnect
-          ? Icons.link_rounded
-          : Icons.file_download_rounded,
+      headerIcon: icon,
       headerColor: Colors.blue,
-      headerTitle: request.asksToConnect
-          ? l10n.connectionRequest
-          : l10n.incomingFilesTitle,
-      headerSubtitle: request.asksToConnect
-          ? l10n.acceptConnection
-          : l10n.receiveFilesQuestion(request.fileCount),
+      headerTitle: title,
+      headerSubtitle: question,
       isDismissible: false,
       enableDrag: false,
       content: Container(
@@ -253,9 +267,9 @@ mixin HomeDialogs<T extends StatefulWidget> on State<T> {
                   ]),
             ),
           ]),
-          // A nearby phone asking to connect has offered no file yet.
-          if (!request.asksToConnect) const SizedBox(height: 10),
-          if (request.asksToConnect)
+          // Only a files request has files to show.
+          if (request.kind == RequestKind.files) const SizedBox(height: 10),
+          if (request.kind != RequestKind.files)
             const SizedBox.shrink()
           else if (isBatch) ...[
             if (request.fileNames.isNotEmpty) ...[
