@@ -269,15 +269,15 @@ class ApexCore {
 
   Future<SendOutcome> sendFileWithName(
       String filePath, String fileName, Device target) async {
-    if (_isAndroid && target.isNearby) {
-      return _nearbyOutcome(await _nearby.sendFile(filePath, fileName, target));
-    }
     final f = File(filePath);
     if (!await f.exists()) {
       return SendOutcome.failed;
     }
-    final size = await f.length();
-    return _send.sendFiles([(path: filePath, name: fileName, size: size)], target);
+    final files = [(path: filePath, name: fileName, size: await f.length())];
+    if (_isAndroid && target.isNearby) {
+      return _nearby.sendBatch(files, target);
+    }
+    return _send.sendFiles(files, target);
   }
 
   Future<SendOutcome> sendFiles(List<String> filePaths, Device target) async {
@@ -299,14 +299,11 @@ class ApexCore {
     }
 
     if (_isAndroid && target.isNearby) {
-      return _nearbyOutcome(await _nearby.sendBatchFiles(files, target));
+      return _nearby.sendBatch(files, target);
     }
 
     return _send.sendFiles(files, target);
   }
-
-  /// Nearby reports only success or failure.
-  SendOutcome _nearbyOutcome(bool ok) => ok ? SendOutcome.sent : SendOutcome.failed;
 
   /// Android saves through MediaStore; other systems move the file into the
   /// category folder without replacing an existing one.
