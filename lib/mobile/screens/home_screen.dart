@@ -288,13 +288,6 @@ class _HomeScreenState extends State<HomeScreen>
                     selected: _ctrl.currentIndex == 2,
                     onTap: () => _ctrl.setCurrentIndex(2)),
                 const Spacer(),
-                if (!Platform.isMacOS)
-                  Padding(
-                    padding: const EdgeInsets.fromLTRB(12, 0, 12, 4),
-                    child: NetworkModeTile(
-                        settings: widget.settings,
-                        onChanged: _ctrl.restartSystem),
-                  ),
                 Padding(
                   padding: const EdgeInsets.fromLTRB(12, 0, 12, 8),
                   child: Column(children: [

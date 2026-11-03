@@ -36,7 +36,6 @@ class ApexCore {
   Timer? _cleanupTimer;
   bool _isRunning = false;
   int _httpPort = 0;
-  NetworkMode _networkMode = NetworkMode.wifi;
 
   static const Duration _deviceTimeout = Duration(seconds: 60);
 
@@ -85,7 +84,6 @@ class ApexCore {
   List<Device> get devices => _discoveredDevices.values.toList();
   bool get isRunning => _isRunning;
 
-  void setNetworkMode(NetworkMode mode) => _networkMode = mode;
   bool get _isAndroid => !kIsWeb && Platform.isAndroid;
 
   /// يُمرِّر SettingsService لقراءة إعدادات Share في runtime
@@ -223,16 +221,18 @@ class ApexCore {
     _devicesController.add([]);
   }
 
-  /// تحديث خفيف — بث فوري بدون إعادة تشغيل النظام
-  void refreshDiscovery() {
+  /// Clears the list, reads this device's address again and reopens the
+  /// discovery socket, without stopping the transfer server.
+  Future<void> refreshDiscovery() async {
     if (TransferProgressService().isTransferring) {
       return;
     }
-    // مسح القائمة الحالية وإعادة البث — نفس تأثير restart لكن بدون إيقاف الخادم
     _discoveredDevices.clear();
     _nearby.connectedEndpoints.clear();
     _devicesController.add([]);
-    _discoveryService?.forceBroadcast();
+    final ip = await _getLocalIp();
+    _localDevice = _localDevice?.copyWith(ip: ip);
+    await _discoveryService?.restart();
   }
 
   /// إرسال UDP unicast مباشر لجهاز محدد بـ IP (للأجهزة المثبتة)
@@ -408,22 +408,17 @@ class ApexCore {
           includeLinkLocal: false,
           type: InternetAddressType.IPv4,
         );
-        final isWifi = _networkMode == NetworkMode.wifi;
-        final wifiKeywords = ['wi-fi', 'wifi', 'wlan', 'wireless', 'wlp'];
-        final lanKeywords = ['ethernet', 'eth', 'local area', 'enp', 'eno'];
-        final keywords = isWifi ? wifiKeywords : lanKeywords;
-
+        // Only shown on "My Device": discovery goes out on every network.
+        const virtual = ['vethernet', 'virtual', 'vmware', 'vbox', 'docker', 'br-', 'virbr',
+            'tailscale', 'zerotier', 'tun', 'tap', 'wsl'];
         for (final iface in interfaces) {
           final name = iface.name.toLowerCase();
-          if (keywords.any((k) => name.contains(k))) {
-            for (final addr in iface.addresses) {
-              if (!addr.isLoopback) {
-                ApexLogger.instance.log(
-                    'NET',
-                    '${isWifi ? 'WiFi' : 'LAN'} iface: ${iface.name} -> ${addr.address}',
-                    LogLevel.info);
-                return addr.address;
-              }
+          if (virtual.any(name.contains)) {
+            continue;
+          }
+          for (final addr in iface.addresses) {
+            if (!addr.isLoopback && !addr.address.startsWith('192.168.137.')) {
+              return addr.address;
             }
           }
         }

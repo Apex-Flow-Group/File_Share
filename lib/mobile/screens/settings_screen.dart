@@ -419,7 +419,7 @@ class _ShareSettingsSectionState extends State<_ShareSettingsSection> {
               onChanged: (v) async {
                 await widget.settings.setSharedFolderEnabled(v);
                 // إعادة البث الفوري بالحالة الجديدة
-                ApexCore.instance.refreshDiscovery();
+                await ApexCore.instance.refreshDiscovery();
                 if (mounted) {
                   setState(() {});
                 }

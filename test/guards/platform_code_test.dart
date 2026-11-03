@@ -13,7 +13,6 @@ const _legacyOsCode = <String, int>{
   'lib/managers/device_manager.dart': 20,
   'lib/managers/permission_manager.dart': 2,
   'lib/mobile/controllers/home_controller.dart': 3,
-  'lib/mobile/screens/home_screen.dart': 1,
   'lib/mobile/screens/settings_screen.dart': 2,
   'lib/mobile/screens/settings_sheets.dart': 3,
   'lib/mobile/screens/share_browser_screen.dart': 1,
