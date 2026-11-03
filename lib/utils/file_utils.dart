@@ -142,14 +142,4 @@ class FileUtils {
       }
     }
   }
-  
-  static Future<void> shareFile(String filePath) async {
-    try {
-      if (Platform.isAndroid) {
-        await Process.run('am', ['start', '-a', 'android.intent.action.SEND', '-t', '*/*', '--eu', 'android.intent.extra.STREAM', 'file://$filePath']);
-      }
-    } catch (e) {
-      rethrow;
-    }
-  }
 }
