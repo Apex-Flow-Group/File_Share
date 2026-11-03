@@ -20,16 +20,23 @@ void main() {
       expect(desktopName('jawal-pc', user: 'jawal', system: 'Fedora Linux'), 'jawal-pc');
     });
 
-    test('a MAC-like hostname becomes user and system', () {
+    test('a MAC-like hostname becomes user, system and its last 4 characters', () {
       expect(desktopName('58-11-22-A8-AB-8E', user: 'jawal', system: 'Fedora Linux'),
-          'jawal · Fedora');
+          'jawal · Fedora · AB8E');
+      expect(desktopName('58:11:22:a8:ab:8e', user: 'jawal', system: 'Fedora Linux'),
+          'jawal · Fedora · AB8E');
     });
 
-    test('with no user name, the system alone', () {
-      expect(desktopName('58-11-22-A8-AB-8E', user: '', system: 'Fedora Linux'), 'Fedora');
+    test('two PCs of the same user and system still differ', () {
+      expect(desktopName('58-11-22-A8-AB-8E', user: 'jawal', system: 'Fedora Linux'),
+          isNot(desktopName('58-11-22-A8-C3-10', user: 'jawal', system: 'Fedora Linux')));
     });
 
-    test('with no system name either, Linux', () {
+    test('with no user name, the system and the 4 characters', () {
+      expect(desktopName('58-11-22-A8-AB-8E', user: '', system: 'Fedora Linux'), 'Fedora · AB8E');
+    });
+
+    test('with no hostname at all, Linux', () {
       expect(desktopName('', user: '', system: ''), 'Linux');
     });
   });

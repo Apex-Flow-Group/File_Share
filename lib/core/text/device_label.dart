@@ -3,7 +3,9 @@
 bool looksLikeMac(String name) =>
     RegExp(r'^[0-9A-Fa-f]{2}([-:]?)[0-9A-Fa-f]{2}(\1[0-9A-Fa-f]{2}){4}$').hasMatch(name.trim());
 
-/// The hostname, unless it is empty or MAC-like: then "<user> · <system>".
+/// The hostname, unless it is empty or MAC-like: then "<user> · <system>",
+/// plus the last 4 characters of a MAC-like name so two PCs of the same user
+/// and system still differ.
 String desktopName(String hostname, {required String user, required String system}) {
   final host = hostname.trim();
   if (host.isNotEmpty && !looksLikeMac(host)) {
@@ -16,8 +18,13 @@ String desktopName(String hostname, {required String user, required String syste
   if (os.isEmpty) {
     os = 'Linux';
   }
-  final who = user.trim();
-  return who.isEmpty ? os : '$who · $os';
+  final hex = host.replaceAll(RegExp('[-:]'), '').toUpperCase();
+  final parts = [
+    if (user.trim().isNotEmpty) user.trim(),
+    os,
+    if (hex.length >= 4) hex.substring(hex.length - 4),
+  ];
+  return parts.join(' · ');
 }
 
 /// Older runs saved the hostname automatically, so a MAC-like saved name was
