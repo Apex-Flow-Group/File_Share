@@ -62,7 +62,7 @@ void main() {
       await press(tester, LogicalKeyboardKey.arrowDown); // a.jpg -> send this folder
       await press(tester, LogicalKeyboardKey.select);
       expect(closed, isTrue);
-      expect(picked, '${root.path}/Photos');
+      expect(_slashes(picked), _slashes('${root.path}/Photos'));
     });
   }
 
@@ -130,10 +130,13 @@ void main() {
     await press(tester, LogicalKeyboardKey.select); // pick notes.txt
     await press(tester, LogicalKeyboardKey.arrowDown); // -> send
     await press(tester, LogicalKeyboardKey.select);
-    expect(files, ['${root.path}/notes.txt']);
+    expect(files?.map(_slashes), [_slashes('${root.path}/notes.txt')]);
   });
 }
 
 // Disk I/O started inside testWidgets' fake async never completes; the
 // real temp folder is listed at once instead.
 Future<List<FileSystemEntity>> _listNow(Directory dir) async => dir.listSync();
+
+// Windows lists children with a backslash.
+String? _slashes(String? path) => path?.replaceAll(r'\', '/');

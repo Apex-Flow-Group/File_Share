@@ -73,6 +73,9 @@ class _TVFileBrowserState extends State<_TVFileBrowser> {
     super.dispose();
   }
 
+  // Paths come with a backslash on Windows, where the tests also run.
+  static String _nameOf(String path) => path.split(RegExp(r'[/\\]')).last;
+
   Future<void> _loadDir(String path) async {
     setState(() {
       _loading = true;
@@ -89,9 +92,9 @@ class _TVFileBrowserState extends State<_TVFileBrowser> {
         if (!aDir && bDir) {
           return 1;
         }
-        return a.path.split('/').last
+        return _nameOf(a.path)
             .toLowerCase()
-            .compareTo(b.path.split('/').last.toLowerCase());
+            .compareTo(_nameOf(b.path).toLowerCase());
       });
       // أضف ".." إذا مش في الجذر
       final showBack = _pathStack.length > 1;
@@ -157,7 +160,7 @@ class _TVFileBrowserState extends State<_TVFileBrowser> {
   // At the root the last part of /storage/emulated/0 would read "0".
   String get _currentDir => _pathStack.length == 1
       ? AppLocalizations.of(context).storageLabel
-      : _pathStack.last.split('/').last;
+      : _nameOf(_pathStack.last);
 
   @override
   Widget build(BuildContext context) {
@@ -172,7 +175,7 @@ class _TVFileBrowserState extends State<_TVFileBrowser> {
       displayItems.add(const _BrowserItem(isBack: true, path: '', name: '..'));
     }
     for (final e in _items) {
-      final name = e.path.split('/').last;
+      final name = _nameOf(e.path);
       if (name.startsWith('.')) {
         continue; // إخفاء الملفات المخفية
       }

@@ -16,10 +16,11 @@ void main() {
 
   tearDown(() => root.deleteSync(recursive: true));
 
-  /// Relative path -> bytes for files, null for folders.
+  /// Relative path -> bytes for files, null for folders. Separators are '/'
+  /// as in a zip entry, also on Windows.
   Map<String, List<int>?> tree(Directory dir) => {
         for (final e in dir.listSync(recursive: true, followLinks: false))
-          e.path.substring(dir.path.length + 1):
+          e.path.substring(dir.path.length + 1).replaceAll(r'\', '/'):
               e is File ? e.readAsBytesSync() : null,
       };
 
