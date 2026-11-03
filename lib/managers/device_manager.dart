@@ -20,10 +20,9 @@ class DeviceManager {
         final info = await DeviceInfoPlugin().windowsInfo;
         return info.computerName;
       } else if (Platform.isLinux) {
-        final info = await DeviceInfoPlugin().linuxInfo;
-        return info.prettyName.isNotEmpty
-            ? info.prettyName
-            : Platform.localHostname;
+        // Not linuxInfo.prettyName: that is the distribution ("Fedora Linux
+        // 44"), the same on every PC of that system.
+        return Platform.localHostname;
       } else if (Platform.isMacOS) {
         final info = await DeviceInfoPlugin().macOsInfo;
         return info.hostName.isNotEmpty ? info.hostName : info.computerName;
@@ -62,10 +61,7 @@ class DeviceManager {
         final iosInfo = await deviceInfo.iosInfo;
         deviceName = iosInfo.name;
       } else if (Platform.isLinux) {
-        final linuxInfo = await deviceInfo.linuxInfo;
-        deviceName = linuxInfo.prettyName.isNotEmpty
-            ? linuxInfo.prettyName.split(' ').first
-            : fallback;
+        deviceName = Platform.localHostname.isNotEmpty ? Platform.localHostname : fallback;
       } else if (Platform.isWindows) {
         final windowsInfo = await deviceInfo.windowsInfo;
         deviceName = windowsInfo.computerName;
