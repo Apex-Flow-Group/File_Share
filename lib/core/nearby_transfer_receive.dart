@@ -1,47 +1,29 @@
 part of 'nearby_transfer.dart';
 
-/// Receive-related methods for [NearbyTransfer].
+/// Receive-related methods for [NearbyTransfer]. Every decision is made by
+/// [NearbyTransfer.door]; this part only moves the bytes the door let in.
 extension NearbyTransferReceive on NearbyTransfer {
-  static final Map<int, String> _pendingReceiveNames = {};
-  static final Map<int, int> _pendingReceiveSizes = {};
-
   void onPayloadReceived(String endpointId, Payload payload) async {
     if (payload.type == PayloadType.FILE) {
-      _handleFilePayload(endpointId, payload);
+      await _handleFilePayload(endpointId, payload);
       return;
     }
-
-    if (payload.type != PayloadType.BYTES) {
+    final bytes = payload.bytes;
+    if (payload.type != PayloadType.BYTES || bytes == null) {
       return;
     }
-    final bytes = payload.bytes!;
-
+    Object? msg;
     try {
-      final msg = jsonDecode(utf8.decode(bytes)) as Map<String, dynamic>;
-      switch (msg['type'] as String?) {
-        case 'request':
-          await _handleTransferRequest(endpointId, msg);
-        case 'batch_request':
-          await _handleBatchTransferRequest(endpointId, msg);
-        case 'response':
-          _pendingRequests
-              .remove(endpointId)
-              ?.complete(msg['accepted'] as bool? ?? false);
-        case 'file_name':
-          final pid = (msg['payload_id'] as num?)?.toInt();
-          final name = msg['name'] as String?;
-          final size = (msg['size'] as num?)?.toInt() ?? 0;
-          if (pid != null && name != null) {
-            _pendingFileNames[pid] = name;
-            _pendingReceiveNames[pid] = name;
-            if (size > 0) {
-              _pendingReceiveSizes[pid] = size;
-            }
-          }
-      }
+      msg = jsonDecode(utf8.decode(bytes));
     } catch (e) {
       ApexLogger.instance.log('NEARBY', 'Parse error: $e', LogLevel.error);
+      return;
     }
+    if (msg is Map && msg['type'] == NearbyMessage.answer) {
+      _pendingRequests.remove(endpointId)?.complete(msg);
+      return;
+    }
+    await door.onMessage(endpointId, msg);
   }
 
   void onPayloadTransferUpdate(
@@ -49,269 +31,130 @@ extension NearbyTransferReceive on NearbyTransfer {
     _transferCallbacks[update.id]?.call(update);
   }
 
-  void _handleFilePayload(String endpointId, Payload payload) async {
-    final device = discoveredDevices[endpointId];
-    ApexLogger.instance.log(
-        'NEARBY',
-        '📥 FILE payload | id=${payload.id} | endpoint=$endpointId | device=${device?.name ?? "unknown"}',
-        LogLevel.info);
-
-    final pendingName = _pendingFileNames.remove(payload.id) ??
-        _pendingReceiveNames.remove(payload.id);
-    final pendingSize = _pendingReceiveSizes.remove(payload.id) ?? 0;
-    final fileName = _sanitize(pendingName ?? 'file_${payload.id}');
-    ApexLogger.instance.log(
-        'NEARBY',
-        '📄 fileName=$fileName | pendingName=$pendingName | pendingSize=$pendingSize',
-        LogLevel.info);
-
-    final progress = TransferProgressService();
-    final startTime = DateTime.now();
-
-    if (pendingSize > 0) {
-      progress.startReceive(senderDeviceName: device?.name ?? endpointId);
-      progress.updateProgress(TransferProgress(
-        fileName: fileName,
-        totalBytes: pendingSize,
-        transferredBytes: 0,
-        status: TransferStatus.transferring,
-        startTime: startTime,
-      ));
+  Future<void> _handleFilePayload(String endpointId, Payload payload) async {
+    if (!door.expectsFile(endpointId)) {
+      ApexLogger.instance.log(
+          'NEARBY', 'FILE payload with no accepted offer dropped: $endpointId', LogLevel.warning);
+      await _cancelPayload(payload.id);
+      return;
     }
+    final progress = TransferProgressService();
+    final started = DateTime.now();
 
     _transferCallbacks[payload.id] = (update) async {
-      if (update.status != PayloadStatus.SUCCESS &&
-          update.status != PayloadStatus.FAILURE &&
-          update.status != PayloadStatus.CANCELED) {
-        if (pendingSize > 0) {
-          progress.updateProgress(TransferProgress(
-            fileName: fileName,
-            totalBytes: pendingSize,
-            transferredBytes: update.bytesTransferred,
-            status: TransferStatus.transferring,
-            startTime: startTime,
-          ));
+      final done = update.status == PayloadStatus.SUCCESS ||
+          update.status == PayloadStatus.FAILURE ||
+          update.status == PayloadStatus.CANCELED;
+      if (!done) {
+        if (progress.isCancelledReceive) {
+          // The rest of the batch is refused too, not only this file.
+          _transferCallbacks.remove(payload.id);
+          door.forget(endpointId);
+          await _cancelPayload(payload.id);
+          progress.clearProgress();
+          return;
         }
+        progress.updateProgress(TransferProgress(
+          fileName: door.announced(endpointId, payload.id)?.name ?? '',
+          totalBytes: update.totalBytes,
+          transferredBytes: update.bytesTransferred,
+          status: TransferStatus.transferring,
+          startTime: started,
+        ));
         return;
       }
 
       _transferCallbacks.remove(payload.id);
-      ApexLogger.instance.log(
-          'NEARBY',
-          '🏁 Transfer done | status=${update.status} | fileName=$fileName | bytes=${update.bytesTransferred}',
-          LogLevel.info);
-
-      if (update.status != PayloadStatus.SUCCESS) {
-        progress.clearProgress();
-        ApexLogger.instance.log(
-            'NEARBY', '❌ Receive failed/cancelled: $fileName', LogLevel.error);
-        return;
-      }
-
-      // ignore: deprecated_member_use
-      final rawUri = payload.uri;
-      // ignore: deprecated_member_use
-      final rawPath = payload.filePath;
-      ApexLogger.instance.log('NEARBY',
-          '📂 payload.uri=$rawUri | payload.filePath=$rawPath', LogLevel.info);
-
-      String? tmpPath;
-
-      if (rawUri != null) {
-        final uri = Uri.tryParse(rawUri);
-        if (uri != null && uri.scheme == 'file') {
-          tmpPath = uri.toFilePath();
-        } else if (uri != null && uri.scheme == 'content') {
-          try {
-            final cacheDir = await getTemporaryDirectory();
-            final tmpFile = '${cacheDir.path}/nearby_tmp_${payload.id}';
-            ApexLogger.instance.log(
-                'NEARBY',
-                '📋 Copying via ContentResolver: $rawUri → $tmpFile',
-                LogLevel.info);
-            final result =
-                await NearbyTransfer._nearbyChannel.invokeMethod<String>(
-              'copyContentUri',
-              {'uri': rawUri, 'destPath': tmpFile},
-            );
-            if (result != null && await File(result).exists()) {
-              tmpPath = result;
-              ApexLogger.instance.log('NEARBY',
-                  '✅ ContentResolver copy OK: $tmpPath', LogLevel.success);
-            } else {
-              ApexLogger.instance.log(
-                  'NEARBY',
-                  '❌ ContentResolver returned null or file missing',
-                  LogLevel.error);
-            }
-          } catch (e) {
-            ApexLogger.instance
-                .log('NEARBY', '❌ ContentResolver failed: $e', LogLevel.error);
-          }
-        }
-      }
-
-      // Fallback for Android <10
-      tmpPath ??= rawPath;
-
-      ApexLogger.instance.log('NEARBY', '📂 tmpPath=$tmpPath', LogLevel.info);
-
-      if (tmpPath == null) {
-        progress.clearProgress();
-        ApexLogger.instance.log('NEARBY', '❌ tmpPath is null!', LogLevel.error);
-        return;
-      }
-
-      try {
-        final destDir = await PathUtils.getTempCachePath();
-        final destPath = '$destDir/$fileName';
-        ApexLogger.instance
-            .log('NEARBY', '🚚 Moving: $tmpPath → $destPath', LogLevel.info);
-        try {
-          await File(tmpPath).rename(destPath);
-          ApexLogger.instance.log('NEARBY', '✅ rename() OK', LogLevel.success);
-        } catch (renameErr) {
-          ApexLogger.instance.log(
-              'NEARBY',
-              '⚠️ rename() failed: $renameErr → trying copy()',
-              LogLevel.warning);
-          await File(tmpPath).copy(destPath);
-          try {
-            await File(tmpPath).delete();
-          } catch (_) {}
-          ApexLogger.instance.log('NEARBY', '✅ copy() OK', LogLevel.success);
-        }
-
-        final finalPath =
-            await PathUtils.saveToPublicDownloads(fileName, destPath) ??
-                destPath;
-        if (finalPath != destPath) {
-          try {
-            await File(destPath).delete();
-          } catch (_) {}
-        }
-
-        final fileSize = await File(finalPath).length();
-        ApexLogger.instance.log('NEARBY',
-            '✅ Saved: $finalPath | size=$fileSize bytes', LogLevel.success);
-
-        final progress = TransferProgressService();
-        progress.nextFile();
-        final isLast = progress.currentFileIndex >= progress.totalFiles;
-        if (isLast) {
+      final file = await door.takeFile(endpointId, payload.id);
+      final ok = update.status == PayloadStatus.SUCCESS;
+      final temp = ok && file != null ? await _receivedFile(payload) : null;
+      if (file == null || temp == null || await temp.length() != file.size) {
+        await _deleteQuietly(temp);
+        await _deleteRaw(payload);
+        if (!ok) {
           progress.clearProgress();
         }
-
-        onFileReceived(FileReceivedEvent(
-          fileName: fileName,
-          fileSize: fileSize,
-          fromDevice: device?.name ?? endpointId,
-          filePath: finalPath,
-          isLastInBatch: isLast,
-          batchTotal: progress.totalFiles,
-          batchIndex: progress.currentFileIndex,
-        ));
+        ApexLogger.instance.log('NEARBY',
+            'Payload ${payload.id} not saved (status=${update.status}, accepted=${file != null})',
+            LogLevel.warning);
+        return;
+      }
+      try {
+        final path = await place(temp, file.name);
+        _finished(endpointId, file.name, file.size, path);
       } catch (e) {
+        await _deleteQuietly(temp);
         progress.clearProgress();
-        ApexLogger.instance
-            .log('NEARBY', '❌ Move/save error: $e', LogLevel.error);
+        ApexLogger.instance.log('NEARBY', 'Save error: $e', LogLevel.error);
       }
     };
   }
 
-  Future<void> _handleTransferRequest(String endpointId, Map msg) async {
-    final fileName = msg['name'] as String? ?? 'unknown';
-    final fileSize = (msg['size'] as num?)?.toInt() ?? 0;
-    final fromName = msg['from'] as String? ?? 'Unknown';
-
-    if (PlatformDetector.instance.isTV) {
-      await Nearby().sendBytesPayload(
-        endpointId,
-        Uint8List.fromList(
-            utf8.encode(jsonEncode({'type': 'response', 'accepted': true}))),
-      );
-      ApexLogger.instance
-          .log('NEARBY', '✅ TV auto-accepted: $fileName', LogLevel.success);
-      return;
+  void _finished(String endpointId, String name, int size, String path) {
+    final progress = TransferProgressService()..nextFile();
+    final isLast = progress.currentFileIndex >= progress.totalFiles;
+    final sender = progress.senderDeviceName ?? endpointId;
+    final total = progress.totalFiles;
+    final index = progress.currentFileIndex;
+    if (isLast) {
+      progress.clearProgress();
     }
-
-    final completer = Completer<bool>();
-    _pendingRequests[endpointId] = completer;
-
-    onConnectionRequest(ConnectionRequest(
-      device: discoveredDevices[endpointId] ??
-          Device(
-              id: endpointId,
-              name: fromName,
-              type: 'phone',
-              endpointId: endpointId),
-      fileName: fileName,
-      fileSize: fileSize,
-      onResponse: (v) async {
-        if (!completer.isCompleted) {
-          completer.complete(v);
-        }
-        await Nearby().sendBytesPayload(
-          endpointId,
-          Uint8List.fromList(
-              utf8.encode(jsonEncode({'type': 'response', 'accepted': v}))),
-        );
-      },
+    onFileReceived(FileReceivedEvent(
+      fileName: name,
+      fileSize: size,
+      fromDevice: sender,
+      filePath: path,
+      isLastInBatch: isLast,
+      batchTotal: total,
+      batchIndex: index,
     ));
   }
 
-  Future<void> _handleBatchTransferRequest(String endpointId, Map msg) async {
-    final fromName = msg['from'] as String? ?? 'Unknown';
-    final total = (msg['total'] as num?)?.toInt() ?? 1;
-    final names = (msg['names'] as List?)?.cast<String>() ?? [];
-    final totalSize = (msg['totalSize'] as num?)?.toInt() ?? 0;
-
-    if (PlatformDetector.instance.isTV) {
-      await Nearby().sendBytesPayload(
-        endpointId,
-        Uint8List.fromList(
-            utf8.encode(jsonEncode({'type': 'response', 'accepted': true}))),
-      );
-      ApexLogger.instance.log(
-          'NEARBY', '✅ TV auto-accepted batch: $total files', LogLevel.success);
-      return;
+  /// The received bytes as a file of our own. Temp names never use the
+  /// sender's name.
+  Future<File?> _receivedFile(Payload payload) async {
+    // ignore: deprecated_member_use
+    final rawUri = payload.uri;
+    final uri = rawUri == null ? null : Uri.tryParse(rawUri);
+    if (uri != null && uri.scheme == 'content') {
+      try {
+        final dest =
+            '${await PathUtils.getTempCachePath()}/${DateTime.now().microsecondsSinceEpoch}_${_random.nextInt(1 << 32)}.part';
+        final copied = await NearbyTransfer._nearbyChannel
+            .invokeMethod<String>('copyContentUri', {'uri': rawUri, 'destPath': dest});
+        return copied != null && await File(copied).exists() ? File(copied) : null;
+      } catch (e) {
+        ApexLogger.instance.log('NEARBY', 'ContentResolver copy failed: $e', LogLevel.error);
+        return null;
+      }
     }
-
-    final displayName = '$total ملفات';
-    final completer = Completer<bool>();
-    _pendingRequests[endpointId] = completer;
-
-    onConnectionRequest(ConnectionRequest(
-      device: discoveredDevices[endpointId] ??
-          Device(
-              id: endpointId,
-              name: fromName,
-              type: 'phone',
-              endpointId: endpointId),
-      fileName: displayName,
-      fileSize: totalSize,
-      fileCount: total,
-      fileNames: names,
-      onResponse: (v) async {
-        if (!completer.isCompleted) {
-          completer.complete(v);
-        }
-        await Nearby().sendBytesPayload(
-          endpointId,
-          Uint8List.fromList(
-              utf8.encode(jsonEncode({'type': 'response', 'accepted': v}))),
-        );
-        // ابدأ وضع الاستقبال مع عدد الملفات
-        if (v) {
-          TransferProgressService().startReceive(
-            senderDeviceName: fromName,
-            totalFiles: total,
-          );
-        }
-      },
-    ));
+    // ignore: deprecated_member_use
+    final path = uri != null && uri.scheme == 'file' ? uri.toFilePath() : payload.filePath;
+    return path != null && await File(path).exists() ? File(path) : null;
   }
 
-  String _sanitize(String name) =>
-      name.replaceAll(RegExp(r'[\\/\x00]'), '_').replaceAll('..', '_');
+  /// Before Android 10 the plugin writes the payload into a shared folder;
+  /// a dropped one must not stay there.
+  Future<void> _deleteRaw(Payload payload) async {
+    // ignore: deprecated_member_use
+    final rawUri = payload.uri;
+    final uri = rawUri == null ? null : Uri.tryParse(rawUri);
+    // ignore: deprecated_member_use
+    final path = uri != null && uri.scheme == 'file' ? uri.toFilePath() : payload.filePath;
+    await _deleteQuietly(path == null ? null : File(path));
+  }
+
+  Future<void> _deleteQuietly(File? f) async {
+    try {
+      if (f != null && await f.exists()) {
+        await f.delete();
+      }
+    } catch (_) {}
+  }
+
+  Future<void> _cancelPayload(int id) async {
+    try {
+      await Nearby().cancelPayload(id);
+    } catch (_) {}
+  }
 }

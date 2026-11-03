@@ -7,79 +7,55 @@ extension NearbyTransferSend on NearbyTransfer {
     if (!await file.exists()) {
       return false;
     }
-
-    final fileSize = await file.length();
-    final endpointId = target.endpointId!;
-    final progress = TransferProgressService();
-    progress.startBatch(1, targetDeviceId: target.id);
-
-    if (!connectedEndpoints.contains(endpointId)) {
-      if (!await connect(endpointId, target.name)) {
-        ApexLogger.instance
-            .log('NEARBY', '❌ Connection failed', LogLevel.error);
-        progress.clearProgress();
-        return false;
-      }
-    }
-
-    final accepted =
-        await _requestPermission(endpointId, fileName, fileSize, target.name);
-    if (!accepted) {
-      ApexLogger.instance.log('NEARBY', '❌ Rejected', LogLevel.warning);
-      progress.clearProgress();
-      return false;
-    }
-
-    try {
-      return await _sendFilePayload(
-          endpointId, filePath, fileName, fileSize, progress);
-    } finally {
-      progress.clearProgress();
-    }
+    final files = [(path: filePath, name: fileName, size: await file.length())];
+    return await sendBatch(files, target) == SendOutcome.sent;
   }
 
-  Future<bool> sendBatchFiles(
-    List<({String path, String name, int size})> files,
-    Device target,
-  ) async {
+  Future<bool> sendBatchFiles(List<OutgoingFile> files, Device target) async =>
+      await sendBatch(files, target) == SendOutcome.sent;
+
+  /// One offer for the whole batch, then each file announced with the token
+  /// the receiver issued when its user accepted.
+  Future<SendOutcome> sendBatch(List<OutgoingFile> files, Device target) async {
     if (files.isEmpty) {
-      return false;
+      return SendOutcome.failed;
     }
-
     final endpointId = target.endpointId!;
-    final progress = TransferProgressService();
-    progress.startBatch(files.length, targetDeviceId: target.id);
-
-    if (!connectedEndpoints.contains(endpointId)) {
-      if (!await connect(endpointId, target.name)) {
-        ApexLogger.instance
-            .log('NEARBY', '❌ Connection failed', LogLevel.error);
-        progress.clearProgress();
-        return false;
-      }
-    }
-
-    final accepted =
-        await _requestBatchPermission(endpointId, files, target.name);
-    if (!accepted) {
-      ApexLogger.instance.log('NEARBY', '❌ Batch rejected', LogLevel.warning);
-      progress.clearProgress();
-      return false;
-    }
-
+    final progress = TransferProgressService()
+      ..startBatch(files.length, targetDeviceId: target.id);
     try {
-      int success = 0;
-      for (final f in files) {
+      if (!connectedEndpoints.contains(endpointId) &&
+          !await connect(endpointId, target.name)) {
+        ApexLogger.instance.log('NEARBY', '❌ Connection failed', LogLevel.error);
+        return SendOutcome.failed;
+      }
+      final answer = await _offer(endpointId, files);
+      if (answer == null) {
+        return SendOutcome.failed;
+      }
+      if (answer['error'] == ApexProtocol.updateRequired) {
+        return SendOutcome.updateRequired;
+      }
+      if (answer['accepted'] != true) {
+        return SendOutcome.declined;
+      }
+      final tokens = answer['tokens'];
+      if (tokens is! List || tokens.length != files.length || tokens.any((t) => t is! String)) {
+        return SendOutcome.failed;
+      }
+      var allSent = true;
+      for (var i = 0; i < files.length; i++) {
         if (progress.isCancelled) {
-          break;
+          return SendOutcome.cancelled;
         }
-        if (await _sendFilePayload(
-            endpointId, f.path, f.name, f.size, progress)) {
-          success++;
-        }
+        allSent = await _sendFilePayload(endpointId, files[i], tokens[i] as String, progress) &&
+            allSent;
         progress.nextFile();
       }
-      return success == files.length;
+      if (progress.isCancelled) {
+        return SendOutcome.cancelled;
+      }
+      return allSent ? SendOutcome.sent : SendOutcome.failed;
     } finally {
       progress.clearProgress();
     }
@@ -87,38 +63,26 @@ extension NearbyTransferSend on NearbyTransfer {
 
   Future<bool> _sendFilePayload(
     String endpointId,
-    String filePath,
-    String fileName,
-    int fileSize,
+    OutgoingFile file,
+    String token,
     TransferProgressService progress,
   ) async {
     try {
       final startTime = DateTime.now();
       progress.updateProgress(TransferProgress(
-        fileName: fileName,
-        totalBytes: fileSize,
+        fileName: file.name,
+        totalBytes: file.size,
         transferredBytes: 0,
         status: TransferStatus.transferring,
         startTime: startTime,
       ));
 
       final completer = Completer<bool>();
-      final payloadId = await Nearby().sendFilePayload(endpointId, filePath);
-
-      await Nearby().sendBytesPayload(
-        endpointId,
-        Uint8List.fromList(utf8.encode(jsonEncode({
-          'type': 'file_name',
-          'name': fileName,
-          'payload_id': payloadId,
-          'size': fileSize,
-        }))),
-      );
-
+      final payloadId = await Nearby().sendFilePayload(endpointId, file.path);
       _transferCallbacks[payloadId] = (update) {
         progress.updateProgress(TransferProgress(
-          fileName: fileName,
-          totalBytes: fileSize,
+          fileName: file.name,
+          totalBytes: file.size,
           transferredBytes: update.bytesTransferred,
           status: TransferStatus.transferring,
           startTime: startTime,
@@ -134,15 +98,17 @@ extension NearbyTransferSend on NearbyTransfer {
           }
         }
       };
+      await _sendJson(endpointId,
+          {'type': NearbyMessage.file, 'token': token, 'payload_id': payloadId});
 
-      final timeoutSecs = ((fileSize / (50 * 1024)) + 60).ceil();
+      final timeoutSecs = ((file.size / (50 * 1024)) + 60).ceil();
       final ok = await completer.future
           .timeout(Duration(seconds: timeoutSecs), onTimeout: () => false);
 
       _transferCallbacks.remove(payloadId);
       ApexLogger.instance.log(
           'NEARBY',
-          ok ? '✅ Sent: $fileName' : '❌ Failed: $fileName',
+          ok ? '✅ Sent: ${file.name}' : '❌ Failed: ${file.name}',
           ok ? LogLevel.success : LogLevel.error);
       return ok;
     } catch (e) {
@@ -151,56 +117,24 @@ extension NearbyTransferSend on NearbyTransfer {
     }
   }
 
-  Future<bool> _requestPermission(String endpointId, String fileName,
-      int fileSize, String senderName) async {
-    final completer = Completer<bool>();
+  /// The receiver's answer, or null when it never came.
+  Future<Map?> _offer(String endpointId, List<OutgoingFile> files) async {
+    final completer = Completer<Map>();
     _pendingRequests[endpointId] = completer;
     try {
-      await Nearby().sendBytesPayload(
-        endpointId,
-        Uint8List.fromList(utf8.encode(jsonEncode({
-          'type': 'request',
-          'name': fileName,
-          'size': fileSize,
-          'from': senderName,
-        }))),
-      );
+      await _sendJson(endpointId, {
+        'type': NearbyMessage.offer,
+        'version': ApexProtocol.version,
+        'name': getLocalName() ?? '',
+        'files': [for (final f in files) {'name': f.name, 'size': f.size}],
+      });
+      return await completer.future
+          .timeout(TransferRules.decisionTimeout + const Duration(seconds: 10));
     } catch (e) {
+      ApexLogger.instance.log('NEARBY', 'Offer failed: $e', LogLevel.error);
+      return null;
+    } finally {
       _pendingRequests.remove(endpointId);
-      return false;
     }
-    return completer.future.timeout(const Duration(seconds: 30), onTimeout: () {
-      _pendingRequests.remove(endpointId);
-      return false;
-    });
-  }
-
-  Future<bool> _requestBatchPermission(
-    String endpointId,
-    List<({String path, String name, int size})> files,
-    String senderName,
-  ) async {
-    final completer = Completer<bool>();
-    _pendingRequests[endpointId] = completer;
-    try {
-      await Nearby().sendBytesPayload(
-        endpointId,
-        Uint8List.fromList(utf8.encode(jsonEncode({
-          'type': 'batch_request',
-          'from': senderName,
-          'total': files.length,
-          'names': files.map((f) => f.name).toList(),
-          'sizes': files.map((f) => f.size).toList(),
-          'totalSize': files.fold<int>(0, (s, f) => s + f.size),
-        }))),
-      );
-    } catch (e) {
-      _pendingRequests.remove(endpointId);
-      return false;
-    }
-    return completer.future.timeout(const Duration(seconds: 30), onTimeout: () {
-      _pendingRequests.remove(endpointId);
-      return false;
-    });
   }
 }

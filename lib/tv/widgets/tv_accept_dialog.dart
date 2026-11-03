@@ -25,9 +25,12 @@ class TVAcceptDialog extends StatelessWidget {
   Widget build(BuildContext context) {
     final l10n = AppLocalizations.of(context);
     final isDark = Theme.of(context).brightness == Brightness.dark;
-    final what = request.fileCount > 1
-        ? '${request.fileCount} ${l10n.files}'
-        : request.fileName;
+    // A nearby phone asking to connect has offered no file yet.
+    final what = request.asksToConnect
+        ? l10n.acceptConnection
+        : request.fileCount > 1
+            ? '${request.fileCount} ${l10n.files}'
+            : request.fileName;
     return Dialog(
       backgroundColor: isDark ? const Color(0xFF2C2C2E) : Colors.white,
       shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),

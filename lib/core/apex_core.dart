@@ -69,6 +69,7 @@ class ApexCore {
     getLocalName: () => _localDevice?.name,
     onFileReceived: _fileReceivedController.add,
     onConnectionRequest: _connectionRequestController.add,
+    place: _placeReceived,
     discoveredDevices: _discoveredDevices,
   );
 
@@ -166,7 +167,7 @@ class ApexCore {
         return;
       }
       _discoveredDevices.remove(id);
-      _nearby.connectedEndpoints.remove(id);
+      _nearby.forget(id);
       _devicesController.add(devices);
     });
 
@@ -325,10 +326,10 @@ class ApexCore {
 
   // ─── Nearby incoming connection ────────────────────────────────────────────
 
-  void handleIncomingConnectionInitiated(String endpointId) async {
-    await _nearby.acceptConnection(endpointId);
-    ApexLogger.instance
-        .log('NEARBY', '✅ Accepted: $endpointId', LogLevel.success);
+  void handleIncomingConnectionInitiated(String endpointId, String endpointName) async {
+    final accepted = await _nearby.answerConnection(endpointId, endpointName);
+    ApexLogger.instance.log('NEARBY', '${accepted ? 'Accepted' : 'Refused'}: $endpointId',
+        accepted ? LogLevel.success : LogLevel.warning);
   }
 
   // ─── Helpers ───────────────────────────────────────────────────────────────

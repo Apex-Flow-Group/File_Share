@@ -246,8 +246,11 @@ mixin HomeDialogs<T extends StatefulWidget> on State<T> {
                   ]),
             ),
           ]),
-          const SizedBox(height: 10),
-          if (isBatch) ...[
+          // A nearby phone asking to connect has offered no file yet.
+          if (!request.asksToConnect) const SizedBox(height: 10),
+          if (request.asksToConnect)
+            const SizedBox.shrink()
+          else if (isBatch) ...[
             Row(children: [
               const Icon(Icons.folder_rounded, size: 15, color: Colors.blue),
               const SizedBox(width: 6),

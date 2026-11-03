@@ -25,6 +25,9 @@ class ConnectionRequest {
   final int fileSize;
   final int fileCount;
   final List<String> fileNames;
+
+  /// True when a nearby phone asks to connect, before it can offer any file.
+  final bool asksToConnect;
   final Function(bool) onResponse;
   ConnectionRequest({
     required this.device,
@@ -33,5 +36,6 @@ class ConnectionRequest {
     this.fileSize = 0,
     this.fileCount = 1,
     this.fileNames = const [],
+    this.asksToConnect = false,
   });
 }

@@ -28,8 +28,8 @@ extension NearbyTransferConnection on NearbyTransfer {
           }
         },
         onDisconnected: (eid) {
-          connectedEndpoints.remove(eid);
-          _pendingRequests.remove(eid)?.complete(false);
+          forget(eid);
+          _pendingRequests.remove(eid)?.completeError(StateError('disconnected'));
           _connectCompleters.remove(eid)?.complete(false);
         },
       );
@@ -37,13 +37,22 @@ extension NearbyTransferConnection on NearbyTransfer {
       _connectCompleters.remove(endpointId)?.complete(false);
       return false;
     }
-    return completer.future.timeout(const Duration(seconds: 15), onTimeout: () {
+    // The other phone asks its user before it accepts.
+    return completer.future.timeout(TransferRules.decisionTimeout + const Duration(seconds: 10),
+        onTimeout: () {
       _connectCompleters.remove(endpointId);
       return false;
     });
   }
 
-  Future<void> acceptConnection(String endpointId) async {
+  /// A phone asks to connect to us: accepted only when the user agrees.
+  Future<bool> answerConnection(String endpointId, String endpointName) async {
+    if (!await door.mayConnect(endpointId, endpointName)) {
+      try {
+        await Nearby().rejectConnection(endpointId);
+      } catch (_) {}
+      return false;
+    }
     await Nearby().acceptConnection(
       endpointId,
       onPayLoadRecieved: onPayloadReceived,
@@ -52,6 +61,12 @@ extension NearbyTransferConnection on NearbyTransfer {
       },
     );
     connectedEndpoints.add(endpointId);
+    return true;
+  }
+
+  void forget(String endpointId) {
+    connectedEndpoints.remove(endpointId);
+    door.forget(endpointId);
   }
 
   Future<void> stopAll() async {

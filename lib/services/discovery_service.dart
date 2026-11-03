@@ -167,7 +167,8 @@ class DiscoveryService {
         localDevice.name,
         Strategy.P2P_CLUSTER,
         onConnectionInitiated: (endpointId, info) async {
-          ApexCore.instance.handleIncomingConnectionInitiated(endpointId);
+          ApexCore.instance
+              .handleIncomingConnectionInitiated(endpointId, info.endpointName);
         },
         onConnectionResult: (endpointId, status) {
           ApexLogger.instance
