@@ -59,5 +59,9 @@ analyzer:
   exclude:
     - "**/*.g.dart"
     - "**/*.freezed.dart"
+    - build/**
+    - android/**
+    - windows/**
+    - linux/**
   errors:
     invalid_annotation_target: ignore
