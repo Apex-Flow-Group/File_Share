@@ -1,3 +1,5 @@
+import 'dart:async';
+
 import 'package:flutter/material.dart';
 
 /// عنصر القائمة الجانبية (Desktop)
@@ -57,38 +59,92 @@ class SidebarItem extends StatelessWidget {
 }
 
 /// زر الإجراء في القائمة الجانبية (Desktop)
-class SidebarActionTile extends StatelessWidget {
+/// Lit from the press until what it started ends (a bottom sheet closes, a
+/// refresh finishes); with [spinWhileBusy] the icon turns meanwhile.
+class SidebarActionTile extends StatefulWidget {
   final IconData icon;
   final String label;
-  final VoidCallback onTap;
+  final Future<void> Function() onTap;
+  final bool spinWhileBusy;
 
   const SidebarActionTile({
     required this.icon,
     required this.label,
     required this.onTap,
+    this.spinWhileBusy = false,
     super.key,
   });
 
   @override
+  State<SidebarActionTile> createState() => _SidebarActionTileState();
+}
+
+class _SidebarActionTileState extends State<SidebarActionTile>
+    with SingleTickerProviderStateMixin {
+  late final AnimationController _spin =
+      AnimationController(vsync: this, duration: Durations.extralong2);
+  bool _busy = false;
+
+  Future<void> _run() async {
+    if (_busy) {
+      return;
+    }
+    setState(() => _busy = true);
+    if (widget.spinWhileBusy) {
+      unawaited(_spin.repeat());
+    }
+    try {
+      await widget.onTap();
+    } finally {
+      if (widget.spinWhileBusy && mounted) {
+        // Finish the turn under way so the icon ends upright.
+        await _spin.forward();
+        if (mounted) {
+          _spin.value = 0;
+        }
+      }
+      if (mounted) {
+        setState(() => _busy = false);
+      }
+    }
+  }
+
+  @override
+  void dispose() {
+    _spin.dispose();
+    super.dispose();
+  }
+
+  @override
   Widget build(BuildContext context) {
+    final scheme = Theme.of(context).colorScheme;
     final isDark = Theme.of(context).brightness == Brightness.dark;
+    final fg = _busy
+        ? scheme.onSurface
+        : (isDark ? Colors.white60 : Colors.black45);
     return Padding(
       padding: const EdgeInsets.symmetric(vertical: 2),
-      child: InkWell(
-        onTap: onTap,
-        borderRadius: BorderRadius.circular(10),
-        child: Padding(
-          padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 8),
-          child: Row(children: [
-            Icon(icon,
-                size: 18, color: isDark ? Colors.white54 : Colors.black45),
-            const SizedBox(width: 10),
-            Text(label,
-                style: TextStyle(
-                  fontSize: 13,
-                  color: isDark ? Colors.white60 : Colors.black45,
-                )),
-          ]),
+      child: AnimatedContainer(
+        duration: Durations.short4,
+        curve: Easing.standard,
+        decoration: BoxDecoration(
+          color: _busy ? scheme.surfaceContainerHigh : scheme.surfaceContainerHigh.withValues(alpha: 0),
+          borderRadius: BorderRadius.circular(10),
+        ),
+        child: InkWell(
+          onTap: _run,
+          borderRadius: BorderRadius.circular(10),
+          child: Padding(
+            padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 8),
+            child: Row(children: [
+              RotationTransition(
+                turns: _spin,
+                child: Icon(widget.icon, size: 18, color: fg),
+              ),
+              const SizedBox(width: 10),
+              Text(widget.label, style: TextStyle(fontSize: 13, color: fg)),
+            ]),
+          ),
         ),
       ),
     );

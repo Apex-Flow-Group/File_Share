@@ -294,6 +294,7 @@ class _HomeScreenState extends State<HomeScreen>
                     SidebarActionTile(
                         icon: Icons.restart_alt_rounded,
                         label: l10n.restartingSystem,
+                        spinWhileBusy: true,
                         onTap: _ctrl.refreshDiscovery),
                     SidebarActionTile(
                         icon: Icons.settings_rounded,
@@ -372,8 +373,8 @@ class _HomeScreenState extends State<HomeScreen>
 
   // ─── Actions ────────────────────────────────────────────────────────────────
 
-  void _openSettings() {
-    ApexBottomSheet.show(
+  Future<void> _openSettings() {
+    return ApexBottomSheet.show<void>(
       context,
       scrollable: true,
       isScrollControlled: true,
@@ -388,8 +389,8 @@ class _HomeScreenState extends State<HomeScreen>
     );
   }
 
-  void _openAbout() {
-    ApexBottomSheet.show(
+  Future<void> _openAbout() {
+    return ApexBottomSheet.show<void>(
       context,
       scrollable: true,
       isScrollControlled: true,
