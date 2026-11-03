@@ -3,12 +3,13 @@ import 'dart:io';
 import 'package:flutter/material.dart';
 
 import '../../core/apex_core.dart';
+import '../../features/send/data/send_http.dart';
+import '../../features/send/ui/send_outcome_message.dart';
 import '../../l10n/generated/app_localizations.dart';
 import '../../models/device.dart';
 import '../../services/clipboard_monitor_service.dart';
 import '../../services/desktop_notification_service.dart';
 import '../../services/transfer_progress_service.dart';
-import '../../shared/apex_snackbar.dart';
 import '../screens/share_browser_screen.dart';
 import 'connection_send_actions.dart';
 import 'transfer_progress_indicator.dart';
@@ -387,12 +388,12 @@ class _ConnectionWidgetState extends State<ConnectionWidget>
     }
     setSending();
     try {
-      final ok = await ApexCore.instance.sendFile(path, widget.device);
+      final outcome = await ApexCore.instance.sendFile(path, widget.device);
+      final ok = outcome == SendOutcome.sent;
       if (mounted) {
-        ApexSnackBar.result(context,
-            ok: ok,
-            successMessage: AppLocalizations.of(context).fileSentSuccess,
-            failMessage: AppLocalizations.of(context).fileSendFailed);
+        showSendOutcome(context, outcome,
+            sent: AppLocalizations.of(context).fileSentSuccess,
+            failed: AppLocalizations.of(context).fileSendFailed);
         if (ok) {
           widget.onPendingFileSent?.call();
         }
@@ -412,12 +413,12 @@ class _ConnectionWidgetState extends State<ConnectionWidget>
     }
     setSending();
     try {
-      final ok = await ApexCore.instance.sendFiles(paths, widget.device);
+      final outcome = await ApexCore.instance.sendFiles(paths, widget.device);
+      final ok = outcome == SendOutcome.sent;
       if (mounted) {
-        ApexSnackBar.result(context,
-            ok: ok,
-            successMessage: AppLocalizations.of(context).fileSentSuccess,
-            failMessage: AppLocalizations.of(context).fileSendFailed);
+        showSendOutcome(context, outcome,
+            sent: AppLocalizations.of(context).fileSentSuccess,
+            failed: AppLocalizations.of(context).fileSendFailed);
         if (ok) {
           widget.onSharedFilesSent?.call();
         }
@@ -445,14 +446,12 @@ class _ConnectionWidgetState extends State<ConnectionWidget>
     }
     setSending();
     try {
-      final ok = await ApexCore.instance.sendFiles(item.paths, widget.device);
+      final outcome = await ApexCore.instance.sendFiles(item.paths, widget.device);
+      final ok = outcome == SendOutcome.sent;
       if (mounted) {
-        ApexSnackBar.result(
-          context,
-          ok: ok,
-          successMessage: AppLocalizations.of(context).fileSentSuccess,
-          failMessage: AppLocalizations.of(context).fileSendFailed,
-        );
+        showSendOutcome(context, outcome,
+            sent: AppLocalizations.of(context).fileSentSuccess,
+            failed: AppLocalizations.of(context).fileSendFailed);
         if (ok) {
           widget.onClipboardItemSent?.call();
           // نظّف الصور المؤقتة بعد الإرسال الناجح

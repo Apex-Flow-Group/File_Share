@@ -213,5 +213,10 @@
   "confirmDeleteFromShare": "هل تريد حذف هذا الملف من المجلد المشترك؟",
   "shareNetworkError": "الجهاز غير متاح",
   "uploading": "جاري الرفع...",
-  "downloading": "جاري التنزيل..."
+  "downloading": "جاري التنزيل...",
+  "updateRequired": "إصدار التطبيق مختلف بين الجهازين. حدّثه على الجهازين",
+  "sendDeclined": "رفض الجهاز الآخر الاستلام",
+  "sendNoAnswer": "لم يُجب الجهاز الآخر",
+  "sendReceiverBusy": "الجهاز الآخر مشغول بطلب آخر. حاول بعد قليل",
+  "sendCancelled": "أُلغي الإرسال"
 }

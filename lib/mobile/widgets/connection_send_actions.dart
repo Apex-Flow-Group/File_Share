@@ -4,12 +4,13 @@ import 'package:file_picker/file_picker.dart';
 import 'package:flutter/material.dart';
 
 import '../../core/apex_core.dart';
+import '../../features/send/data/send_http.dart';
+import '../../features/send/ui/send_outcome_message.dart';
 import '../../l10n/generated/app_localizations.dart';
 import '../../models/device.dart';
 import '../../services/desktop_notification_service.dart';
 import '../../services/folder_zip_service.dart';
 import '../../services/transfer_progress_service.dart';
-import '../../shared/apex_snackbar.dart';
 import '../screens/apps_selection_screen.dart';
 
 /// Mixin that encapsulates file/app/folder send actions for ConnectionWidget.
@@ -29,14 +30,12 @@ mixin ConnectionSendActions<T extends StatefulWidget> on State<T> {
 
     setSending();
     try {
-      final ok = await ApexCore.instance.sendFiles(paths, device);
+      final outcome = await ApexCore.instance.sendFiles(paths, device);
+      final ok = outcome == SendOutcome.sent;
       if (mounted) {
-        _showSnack(
-          ok
-              ? AppLocalizations.of(context).fileSentSuccess
-              : AppLocalizations.of(context).fileSendFailed,
-          ok,
-        );
+        showSendOutcome(context, outcome,
+            sent: AppLocalizations.of(context).fileSentSuccess,
+            failed: AppLocalizations.of(context).fileSendFailed);
       }
       final label = paths.length == 1
           ? paths.first.split('/').last
@@ -69,9 +68,9 @@ mixin ConnectionSendActions<T extends StatefulWidget> on State<T> {
           final paths = selectedApps.map((a) => a.file.path).toList();
           final names = selectedApps.map((a) => '${a.name}.apk').toList();
 
-          bool ok;
+          SendOutcome outcome;
           if (selectedApps.length == 1) {
-            ok = await ApexCore.instance
+            outcome = await ApexCore.instance
                 .sendFileWithName(paths.first, names.first, device);
           } else {
             final files = <String>[];
@@ -86,7 +85,7 @@ mixin ConnectionSendActions<T extends StatefulWidget> on State<T> {
                 files.add(src.path);
               }
             }
-            ok = await ApexCore.instance.sendFiles(files, device);
+            outcome = await ApexCore.instance.sendFiles(files, device);
             for (int i = 0; i < files.length; i++) {
               if (files[i] != selectedApps[i].file.path) {
                 try {
@@ -99,12 +98,9 @@ mixin ConnectionSendActions<T extends StatefulWidget> on State<T> {
           if (!mounted) {
             return;
           }
-          _showSnack(
-            ok
-                ? AppLocalizations.of(context).appSent
-                : AppLocalizations.of(context).sendFailed,
-            ok,
-          );
+          showSendOutcome(context, outcome,
+              sent: AppLocalizations.of(context).appSent,
+              failed: AppLocalizations.of(context).sendFailed);
         } finally {
           TransferProgressService().clearProgress();
           if (mounted) {
@@ -127,15 +123,13 @@ mixin ConnectionSendActions<T extends StatefulWidget> on State<T> {
       zipPath = await FolderZipService.zipFolder(folderPath);
       final folderName = folderPath.split(Platform.pathSeparator).last;
 
-      final ok = await ApexCore.instance
+      final outcome = await ApexCore.instance
           .sendFileWithName(zipPath, '$folderName.zip', device);
+      final ok = outcome == SendOutcome.sent;
       if (mounted) {
-        _showSnack(
-          ok
-              ? AppLocalizations.of(context).folderSent
-              : AppLocalizations.of(context).sendFailed,
-          ok,
-        );
+        showSendOutcome(context, outcome,
+            sent: AppLocalizations.of(context).folderSent,
+            failed: AppLocalizations.of(context).sendFailed);
       }
       final label = '$folderName.zip';
       if (ok) {
@@ -152,12 +146,5 @@ mixin ConnectionSendActions<T extends StatefulWidget> on State<T> {
         setIdle();
       }
     }
-  }
-
-  void _showSnack(String msg, bool ok) {
-    if (!mounted) {
-      return;
-    }
-    ApexSnackBar.result(context, ok: ok, successMessage: msg, failMessage: msg);
   }
 }

@@ -262,26 +262,25 @@ class ApexCore {
 
   // ─── Send ──────────────────────────────────────────────────────────────────
 
-  Future<bool> sendFile(String filePath, Device target) =>
+  Future<SendOutcome> sendFile(String filePath, Device target) =>
       sendFileWithName(filePath, _extractFileName(filePath), target);
 
-  Future<bool> sendFileWithName(
+  Future<SendOutcome> sendFileWithName(
       String filePath, String fileName, Device target) async {
     if (_isAndroid && target.isNearby) {
-      return _nearby.sendFile(filePath, fileName, target);
+      return _nearbyOutcome(await _nearby.sendFile(filePath, fileName, target));
     }
     final f = File(filePath);
     if (!await f.exists()) {
-      return false;
+      return SendOutcome.failed;
     }
     final size = await f.length();
-    return await _send.sendFiles([(path: filePath, name: fileName, size: size)], target) ==
-        SendOutcome.sent;
+    return _send.sendFiles([(path: filePath, name: fileName, size: size)], target);
   }
 
-  Future<bool> sendFiles(List<String> filePaths, Device target) async {
+  Future<SendOutcome> sendFiles(List<String> filePaths, Device target) async {
     if (filePaths.isEmpty) {
-      return false;
+      return SendOutcome.failed;
     }
 
     final files = <({String path, String name, int size})>[];
@@ -294,15 +293,18 @@ class ApexCore {
           (path: path, name: _extractFileName(path), size: await f.length()));
     }
     if (files.isEmpty) {
-      return false;
+      return SendOutcome.failed;
     }
 
     if (_isAndroid && target.isNearby) {
-      return _nearby.sendBatchFiles(files, target);
+      return _nearbyOutcome(await _nearby.sendBatchFiles(files, target));
     }
 
-    return await _send.sendFiles(files, target) == SendOutcome.sent;
+    return _send.sendFiles(files, target);
   }
+
+  /// Nearby reports only success or failure.
+  SendOutcome _nearbyOutcome(bool ok) => ok ? SendOutcome.sent : SendOutcome.failed;
 
   /// Android saves through MediaStore; other systems move the file into the
   /// category folder without replacing an existing one.

@@ -629,4 +629,21 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get downloading => 'Downloading...';
+
+  @override
+  String get updateRequired =>
+      'The app version differs between the two devices. Update it on both';
+
+  @override
+  String get sendDeclined => 'The other device declined';
+
+  @override
+  String get sendNoAnswer => 'The other device did not answer';
+
+  @override
+  String get sendReceiverBusy =>
+      'The other device is answering another request. Try again shortly';
+
+  @override
+  String get sendCancelled => 'Sending was cancelled';
 }

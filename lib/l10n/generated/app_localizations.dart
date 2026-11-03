@@ -1315,6 +1315,36 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Downloading...'**
   String get downloading;
+
+  /// No description provided for @updateRequired.
+  ///
+  /// In en, this message translates to:
+  /// **'The app version differs between the two devices. Update it on both'**
+  String get updateRequired;
+
+  /// No description provided for @sendDeclined.
+  ///
+  /// In en, this message translates to:
+  /// **'The other device declined'**
+  String get sendDeclined;
+
+  /// No description provided for @sendNoAnswer.
+  ///
+  /// In en, this message translates to:
+  /// **'The other device did not answer'**
+  String get sendNoAnswer;
+
+  /// No description provided for @sendReceiverBusy.
+  ///
+  /// In en, this message translates to:
+  /// **'The other device is answering another request. Try again shortly'**
+  String get sendReceiverBusy;
+
+  /// No description provided for @sendCancelled.
+  ///
+  /// In en, this message translates to:
+  /// **'Sending was cancelled'**
+  String get sendCancelled;
 }
 
 class _AppLocalizationsDelegate

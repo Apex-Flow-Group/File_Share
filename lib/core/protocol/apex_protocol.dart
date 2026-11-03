@@ -15,5 +15,9 @@ class ApexProtocol {
   /// Error code of a version refusal; the sender shows "update the app".
   static const updateRequired = 'update_required';
 
+  /// Why an offer was not accepted when the user never answered (a refusal
+  /// carries no reason). The sender must not report it as a refusal.
+  static const noAnswer = 'no_answer';
+
   static bool accepts(String? sentVersion) => sentVersion == '$version';
 }

@@ -102,14 +102,15 @@ class ReceiveHttp {
       return;
     }
     _asking = true;
-    final bool accepted;
+    final bool? accepted;
     try {
       accepted = await _ask(offer);
     } finally {
       _asking = false;
     }
-    if (!accepted) {
-      await _reply(req, HttpStatus.ok, {'accepted': false});
+    if (accepted != true) {
+      await _reply(req, HttpStatus.ok,
+          {'accepted': false, if (accepted == null) 'reason': ApexProtocol.noAnswer});
       return;
     }
     final tokens = gate.admit(offer);
@@ -117,8 +118,9 @@ class ReceiveHttp {
     await _reply(req, HttpStatus.ok, {'accepted': true, 'tokens': tokens});
   }
 
-  Future<bool> _ask(Offer offer) {
-    final answer = Completer<bool>();
+  /// True or false as the user answered; null when no answer came in time.
+  Future<bool?> _ask(Offer offer) {
+    final answer = Completer<bool?>();
     onConnectionRequest(ConnectionRequest(
       device: Device(
           id: 'http:${offer.senderAddress}',
@@ -135,7 +137,7 @@ class ReceiveHttp {
         }
       },
     ));
-    return answer.future.timeout(decisionTimeout, onTimeout: () => false);
+    return answer.future.timeout(decisionTimeout, onTimeout: () => null);
   }
 
   /// The address comes from the connection; any address in the body is ignored.

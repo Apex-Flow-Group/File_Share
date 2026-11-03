@@ -5,6 +5,8 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 
 import '../../../core/apex_core.dart';
+import '../../../features/send/data/send_http.dart';
+import '../../../features/send/ui/send_outcome_message.dart';
 import '../../../l10n/generated/app_localizations.dart';
 import '../../../mobile/screens/apps_selection_screen.dart';
 import '../../../mobile/widgets/connection_widget.dart';
@@ -12,7 +14,6 @@ import '../../../models/device.dart';
 import '../../../services/desktop_notification_service.dart';
 import '../../../services/folder_zip_service.dart';
 import '../../../services/transfer_progress_service.dart';
-import '../../../shared/apex_snackbar.dart';
 import '../tv_file_browser.dart';
 import '../tv_focusable_widgets.dart';
 
@@ -148,13 +149,13 @@ class _TVDeviceCardState extends State<TVDeviceCard> {
       return;
     }
 
-    final ok = await ApexCore.instance.sendFiles(paths, widget.device);
+    final outcome = await ApexCore.instance.sendFiles(paths, widget.device);
+    final ok = outcome == SendOutcome.sent;
     if (mounted) {
       final l10n = AppLocalizations.of(context);
-      ApexSnackBar.result(context,
-          ok: ok,
-          successMessage: l10n.fileSentSuccess,
-          failMessage: l10n.fileSendFailed);
+      showSendOutcome(context, outcome,
+          sent: l10n.fileSentSuccess,
+          failed: l10n.fileSendFailed);
     }
     final label = paths.length == 1
         ? paths.first.split('/').last
@@ -177,22 +178,23 @@ class _TVDeviceCardState extends State<TVDeviceCard> {
         if (!mounted || selectedApps.isEmpty) {
           return;
         }
-        bool ok;
+        SendOutcome outcome;
         if (selectedApps.length == 1) {
-          ok = await ApexCore.instance.sendFileWithName(
+          outcome = await ApexCore.instance.sendFileWithName(
               selectedApps.first.file.path,
               '${selectedApps.first.name}.apk',
               widget.device);
         } else {
           final paths = selectedApps.map((a) => a.file.path).toList();
-          ok = await ApexCore.instance.sendFiles(paths, widget.device);
+          outcome = await ApexCore.instance.sendFiles(paths, widget.device);
         }
         if (!mounted) {
           return;
         }
         final l10n = AppLocalizations.of(context);
-        ApexSnackBar.result(context,
-            ok: ok, successMessage: l10n.appSent, failMessage: l10n.sendFailed);
+        showSendOutcome(context, outcome,
+            sent: l10n.appSent,
+            failed: l10n.sendFailed);
         TransferProgressService().clearProgress();
       },
     );
@@ -209,14 +211,14 @@ class _TVDeviceCardState extends State<TVDeviceCard> {
       zipPath = await FolderZipService.zipFolder(folderPath);
       final folderName = folderPath.split(Platform.pathSeparator).last;
 
-      final ok = await ApexCore.instance
+      final outcome = await ApexCore.instance
           .sendFileWithName(zipPath, '$folderName.zip', widget.device);
+      final ok = outcome == SendOutcome.sent;
       if (mounted) {
         final l10n = AppLocalizations.of(context);
-        ApexSnackBar.result(context,
-            ok: ok,
-            successMessage: l10n.folderSent,
-            failMessage: l10n.sendFailed);
+        showSendOutcome(context, outcome,
+            sent: l10n.folderSent,
+            failed: l10n.sendFailed);
       }
       final label = '$folderName.zip';
       if (ok) {

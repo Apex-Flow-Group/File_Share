@@ -216,5 +216,10 @@
   "confirmDeleteFromShare": "Delete this file from the shared folder?",
   "shareNetworkError": "Device unreachable",
   "uploading": "Uploading...",
-  "downloading": "Downloading..."
+  "downloading": "Downloading...",
+  "updateRequired": "The app version differs between the two devices. Update it on both",
+  "sendDeclined": "The other device declined",
+  "sendNoAnswer": "The other device did not answer",
+  "sendReceiverBusy": "The other device is answering another request. Try again shortly",
+  "sendCancelled": "Sending was cancelled"
 }

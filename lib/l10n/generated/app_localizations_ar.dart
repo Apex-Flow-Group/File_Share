@@ -625,4 +625,20 @@ class AppLocalizationsAr extends AppLocalizations {
 
   @override
   String get downloading => 'جاري التنزيل...';
+
+  @override
+  String get updateRequired =>
+      'إصدار التطبيق مختلف بين الجهازين. حدّثه على الجهازين';
+
+  @override
+  String get sendDeclined => 'رفض الجهاز الآخر الاستلام';
+
+  @override
+  String get sendNoAnswer => 'لم يُجب الجهاز الآخر';
+
+  @override
+  String get sendReceiverBusy => 'الجهاز الآخر مشغول بطلب آخر. حاول بعد قليل';
+
+  @override
+  String get sendCancelled => 'أُلغي الإرسال';
 }

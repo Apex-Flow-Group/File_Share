@@ -29,6 +29,7 @@ class ReceiveTestServer {
   static Future<ReceiveTestServer> start({
     bool? Function(ConnectionRequest)? decide,
     Duration? bodyIdleLimit,
+    Duration? decisionTimeout,
   }) async {
     TransferProgressService().clearProgress();
     final root = await Directory.systemTemp.createTemp('apex_receive_server_');
@@ -50,6 +51,7 @@ class ReceiveTestServer {
       },
       onFileReceived: (_) {},
       bodyIdleLimit: bodyIdleLimit ?? TransferRules.bodyIdleLimit,
+      decisionTimeout: decisionTimeout ?? TransferRules.decisionTimeout,
     );
     server.listen((req) async {
       if (!await receive.handle(req)) {

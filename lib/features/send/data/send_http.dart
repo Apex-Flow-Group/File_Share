@@ -10,7 +10,7 @@ import '../../../models/transfer_progress.dart';
 import '../../../services/transfer_progress_service.dart';
 import '../../../utils/apex_logger.dart';
 
-enum SendOutcome { sent, declined, updateRequired, failed, cancelled }
+enum SendOutcome { sent, declined, noAnswer, updateRequired, busy, failed, cancelled }
 
 typedef OutgoingFile = ({String path, String name, int size});
 
@@ -74,12 +74,17 @@ class SendHttp {
       if (res.statusCode == HttpStatus.notFound || res.statusCode == HttpStatus.upgradeRequired) {
         return (outcome: SendOutcome.updateRequired, tokens: null);
       }
+      // The receiver is already asking its user about another offer.
+      if (res.statusCode == HttpStatus.tooManyRequests) {
+        return (outcome: SendOutcome.busy, tokens: null);
+      }
       if (res.statusCode != HttpStatus.ok) {
         return failed;
       }
       final json = jsonDecode(text);
       if (json is! Map || json['accepted'] != true) {
-        return (outcome: SendOutcome.declined, tokens: null);
+        final unanswered = json is Map && json['reason'] == ApexProtocol.noAnswer;
+        return (outcome: unanswered ? SendOutcome.noAnswer : SendOutcome.declined, tokens: null);
       }
       final tokens = json['tokens'];
       if (tokens is! List || tokens.length != files.length || tokens.any((t) => t is! String)) {
