@@ -185,7 +185,7 @@ class _TVSendTabState extends State<TVSendTab> with TickerProviderStateMixin {
                 // ─── الأجهزة المثبتة
                 if (widget.pinnedDevices.isNotEmpty) ...[
                   _TVSectionHeader(
-                    icon: Icons.push_pin_rounded,
+                    icon: Icons.star_rounded,
                     label: l10n.pinnedDevices,
                     isDark: isDark,
                   ),

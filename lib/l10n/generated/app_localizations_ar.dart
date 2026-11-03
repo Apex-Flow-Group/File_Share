@@ -358,10 +358,10 @@ class AppLocalizationsAr extends AppLocalizations {
   }
 
   @override
-  String get pinDevice => 'تثبيت الجهاز';
+  String get pinDevice => 'إضافة إلى المفضلة';
 
   @override
-  String get unpinDevice => 'إلغاء تثبيت الجهاز';
+  String get unpinDevice => 'إزالة من المفضلة';
 
   @override
   String get deviceOffline => 'غير متصل حالياً';
@@ -611,7 +611,7 @@ class AppLocalizationsAr extends AppLocalizations {
       'عند كل نسخ ينتقل التطبيق إلى تبويب الإرسال ويعرض ما نسخته مع زر لإرساله. ويقرأ كل ما تنسخه، ومنه كلمات المرور.';
 
   @override
-  String get pinnedDevices => 'الأجهزة المثبتة';
+  String get pinnedDevices => 'الأجهزة المفضلة';
 
   @override
   String get newDevices => 'أجهزة جديدة';

@@ -118,8 +118,8 @@
   "@sendCount": {
     "placeholders": { "count": { "type": "int" } }
   },
-  "pinDevice": "تثبيت الجهاز",
-  "unpinDevice": "إلغاء تثبيت الجهاز",
+  "pinDevice": "إضافة إلى المفضلة",
+  "unpinDevice": "إزالة من المفضلة",
   "deviceOffline": "غير متصل حالياً",
   "pickApp": "اختر تطبيقاً",
   "directConnection": "اتصال مباشر",
@@ -207,7 +207,7 @@
   "clipboardSettings": "الحافظة",
   "watchClipboard": "اقتراح إرسال ما تنسخه",
   "watchClipboardDesc": "عند كل نسخ ينتقل التطبيق إلى تبويب الإرسال ويعرض ما نسخته مع زر لإرساله. ويقرأ كل ما تنسخه، ومنه كلمات المرور.",
-  "pinnedDevices": "الأجهزة المثبتة",
+  "pinnedDevices": "الأجهزة المفضلة",
   "newDevices": "أجهزة جديدة",
 
   "sharedFolder": "المجلد المشترك",

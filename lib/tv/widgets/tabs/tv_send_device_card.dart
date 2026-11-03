@@ -267,7 +267,7 @@ class _TVSendOptionsDialog extends StatelessWidget {
               if (canSend) const SizedBox(height: 8),
               // The phone card pins by touch; the remote reaches it only here.
               TVDialogOption(
-                icon: isPinned ? Icons.push_pin_outlined : Icons.push_pin_rounded,
+                icon: isPinned ? Icons.star_border_rounded : Icons.star_rounded,
                 label: isPinned ? l10n.unpinDevice : l10n.pinDevice,
                 color: Colors.grey,
                 autofocus: !canSend,
@@ -347,7 +347,7 @@ class _TVDeviceTile extends StatelessWidget {
               ],
             ),
           ),
-          if (isPinned) Icon(Icons.push_pin_rounded, size: 18, color: color),
+          if (isPinned) Icon(Icons.star_rounded, size: 18, color: color),
           const SizedBox(width: 8),
           Container(
             width: 10,

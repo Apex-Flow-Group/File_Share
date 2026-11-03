@@ -356,10 +356,10 @@ class AppLocalizationsEn extends AppLocalizations {
   }
 
   @override
-  String get pinDevice => 'Pin device';
+  String get pinDevice => 'Add to favorites';
 
   @override
-  String get unpinDevice => 'Unpin device';
+  String get unpinDevice => 'Remove from favorites';
 
   @override
   String get deviceOffline => 'Currently offline';
@@ -611,7 +611,7 @@ class AppLocalizationsEn extends AppLocalizations {
       'Each time you copy, the app opens the Send tab and shows what you copied with a button to send it. It reads everything you copy, passwords included.';
 
   @override
-  String get pinnedDevices => 'Pinned Devices';
+  String get pinnedDevices => 'Favorite Devices';
 
   @override
   String get newDevices => 'New Devices';

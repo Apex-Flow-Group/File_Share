@@ -120,8 +120,8 @@
   "@sendCount": {
     "placeholders": { "count": { "type": "int" } }
   },
-  "pinDevice": "Pin device",
-  "unpinDevice": "Unpin device",
+  "pinDevice": "Add to favorites",
+  "unpinDevice": "Remove from favorites",
   "deviceOffline": "Currently offline",
   "pickApp": "Choose an app",
   "directConnection": "Nearby",
@@ -210,7 +210,7 @@
   "clipboardSettings": "Clipboard",
   "watchClipboard": "Offer to send what you copy",
   "watchClipboardDesc": "Each time you copy, the app opens the Send tab and shows what you copied with a button to send it. It reads everything you copy, passwords included.",
-  "pinnedDevices": "Pinned Devices",
+  "pinnedDevices": "Favorite Devices",
   "newDevices": "New Devices",
 
   "sharedFolder": "Shared Folder",

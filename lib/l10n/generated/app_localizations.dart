@@ -767,13 +767,13 @@ abstract class AppLocalizations {
   /// No description provided for @pinDevice.
   ///
   /// In en, this message translates to:
-  /// **'Pin device'**
+  /// **'Add to favorites'**
   String get pinDevice;
 
   /// No description provided for @unpinDevice.
   ///
   /// In en, this message translates to:
-  /// **'Unpin device'**
+  /// **'Remove from favorites'**
   String get unpinDevice;
 
   /// No description provided for @deviceOffline.
@@ -1265,7 +1265,7 @@ abstract class AppLocalizations {
   /// No description provided for @pinnedDevices.
   ///
   /// In en, this message translates to:
-  /// **'Pinned Devices'**
+  /// **'Favorite Devices'**
   String get pinnedDevices;
 
   /// No description provided for @newDevices.

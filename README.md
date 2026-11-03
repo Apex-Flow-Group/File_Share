@@ -31,7 +31,7 @@ Most file-sharing tools either require an internet connection, charge a subscrip
 | 📦 **Batch transfer** | Send multiple files or a whole folder in one tap |
 | 📱 **Share Sheet** | Appears in the Android system share menu |
 | 📺 **Android TV** | Full remote-control UI with D-pad navigation |
-| 🖥️ **Desktop sidebar** | Pinned devices, network mode selector, notifications |
+| 🖥️ **Desktop sidebar** | Favorite devices, network mode selector, notifications |
 | 🌙 **Dark / Light / System** | Theme follows OS preference by default |
 | 🌍 **Arabic & English** | Full RTL support |
 | 🔒 **100% offline** | No internet required — LAN only |

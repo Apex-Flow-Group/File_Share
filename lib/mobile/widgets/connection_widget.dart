@@ -264,29 +264,34 @@ class _ConnectionWidgetState extends State<ConnectionWidget>
             ],
           ),
         ),
-        // ─── زر الدبوس
+        // ─── زر المفضلة
         if (widget.onPin != null || widget.onUnpin != null)
-          GestureDetector(
-            onTap: widget.isPinned ? widget.onUnpin : widget.onPin,
-            child: Container(
-              width: 30,
-              height: 30,
-              margin: const EdgeInsets.only(right: 6),
-              decoration: BoxDecoration(
-                color: widget.isPinned
-                    ? color.withValues(alpha: isDark ? 0.25 : 0.15)
-                    : (isDark ? Colors.white : Colors.black)
-                        .withValues(alpha: 0.06),
-                borderRadius: BorderRadius.circular(9),
-              ),
-              child: Icon(
-                widget.isPinned
-                    ? Icons.push_pin_rounded
-                    : Icons.push_pin_outlined,
-                size: 16,
-                color: widget.isPinned
-                    ? color
-                    : (isDark ? Colors.white38 : Colors.black38),
+          Tooltip(
+            message: widget.isPinned
+                ? AppLocalizations.of(context).unpinDevice
+                : AppLocalizations.of(context).pinDevice,
+            child: GestureDetector(
+              onTap: widget.isPinned ? widget.onUnpin : widget.onPin,
+              child: Container(
+                width: 30,
+                height: 30,
+                margin: const EdgeInsets.only(right: 6),
+                decoration: BoxDecoration(
+                  color: widget.isPinned
+                      ? color.withValues(alpha: isDark ? 0.25 : 0.15)
+                      : (isDark ? Colors.white : Colors.black)
+                          .withValues(alpha: 0.06),
+                  borderRadius: BorderRadius.circular(9),
+                ),
+                child: Icon(
+                  widget.isPinned
+                      ? Icons.star_rounded
+                      : Icons.star_border_rounded,
+                  size: 16,
+                  color: widget.isPinned
+                      ? color
+                      : (isDark ? Colors.white38 : Colors.black38),
+                ),
               ),
             ),
           ),
