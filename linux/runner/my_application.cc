@@ -123,32 +123,14 @@ static void on_clipboard_changed(GtkClipboard* clipboard,
       }
     }
     if (has_content) {
-      std::string path = make_temp_path("apex_clip_", "txt");
-      std::ofstream f(path, std::ios::binary);
-      if (f.is_open()) {
-        f.write(text, strlen(text));
-        f.close();
-
-        // Preview: first 100 UTF-8 characters (simple byte slice is fine for preview)
-        std::string preview(text);
-        bool truncated = false;
-        if (preview.size() > 100) {
-          preview = preview.substr(0, 100);
-          truncated = true;
-        }
-        if (truncated) preview += "...";
-
-        g_autoptr(FlValue) args = fl_value_new_map();
-        fl_value_set_string_take(args, "type", fl_value_new_string("text"));
-        g_autoptr(FlValue) paths_list = fl_value_new_list();
-        fl_value_append_take(paths_list, fl_value_new_string(path.c_str()));
-        fl_value_set_string(args, "paths", paths_list);
-        fl_value_set_string_take(args, "textPreview",
-                                 fl_value_new_string(preview.c_str()));
-        fl_method_channel_invoke_method(self->clipboard_channel,
-                                       "onClipboardChanged", args,
-                                       nullptr, nullptr, nullptr);
-      }
+      // The text stays in memory: it may be a password, and /tmp is
+      // readable by other users of the machine.
+      g_autoptr(FlValue) args = fl_value_new_map();
+      fl_value_set_string_take(args, "type", fl_value_new_string("text"));
+      fl_value_set_string_take(args, "text", fl_value_new_string(text));
+      fl_method_channel_invoke_method(self->clipboard_channel,
+                                     "onClipboardChanged", args,
+                                     nullptr, nullptr, nullptr);
     }
     g_free(text);
   }
@@ -224,22 +206,34 @@ static void my_application_activate(GApplication* application) {
   self->clipboard_channel = fl_method_channel_new(
       messenger, kClipboardChannel, FL_METHOD_CODEC(codec));
 
-  // Dart → C++ calls not used on this channel; just return NotImplemented
+  // Nothing is watched until Dart sends "start" (the user turned it on).
+  self->clipboard = gtk_clipboard_get(GDK_SELECTION_CLIPBOARD);
   fl_method_channel_set_method_call_handler(
       self->clipboard_channel,
-      [](FlMethodChannel*, FlMethodCall* call, gpointer) {
-        g_autoptr(FlMethodErrorResponse) response =
-            fl_method_error_response_new("NOT_IMPLEMENTED",
-                                        "not implemented", nullptr);
-        fl_method_call_respond(call, FL_METHOD_RESPONSE(response), nullptr);
+      [](FlMethodChannel*, FlMethodCall* call, gpointer user_data) {
+        MyApplication* self = MY_APPLICATION(user_data);
+        const gchar* method = fl_method_call_get_name(call);
+        g_autoptr(FlMethodResponse) response = nullptr;
+        if (g_strcmp0(method, "start") == 0) {
+          if (self->clipboard_signal_id == 0) {
+            self->clipboard_signal_id =
+                g_signal_connect(self->clipboard, "owner-change",
+                                 G_CALLBACK(on_clipboard_changed), self);
+          }
+          response = FL_METHOD_RESPONSE(fl_method_success_response_new(nullptr));
+        } else if (g_strcmp0(method, "stop") == 0) {
+          if (self->clipboard_signal_id > 0) {
+            g_signal_handler_disconnect(self->clipboard,
+                                        self->clipboard_signal_id);
+            self->clipboard_signal_id = 0;
+          }
+          response = FL_METHOD_RESPONSE(fl_method_success_response_new(nullptr));
+        } else {
+          response = FL_METHOD_RESPONSE(fl_method_not_implemented_response_new());
+        }
+        fl_method_call_respond(call, response, nullptr);
       },
       self, nullptr);
-
-  // ── Connect to GTK clipboard owner-change signal ──────────────────────────
-  self->clipboard = gtk_clipboard_get(GDK_SELECTION_CLIPBOARD);
-  self->clipboard_signal_id =
-      g_signal_connect(self->clipboard, "owner-change",
-                       G_CALLBACK(on_clipboard_changed), self);
 
   gtk_widget_grab_focus(GTK_WIDGET(view));
 }

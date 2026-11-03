@@ -556,6 +556,16 @@ class AppLocalizationsEn extends AppLocalizations {
   String get clipboardSendTooltip => 'Send from clipboard';
 
   @override
+  String get clipboardSettings => 'Clipboard';
+
+  @override
+  String get watchClipboard => 'Offer to send what you copy';
+
+  @override
+  String get watchClipboardDesc =>
+      'Each time you copy, the app opens the Send tab and shows what you copied with a button to send it. It reads everything you copy, passwords included.';
+
+  @override
   String get pinnedDevices => 'Pinned Devices';
 
   @override

@@ -553,6 +553,16 @@ class AppLocalizationsAr extends AppLocalizations {
   String get clipboardSendTooltip => 'إرسال من الحافظة';
 
   @override
+  String get clipboardSettings => 'الحافظة';
+
+  @override
+  String get watchClipboard => 'اقتراح إرسال ما تنسخه';
+
+  @override
+  String get watchClipboardDesc =>
+      'عند كل نسخ ينتقل التطبيق إلى تبويب الإرسال ويعرض ما نسخته مع زر لإرساله. ويقرأ كل ما تنسخه، ومنه كلمات المرور.';
+
+  @override
   String get pinnedDevices => 'الأجهزة المثبتة';
 
   @override

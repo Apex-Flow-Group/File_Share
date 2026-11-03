@@ -190,6 +190,9 @@
   "clipboardTypeFiles": "Files",
   "clipboardTypeText": "Text",
   "clipboardSendTooltip": "Send from clipboard",
+  "clipboardSettings": "Clipboard",
+  "watchClipboard": "Offer to send what you copy",
+  "watchClipboardDesc": "Each time you copy, the app opens the Send tab and shows what you copied with a button to send it. It reads everything you copy, passwords included.",
   "pinnedDevices": "Pinned Devices",
   "newDevices": "New Devices",
 

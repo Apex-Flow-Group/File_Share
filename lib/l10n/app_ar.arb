@@ -187,6 +187,9 @@
   "clipboardTypeFiles": "ملفات",
   "clipboardTypeText": "نص",
   "clipboardSendTooltip": "إرسال من الحافظة",
+  "clipboardSettings": "الحافظة",
+  "watchClipboard": "اقتراح إرسال ما تنسخه",
+  "watchClipboardDesc": "عند كل نسخ ينتقل التطبيق إلى تبويب الإرسال ويعرض ما نسخته مع زر لإرساله. ويقرأ كل ما تنسخه، ومنه كلمات المرور.",
   "pinnedDevices": "الأجهزة المثبتة",
   "newDevices": "أجهزة جديدة",
 

@@ -67,6 +67,24 @@ class SettingsScreen extends StatelessWidget {
         if (PlatformDetector.instance.isDesktop) ...[
           _sectionLabel(context, l10n.sharedFolder),
           _ShareSettingsSection(settings: settings),
+          _sectionLabel(context, l10n.clipboardSettings),
+          ListenableBuilder(
+            listenable: settings,
+            builder: (context, _) => _buildGroup(context, isDark, [
+              _SettingsTile(
+                icon: Icons.content_paste_rounded,
+                iconColor: const Color(0xFFFF9500),
+                title: l10n.watchClipboard,
+                subtitle: l10n.watchClipboardDesc,
+                trailing: Switch(
+                  value: settings.clipboardMonitorEnabled,
+                  onChanged: settings.setClipboardMonitorEnabled,
+                ),
+                onTap: () => settings
+                    .setClipboardMonitorEnabled(!settings.clipboardMonitorEnabled),
+              ),
+            ]),
+          ),
         ],
 
         // ─── Appearance ───────────────────────────────────────────────

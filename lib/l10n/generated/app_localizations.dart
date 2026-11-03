@@ -1178,6 +1178,24 @@ abstract class AppLocalizations {
   /// **'Send from clipboard'**
   String get clipboardSendTooltip;
 
+  /// No description provided for @clipboardSettings.
+  ///
+  /// In en, this message translates to:
+  /// **'Clipboard'**
+  String get clipboardSettings;
+
+  /// No description provided for @watchClipboard.
+  ///
+  /// In en, this message translates to:
+  /// **'Offer to send what you copy'**
+  String get watchClipboard;
+
+  /// No description provided for @watchClipboardDesc.
+  ///
+  /// In en, this message translates to:
+  /// **'Each time you copy, the app opens the Send tab and shows what you copied with a button to send it. It reads everything you copy, passwords included.'**
+  String get watchClipboardDesc;
+
   /// No description provided for @pinnedDevices.
   ///
   /// In en, this message translates to:

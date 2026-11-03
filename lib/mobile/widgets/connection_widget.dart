@@ -446,7 +446,8 @@ class _ConnectionWidgetState extends State<ConnectionWidget>
     }
     setSending();
     try {
-      final outcome = await ApexCore.instance.sendFiles(item.paths, widget.device);
+      final outcome = await ClipboardMonitorService.instance.withSendableFiles(
+          item, (paths) => ApexCore.instance.sendFiles(paths, widget.device));
       final ok = outcome == SendOutcome.sent;
       if (mounted) {
         showSendOutcome(context, outcome,
@@ -458,7 +459,7 @@ class _ConnectionWidgetState extends State<ConnectionWidget>
           await ClipboardMonitorService.instance.cleanupTempImages();
         }
       }
-      final label = item.paths.length == 1
+      final label = item.paths.length <= 1
           ? item.displayName
           : '${item.paths.length} files';
       if (ok) {

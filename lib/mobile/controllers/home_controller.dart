@@ -293,6 +293,8 @@ class HomeController extends ChangeNotifier {
       return;
     }
     ClipboardMonitorService.instance.initialize();
+    _applyClipboardSetting();
+    settings.addListener(_applyClipboardSetting);
     _clipboardSub = ClipboardMonitorService.instance.stream.listen((item) {
       _pendingClipboardItem = item;
       if (item != null) {
@@ -301,6 +303,10 @@ class HomeController extends ChangeNotifier {
       }
       notifyListeners();
     });
+  }
+
+  void _applyClipboardSetting() {
+    ClipboardMonitorService.instance.setEnabled(settings.clipboardMonitorEnabled);
   }
 
   void clearPendingClipboardItem() {
@@ -373,6 +379,7 @@ class HomeController extends ChangeNotifier {
   @override
   void dispose() {
     _clipboardSub?.cancel();
+    settings.removeListener(_applyClipboardSetting);
     filesRefreshNotifier.dispose();
     super.dispose();
   }
