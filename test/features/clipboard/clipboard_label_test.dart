@@ -47,7 +47,7 @@ void main() {
 
   test('a copied file shows its name', () async {
     final l10n = await AppLocalizations.delegate.load(AppLocalizations.supportedLocales.first);
-    const item = ClipboardItem(paths: [r'C:\Users\a\Pictures\photo.png'], type: ClipboardItemType.image);
+    const item = ClipboardItem(paths: [r'D:\Pictures\photo.png'], type: ClipboardItemType.image);
 
     expect(clipboardLabel(l10n, item), 'photo.png');
   });
