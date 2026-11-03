@@ -10,32 +10,28 @@ import 'package:flutter_test/flutter_test.dart';
 /// When you move code out of a file, lower its number (or delete the line).
 const _legacyOsCode = <String, int>{
   'lib/core/apex_core.dart': 6,
-  'lib/main.dart': 2,
   'lib/managers/device_manager.dart': 20,
   'lib/managers/permission_manager.dart': 2,
   'lib/mobile/controllers/home_controller.dart': 3,
   'lib/mobile/screens/home_screen.dart': 1,
   'lib/mobile/screens/settings_screen.dart': 2,
   'lib/mobile/screens/settings_sheets.dart': 3,
-  'lib/mobile/screens/share_browser_screen.dart': 2,
+  'lib/mobile/screens/share_browser_screen.dart': 1,
   'lib/mobile/widgets/connection_widget.dart': 1,
   'lib/mobile/widgets/tabs/receive_tab.dart': 1,
   'lib/screens/about_screen.dart': 6,
   'lib/services/clipboard_monitor_service.dart': 2,
   'lib/services/desktop_notification_service.dart': 3,
   'lib/services/discovery_service.dart': 1,
-  'lib/services/file_storage_service.dart': 4,
   'lib/services/share_folder_service.dart': 6,
   'lib/services/update_service.dart': 1,
-  'lib/tv/widgets/tabs/tv_send_device_card.dart': 1,
-  'lib/utils/file_utils.dart': 10,
+  'lib/utils/file_utils.dart': 8,
   'lib/utils/path_utils.dart': 5,
   'lib/utils/platform_detector.dart': 6,
 };
 
 /// TV checks belong in lib/tv/, the router (main.dart) and the detector itself.
 const _legacyTvChecks = <String, int>{
-  'lib/core/nearby_transfer_receive.dart': 2,
   'lib/screens/splash_screen.dart': 1,
 };
 
