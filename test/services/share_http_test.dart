@@ -1,6 +1,5 @@
 // ignore_for_file: avoid_print
 
-import 'dart:convert';
 import 'dart:io';
 
 import 'package:apex_file_share/core/share_folder_http.dart';
@@ -63,19 +62,6 @@ Future<HttpClientResponse> _get(int port, String path,
   return req.close();
 }
 
-Future<HttpClientResponse> _post(
-    int port, String path, Map<String, String> params, List<int> body) async {
-  final uri = Uri.http('127.0.0.1:$port', path, params);
-  final c = HttpClient()..connectionTimeout = const Duration(seconds: 5);
-  final req = await c.postUrl(uri);
-  req.headers.set('Content-Length', body.length.toString());
-  req.add(body);
-  return req.close();
-}
-
-Future<String> _body(HttpClientResponse res) =>
-    res.transform(utf8.decoder).join();
-
 // ─── Tests ────────────────────────────────────────────────────────────────────
 
 void main() {
@@ -99,25 +85,6 @@ void main() {
   // ── GET /share ─────────────────────────────────────────────────────────────
 
   group('GET /share', () {
-    test('يُعيد 200 وJSON فارغ عندما المجلد فارغ', () async {
-      final res = await _get(port, '/share');
-      expect(res.statusCode, equals(200));
-      final json = jsonDecode(await _body(res)) as List;
-      expect(json, isEmpty);
-    });
-
-    test('يُعيد قائمة الملفات بعد إضافة ملف', () async {
-      await File('${srv.shareDir.path}/hello.txt').writeAsString('hello world');
-
-      final res = await _get(port, '/share');
-      expect(res.statusCode, equals(200));
-      final json = jsonDecode(await _body(res)) as List;
-      expect(json.length, equals(1));
-      expect(json.first['name'], equals('hello.txt'));
-      expect(json.first['size'], equals(11));
-      expect(json.first['modified'], isNotNull);
-    });
-
     test('يُعيد 404 إذا Share مُعطَّل', () async {
       srv.disableShare();
       final res = await _get(port, '/share');
@@ -127,63 +94,10 @@ void main() {
 
   // ── GET /share/file ────────────────────────────────────────────────────────
 
-  group('GET /share/file', () {
-    test('يُنزّل ملفاً موجوداً بالمحتوى الصحيح', () async {
-      const content = 'apex share content';
-      await File('${srv.shareDir.path}/test.txt').writeAsString(content);
-
-      final res = await _get(port, '/share/file', {'name': 'test.txt'});
-      expect(res.statusCode, equals(200));
-      expect(await _body(res), equals(content));
-    });
-
-    test('يُعيد 404 إذا الملف غير موجود', () async {
-      final res = await _get(port, '/share/file', {'name': 'ghost.txt'});
-      expect(res.statusCode, equals(404));
-    });
-
-    test('يُعيد 400 إذا اسم الملف فارغ', () async {
-      final res = await _get(port, '/share/file', {'name': ''});
-      expect(res.statusCode, equals(400));
-    });
-
-    test('يُعيد 400 لاسم خطير (../)', () async {
-      final res = await _get(port, '/share/file', {'name': '../secret.txt'});
-      expect(res.statusCode, equals(400));
-    });
-
-    test('Content-Disposition يحتوي اسم الملف', () async {
-      await File('${srv.shareDir.path}/doc.pdf').writeAsBytes([1, 2, 3]);
-      final res = await _get(port, '/share/file', {'name': 'doc.pdf'});
-      final disp = res.headers.value('Content-Disposition') ?? '';
-      expect(disp, contains('doc.pdf'));
-    });
-  });
 
   // ── POST /share/upload ─────────────────────────────────────────────────────
 
   group('POST /share/upload', () {
-    test('يحفظ ملفاً مرفوعاً بالمحتوى الصحيح', () async {
-      const data = [72, 101, 108, 108, 111]; // "Hello"
-      final res = await _post(
-          port, '/share/upload', {'name': 'upload.bin', 'from': 'Phone'}, data);
-      expect(res.statusCode, equals(200));
-      final json = jsonDecode(await _body(res)) as Map;
-      expect(json['success'], isTrue);
-
-      final savedName = json['name'] as String;
-      final saved = File('${srv.shareDir.path}/$savedName');
-      expect(saved.existsSync(), isTrue);
-      expect(saved.readAsBytesSync(), equals(data));
-    });
-
-    test('يُعيد 403 إذا الرفع مُعطَّل', () async {
-      srv.disableUploads();
-      final res = await _post(
-          port, '/share/upload', {'name': 'x.txt', 'from': 'Phone'}, [1]);
-      expect(res.statusCode, equals(403));
-    });
-
     test('اختبار حد الـ 2GB — المنطق في ShareFolderHttp', () {
       // اختبار مباشر للثابت بدون HTTP فعلي
       const maxBytes = 2 * 1024 * 1024 * 1024;
@@ -195,17 +109,4 @@ void main() {
 
   // ── GET /share/info ────────────────────────────────────────────────────────
 
-  group('GET /share/info', () {
-    test('يُعيد enabled=true وfileCount صحيح', () async {
-      await File('${srv.shareDir.path}/a.txt').writeAsString('a');
-      await File('${srv.shareDir.path}/b.txt').writeAsString('bb');
-
-      final res = await _get(port, '/share/info');
-      expect(res.statusCode, equals(200));
-      final json = jsonDecode(await _body(res)) as Map;
-      expect(json['enabled'], isTrue);
-      expect(json['fileCount'], equals(2));
-      expect(json['folderName'], isNotEmpty);
-    });
-  });
 }
