@@ -152,6 +152,14 @@ class ReceiveHttp {
       await _reply(req, HttpStatus.forbidden, {'error': 'not_accepted'});
       return;
     }
+    try {
+      await _receive(req, upload);
+    } finally {
+      upload.finish();
+    }
+  }
+
+  Future<void> _receive(HttpRequest req, Upload upload) async {
     final file = upload.file;
     if (req.contentLength != file.size) {
       await _reply(req, HttpStatus.badRequest, {'error': 'size'});

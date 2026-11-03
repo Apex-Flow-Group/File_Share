@@ -26,7 +26,11 @@ class ReceiveGate {
 
   /// The accepted file for [token], once. Null for a missing, unknown, used or
   /// expired token, or one sent from another address.
-  OfferedFile? claim(String? token, String senderAddress) => take(token, senderAddress)?.file;
+  OfferedFile? claim(String? token, String senderAddress) {
+    final upload = take(token, senderAddress);
+    upload?.finish();
+    return upload?.file;
+  }
 
   /// Like [claim], with a handle on the batch for the upload that follows.
   Upload? take(String? token, String senderAddress) {
@@ -39,7 +43,9 @@ class ReceiveGate {
       return null;
     }
     _tickets.remove(token);
-    ticket.batch.lastUse = _clock();
+    ticket.batch
+      ..lastUse = _clock()
+      ..moving += 1;
     return Upload._(this, ticket.batch, ticket.file);
   }
 
@@ -54,7 +60,10 @@ class ReceiveGate {
     return token;
   }
 
-  bool _isExpired(_Batch b) => _clock().difference(b.lastUse) > TransferRules.tokenIdleLimit;
+  /// Idle means no file of the batch is moving: a big file may take longer
+  /// than the limit, and the files after it must still be accepted.
+  bool _isExpired(_Batch b) =>
+      b.moving == 0 && _clock().difference(b.lastUse) > TransferRules.tokenIdleLimit;
 
   void _dropExpired() => _tickets.removeWhere((_, t) => _isExpired(t.batch));
 }
@@ -67,14 +76,28 @@ class Upload {
   final _Batch _batch;
   final OfferedFile file;
 
+  bool _finished = false;
+
   /// The receiving user cancelled: no other file of this batch is accepted.
   void revokeBatch() => _gate._revoke(_batch);
+
+  /// Call once the upload ends, however it ends. The idle time counts from here.
+  void finish() {
+    if (_finished) {
+      return;
+    }
+    _finished = true;
+    _batch
+      ..moving -= 1
+      ..lastUse = _gate._clock();
+  }
 }
 
 class _Batch {
   _Batch(this.address, this.lastUse);
   final String address;
   DateTime lastUse;
+  int moving = 0;
 }
 
 class _Ticket {
