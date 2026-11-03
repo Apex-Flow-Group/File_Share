@@ -364,7 +364,7 @@ class AppLocalizationsAr extends AppLocalizations {
   String get from => 'من';
 
   @override
-  String get savedIn => 'تم الحفظ في';
+  String get savedIn => 'حُفظ في';
 
   @override
   String get receiving => 'جاري الاستقبال...';
@@ -594,7 +594,7 @@ class AppLocalizationsAr extends AppLocalizations {
   String get downloadFromShare => 'تنزيل';
 
   @override
-  String get uploadSuccess => 'تم رفع الملف بنجاح';
+  String get uploadSuccess => 'رُفع الملف';
 
   @override
   String get uploadFailed => 'فشل الرفع';
