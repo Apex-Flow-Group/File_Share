@@ -8,8 +8,12 @@ import 'package:file_picker/file_picker.dart';
 import 'package:flutter/material.dart';
 import 'package:path_provider/path_provider.dart';
 
+import '../../core/apex_core.dart';
 import '../../core/files/move_into_folder.dart';
 import '../../core/files/save_download.dart';
+import '../../core/protocol/apex_protocol.dart';
+import '../../core/protocol/transfer_rules.dart';
+import '../../core/share_folder_http.dart';
 import '../../l10n/generated/app_localizations.dart';
 import '../../models/device.dart';
 import '../../services/share_folder_service.dart';
@@ -33,7 +37,17 @@ class _ShareBrowserScreenState extends State<ShareBrowserScreen> {
   bool _loading = true;
   String? _error;
 
+  /// Set when the other device answered; null for a network failure.
+  String? _refusal;
+
   final Map<String, double> _progress = {};
+
+  /// Issued by the other device when its user agreed; it ends there when the
+  /// folder is turned off or left unused.
+  String? _token;
+
+  /// What the other user agreed to; uploading needs its own yes.
+  bool _canUpload = false;
 
   @override
   void initState() {
@@ -47,16 +61,29 @@ class _ShareBrowserScreenState extends State<ShareBrowserScreen> {
     setState(() {
       _loading = true;
       _error = null;
+      _refusal = null;
     });
     try {
-      final url = Uri.http(
-        '${widget.device.ip}:${widget.device.port}',
-        '/share',
-      );
+      await _ensureAccess();
       final client = HttpClient()
         ..connectionTimeout = const Duration(seconds: 8);
-      final req = await client.getUrl(url);
-      final res = await req.close();
+      var res = await (await _request(client, 'GET', ShareFolderHttp.listPath)).close();
+      if (res.statusCode == HttpStatus.forbidden) {
+        // The token ended (folder turned off, or unused): ask once more.
+        await res.drain<void>();
+        _token = null;
+        await _ensureAccess();
+        res = await (await _request(client, 'GET', ShareFolderHttp.listPath)).close();
+      }
+      if (res.statusCode == HttpStatus.upgradeRequired) {
+        throw const _UpdateRequired();
+      }
+      if (res.statusCode == HttpStatus.notFound) {
+        throw const _ShareOff();
+      }
+      if (res.statusCode == HttpStatus.forbidden) {
+        throw const _NoAnswer();
+      }
       if (res.statusCode != 200) {
         throw Exception('HTTP ${res.statusCode}');
       }
@@ -80,11 +107,62 @@ class _ShareBrowserScreenState extends State<ShareBrowserScreen> {
       }
     } catch (e) {
       if (mounted) {
+        final l10n = AppLocalizations.of(context);
         setState(() {
           _loading = false;
-          _error = '${AppLocalizations.of(context).shareNetworkError}\n$e';
+          _refusal = switch (e) {
+            _UpdateRequired() => l10n.updateRequired,
+            _Refused() => l10n.shareAccessRefused,
+            _NoAnswer() => l10n.shareNoAnswer,
+            _ShareOff() => l10n.shareOffRemote,
+            _ => null,
+          };
+          _error = _refusal ?? '${l10n.shareNetworkError}\n$e';
         });
       }
+    }
+  }
+
+  /// Every request carries the protocol version and, once given, the token.
+  Future<HttpClientRequest> _request(HttpClient client, String method, String path,
+      [Map<String, String>? query]) async {
+    final req = await client.openUrl(
+        method, Uri.http('${widget.device.ip}:${widget.device.port}', path, query));
+    req.headers.set(ApexProtocol.versionHeader, '${ApexProtocol.version}');
+    final token = _token;
+    if (token != null) req.headers.set(ApexProtocol.tokenHeader, token);
+    return req;
+  }
+
+  /// Asks the other device's user once; the answer may take their whole
+  /// decision time.
+  Future<void> _ensureAccess() async {
+    if (_token != null) return;
+    final client = HttpClient()..connectionTimeout = const Duration(seconds: 8);
+    try {
+      final req = await _request(client, 'POST', ShareFolderHttp.accessPath);
+      final body = utf8.encode(jsonEncode({'name': ApexCore.instance.localDevice?.name ?? ''}));
+      req.headers.contentType = ContentType.json;
+      req.contentLength = body.length;
+      req.add(body);
+      final res = await req.close().timeout(TransferRules.decisionTimeout + const Duration(seconds: 10));
+      final text = await res.transform(utf8.decoder).join();
+      if (res.statusCode == HttpStatus.upgradeRequired) {
+        throw const _UpdateRequired();
+      }
+      // A copy on another version is not listed at all, so 404 is a folder that is off.
+      if (res.statusCode == HttpStatus.notFound) {
+        throw const _ShareOff();
+      }
+      final json = res.statusCode == HttpStatus.ok ? jsonDecode(text) : null;
+      final token = json is Map && json['accepted'] == true ? json['token'] : null;
+      if (token is! String) {
+        throw json is Map && json['reason'] == 'refused' ? const _Refused() : const _NoAnswer();
+      }
+      _token = token;
+      _canUpload = json['uploads'] == true;
+    } finally {
+      client.close(force: true);
     }
   }
 
@@ -94,14 +172,9 @@ class _ShareBrowserScreenState extends State<ShareBrowserScreen> {
     final l10n = AppLocalizations.of(context);
     setState(() => _progress[file.name] = 0.0);
     try {
-      final url = Uri.http(
-        '${widget.device.ip}:${widget.device.port}',
-        '/share/file',
-        {'name': file.name},
-      );
       final client = HttpClient()
         ..connectionTimeout = const Duration(seconds: 10);
-      final req = await client.getUrl(url);
+      final req = await _request(client, 'GET', ShareFolderHttp.filePath, {'name': file.name});
       final res = await req.close();
 
       if (res.statusCode == 404) throw Exception('Not found');
@@ -151,17 +224,12 @@ class _ShareBrowserScreenState extends State<ShareBrowserScreen> {
 
     setState(() => _progress[name] = 0.0);
     try {
-      final url = Uri.http(
-        '${widget.device.ip}:${widget.device.port}',
-        '/share/upload',
-        {'name': name, 'from': Platform.localHostname},
-      );
       final client = HttpClient()
         ..connectionTimeout = const Duration(seconds: 30)
         ..idleTimeout = Duration(seconds: ((size / (100 * 1024)) + 60).ceil());
 
-      final req = await client.postUrl(url);
-      req.headers.set('Content-Length', size.toString());
+      final req = await _request(client, 'POST', ShareFolderHttp.uploadPath, {'name': name});
+      req.contentLength = size;
 
       int sent = 0;
       await for (final chunk in file.openRead()) {
@@ -351,16 +419,18 @@ class _ShareBrowserScreenState extends State<ShareBrowserScreen> {
               ),
             ),
           const SizedBox(width: 10),
-          // زر رفع
-          _HeaderIconButton(
-            icon: Icons.upload_rounded,
-            tooltip: l10n.uploadToSharedFolder,
-            color: color,
-            isDark: isDark,
-            enabled: _progress.isEmpty,
-            onTap: _upload,
-          ),
-          const SizedBox(width: 8),
+          // زر رفع: only when the other user agreed to uploads too.
+          if (_canUpload) ...[
+            _HeaderIconButton(
+              icon: Icons.upload_rounded,
+              tooltip: l10n.uploadToSharedFolder,
+              color: color,
+              isDark: isDark,
+              enabled: _progress.isEmpty,
+              onTap: _upload,
+            ),
+            const SizedBox(width: 8),
+          ],
           // زر تحديث
           _HeaderIconButton(
             icon: Icons.refresh_rounded,
@@ -391,31 +461,38 @@ class _ShareBrowserScreenState extends State<ShareBrowserScreen> {
                 color: Colors.red.withValues(alpha: 0.08),
                 borderRadius: BorderRadius.circular(32),
               ),
-              child: const Icon(Icons.wifi_off_rounded,
+              // The device answered: it is reachable, so no network icon.
+              child: Icon(_refusal == null ? Icons.wifi_off_rounded : Icons.block_rounded,
                   size: 56, color: Colors.red),
             ),
             const SizedBox(height: 20),
-            Text(
-              l10n.shareNetworkError,
-              style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 16),
-            ),
-            const SizedBox(height: 6),
             Padding(
               padding: const EdgeInsets.symmetric(horizontal: 32),
               child: Text(
-                _error!.split('\n').last,
+                _refusal ?? l10n.shareNetworkError,
                 textAlign: TextAlign.center,
-                style: TextStyle(
-                  fontSize: 12,
-                  color: Theme.of(context).colorScheme.onSurfaceVariant,
-                ),
+                style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 16),
               ),
             ),
+            if (_refusal == null) ...[
+              const SizedBox(height: 6),
+              Padding(
+                padding: const EdgeInsets.symmetric(horizontal: 32),
+                child: Text(
+                  _error!.split('\n').last,
+                  textAlign: TextAlign.center,
+                  style: TextStyle(
+                    fontSize: 12,
+                    color: Theme.of(context).colorScheme.onSurfaceVariant,
+                  ),
+                ),
+              ),
+            ],
             const SizedBox(height: 20),
             FilledButton.icon(
               onPressed: _load,
               icon: const Icon(Icons.refresh_rounded),
-              label: Text(l10n.restartingSystem),
+              label: Text(l10n.retry),
             ),
           ],
         ),
@@ -656,4 +733,20 @@ class _FileTile extends StatelessWidget {
       ),
     );
   }
+}
+
+class _UpdateRequired implements Exception {
+  const _UpdateRequired();
+}
+
+class _Refused implements Exception {
+  const _Refused();
+}
+
+class _NoAnswer implements Exception {
+  const _NoAnswer();
+}
+
+class _ShareOff implements Exception {
+  const _ShareOff();
 }
