@@ -595,9 +595,6 @@ class AppLocalizationsAr extends AppLocalizations {
   String get clipboardTypeImage => 'صورة';
 
   @override
-  String get clipboardTypeFiles => 'ملفات';
-
-  @override
   String get clipboardTypeText => 'نص';
 
   @override
@@ -734,4 +731,46 @@ class AppLocalizationsAr extends AppLocalizations {
 
   @override
   String get sendNoSpace => 'لا توجد مساحة كافية على الجهاز الآخر';
+
+  @override
+  String clipboardTextLength(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: 'نص ($count حرف)',
+      many: 'نص ($count حرفاً)',
+      few: 'نص ($count أحرف)',
+      two: 'نص (حرفان)',
+      one: 'نص (حرف واحد)',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String clipboardCharCount(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '$count حرف',
+      many: '$count حرفاً',
+      few: '$count أحرف',
+      two: 'حرفان',
+      one: 'حرف واحد',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String clipboardFileCount(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '$count ملف',
+      many: '$count ملفاً',
+      few: '$count ملفات',
+      two: 'ملفان',
+      one: 'ملف واحد',
+    );
+    return '$_temp0';
+  }
 }

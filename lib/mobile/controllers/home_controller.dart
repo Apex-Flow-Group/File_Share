@@ -297,10 +297,6 @@ class HomeController extends ChangeNotifier {
     settings.addListener(_applyClipboardSetting);
     _clipboardSub = ClipboardMonitorService.instance.stream.listen((item) {
       _pendingClipboardItem = item;
-      if (item != null) {
-        // انتقل تلقائياً لتبويب الإرسال لعرض البانر
-        _currentIndex = 0;
-      }
       notifyListeners();
     });
   }

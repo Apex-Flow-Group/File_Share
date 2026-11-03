@@ -202,7 +202,6 @@
 
   "clipboardSend": "إرسال",
   "clipboardTypeImage": "صورة",
-  "clipboardTypeFiles": "ملفات",
   "clipboardTypeText": "نص",
   "clipboardSendTooltip": "إرسال من الحافظة",
   "clipboardSettings": "الحافظة",
@@ -249,5 +248,8 @@
   "sendReceiverBusy": "الجهاز الآخر مشغول بطلب آخر. حاول بعد قليل",
   "sendCancelled": "أُلغي الإرسال",
   "sendTooManyFiles": "{max, plural, few{يمكن إرسال {max} ملفات في المرة الواحدة على الأكثر} many{يمكن إرسال {max} ملفاً في المرة الواحدة على الأكثر} other{يمكن إرسال {max} ملف في المرة الواحدة على الأكثر}}",
-  "sendNoSpace": "لا توجد مساحة كافية على الجهاز الآخر"
+  "sendNoSpace": "لا توجد مساحة كافية على الجهاز الآخر",
+  "clipboardTextLength": "{count, plural, one{نص (حرف واحد)} two{نص (حرفان)} few{نص ({count} أحرف)} many{نص ({count} حرفاً)} other{نص ({count} حرف)}}",
+  "clipboardCharCount": "{count, plural, one{حرف واحد} two{حرفان} few{{count} أحرف} many{{count} حرفاً} other{{count} حرف}}",
+  "clipboardFileCount": "{count, plural, one{ملف واحد} two{ملفان} few{{count} ملفات} many{{count} ملفاً} other{{count} ملف}}"
 }

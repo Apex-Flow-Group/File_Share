@@ -23,27 +23,6 @@ class ClipboardItem {
     this.text,
   });
 
-  String? get textPreview {
-    final t = text;
-    if (t == null) {
-      return null;
-    }
-    final runes = t.runes;
-    return runes.length <= 100 ? t : '${String.fromCharCodes(runes.take(100))}...';
-  }
-
-  /// اسم العرض: للنص يعرض المعاينة، للصورة اسم الملف، للملفات الاسم الأول
-  String get displayName {
-    if (type == ClipboardItemType.text && textPreview != null) {
-      return textPreview!;
-    }
-    if (paths.isEmpty) {
-      return '';
-    }
-    final name = paths.first.replaceAll('\\', '/').split('/').last;
-    return name;
-  }
-
   /// حجم إجمالي لكل الملفات (بايت)
   Future<int> get totalSize async {
     int total = 0;

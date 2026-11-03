@@ -595,9 +595,6 @@ class AppLocalizationsEn extends AppLocalizations {
   String get clipboardTypeImage => 'Image';
 
   @override
-  String get clipboardTypeFiles => 'Files';
-
-  @override
   String get clipboardTypeText => 'Text';
 
   @override
@@ -731,4 +728,37 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get sendNoSpace => 'Not enough space on the other device';
+
+  @override
+  String clipboardTextLength(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: 'Text ($count characters)',
+      one: 'Text (1 character)',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String clipboardCharCount(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '$count characters',
+      one: '1 character',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String clipboardFileCount(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '$count files',
+      one: '1 file',
+    );
+    return '$_temp0';
+  }
 }

@@ -1232,12 +1232,6 @@ abstract class AppLocalizations {
   /// **'Image'**
   String get clipboardTypeImage;
 
-  /// No description provided for @clipboardTypeFiles.
-  ///
-  /// In en, this message translates to:
-  /// **'Files'**
-  String get clipboardTypeFiles;
-
   /// No description provided for @clipboardTypeText.
   ///
   /// In en, this message translates to:
@@ -1477,6 +1471,24 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Not enough space on the other device'**
   String get sendNoSpace;
+
+  /// No description provided for @clipboardTextLength.
+  ///
+  /// In en, this message translates to:
+  /// **'{count, plural, =1{Text (1 character)} other{Text ({count} characters)}}'**
+  String clipboardTextLength(int count);
+
+  /// No description provided for @clipboardCharCount.
+  ///
+  /// In en, this message translates to:
+  /// **'{count, plural, =1{1 character} other{{count} characters}}'**
+  String clipboardCharCount(int count);
+
+  /// No description provided for @clipboardFileCount.
+  ///
+  /// In en, this message translates to:
+  /// **'{count, plural, =1{1 file} other{{count} files}}'**
+  String clipboardFileCount(int count);
 }
 
 class _AppLocalizationsDelegate

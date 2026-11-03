@@ -3,6 +3,7 @@ import 'dart:io';
 import 'package:flutter/material.dart';
 
 import '../../core/apex_core.dart';
+import '../../features/clipboard/ui/clipboard_label.dart';
 import '../../features/send/data/send_http.dart';
 import '../../features/send/ui/send_outcome_message.dart';
 import '../../l10n/generated/app_localizations.dart';
@@ -452,6 +453,7 @@ class _ConnectionWidgetState extends State<ConnectionWidget>
     if (item == null) {
       return;
     }
+    final label = clipboardLabel(AppLocalizations.of(context), item);
     setSending();
     try {
       final outcome = await ClipboardMonitorService.instance.withSendableFiles(
@@ -467,9 +469,6 @@ class _ConnectionWidgetState extends State<ConnectionWidget>
           await ClipboardMonitorService.instance.cleanupTempImages();
         }
       }
-      final label = item.paths.length <= 1
-          ? item.displayName
-          : '${item.paths.length} files';
       if (ok) {
         await DesktopNotificationService.instance.showFileSent(label);
       } else {
@@ -797,7 +796,7 @@ class _ClipboardBannerState extends State<_ClipboardBanner> {
       return l10n.clipboardTypeText;
     }
     if (widget.item.paths.length > 1) {
-      return '${widget.item.paths.length} ${l10n.clipboardTypeFiles}';
+      return l10n.clipboardFileCount(widget.item.paths.length);
     }
     return widget.item.extensionHint.toUpperCase();
   }
@@ -851,7 +850,8 @@ class _ClipboardBannerState extends State<_ClipboardBanner> {
                       const SizedBox(width: 4),
                       Expanded(
                         child: Text(
-                          widget.item.displayName,
+                          clipboardLabel(AppLocalizations.of(context), widget.item,
+                              typeShown: true),
                           maxLines: widget.item.type == ClipboardItemType.text
                               ? 2
                               : 1,

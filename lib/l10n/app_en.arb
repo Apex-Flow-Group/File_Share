@@ -205,7 +205,6 @@
 
   "clipboardSend": "Send",
   "clipboardTypeImage": "Image",
-  "clipboardTypeFiles": "Files",
   "clipboardTypeText": "Text",
   "clipboardSendTooltip": "Send from clipboard",
   "clipboardSettings": "Clipboard",
@@ -259,5 +258,29 @@
       }
     }
   },
-  "sendNoSpace": "Not enough space on the other device"
+  "sendNoSpace": "Not enough space on the other device",
+  "clipboardTextLength": "{count, plural, =1{Text (1 character)} other{Text ({count} characters)}}",
+  "@clipboardTextLength": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "clipboardCharCount": "{count, plural, =1{1 character} other{{count} characters}}",
+  "@clipboardCharCount": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "clipboardFileCount": "{count, plural, =1{1 file} other{{count} files}}",
+  "@clipboardFileCount": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  }
 }
