@@ -160,7 +160,12 @@ class DiscoveryService {
     } catch (_) {
       ifaces = const [];
     }
-    for (final addr in broadcastTargets(ifaces)) {
+    final ips = [
+      for (final iface in ifaces)
+        for (final a in iface.addresses)
+          if (a.type == InternetAddressType.IPv4) a.address,
+    ];
+    for (final addr in broadcastTargets(ips)) {
       final socket = _udpSocket;
       if (socket == null) return;
       try {
@@ -173,16 +178,16 @@ class DiscoveryService {
   /// the device is on also gets its own broadcast, read again every time so a
   /// new address after a network change is used. A /24 mask is assumed:
   /// Dart does not report the real one.
-  static List<String> broadcastTargets(List<NetworkInterface> interfaces) {
+  /// Takes plain IPv4 strings: the type of NetworkInterface.addresses differs
+  /// between Dart versions.
+  static List<String> broadcastTargets(Iterable<String> ipv4) {
     final targets = <String>{'255.255.255.255'};
-    for (final iface in interfaces) {
-      for (final addr in iface.addresses) {
-        if (addr.type != InternetAddressType.IPv4 || addr.isLoopback || addr.isLinkLocal) {
-          continue;
-        }
-        final parts = addr.address.split('.');
-        targets.add('${parts[0]}.${parts[1]}.${parts[2]}.255');
+    for (final ip in ipv4) {
+      final parts = ip.split('.');
+      if (parts.length != 4 || parts[0] == '127' || ip.startsWith('169.254.')) {
+        continue;
       }
+      targets.add('${parts[0]}.${parts[1]}.${parts[2]}.255');
     }
     return targets.toList();
   }

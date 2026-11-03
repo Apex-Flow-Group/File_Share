@@ -45,17 +45,6 @@ Future<Device?> _heard(DiscoveryService svc, int port, {String id = 'phone-1'}) 
 
 const _none = Device(id: '', name: '', type: '');
 
-class _Iface implements NetworkInterface {
-  _Iface(this.name, List<String> ips)
-      : addresses = [for (final ip in ips) InternetAddress(ip)];
-  @override
-  final String name;
-  @override
-  final List<InternetAddress> addresses;
-  @override
-  int get index => 0;
-}
-
 void main() {
   late int port;
   late DiscoveryService svc;
@@ -135,12 +124,9 @@ void main() {
 
   group('where the presence packet goes', () {
     test('to every network the device is on, read again each time', () {
-      final targets = DiscoveryService.broadcastTargets([
-        _Iface('Ethernet', ['192.168.8.70']),
-        _Iface('Wi-Fi 4', ['192.168.137.1']),
-        _Iface('Wi-Fi', ['192.168.8.28']),
-        _Iface('vEthernet (WSL)', ['172.17.112.1']),
-      ]);
+      // This PC: cable, Windows hotspot, Wi-Fi on the same subnet, WSL.
+      final targets = DiscoveryService.broadcastTargets(
+          ['192.168.8.70', '192.168.137.1', '192.168.8.28', '172.17.112.1']);
       expect(targets, unorderedEquals([
         '255.255.255.255',
         '192.168.8.255',
@@ -150,10 +136,7 @@ void main() {
     });
 
     test('not to loopback or link-local addresses', () {
-      final targets = DiscoveryService.broadcastTargets([
-        _Iface('lo', ['127.0.0.1']),
-        _Iface('Wi-Fi 5', ['169.254.220.189']),
-      ]);
+      final targets = DiscoveryService.broadcastTargets(['127.0.0.1', '169.254.220.189']);
       expect(targets, ['255.255.255.255']);
     });
   });
