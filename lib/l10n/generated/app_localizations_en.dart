@@ -689,10 +689,6 @@ class AppLocalizationsEn extends AppLocalizations {
   String get downloading => 'Downloading...';
 
   @override
-  String get updateRequired =>
-      'The app version differs between the two devices. Update it on both';
-
-  @override
   String get sendDeclined => 'The other device declined';
 
   @override

@@ -1400,12 +1400,6 @@ abstract class AppLocalizations {
   /// **'Downloading...'**
   String get downloading;
 
-  /// No description provided for @updateRequired.
-  ///
-  /// In en, this message translates to:
-  /// **'The app version differs between the two devices. Update it on both'**
-  String get updateRequired;
-
   /// No description provided for @sendDeclined.
   ///
   /// In en, this message translates to:

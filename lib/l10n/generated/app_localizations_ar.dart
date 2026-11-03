@@ -686,10 +686,6 @@ class AppLocalizationsAr extends AppLocalizations {
   String get downloading => 'جاري التنزيل...';
 
   @override
-  String get updateRequired =>
-      'إصدار التطبيق مختلف بين الجهازين. حدّثه على الجهازين';
-
-  @override
   String get sendDeclined => 'رفض الجهاز الآخر الاستلام';
 
   @override
