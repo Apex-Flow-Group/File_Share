@@ -204,6 +204,10 @@
   "uploadSuccess": "تم رفع الملف بنجاح",
   "uploadFailed": "فشل الرفع",
   "downloadFailed": "فشل التنزيل",
+  "downloadSaved": "حُفظ الملف في {path}",
+  "@downloadSaved": {
+    "placeholders": { "path": { "type": "String" } }
+  },
   "shareFileCount": "{count} ملف",
   "@shareFileCount": {
     "placeholders": { "count": { "type": "int" } }

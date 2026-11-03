@@ -603,6 +603,11 @@ class AppLocalizationsAr extends AppLocalizations {
   String get downloadFailed => 'فشل التنزيل';
 
   @override
+  String downloadSaved(String path) {
+    return 'حُفظ الملف في $path';
+  }
+
+  @override
   String shareFileCount(int count) {
     return '$count ملف';
   }

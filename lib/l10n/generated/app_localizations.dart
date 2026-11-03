@@ -1274,6 +1274,12 @@ abstract class AppLocalizations {
   /// **'Download failed'**
   String get downloadFailed;
 
+  /// No description provided for @downloadSaved.
+  ///
+  /// In en, this message translates to:
+  /// **'Saved to {path}'**
+  String downloadSaved(String path);
+
   /// No description provided for @shareFileCount.
   ///
   /// In en, this message translates to:

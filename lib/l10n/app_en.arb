@@ -207,6 +207,10 @@
   "uploadSuccess": "File uploaded successfully",
   "uploadFailed": "Upload failed",
   "downloadFailed": "Download failed",
+  "downloadSaved": "Saved to {path}",
+  "@downloadSaved": {
+    "placeholders": { "path": { "type": "String" } }
+  },
   "shareFileCount": "{count} file(s)",
   "@shareFileCount": {
     "placeholders": { "count": { "type": "int" } }

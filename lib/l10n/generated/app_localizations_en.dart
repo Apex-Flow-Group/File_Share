@@ -607,6 +607,11 @@ class AppLocalizationsEn extends AppLocalizations {
   String get downloadFailed => 'Download failed';
 
   @override
+  String downloadSaved(String path) {
+    return 'Saved to $path';
+  }
+
+  @override
   String shareFileCount(int count) {
     return '$count file(s)';
   }

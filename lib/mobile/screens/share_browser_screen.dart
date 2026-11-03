@@ -8,11 +8,14 @@ import 'package:file_picker/file_picker.dart';
 import 'package:flutter/material.dart';
 import 'package:path_provider/path_provider.dart';
 
+import '../../core/files/move_into_folder.dart';
+import '../../core/files/save_download.dart';
 import '../../l10n/generated/app_localizations.dart';
 import '../../models/device.dart';
 import '../../services/share_folder_service.dart';
 import '../../shared/apex_snackbar.dart';
 import '../../utils/file_utils.dart';
+import '../../utils/path_utils.dart';
 
 /// شاشة تصفح المجلد المشترك لجهاز PC آخر على الشبكة.
 /// مُصمَّمة لتتناسب مع سطح المكتب — no standard AppBar.
@@ -104,41 +107,26 @@ class _ShareBrowserScreenState extends State<ShareBrowserScreen> {
       if (res.statusCode == 404) throw Exception('Not found');
       if (res.statusCode != 200) throw Exception('HTTP ${res.statusCode}');
 
-      final tmpDir = await getTemporaryDirectory();
-      final tmpPath = '${tmpDir.path}/${file.name}';
-      final sink = File(tmpPath).openWrite();
       int received = 0;
       final total = file.size;
-
-      await for (final chunk in res) {
-        sink.add(chunk);
+      final body = res.map((chunk) {
         received += chunk.length;
         if (total > 0 && mounted) {
           setState(() => _progress[file.name] = received / total);
         }
-      }
-      await sink.flush();
-      await sink.close();
+        return chunk;
+      });
+      // Not opened here: a file from another device runs if it is a .bat.
+      final savedPath = await saveDownload(body, file.name,
+          tempRoot: await getTemporaryDirectory(), place: _placeDownload);
       client.close();
-
-      String finalPath;
-      if (Platform.isAndroid) {
-        finalPath = tmpPath;
-      } else {
-        final destDir = await _getDownloadDir();
-        finalPath = '$destDir/${file.name}';
-        try {
-          await File(tmpPath).rename(finalPath);
-        } catch (_) {
-          await File(tmpPath).copy(finalPath);
-          await File(tmpPath).delete().catchError((_) => File(tmpPath));
-        }
-      }
 
       if (mounted) {
         setState(() => _progress.remove(file.name));
-        ApexSnackBar.success(context, l10n.uploadSuccess);
-        await FileUtils.openFile(finalPath);
+        ApexSnackBar.success(
+            context, l10n.downloadSaved(FileUtils.displayPath(savedPath)),
+            // The path is the whole point of this message; it needs time to read.
+            duration: const Duration(seconds: 4));
       }
     } catch (e) {
       if (mounted) {
@@ -204,10 +192,20 @@ class _ShareBrowserScreenState extends State<ShareBrowserScreen> {
     }
   }
 
-  Future<String> _getDownloadDir() async {
+  /// Android saves through MediaStore, like received files; the cache folder
+  /// it used before is not visible to the user.
+  Future<String> _placeDownload(File temp, String name) async {
     if (Platform.isAndroid) {
-      return (await getTemporaryDirectory()).path;
+      final saved = await PathUtils.saveToPublicDownloads(name, temp.path);
+      if (saved == null) {
+        throw FileSystemException('Could not save to Downloads', name);
+      }
+      return saved;
     }
+    return (await moveIntoFolder(temp, Directory(await _getDownloadDir()), name)).path;
+  }
+
+  Future<String> _getDownloadDir() async {
     final docs = await getApplicationDocumentsDirectory();
     final dir = Directory('${docs.path}/ApexShare/Downloads');
     await dir.create(recursive: true);
