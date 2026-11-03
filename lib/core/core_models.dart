@@ -1,3 +1,5 @@
+import 'dart:async';
+
 import '../models/device.dart';
 
 class FileReceivedEvent {
@@ -54,4 +56,17 @@ class ConnectionRequest {
   });
 
   bool get asksToConnect => kind == RequestKind.connect;
+
+  final _closed = Completer<void>();
+
+  /// Completes when the asker stops waiting, answered or not, so a dialog
+  /// still showing this request closes instead of taking a late answer.
+  Future<void> get closed => _closed.future;
+  bool get isClosed => _closed.isCompleted;
+
+  void close() {
+    if (!_closed.isCompleted) {
+      _closed.complete();
+    }
+  }
 }

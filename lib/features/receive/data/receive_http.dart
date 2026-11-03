@@ -119,9 +119,9 @@ class ReceiveHttp {
   }
 
   /// True or false as the user answered; null when no answer came in time.
-  Future<bool?> _ask(Offer offer) {
+  Future<bool?> _ask(Offer offer) async {
     final answer = Completer<bool?>();
-    onConnectionRequest(ConnectionRequest(
+    final request = ConnectionRequest(
       device: Device(
           id: 'http:${offer.senderAddress}',
           name: offer.senderName,
@@ -136,8 +136,13 @@ class ReceiveHttp {
           answer.complete(accepted);
         }
       },
-    ));
-    return answer.future.timeout(decisionTimeout, onTimeout: () => null);
+    );
+    onConnectionRequest(request);
+    try {
+      return await answer.future.timeout(decisionTimeout, onTimeout: () => null);
+    } finally {
+      request.close();
+    }
   }
 
   /// The address comes from the connection; any address in the body is ignored.

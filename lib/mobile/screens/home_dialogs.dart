@@ -5,6 +5,7 @@ import '../../l10n/generated/app_localizations.dart';
 import '../../services/transfer_progress_service.dart';
 import '../../services/update_service.dart';
 import '../../shared/apex_bottom_sheet.dart';
+import '../../shared/closes_with_request.dart';
 import '../../shared/file_ui_utils.dart';
 import '../../utils/file_utils.dart';
 
@@ -197,6 +198,10 @@ mixin HomeDialogs<T extends StatefulWidget> on State<T> {
   // ─── Connection Request Dialog ─────────────────────────────────────────────
 
   void showConnectionRequestDialog(ConnectionRequest request) {
+    // The asker already stopped waiting: an answer here would be ignored.
+    if (request.isClosed) {
+      return;
+    }
     final l10n = AppLocalizations.of(context);
     final sizeStr = request.fileSize > 0
         ? FileUiUtils.formatFileSize(request.fileSize)
@@ -232,75 +237,78 @@ mixin HomeDialogs<T extends StatefulWidget> on State<T> {
       headerSubtitle: question,
       isDismissible: false,
       enableDrag: false,
-      content: Container(
-        width: double.infinity,
-        padding: const EdgeInsets.all(14),
-        decoration: BoxDecoration(
-          color: Colors.blue.withValues(alpha: 0.06),
-          borderRadius: BorderRadius.circular(14),
-          border: Border.all(color: Colors.blue.withValues(alpha: 0.2)),
-        ),
-        child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-          Row(children: [
-            CircleAvatar(
-                radius: 16,
-                backgroundColor: Colors.blue.withValues(alpha: 0.15),
-                child: const Icon(Icons.smartphone_rounded,
-                    color: Colors.blue, size: 16)),
-            const SizedBox(width: 10),
-            Expanded(
-              child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Text(request.device.name,
-                        overflow: TextOverflow.ellipsis,
-                        style: const TextStyle(fontWeight: FontWeight.bold)),
-                    // The address comes from the connection, so a device
-                    // cannot pose as another by claiming its name alone.
-                    if (request.device.ip.isNotEmpty)
-                      Directionality(
-                        textDirection: TextDirection.ltr,
-                        child: Text(request.device.ip,
-                            style: TextStyle(
-                                fontSize: 12, color: Colors.grey[600])),
-                      ),
-                  ]),
-            ),
-          ]),
-          // Only a files request has files to show.
-          if (request.kind == RequestKind.files) const SizedBox(height: 10),
-          if (request.kind != RequestKind.files)
-            const SizedBox.shrink()
-          else if (isBatch) ...[
-            if (request.fileNames.isNotEmpty) ...[
-              ...request.fileNames.map((name) => Padding(
-                    padding: const EdgeInsets.only(left: 21, bottom: 2),
-                    child: Text(name.trim(),
-                        overflow: TextOverflow.ellipsis,
-                        style:
-                            TextStyle(fontSize: 12, color: Colors.grey[600])),
-                  )),
-            ],
-          ] else ...[
+      content: ClosesWithRequest(
+        request: request,
+        child: Container(
+          width: double.infinity,
+          padding: const EdgeInsets.all(14),
+          decoration: BoxDecoration(
+            color: Colors.blue.withValues(alpha: 0.06),
+            borderRadius: BorderRadius.circular(14),
+            border: Border.all(color: Colors.blue.withValues(alpha: 0.2)),
+          ),
+          child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
             Row(children: [
-              const Icon(Icons.insert_drive_file_rounded,
-                  size: 15, color: Colors.blue),
-              const SizedBox(width: 6),
+              CircleAvatar(
+                  radius: 16,
+                  backgroundColor: Colors.blue.withValues(alpha: 0.15),
+                  child: const Icon(Icons.smartphone_rounded,
+                      color: Colors.blue, size: 16)),
+              const SizedBox(width: 10),
               Expanded(
-                  child: Text(request.fileName,
-                      overflow: TextOverflow.ellipsis,
-                      style: const TextStyle(fontSize: 13))),
+                child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text(request.device.name,
+                          overflow: TextOverflow.ellipsis,
+                          style: const TextStyle(fontWeight: FontWeight.bold)),
+                      // The address comes from the connection, so a device
+                      // cannot pose as another by claiming its name alone.
+                      if (request.device.ip.isNotEmpty)
+                        Directionality(
+                          textDirection: TextDirection.ltr,
+                          child: Text(request.device.ip,
+                              style: TextStyle(
+                                  fontSize: 12, color: Colors.grey[600])),
+                        ),
+                    ]),
+              ),
             ]),
-          ],
-          if (sizeStr.isNotEmpty) ...[
-            const SizedBox(height: 4),
-            Text(sizeStr,
-                style: const TextStyle(
-                    fontWeight: FontWeight.w600,
-                    color: Colors.blue,
-                    fontSize: 13)),
-          ],
-        ]),
+            // Only a files request has files to show.
+            if (request.kind == RequestKind.files) const SizedBox(height: 10),
+            if (request.kind != RequestKind.files)
+              const SizedBox.shrink()
+            else if (isBatch) ...[
+              if (request.fileNames.isNotEmpty) ...[
+                ...request.fileNames.map((name) => Padding(
+                      padding: const EdgeInsets.only(left: 21, bottom: 2),
+                      child: Text(name.trim(),
+                          overflow: TextOverflow.ellipsis,
+                          style:
+                              TextStyle(fontSize: 12, color: Colors.grey[600])),
+                    )),
+              ],
+            ] else ...[
+              Row(children: [
+                const Icon(Icons.insert_drive_file_rounded,
+                    size: 15, color: Colors.blue),
+                const SizedBox(width: 6),
+                Expanded(
+                    child: Text(request.fileName,
+                        overflow: TextOverflow.ellipsis,
+                        style: const TextStyle(fontSize: 13))),
+              ]),
+            ],
+            if (sizeStr.isNotEmpty) ...[
+              const SizedBox(height: 4),
+              Text(sizeStr,
+                  style: const TextStyle(
+                      fontWeight: FontWeight.w600,
+                      color: Colors.blue,
+                      fontSize: 13)),
+            ],
+          ]),
+        ),
       ),
       actions: [
         Expanded(

@@ -205,15 +205,17 @@ class NearbyDoor {
     }
     _asking = true;
     final answer = Completer<bool>();
+    final request = build((v) {
+      if (!answer.isCompleted) {
+        answer.complete(v);
+      }
+    });
     try {
-      onConnectionRequest(build((v) {
-        if (!answer.isCompleted) {
-          answer.complete(v);
-        }
-      }));
+      onConnectionRequest(request);
       return await answer.future.timeout(decisionTimeout, onTimeout: () => false);
     } finally {
       _asking = false;
+      request.close();
     }
   }
 

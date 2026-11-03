@@ -148,20 +148,22 @@ class ShareFolderHttp {
     if (ask == null || _asking) return _Answer.none;
     _asking = true;
     final answer = Completer<_Answer>();
+    final request = ConnectionRequest(
+      device: Device(id: 'http:$address', name: name, type: 'unknown', ip: address),
+      fileName: '',
+      fileCount: 0,
+      kind: RequestKind.shareFolder,
+      allowsUploads: uploads,
+      onResponse: (v) {
+        if (!answer.isCompleted) answer.complete(v ? _Answer.accepted : _Answer.refused);
+      },
+    );
     try {
-      ask(ConnectionRequest(
-        device: Device(id: 'http:$address', name: name, type: 'unknown', ip: address),
-        fileName: '',
-        fileCount: 0,
-        kind: RequestKind.shareFolder,
-        allowsUploads: uploads,
-        onResponse: (v) {
-          if (!answer.isCompleted) answer.complete(v ? _Answer.accepted : _Answer.refused);
-        },
-      ));
+      ask(request);
       return await answer.future.timeout(decisionTimeout, onTimeout: () => _Answer.none);
     } finally {
       _asking = false;
+      request.close();
     }
   }
 
