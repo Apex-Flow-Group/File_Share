@@ -8,6 +8,8 @@ import 'package:flutter/foundation.dart';
 import 'package:nearby_connections/nearby_connections.dart';
 
 import '../core/apex_core.dart';
+import '../core/protocol/discovery_packet.dart';
+import '../core/text/clean_label.dart';
 import '../models/device.dart';
 import '../utils/apex_logger.dart';
 
@@ -33,7 +35,6 @@ class DiscoveryService {
   Timer? _broadcastTimer;
   Device? _localDevice;
   static const int _udpPort = 45679;
-  static const String _magic = 'APEX3:';
 
   bool get _isAndroid => !kIsWeb && Platform.isAndroid;
 
@@ -58,16 +59,7 @@ class DiscoveryService {
   void pingDevice(Device device) {
     final d = _localDevice;
     if (d == null || _udpSocket == null || device.ip.isEmpty) return;
-    final msg = '$_magic${jsonEncode({
-          'id': d.id,
-          'name': d.name,
-          'type': d.type,
-          'port': d.port,
-          if (d.hostname != null && d.hostname!.isNotEmpty)
-            'hostname': d.hostname,
-          if (isShareEnabled()) 'share': true,
-        })}';
-    final data = utf8.encode(msg);
+    final data = utf8.encode(DiscoveryPacket.encode(d, shareEnabled: isShareEnabled()));
     try {
       _udpSocket!.send(data, InternetAddress(device.ip), _udpPort);
     } catch (_) {}
@@ -87,24 +79,11 @@ class DiscoveryService {
         if (event != RawSocketEvent.read) return;
         final dg = _udpSocket!.receive();
         if (dg == null) return;
+        if (dg.address.address == localDevice.ip) return; // ignore self by IP
         try {
-          final msg = utf8.decode(dg.data);
-          if (!msg.startsWith(_magic)) return;
-          final json =
-              jsonDecode(msg.substring(_magic.length)) as Map<String, dynamic>;
-          final id = json['id'] as String;
-          if (id == localDevice.id) return; // ignore self by id
-          if (dg.address.address == localDevice.ip) return; // ignore self by IP
-          _deviceFoundController.add(Device(
-            id: id,
-            name: json['name'] as String,
-            type: json['type'] as String? ?? 'desktop',
-            ip: dg.address.address,
-            port: json['port'] as int? ?? 0,
-            hostname: json['hostname'] as String?,
-            shareEnabled: json['share'] == true,
-            lastSeen: DateTime.now(),
-          ));
+          final device = DiscoveryPacket.decode(utf8.decode(dg.data),
+              from: dg.address.address, selfId: localDevice.id);
+          if (device != null) _deviceFoundController.add(device);
         } catch (_) {}
       });
 
@@ -124,16 +103,7 @@ class DiscoveryService {
   void _broadcast() {
     final d = _localDevice;
     if (d == null || _udpSocket == null) return;
-    final msg = '$_magic${jsonEncode({
-          'id': d.id,
-          'name': d.name,
-          'type': d.type,
-          'port': d.port,
-          if (d.hostname != null && d.hostname!.isNotEmpty)
-            'hostname': d.hostname,
-          if (isShareEnabled()) 'share': true,
-        })}';
-    final data = utf8.encode(msg);
+    final data = utf8.encode(DiscoveryPacket.encode(d, shareEnabled: isShareEnabled()));
     // Send to both general broadcast and subnet broadcast
     for (final addr in _getBroadcastAddresses()) {
       try {
@@ -160,7 +130,7 @@ class DiscoveryService {
   // ─── Nearby Connections (Android phone ↔ phone) ───────────────────────────
 
   Future<void> _startNearby(Device localDevice) async {
-    const serviceId = 'com.apexflow.tools.transfer';
+    const serviceId = DiscoveryPacket.nearbyServiceId;
 
     try {
       await Nearby().startAdvertising(
@@ -190,9 +160,10 @@ class DiscoveryService {
         localDevice.name,
         Strategy.P2P_CLUSTER,
         onEndpointFound: (endpointId, name, sid) {
+          final shown = cleanLabel(name);
           _deviceFoundController.add(Device(
             id: endpointId,
-            name: name,
+            name: shown.isEmpty ? endpointId : shown,
             type: 'phone',
             endpointId: endpointId,
             lastSeen: DateTime.now(),
