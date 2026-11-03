@@ -38,7 +38,8 @@ echo.
 :: 3. Inno Setup
 echo [3/3] Building installer...
 
-set ISCC=C:\Program Files (x86)\Inno Setup 6\ISCC.exe
+:: Set ISCC beforehand to use Inno Setup from another folder.
+if not defined ISCC set "ISCC=%ProgramFiles(x86)%\Inno Setup 6\ISCC.exe"
 if not exist "%ISCC%" (
     echo [FAILED] Inno Setup not found.
     echo          Install from: https://jrsoftware.org/isdl.php

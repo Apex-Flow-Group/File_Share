@@ -5,7 +5,8 @@
 #define AppPublisher "ApexFlow"
 #define AppURL "https://apexflow.app"
 #define AppExeName "file_share_app.exe"
-#define ProjectDir "C:\Users\aljaw\Documents\GitHub\Apex_File_Share"
+; The project root is the folder above this script, on any machine.
+#define ProjectDir SourcePath + ".."
 #define SourceDir ProjectDir + "\build\windows\x64\runner\Release"
 #define AppVersion GetVersionNumbersString(SourceDir + "\" + AppExeName)
 
