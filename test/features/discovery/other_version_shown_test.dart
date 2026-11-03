@@ -101,7 +101,7 @@ void main() {
     final l10n = await AppLocalizations.delegate.load(const Locale('en'));
     await tester.pumpWidget(_app(ConnectionWidget(device: _read(_raw(_old))!)));
     expect(find.text('Old PC'), findsOneWidget);
-    expect(find.text(l10n.versionDiffers), findsOneWidget);
+    expect(find.text(l10n.updateRequired), findsOneWidget);
     expect(find.text(l10n.sendFile), findsNothing);
     expect(find.text(l10n.browseSharedFolder), findsNothing);
   });
@@ -116,7 +116,7 @@ void main() {
     final l10n = await AppLocalizations.delegate.load(const Locale('en'));
     await tester.pumpWidget(_app(ConnectionWidget(device: _read(_raw(_old))!, isActive: false)));
     expect(find.text('Currently offline'), findsOneWidget);
-    expect(find.text(l10n.versionDiffers), findsNothing);
+    expect(find.text(l10n.updateRequired), findsNothing);
   });
 
   testWidgets('the TV card shows the version message and offers no send', (tester) async {

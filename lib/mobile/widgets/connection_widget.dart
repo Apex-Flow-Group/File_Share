@@ -322,7 +322,7 @@ class _ConnectionWidgetState extends State<ConnectionWidget>
         const SizedBox(width: 8),
         Expanded(
           child: Text(
-            l10n.versionDiffers,
+            l10n.updateRequired,
             style: const TextStyle(
               fontSize: 12,
               color: Colors.orange,
