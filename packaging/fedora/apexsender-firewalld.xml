@@ -1,0 +1,6 @@
+<?xml version="1.0" encoding="utf-8"?>
+<service>
+  <short>Apex Sender</short>
+  <description>Device discovery for Apex Sender on the local network.</description>
+  <port protocol="udp" port="45679"/>
+</service>
