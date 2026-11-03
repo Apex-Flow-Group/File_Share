@@ -48,5 +48,5 @@ gtk-update-icon-cache -f -t "$HOME/.local/share/icons/hicolor" 2>/dev/null || tr
 echo ""
 echo "✅ تم حذف التطبيق بنجاح"
 echo ""
-echo "📝 ملاحظة: الملفات المستلمة في ~/Documents/ لم يتم حذفها"
+echo "📝 ملاحظة: لم تُحذف الملفات المستلمة في ~/Downloads/ApexShare/"
 echo ""
