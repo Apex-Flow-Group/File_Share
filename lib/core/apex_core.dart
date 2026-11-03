@@ -10,6 +10,7 @@ import '../features/receive/logic/receive_gate.dart';
 import '../features/send/data/send_http.dart';
 import '../managers/device_manager.dart';
 import '../models/device.dart';
+import '../platform/free_space.dart';
 import '../services/discovery_service.dart';
 import '../services/settings_service.dart';
 import '../services/transfer_progress_service.dart';
@@ -54,6 +55,7 @@ class ApexCore {
     ),
     onConnectionRequest: _connectionRequestController.add,
     onFileReceived: _fileReceivedController.add,
+    freeBytes: () async => freeBytesAt(await PathUtils.getDownloadPath()),
   );
 
   late final SendHttp _send = SendHttp(getLocalName: () => _localDevice?.name);

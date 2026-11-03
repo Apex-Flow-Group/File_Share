@@ -6,6 +6,7 @@ import android.content.Intent
 import android.net.Uri
 import android.os.Build
 import android.os.Environment
+import android.os.StatFs
 import android.provider.MediaStore
 import android.webkit.MimeTypeMap
 import androidx.core.content.FileProvider
@@ -45,6 +46,11 @@ class FileOperationsHandler(private val context: Context) {
                 }
                 "getDownloadsPath" -> {
                     getDownloadsPath(result)
+                }
+                "getFreeBytes" -> {
+                    // Free space where received files are saved (Downloads).
+                    val downloads = Environment.getExternalStoragePublicDirectory(Environment.DIRECTORY_DOWNLOADS)
+                    result.success(StatFs(downloads.path).availableBytes)
                 }
                 else -> result.notImplemented()
             }
