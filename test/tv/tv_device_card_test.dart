@@ -43,14 +43,14 @@ void main() {
   });
 
   for (final locale in const [Locale('ar'), Locale('en')]) {
-    testWidgets('OK opens the send choices: file and app ($locale)', (tester) async {
+    testWidgets('OK opens the send choices: file, app and folder ($locale)', (tester) async {
       await tester.pumpWidget(host(locale: locale));
       await press(tester, LogicalKeyboardKey.select);
       final l10n = await AppLocalizations.delegate.load(locale);
       expect(find.text(l10n.sendFile), findsOneWidget);
-      expect(find.text(l10n.sendApp), findsOneWidget,
-          reason: 'A TV is always Android: it sends apps, not folders.');
-      expect(find.text(l10n.sendFolder), findsNothing);
+      expect(find.text(l10n.sendApp), findsOneWidget);
+      expect(find.text(l10n.sendFolder), findsOneWidget,
+          reason: 'Owner decision 2026-11-03: the TV sends a folder too.');
     });
   }
 
@@ -68,7 +68,8 @@ void main() {
     await press(tester, LogicalKeyboardKey.select);
     final l10n = await AppLocalizations.delegate.load(const Locale('en'));
     await press(tester, LogicalKeyboardKey.arrowDown);
-    await press(tester, LogicalKeyboardKey.arrowDown); // file -> app -> unpin
+    await press(tester, LogicalKeyboardKey.arrowDown);
+    await press(tester, LogicalKeyboardKey.arrowDown); // file -> app -> folder -> unpin
     expect(Focus.of(tester.element(find.text(l10n.unpinDevice))).hasFocus, isTrue);
     await press(tester, LogicalKeyboardKey.select);
     expect(calls, ['unpin']);
