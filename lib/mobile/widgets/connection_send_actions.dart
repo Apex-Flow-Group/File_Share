@@ -5,11 +5,11 @@ import 'package:flutter/material.dart';
 
 import '../../core/apex_core.dart';
 import '../../features/send/data/send_http.dart';
+import '../../features/send/logic/send_folder.dart';
 import '../../features/send/ui/send_outcome_message.dart';
 import '../../l10n/generated/app_localizations.dart';
 import '../../models/device.dart';
 import '../../services/desktop_notification_service.dart';
-import '../../services/folder_zip_service.dart';
 import '../../services/transfer_progress_service.dart';
 import '../screens/apps_selection_screen.dart';
 
@@ -118,29 +118,19 @@ mixin ConnectionSendActions<T extends StatefulWidget> on State<T> {
     }
 
     setSending();
-    String? zipPath;
     try {
-      zipPath = await FolderZipService.zipFolder(folderPath);
-      final folderName = folderPath.split(Platform.pathSeparator).last;
-
-      final outcome = await ApexCore.instance
-          .sendFileWithName(zipPath, '$folderName.zip', device);
-      final ok = outcome == SendOutcome.sent;
+      final (:outcome, :label) = await sendFolderZipped(folderPath, device);
       if (mounted) {
         showSendOutcome(context, outcome,
             sent: AppLocalizations.of(context).folderSent,
             failed: AppLocalizations.of(context).sendFailed);
       }
-      final label = '$folderName.zip';
-      if (ok) {
+      if (outcome == SendOutcome.sent) {
         await DesktopNotificationService.instance.showFileSent(label);
       } else {
         await DesktopNotificationService.instance.showSendFailed(label);
       }
     } finally {
-      if (zipPath != null) {
-        await FolderZipService.cleanupTemp(zipPath);
-      }
       TransferProgressService().clearProgress();
       if (mounted) {
         setIdle();

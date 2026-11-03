@@ -1,8 +1,11 @@
+import 'dart:async';
+
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 
 import '../../../core/apex_core.dart';
 import '../../../features/send/data/send_http.dart';
+import '../../../features/send/logic/send_folder.dart';
 import '../../../features/send/ui/send_outcome_message.dart';
 import '../../../l10n/generated/app_localizations.dart';
 import '../../../models/device.dart';
@@ -141,6 +144,10 @@ class _TVDeviceCardState extends State<TVDeviceCard> {
           Navigator.pop(dialogContext);
           _sendApp();
         },
+        onSendFolder: () {
+          Navigator.pop(dialogContext);
+          _sendFolder();
+        },
         isPinned: widget.isPinned,
         onTogglePin: togglePin == null
             ? null
@@ -204,6 +211,57 @@ class _TVDeviceCardState extends State<TVDeviceCard> {
         failed: l10n.sendFailed);
     TransferProgressService().clearProgress();
   }
+
+  Future<void> _sendFolder() async {
+    final folderPath = await showTVFolderBrowser(context);
+    if (folderPath == null || !mounted) {
+      return;
+    }
+    // Zipping a big folder takes a while and shows no transfer progress yet.
+    var compressing = true;
+    final compressingText = AppLocalizations.of(context).compressingFolder;
+    // Held now: the card may leave the list while zipping, and the dialog
+    // cannot be closed with Back, so it must close even then.
+    final navigator = Navigator.of(context);
+    unawaited(showDialog<void>(
+      context: context,
+      barrierDismissible: false,
+      builder: (_) => PopScope(
+        canPop: false,
+        child: AlertDialog(
+          content: Row(children: [
+            const CircularProgressIndicator(),
+            const SizedBox(width: 16),
+            Expanded(child: Text(compressingText)),
+          ]),
+        ),
+      ),
+    ));
+    void closeCompressing() {
+      if (compressing) {
+        compressing = false;
+        navigator.pop();
+      }
+    }
+
+    try {
+      final (:outcome, :label) =
+          await sendFolderZipped(folderPath, widget.device, onZipped: closeCompressing);
+      closeCompressing();
+      if (mounted) {
+        final l10n = AppLocalizations.of(context);
+        showSendOutcome(context, outcome, sent: l10n.folderSent, failed: l10n.sendFailed);
+      }
+      if (outcome == SendOutcome.sent) {
+        await DesktopNotificationService.instance.showFileSent(label);
+      } else {
+        await DesktopNotificationService.instance.showSendFailed(label);
+      }
+    } finally {
+      closeCompressing();
+      TransferProgressService().clearProgress();
+    }
+  }
 }
 
 // ─── TV Send Options Dialog ───────────────────────────────────────────────────
@@ -216,6 +274,7 @@ class _TVSendOptionsDialog extends StatelessWidget {
   final bool canSend;
   final VoidCallback onSendFile;
   final VoidCallback onSendApp;
+  final VoidCallback onSendFolder;
   final bool isPinned;
   final VoidCallback? onTogglePin;
 
@@ -227,6 +286,7 @@ class _TVSendOptionsDialog extends StatelessWidget {
     required this.canSend,
     required this.onSendFile,
     required this.onSendApp,
+    required this.onSendFolder,
     required this.isPinned,
     required this.onTogglePin,
   });
@@ -254,13 +314,20 @@ class _TVSendOptionsDialog extends StatelessWidget {
                 onTap: onSendFile,
               ),
               const SizedBox(height: 8),
-              // A TV is always Android: it sends apps; folders are a desktop choice.
               TVDialogOption(
                 icon: Icons.android_rounded,
                 label: l10n.sendApp,
                 color: const Color(0xFF34C759),
                 autofocus: false,
                 onTap: onSendApp,
+              ),
+              const SizedBox(height: 8),
+              TVDialogOption(
+                icon: Icons.folder_zip_rounded,
+                label: l10n.sendFolder,
+                color: const Color(0xFF5856D6),
+                autofocus: false,
+                onTap: onSendFolder,
               ),
             ],
             if (onTogglePin != null) ...[

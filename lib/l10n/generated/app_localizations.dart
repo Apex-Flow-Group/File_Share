@@ -728,6 +728,18 @@ abstract class AppLocalizations {
   /// **'Send Folder'**
   String get sendFolder;
 
+  /// No description provided for @sendThisFolder.
+  ///
+  /// In en, this message translates to:
+  /// **'Send this folder'**
+  String get sendThisFolder;
+
+  /// No description provided for @pickFolder.
+  ///
+  /// In en, this message translates to:
+  /// **'Choose a folder'**
+  String get pickFolder;
+
   /// No description provided for @folderSent.
   ///
   /// In en, this message translates to:
@@ -737,7 +749,7 @@ abstract class AppLocalizations {
   /// No description provided for @compressingFolder.
   ///
   /// In en, this message translates to:
-  /// **'Compressing folder...'**
+  /// **'Compressing folder…'**
   String get compressingFolder;
 
   /// No description provided for @installedApps.
