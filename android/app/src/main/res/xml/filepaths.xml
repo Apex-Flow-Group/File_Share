@@ -1,0 +1,10 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- Replaces the open_filex resource of the same name, which listed root-path
+     ".". Same folders as file_paths.xml (PathUtils.getDownloadPath
+     and its fallbacks). path="." would let any granted URI reach all shared
+     storage or all of this app's private files. -->
+<paths>
+    <external-path name="apex_share" path="Download/ApexShare/" />
+    <external-files-path name="apex_share_app" path="ApexShare/" />
+    <files-path name="apex_share_private" path="app_flutter/ApexShare/" />
+</paths>
