@@ -126,13 +126,25 @@ gtk-update-icon-cache -f -t "$HOME/.local/share/icons/hicolor" 2>/dev/null || tr
 # 11. فتح المنافذ في جدار الحماية
 echo ""
 echo "🔓 إعداد جدار الحماية..."
+# Only the discovery port: transfers use a random TCP port that cannot be
+# opened by number. uninstall_linux.sh closes what is opened here.
+PORT_OPENED=false
 if command -v firewall-cmd &> /dev/null; then
-    sudo firewall-cmd --add-port=8888/udp --permanent 2>/dev/null || true
-    sudo firewall-cmd --add-port=8080/tcp --permanent 2>/dev/null || true
-    sudo firewall-cmd --reload 2>/dev/null || true
-    echo -e "${GREEN}✅ تم فتح المنافذ (8888 UDP, 8080 TCP)${NC}"
+    sudo firewall-cmd --add-port=45679/udp --permanent 2>/dev/null &&
+        sudo firewall-cmd --reload 2>/dev/null && PORT_OPENED=true
+    FIREWALL_FOUND=true
+elif command -v ufw &> /dev/null; then
+    sudo ufw allow 45679/udp 2>/dev/null && PORT_OPENED=true
+    FIREWALL_FOUND=true
 else
-    echo -e "${YELLOW}⚠️  firewall-cmd غير موجود${NC}"
+    FIREWALL_FOUND=false
+fi
+if $PORT_OPENED; then
+    echo -e "${GREEN}✅ فُتح منفذ اكتشاف الأجهزة (45679 UDP)${NC}"
+elif $FIREWALL_FOUND; then
+    echo -e "${YELLOW}⚠️  لم يُفتح منفذ اكتشاف الأجهزة (45679 UDP): افتحه يدوياً أو أعد تشغيل المثبّت${NC}"
+else
+    echo -e "${YELLOW}⚠️  لم يُعثر على firewall-cmd ولا ufw: افتح المنفذ 45679 UDP يدوياً إن كان لديك جدار حماية آخر${NC}"
 fi
 
 # 12. إضافة PATH إذا لزم الأمر
@@ -160,8 +172,8 @@ echo "   • من التيرمينال: apexsender"
 echo "   • من قائمة التطبيقات: ابحث عن 'Apex Sender'"
 echo ""
 echo "🌐 المنافذ المستخدمة:"
-echo "   • 8888 (UDP) - اكتشاف الأجهزة"
-echo "   • 8080 (TCP) - نقل الملفات"
+echo "   • 45679 (UDP) - اكتشاف الأجهزة"
+echo "   • منفذ TCP يختاره التطبيق عند كل تشغيل - نقل الملفات"
 echo ""
 echo "📝 ملاحظات:"
 echo "   • تأكد من الاتصال بنفس شبكة WiFi"
