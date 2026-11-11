@@ -5,10 +5,15 @@ import '../../../core/protocol/transfer_rules.dart';
 import '../../../l10n/generated/app_localizations.dart';
 import '../../../models/device.dart';
 import '../../../services/clipboard_monitor_service.dart';
+import '../../../services/transfer_progress_service.dart';
 import '../../../shared/apex_snackbar.dart';
+import '../../../shared/file_open_message.dart';
+import '../../../shared/folder_open_message.dart';
 import '../../../shared/framed_capsule_input.dart';
+import '../../../utils/file_utils.dart';
 import '../../send/data/send_http.dart';
 import '../logic/chat_store.dart';
+import 'chat_files_bubble.dart';
 import 'chat_outcome_message.dart';
 
 /// One device's chat. The TV shows it read only: no writing line, no copy.
@@ -17,11 +22,15 @@ class DeviceChatView extends StatefulWidget {
     required this.store,
     required this.device,
     this.canWrite = true,
+    this.onAttach,
     super.key,
   });
 
   final ChatStore store;
   final Device device;
+
+  /// Picks files and sends them to [device]; none on the TV.
+  final VoidCallback? onAttach;
 
   /// False on the TV: it only receives and shows.
   final bool canWrite;
@@ -56,6 +65,35 @@ class _DeviceChatViewState extends State<DeviceChatView> {
     return true;
   }
 
+  Future<void> _open(ChatFile f) async {
+    try {
+      await FileUtils.openFile(f.path);
+    } catch (e) {
+      if (mounted) {
+        ApexSnackBar.error(context, fileOpenMessage(e, AppLocalizations.of(context)));
+      }
+    }
+  }
+
+  Future<void> _openFolder(ChatFile f) async {
+    try {
+      await FileUtils.openFileLocation(f.path);
+    } catch (e) {
+      if (mounted) {
+        ApexSnackBar.error(context, folderOpenMessage(e, AppLocalizations.of(context)));
+      }
+    }
+  }
+
+  /// One transfer at a time, as on the device card.
+  void _retryFiles(ChatMessage m) {
+    if (TransferProgressService().isTransferring) {
+      ApexSnackBar.info(context, AppLocalizations.of(context).chatTransferBusy);
+      return;
+    }
+    widget.store.retryFiles(widget.device, m);
+  }
+
   Future<void> _copy(String text) async {
     await ClipboardMonitorService.instance.copyText(text);
     if (mounted) {
@@ -84,12 +122,23 @@ class _DeviceChatViewState extends State<DeviceChatView> {
                       shrinkWrap: true,
                       padding: const EdgeInsets.symmetric(vertical: 8),
                       itemCount: messages.length,
-                      itemBuilder: (context, i) => _Bubble(
-                        message: messages[messages.length - 1 - i],
-                        canCopy: widget.canWrite,
-                        onCopy: _copy,
-                        onRetry: (m) => widget.store.retry(widget.device, m),
-                      ),
+                      itemBuilder: (context, i) {
+                        final m = messages[messages.length - 1 - i];
+                        return m.isFiles
+                            ? ChatFilesBubble(
+                                message: m,
+                                canOpenFolder: widget.canWrite,
+                                onOpen: _open,
+                                onOpenFolder: _openFolder,
+                                onRetry: _retryFiles,
+                              )
+                            : _Bubble(
+                                message: m,
+                                canCopy: widget.canWrite,
+                                onCopy: _copy,
+                                onRetry: (m) => widget.store.retry(widget.device, m),
+                              );
+                      },
                     ),
             ),
             if (widget.store.isBlocked(_address)) ...[
@@ -108,6 +157,8 @@ class _DeviceChatViewState extends State<DeviceChatView> {
                 hint: l10n.chatHint,
                 sendLabel: l10n.send,
                 onSend: _send,
+                onAttach: widget.onAttach,
+                attachLabel: l10n.chatAttach,
               ),
             ],
           ],

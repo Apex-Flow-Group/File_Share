@@ -316,5 +316,11 @@
   },
   "chatBlockDetail": "Its messages are refused while it is blocked, and you can't write to it. The block ends when the app closes.",
   "chatBlocked": "This device is blocked: no messages to or from it.",
-  "chatUnblock": "Unblock"
+  "chatUnblock": "Unblock",
+  "chatAttach": "Attach files",
+  "chatTransferBusy": "A transfer is in progress. Wait until it ends.",
+  "chatMoreFiles": "{count, plural, one{and 1 more file} other{and {count} more files}}",
+  "@chatMoreFiles": {
+    "placeholders": { "count": { "type": "int" } }
+  }
 }

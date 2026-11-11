@@ -287,6 +287,7 @@ class ReceiveHttp {
       fileName: file.name,
       fileSize: file.size,
       fromDevice: sender,
+      fromAddress: req.connectionInfo?.remoteAddress.address,
       filePath: path,
       isLastInBatch: isLast,
       batchTotal: total,

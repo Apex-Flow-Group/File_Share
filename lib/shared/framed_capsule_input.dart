@@ -13,6 +13,8 @@ class FramedCapsuleColors {
     required this.onFilled,
     required this.hint,
     required this.text,
+    required this.circle,
+    required this.onCircle,
   });
 
   final Color capsule;
@@ -24,6 +26,10 @@ class FramedCapsuleColors {
   final Color hint;
   final Color text;
 
+  /// The other circles: one small step lighter than the capsule.
+  final Color circle;
+  final Color onCircle;
+
   static const _dark = FramedCapsuleColors._(
     capsule: Color(0xFF20201E),
     border: Color(0xFF3C3C3A),
@@ -31,6 +37,8 @@ class FramedCapsuleColors {
     onFilled: Color(0xFF1F1F1D),
     hint: Color(0xFF9A9792),
     text: Color(0xFFF4F4F2),
+    circle: Color(0xFF313131),
+    onCircle: Color(0xFFF4F4F2),
   );
 
   static const _light = FramedCapsuleColors._(
@@ -40,6 +48,8 @@ class FramedCapsuleColors {
     onFilled: Color(0xFFF9F9F7),
     hint: Color(0xFF66645F),
     text: Color(0xFF1F1F1D),
+    circle: Color(0xFFE2E2DF),
+    onCircle: Color(0xFF1F1F1D),
   );
 
   static FramedCapsuleColors of(BuildContext context) =>
@@ -54,6 +64,8 @@ class FramedCapsuleInput extends StatefulWidget {
     required this.hint,
     required this.sendLabel,
     required this.onSend,
+    this.onAttach,
+    this.attachLabel,
     super.key,
   });
 
@@ -64,6 +76,10 @@ class FramedCapsuleInput extends StatefulWidget {
 
   /// False keeps the text in the line (the caller said why).
   final bool Function(String text) onSend;
+
+  /// A plain circle before the send one; none when null (the TV).
+  final VoidCallback? onAttach;
+  final String? attachLabel;
 
   @override
   State<FramedCapsuleInput> createState() => _FramedCapsuleInputState();
@@ -146,40 +162,67 @@ class _FramedCapsuleInputState extends State<FramedCapsuleInput> {
         children: [
           Expanded(child: field),
           const SizedBox(width: 4),
-          Padding(
-            padding: const EdgeInsets.only(bottom: _margin - _touchExtra),
-            child: Tooltip(
-              message: widget.sendLabel,
-              excludeFromSemantics: true,
-              child: Semantics(
-                button: true,
-                label: widget.sendLabel,
-                enabled: _canSend,
-                child: GestureDetector(
-                  behavior: HitTestBehavior.opaque,
-                  onTap: _canSend ? _send : null,
-                  // The circle is under 48dp, so the touch area reaches past it.
-                  child: SizedBox.square(
-                    dimension: _touch,
-                    child: Center(
-                      child: AnimatedOpacity(
-                        opacity: _canSend ? 1 : 0.4,
-                        duration: const Duration(milliseconds: 150),
-                        child: Container(
-                          width: _circle,
-                          height: _circle,
-                          decoration: BoxDecoration(color: c.filled, shape: BoxShape.circle),
-                          child: Icon(Icons.arrow_upward_rounded, color: c.onFilled, size: 22),
-                        ),
-                      ),
+          if (widget.onAttach != null)
+            _circleButton(
+              label: widget.attachLabel ?? '',
+              enabled: true,
+              onTap: widget.onAttach!,
+              background: c.circle,
+              icon: Icons.attach_file_rounded,
+              iconColor: c.onCircle,
+            ),
+          _circleButton(
+            label: widget.sendLabel,
+            enabled: _canSend,
+            onTap: _send,
+            background: c.filled,
+            icon: Icons.arrow_upward_rounded,
+            iconColor: c.onFilled,
+          ),
+        ],
+      ),
+    );
+  }
+
+  /// One circle of the line, all of the same size; under 48dp, so the touch
+  /// area reaches past it.
+  Widget _circleButton({
+    required String label,
+    required bool enabled,
+    required VoidCallback onTap,
+    required Color background,
+    required IconData icon,
+    required Color iconColor,
+  }) =>
+      Padding(
+        padding: const EdgeInsets.only(bottom: _margin - _touchExtra),
+        child: Tooltip(
+          message: label,
+          excludeFromSemantics: true,
+          child: Semantics(
+            button: true,
+            label: label,
+            enabled: enabled,
+            child: GestureDetector(
+              behavior: HitTestBehavior.opaque,
+              onTap: enabled ? onTap : null,
+              child: SizedBox.square(
+                dimension: _touch,
+                child: Center(
+                  child: AnimatedOpacity(
+                    opacity: enabled ? 1 : 0.4,
+                    duration: const Duration(milliseconds: 150),
+                    child: Container(
+                      width: _circle,
+                      height: _circle,
+                      decoration: BoxDecoration(color: background, shape: BoxShape.circle),
+                      child: Icon(icon, color: iconColor, size: 22),
                     ),
                   ),
                 ),
               ),
             ),
           ),
-        ],
-      ),
-    );
-  }
+        ),
+      );
 }

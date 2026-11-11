@@ -843,4 +843,22 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get chatUnblock => 'Unblock';
+
+  @override
+  String get chatAttach => 'Attach files';
+
+  @override
+  String get chatTransferBusy =>
+      'A transfer is in progress. Wait until it ends.';
+
+  @override
+  String chatMoreFiles(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: 'and $count more files',
+      one: 'and 1 more file',
+    );
+    return '$_temp0';
+  }
 }

@@ -6,6 +6,10 @@ class FileReceivedEvent {
   final String fileName;
   final int fileSize;
   final String fromDevice;
+
+  /// The sender's real address, from the connection; null over Nearby.
+  /// The file's line goes to this address's chat, not to the name it gave.
+  final String? fromAddress;
   final String filePath;
   final bool isLastInBatch;
   final int batchTotal;
@@ -15,6 +19,7 @@ class FileReceivedEvent {
     required this.fileSize,
     required this.fromDevice,
     required this.filePath,
+    this.fromAddress,
     this.isLastInBatch = true,
     this.batchTotal = 1,
     this.batchIndex = 1,

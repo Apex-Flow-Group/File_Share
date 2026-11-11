@@ -1621,6 +1621,24 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Unblock'**
   String get chatUnblock;
+
+  /// No description provided for @chatAttach.
+  ///
+  /// In en, this message translates to:
+  /// **'Attach files'**
+  String get chatAttach;
+
+  /// No description provided for @chatTransferBusy.
+  ///
+  /// In en, this message translates to:
+  /// **'A transfer is in progress. Wait until it ends.'**
+  String get chatTransferBusy;
+
+  /// No description provided for @chatMoreFiles.
+  ///
+  /// In en, this message translates to:
+  /// **'{count, plural, one{and 1 more file} other{and {count} more files}}'**
+  String chatMoreFiles(int count);
 }
 
 class _AppLocalizationsDelegate

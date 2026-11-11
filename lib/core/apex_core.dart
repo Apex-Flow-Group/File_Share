@@ -59,7 +59,10 @@ class ApexCore {
       place: _placeReceived,
     ),
     onConnectionRequest: _connectionRequestController.add,
-    onFileReceived: _fileReceivedController.add,
+    onFileReceived: (e) {
+      _fileReceivedController.add(e);
+      chat.receivedFile(e);
+    },
     freeBytes: () async => freeBytesAt(await PathUtils.getDownloadPath()),
     question: _question,
   );
@@ -82,8 +85,13 @@ class ApexCore {
   );
 
   /// The chats of this run, in memory only.
-  late final ChatStore chat =
-      ChatStore(send: _sendChat, onBlock: _chat.block, onUnblock: _chat.unblock);
+  late final ChatStore chat = ChatStore(
+    send: _sendChat,
+    sendFilesNow: (files, target) =>
+        _send.sendFiles([for (final f in files) (path: f.path, name: f.name, size: f.size)], target),
+    onBlock: _chat.block,
+    onUnblock: _chat.unblock,
+  );
   SettingsService? _settings;
 
   late final NearbyTransfer _nearby = NearbyTransfer(
@@ -330,10 +338,7 @@ class ApexCore {
       return SendOutcome.failed;
     }
     final files = [(path: filePath, name: fileName, size: await f.length())];
-    if (_isAndroid && target.isNearby) {
-      return _nearby.sendBatch(files, target);
-    }
-    return _send.sendFiles(files, target);
+    return _sendBatch(files, target);
   }
 
   Future<SendOutcome> sendFiles(List<String> filePaths, Device target) async {
@@ -367,11 +372,16 @@ class ApexCore {
       return SendOutcome.failed;
     }
 
+    return _sendBatch(files, target);
+  }
+
+  /// Every send over the network goes through the chat, so it shows there as
+  /// a line, whichever button started it; Nearby has no chat.
+  Future<SendOutcome> _sendBatch(List<OutgoingFile> files, Device target) {
     if (_isAndroid && target.isNearby) {
       return _nearby.sendBatch(files, target);
     }
-
-    return _send.sendFiles(files, target);
+    return chat.sendFiles(target, [for (final f in files) ChatFile(f.name, f.size, f.path)]);
   }
 
   /// Android saves through MediaStore; other systems move the file into the

@@ -2,13 +2,24 @@ import 'dart:async';
 
 import 'package:flutter/foundation.dart';
 
+import '../../../core/core_models.dart';
 import '../../../models/device.dart';
 import '../../send/data/send_http.dart';
 
 enum ChatStatus { sending, sent, failed }
 
+class ChatFile {
+  const ChatFile(this.name, this.size, this.path);
+  final String name;
+  final int size;
+
+  /// Where it is on this device: saved here, or sent from here.
+  final String path;
+}
+
 class ChatMessage {
-  ChatMessage._(this.id, this.mine, this.text, this.status);
+  ChatMessage._(this.id, this.mine, this.text, this.status, [List<ChatFile>? files])
+      : files = files ?? [];
 
   final int id;
 
@@ -19,6 +30,13 @@ class ChatMessage {
 
   /// Why a message of mine did not arrive.
   ChatOutcome? failure;
+
+  /// A line of files instead of text: one line per batch.
+  final List<ChatFile> files;
+  bool get isFiles => files.isNotEmpty;
+
+  /// Why files of mine did not arrive.
+  SendOutcome? filesFailure;
 }
 
 class ChatThread {
@@ -35,8 +53,16 @@ class ChatThread {
 /// Every chat of this run, in memory only: nothing is written to disk, since
 /// a message may be a password, and closing the app empties it (owner decision).
 class ChatStore extends ChangeNotifier {
-  ChatStore({required this.send, this.onBlock, this.onUnblock, DateTime Function()? clock})
-      : _clock = clock ?? DateTime.now;
+  ChatStore({
+    required this.send,
+    this.sendFilesNow,
+    this.onBlock,
+    this.onUnblock,
+    DateTime Function()? clock,
+  }) : _clock = clock ?? DateTime.now;
+
+  /// Sends files to [target] without adding a line; [sendFiles] adds it.
+  final Future<SendOutcome> Function(List<ChatFile> files, Device target)? sendFilesNow;
 
   /// Tell the door, which refuses a blocked device's messages.
   final void Function(String address)? onBlock;
@@ -79,9 +105,11 @@ class ChatStore extends ChangeNotifier {
 
   bool isBlocked(String address) => _blocked.contains(address);
 
-  /// A device whose messages this one accepted can be blocked.
+  /// A device whose chat this one accepted (a text from it arrived) can be
+  /// blocked; files come through their own question, per batch.
   bool canBlock(String address) =>
-      !isBlocked(address) && (_threads[address]?.messages.any((m) => !m.mine) ?? false);
+      !isBlocked(address) &&
+      (_threads[address]?.messages.any((m) => !m.mine && !m.isFiles) ?? false);
 
   void block(String address) {
     if (!_blocked.add(address)) {
@@ -139,6 +167,76 @@ class ChatStore extends ChangeNotifier {
     notifyListeners();
   }
 
+  /// A file saved from [event]'s sender: a batch is one line, filled as its
+  /// files arrive. Counted unread once, and not announced: the received
+  /// sheet already says it arrived.
+  void receivedFile(FileReceivedEvent event) {
+    final address = event.fromAddress;
+    if (address == null || isBlocked(address)) {
+      return;
+    }
+    final t = _thread(address, event.fromDevice);
+    final file = ChatFile(event.fileName, event.fileSize, event.filePath);
+    final last = t.messages.isEmpty ? null : t.messages.last;
+    if (event.batchIndex > 1 && last != null && !last.mine && last.isFiles) {
+      last.files.add(file);
+    } else {
+      _add(t, ChatMessage._(_nextId++, false, '', ChatStatus.sent, [file]));
+      if (_open != address) {
+        t.unread++;
+      }
+    }
+    notifyListeners();
+  }
+
+  /// Sends [files] to [target] with a line in its chat that shows how it
+  /// ended. A Nearby phone or a blocked device gets no line.
+  Future<SendOutcome> sendFiles(Device target, List<ChatFile> files) async {
+    final now = sendFilesNow;
+    if (now == null) {
+      return SendOutcome.failed;
+    }
+    if (!target.isMdns || isBlocked(target.ip)) {
+      return now(files, target);
+    }
+    final m = ChatMessage._(_nextId++, true, '', ChatStatus.sending, List.of(files));
+    _add(_thread(target.ip, target.name), m);
+    notifyListeners();
+    await _deliverFiles(target, m);
+    return m.filesFailure ?? SendOutcome.sent;
+  }
+
+  /// Retry helps only where the same files can go again the same way.
+  static bool retryHelps(SendOutcome failure) => switch (failure) {
+        SendOutcome.failed || SendOutcome.noAnswer || SendOutcome.busy => true,
+        _ => false,
+      };
+
+  /// Only the user resends failed files, the same line, never by itself.
+  Future<void> retryFiles(Device target, ChatMessage m) async {
+    final failure = m.filesFailure;
+    if (!m.mine || !m.isFiles || failure == null || !retryHelps(failure)) {
+      return;
+    }
+    m
+      ..status = ChatStatus.sending
+      ..filesFailure = null;
+    notifyListeners();
+    await _deliverFiles(target, m);
+  }
+
+  Future<void> _deliverFiles(Device target, ChatMessage m) async {
+    final outcome = await sendFilesNow!(m.files, target);
+    if (outcome == SendOutcome.sent) {
+      m.status = ChatStatus.sent;
+    } else {
+      m
+        ..status = ChatStatus.failed
+        ..filesFailure = outcome;
+    }
+    notifyListeners();
+  }
+
   Future<void> write(Device target, String text) async {
     if (isBlocked(target.ip)) {
       return;
@@ -152,7 +250,7 @@ class ChatStore extends ChangeNotifier {
 
   /// Only the user resends a failed message: it never goes again by itself.
   Future<void> retry(Device target, ChatMessage m) async {
-    if (!m.mine || m.status != ChatStatus.failed) {
+    if (!m.mine || m.isFiles || m.status != ChatStatus.failed) {
       return;
     }
     m

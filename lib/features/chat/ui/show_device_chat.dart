@@ -1,9 +1,12 @@
+import 'package:file_picker/file_picker.dart';
 import 'package:flutter/material.dart';
 
 import '../../../core/apex_core.dart';
 import '../../../l10n/generated/app_localizations.dart';
 import '../../../models/device.dart';
+import '../../../services/transfer_progress_service.dart';
 import '../../../shared/apex_bottom_sheet.dart';
+import '../../../shared/apex_snackbar.dart';
 import 'confirm_block.dart';
 import 'device_chat_view.dart';
 
@@ -59,11 +62,32 @@ Future<void> showDeviceChat(BuildContext context, Device device) {
                 ],
               ),
               const SizedBox(height: 8),
-              Flexible(child: DeviceChatView(store: store, device: device)),
+              Flexible(
+                child: DeviceChatView(
+                  store: store,
+                  device: device,
+                  onAttach: () => _attach(context, device),
+                ),
+              ),
             ],
           ),
         ),
       );
     }),
   );
+}
+
+/// Files picked here go through the same send as the card's button, so they
+/// show as a line in this chat. One transfer at a time, as on the card.
+Future<void> _attach(BuildContext context, Device device) async {
+  if (TransferProgressService().isTransferring) {
+    ApexSnackBar.info(context, AppLocalizations.of(context).chatTransferBusy);
+    return;
+  }
+  final picked = await FilePicker.platform.pickFiles(allowMultiple: true);
+  final paths = [for (final f in picked?.files ?? const <PlatformFile>[]) if (f.path != null) f.path!];
+  if (paths.isEmpty) {
+    return;
+  }
+  await ApexCore.instance.sendFiles(paths, device);
 }

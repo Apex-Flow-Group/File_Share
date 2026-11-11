@@ -285,5 +285,11 @@
   },
   "chatBlockDetail": "تُرفض رسائله ما دام محظوراً، ولا تُرسل إليه. وينتهي الحظر بإغلاق التطبيق.",
   "chatBlocked": "هذا الجهاز محظور: لا رسائل منه ولا إليه.",
-  "chatUnblock": "إلغاء الحظر"
+  "chatUnblock": "إلغاء الحظر",
+  "chatAttach": "إرفاق ملفات",
+  "chatTransferBusy": "يوجد إرسال جارٍ. انتظر حتى ينتهي.",
+  "chatMoreFiles": "{count, plural, one{وملف آخر} two{وملفان آخران} few{و{count} ملفات أخرى} many{و{count} ملفاً آخر} other{و{count} ملف آخر}}",
+  "@chatMoreFiles": {
+    "placeholders": { "count": { "type": "int" } }
+  }
 }

@@ -864,4 +864,24 @@ class AppLocalizationsAr extends AppLocalizations {
 
   @override
   String get chatUnblock => 'إلغاء الحظر';
+
+  @override
+  String get chatAttach => 'إرفاق ملفات';
+
+  @override
+  String get chatTransferBusy => 'يوجد إرسال جارٍ. انتظر حتى ينتهي.';
+
+  @override
+  String chatMoreFiles(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: 'و$count ملف آخر',
+      many: 'و$count ملفاً آخر',
+      few: 'و$count ملفات أخرى',
+      two: 'وملفان آخران',
+      one: 'وملف آخر',
+    );
+    return '$_temp0';
+  }
 }
