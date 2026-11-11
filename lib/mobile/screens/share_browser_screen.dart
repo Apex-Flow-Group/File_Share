@@ -18,10 +18,10 @@ import '../../features/identity/pin_store.dart';
 import '../../features/send/data/send_http.dart';
 import '../../l10n/generated/app_localizations.dart';
 import '../../models/device.dart';
+import '../../platform/media_store_save.dart';
 import '../../services/share_folder_service.dart';
 import '../../shared/apex_snackbar.dart';
 import '../../utils/file_utils.dart';
-import '../../utils/path_utils.dart';
 
 /// شاشة تصفح المجلد المشترك لجهاز PC آخر على الشبكة.
 /// مُصمَّمة لتتناسب مع سطح المكتب — no standard AppBar.
@@ -287,16 +287,9 @@ class _ShareBrowserScreenState extends State<ShareBrowserScreen> {
 
   /// Android saves through MediaStore, like received files; the cache folder
   /// it used before is not visible to the user.
-  Future<String> _placeDownload(File temp, String name) async {
-    if (Platform.isAndroid) {
-      final saved = await PathUtils.saveToPublicDownloads(name, temp.path);
-      if (saved == null) {
-        throw FileSystemException('Could not save to Downloads', name);
-      }
-      return saved;
-    }
-    return (await moveIntoFolder(temp, Directory(await _getDownloadDir()), name)).path;
-  }
+  Future<String> _placeDownload(File temp, String name) async =>
+      await saveThroughMediaStore(temp, name) ??
+      (await moveIntoFolder(temp, Directory(await _getDownloadDir()), name)).path;
 
   Future<String> _getDownloadDir() async {
     final docs = await getApplicationDocumentsDirectory();
