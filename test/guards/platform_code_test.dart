@@ -23,7 +23,7 @@ const _legacyOsCode = <String, int>{
   'lib/services/desktop_notification_service.dart': 3,
   'lib/services/discovery_service.dart': 1,
   'lib/services/update_service.dart': 1,
-  'lib/utils/file_utils.dart': 8,
+  'lib/utils/file_utils.dart': 4,
   'lib/utils/path_utils.dart': 5,
   'lib/utils/platform_detector.dart': 6,
 };
