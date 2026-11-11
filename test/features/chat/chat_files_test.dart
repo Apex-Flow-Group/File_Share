@@ -9,6 +9,7 @@ import 'package:apex_file_share/core/files/move_into_folder.dart';
 import 'package:apex_file_share/core/protocol/apex_protocol.dart';
 import 'package:apex_file_share/features/chat/logic/chat_key.dart';
 import 'package:apex_file_share/features/chat/logic/chat_store.dart';
+import 'package:apex_file_share/features/identity/pin_store.dart';
 import 'package:apex_file_share/features/receive/data/receive_http.dart';
 import 'package:apex_file_share/features/receive/data/receive_store.dart';
 import 'package:apex_file_share/features/receive/logic/receive_gate.dart';
@@ -16,6 +17,8 @@ import 'package:apex_file_share/features/send/data/send_http.dart';
 import 'package:apex_file_share/models/device.dart';
 import 'package:apex_file_share/services/transfer_progress_service.dart';
 import 'package:flutter_test/flutter_test.dart';
+
+import '../identity/tls_peer.dart';
 
 const _pc = Device(id: 'p', name: 'Office PC', type: 'desktop', ip: '10.0.0.7', port: 4000);
 const _nearbyPhone = Device(id: 'n', name: 'Phone', type: 'phone', endpointId: 'ep1');
@@ -36,6 +39,7 @@ FileReceivedEvent _got(String name, int index, int total,
     );
 
 void main() {
+  setUpAll(loadPeers);
   group('received files', () {
     late ChatStore store;
     setUp(() => store = ChatStore(send: (t, d, k) async => (outcome: ChatOutcome.sent, token: null)));
@@ -225,6 +229,8 @@ void main() {
     Directory('${root.path}/tmp').createSync();
     final events = <FileReceivedEvent>[];
     final receive = ReceiveHttp(
+      expectedFingerprint: await heardSender(),
+      pins: PinStore.memory(),
       gate: ReceiveGate(),
       store: ReceiveStore(
         tempFolder: () async => Directory('${root.path}/tmp'),
@@ -233,16 +239,16 @@ void main() {
       onConnectionRequest: (r) => r.onResponse(true),
       onFileReceived: events.add,
     );
-    final server = await HttpServer.bind(InternetAddress.loopbackIPv4, 0);
+    final server = await bindReceiver();
     server.listen((req) async {
       if (!await receive.handle(req)) {
         req.response.statusCode = HttpStatus.notFound;
         await req.response.close();
       }
     });
-    final client = HttpClient();
+    final client = await senderClient();
     try {
-      final offer = await client.postUrl(Uri.http('127.0.0.1:${server.port}', ApexProtocol.offerPath));
+      final offer = await client.postUrl(Uri.https('127.0.0.1:${server.port}', ApexProtocol.offerPath));
       offer.headers.set(ApexProtocol.versionHeader, '${ApexProtocol.version}');
       offer.write(jsonEncode({
         'id': 'test-phone',
@@ -251,7 +257,7 @@ void main() {
       }));
       final token = ((jsonDecode(await (await offer.close()).transform(utf8.decoder).join()) as Map)['tokens']
           as List).single as String;
-      final up = await client.postUrl(Uri.http('127.0.0.1:${server.port}', ApexProtocol.uploadPath));
+      final up = await client.postUrl(Uri.https('127.0.0.1:${server.port}', ApexProtocol.uploadPath));
       up.headers
         ..set(ApexProtocol.versionHeader, '${ApexProtocol.version}')
         ..set(ApexProtocol.tokenHeader, token);

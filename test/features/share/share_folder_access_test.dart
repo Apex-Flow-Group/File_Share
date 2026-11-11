@@ -4,9 +4,15 @@ import 'dart:io';
 import 'package:apex_file_share/core/core_models.dart';
 import 'package:apex_file_share/core/protocol/apex_protocol.dart';
 import 'package:apex_file_share/core/share_folder_http.dart';
+import 'package:apex_file_share/features/identity/pin_store.dart';
 import 'package:apex_file_share/features/share/logic/share_access.dart';
 import 'package:apex_file_share/services/share_folder_service.dart';
 import 'package:flutter_test/flutter_test.dart';
+
+import '../identity/tls_peer.dart';
+
+/// Any certificate's fingerprint: these tests are about tokens, not identity.
+const _fp = 'aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa';
 
 class _TempShareService extends ShareFolderService {
   _TempShareService(this._path) : super.forTesting();
@@ -30,6 +36,8 @@ class _Server {
     dir = await Directory.systemTemp.createTemp('apex_share_access_');
     File('${dir.path}/salary.xlsx').writeAsStringSync('private');
     share = ShareFolderHttp(
+      expectedFingerprint: await heardSender(),
+      pins: PinStore.memory(),
       isEnabled: () => enabled,
       allowUploads: () => uploads,
       getLocalName: () => 'Office PC',
@@ -44,7 +52,7 @@ class _Server {
       decisionTimeout: const Duration(milliseconds: 200),
       maxUploadBytes: maxUploadBytes,
     );
-    server = await HttpServer.bind(InternetAddress.loopbackIPv4, 0);
+    server = await bindReceiver();
     server.listen((req) async {
       if (!await share.handle(req)) {
         req.response.statusCode = 404;
@@ -70,9 +78,9 @@ class _Server {
     Object? version = ApexProtocol.version,
     bool chunked = false,
   }) async {
-    final client = HttpClient();
+    final client = await senderClient();
     try {
-      final req = await client.openUrl(method, Uri.http('127.0.0.1:${server.port}', path, query));
+      final req = await client.openUrl(method, Uri.https('127.0.0.1:${server.port}', path, query));
       if (version != null) {
         req.headers.set(ApexProtocol.versionHeader, '$version');
       }
@@ -94,13 +102,14 @@ class _Server {
 
   Future<String?> askAccess([String name = 'Phone']) async {
     final res = await send('POST', ShareFolderHttp.accessPath,
-        body: utf8.encode(jsonEncode({'name': name})));
+        body: utf8.encode(jsonEncode({'id': 'phone', 'name': name})));
     final json = jsonDecode(res.body);
     return json is Map && json['accepted'] == true ? json['token'] as String? : null;
   }
 }
 
 void main() {
+  setUpAll(loadPeers);
   late _Server s;
 
   setUp(() async {
@@ -142,6 +151,8 @@ void main() {
 
     test('with nobody to ask, access is refused', () async {
       final share = ShareFolderHttp(
+        expectedFingerprint: await heardSender(),
+        pins: PinStore.memory(),
         isEnabled: () => true,
         allowUploads: () => true,
         getLocalName: () => 'Office PC',
@@ -203,9 +214,9 @@ void main() {
     });
 
     test('downloads a file with its content and name', () async {
-      final client = HttpClient();
+      final client = await senderClient();
       final req = await client.getUrl(
-          Uri.http('127.0.0.1:${s.server.port}', '/share/file', {'name': 'salary.xlsx'}));
+          Uri.https('127.0.0.1:${s.server.port}', '/share/file', {'name': 'salary.xlsx'}));
       req.headers
         ..set(ApexProtocol.versionHeader, '${ApexProtocol.version}')
         ..set(ApexProtocol.tokenHeader, token);
@@ -274,19 +285,19 @@ void main() {
   group('ShareAccess', () {
     test('a token works only from the address it was given to', () {
       final access = ShareAccess();
-      final token = access.admit('192.168.1.20', 'Phone');
-      expect(access.check(token, '192.168.1.20')?.name, 'Phone');
-      expect(access.check(token, '192.168.1.21'), isNull);
+      final token = access.admit('192.168.1.20', 'Phone', _fp);
+      expect(access.check(token, '192.168.1.20', _fp)?.name, 'Phone');
+      expect(access.check(token, '192.168.1.21', _fp), isNull);
     });
 
     test('a token unused for the idle limit expires', () {
       var now = DateTime(2026, 11, 3, 12);
       final access = ShareAccess(clock: () => now);
-      final token = access.admit('10.0.0.2', 'Phone');
+      final token = access.admit('10.0.0.2', 'Phone', _fp);
       now = now.add(ShareAccess.idleLimit - const Duration(seconds: 1));
-      expect(access.check(token, '10.0.0.2'), isNotNull);
+      expect(access.check(token, '10.0.0.2', _fp), isNotNull);
       now = now.add(ShareAccess.idleLimit + const Duration(seconds: 1));
-      expect(access.check(token, '10.0.0.2'), isNull);
+      expect(access.check(token, '10.0.0.2', _fp), isNull);
     });
   });
 

@@ -3,8 +3,11 @@ import 'package:apex_file_share/features/receive/logic/offer.dart';
 import 'package:apex_file_share/features/receive/logic/receive_gate.dart';
 import 'package:flutter_test/flutter_test.dart';
 
+/// Any certificate's fingerprint: these tests are about tokens, not identity.
+const _fp = 'aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa';
+
 Offer _offer(List<OfferedFile> files, {String address = '192.168.1.20'}) =>
-    Offer(senderAddress: address, senderId: 'phone', senderName: 'Phone', files: files);
+    Offer(senderAddress: address, senderId: 'phone', senderFingerprint: _fp, senderName: 'Phone', files: files);
 
 void main() {
   group('checkOffer: the batch is refused whole, before anything is written', () {
@@ -51,41 +54,41 @@ void main() {
       final tokens = gate.admit(_offer(const [OfferedFile('a', 1), OfferedFile('b', 2)]));
       expect(tokens, hasLength(2));
       expect(tokens.toSet(), hasLength(2));
-      expect(gate.claim(tokens[1], '192.168.1.20')?.name, 'b');
-      expect(gate.claim(tokens[0], '192.168.1.20')?.name, 'a');
+      expect(gate.claim(tokens[1], '192.168.1.20', _fp)?.name, 'b');
+      expect(gate.claim(tokens[0], '192.168.1.20', _fp)?.name, 'a');
     });
 
     test('a token works once', () {
       final t = gate.admit(_offer(const [OfferedFile('a', 1)])).single;
-      expect(gate.claim(t, '192.168.1.20'), isNotNull);
-      expect(gate.claim(t, '192.168.1.20'), isNull);
+      expect(gate.claim(t, '192.168.1.20', _fp), isNotNull);
+      expect(gate.claim(t, '192.168.1.20', _fp), isNull);
     });
 
     test('a token from another address is refused', () {
       final t = gate.admit(_offer(const [OfferedFile('a', 1)])).single;
-      expect(gate.claim(t, '192.168.1.99'), isNull);
+      expect(gate.claim(t, '192.168.1.99', _fp), isNull);
     });
 
     test('no token, or an unknown one, is refused', () {
       gate.admit(_offer(const [OfferedFile('a', 1)]));
-      expect(gate.claim(null, '192.168.1.20'), isNull);
-      expect(gate.claim('', '192.168.1.20'), isNull);
-      expect(gate.claim('guess', '192.168.1.20'), isNull);
+      expect(gate.claim(null, '192.168.1.20', _fp), isNull);
+      expect(gate.claim('', '192.168.1.20', _fp), isNull);
+      expect(gate.claim('guess', '192.168.1.20', _fp), isNull);
     });
 
     test('tokens of a batch left idle expire', () {
       final tokens = gate.admit(_offer(const [OfferedFile('a', 1), OfferedFile('b', 1)]));
       now = now.add(TransferRules.tokenIdleLimit + const Duration(seconds: 1));
-      expect(gate.claim(tokens[0], '192.168.1.20'), isNull);
-      expect(gate.claim(tokens[1], '192.168.1.20'), isNull);
+      expect(gate.claim(tokens[0], '192.168.1.20', _fp), isNull);
+      expect(gate.claim(tokens[1], '192.168.1.20', _fp), isNull);
     });
 
     test('a batch in use stays open while each file starts in time', () {
       final tokens = gate.admit(_offer(const [OfferedFile('a', 1), OfferedFile('b', 1)]));
       now = now.add(TransferRules.tokenIdleLimit - const Duration(seconds: 1));
-      expect(gate.claim(tokens[0], '192.168.1.20'), isNotNull);
+      expect(gate.claim(tokens[0], '192.168.1.20', _fp), isNotNull);
       now = now.add(TransferRules.tokenIdleLimit - const Duration(seconds: 1));
-      expect(gate.claim(tokens[1], '192.168.1.20'), isNotNull);
+      expect(gate.claim(tokens[1], '192.168.1.20', _fp), isNotNull);
     });
   });
 }

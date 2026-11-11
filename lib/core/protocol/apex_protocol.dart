@@ -3,7 +3,7 @@
 class ApexProtocol {
   ApexProtocol._();
 
-  static const version = 4;
+  static const version = 5;
 
   static const versionHeader = 'x-apex-version';
   static const tokenHeader = 'x-apex-token';
@@ -19,6 +19,10 @@ class ApexProtocol {
   /// Why an offer was not accepted when the user never answered (a refusal
   /// carries no reason). The sender must not report it as a refusal.
   static const noAnswer = 'no_answer';
+
+  /// The certificate the request came with is not the one discovery heard
+  /// from the device it claims to be. Refused before the user is asked.
+  static const wrongIdentity = 'wrong_identity';
 
   /// A chat message over TransferRules.chatTextLimit.
   static const tooLong = 'too_long';

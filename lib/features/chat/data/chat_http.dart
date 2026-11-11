@@ -8,20 +8,25 @@ import '../../../core/protocol/apex_protocol.dart';
 import '../../../core/protocol/transfer_rules.dart';
 import '../../../core/text/clean_label.dart';
 import '../../../models/device.dart';
+import '../../identity/caller.dart';
+import '../../identity/pin_store.dart';
 import '../logic/chat_access.dart';
 import '../logic/chat_key.dart';
 import '../logic/chat_text.dart';
 
-typedef IncomingChat = ({String id, String address, String name, String text});
+typedef IncomingChat = ({String id, String address, String fingerprint, String name, String text});
 
 /// The chat door: POST /chat. The first message from a device (its id at its
-/// address) asks the user; once accepted, the reply carries a token bound to
-/// both, and later messages with it arrive without asking. Nothing is shown
-/// before the user agrees, so a stranger cannot put text on the screen.
+/// address, with the certificate discovery heard from it) asks the user; once
+/// accepted, the reply carries a token bound to all three, and later messages
+/// with it arrive without asking. Nothing is shown before the user agrees, so
+/// a stranger cannot put text on the screen.
 class ChatHttp {
   ChatHttp({
     required this.onRequest,
     required this.onMessage,
+    required this.expectedFingerprint,
+    required this.pins,
     this.onBlocked,
     ChatAccess? access,
     OneQuestion? question,
@@ -32,6 +37,10 @@ class ChatHttp {
 
   final void Function(ConnectionRequest) onRequest;
   final void Function(IncomingChat) onMessage;
+  final ExpectedFingerprint expectedFingerprint;
+
+  /// Written when the user accepts a chat. Never a message.
+  final PinStore pins;
 
   /// The user refused the question: the device is now blocked.
   final void Function(ChatKey key)? onBlocked;
@@ -49,7 +58,8 @@ class ChatHttp {
     if (req.uri.path != ApexProtocol.chatPath) {
       return false;
     }
-    if (!ApexProtocol.accepts(req.headers.value(ApexProtocol.versionHeader))) {
+    final fingerprint = callerFingerprint(req);
+    if (fingerprint == null || !ApexProtocol.accepts(req.headers.value(ApexProtocol.versionHeader))) {
       await _reply(req, HttpStatus.upgradeRequired,
           {'error': ApexProtocol.updateRequired, 'version': ApexProtocol.version});
       return true;
@@ -58,11 +68,11 @@ class ChatHttp {
       await _reply(req, HttpStatus.methodNotAllowed, {'error': 'method'});
       return true;
     }
-    await _message(req);
+    await _message(req, fingerprint);
     return true;
   }
 
-  Future<void> _message(HttpRequest req) async {
+  Future<void> _message(HttpRequest req, String fingerprint) async {
     final address = req.connectionInfo?.remoteAddress.address;
     final Object? body;
     try {
@@ -85,11 +95,15 @@ class ChatHttp {
       await _reply(req, HttpStatus.badRequest, {'error': 'bad_message'});
       return;
     }
+    if (expectedFingerprint(id, address) != fingerprint) {
+      await _reply(req, HttpStatus.forbidden, {'error': ApexProtocol.wrongIdentity});
+      return;
+    }
     final key = chatKey(id, address);
 
-    final grant = _access.check(req.headers.value(ApexProtocol.tokenHeader), key);
+    final grant = _access.check(req.headers.value(ApexProtocol.tokenHeader), key, fingerprint);
     if (grant != null) {
-      onMessage((id: id, address: address, name: grant.name, text: text));
+      onMessage((id: id, address: address, fingerprint: fingerprint, name: grant.name, text: text));
       await _reply(req, HttpStatus.ok, {'delivered': true});
       return;
     }
@@ -110,7 +124,7 @@ class ChatHttp {
     final name = claimed.isEmpty ? address : claimed;
     final bool? accepted;
     try {
-      accepted = await _ask(key, name);
+      accepted = await _ask(key, name, fingerprint);
     } finally {
       _question.release();
     }
@@ -125,16 +139,19 @@ class ChatHttp {
       await _reply(req, HttpStatus.ok, {'accepted': false});
       return;
     }
-    final token = _access.admit(key, name);
-    onMessage((id: id, address: address, name: name, text: text));
+    await pins.pin(id, fingerprint);
+    final token = _access.admit(key, name, fingerprint);
+    onMessage((id: id, address: address, fingerprint: fingerprint, name: name, text: text));
     await _reply(req, HttpStatus.ok, {'delivered': true, 'token': token});
   }
 
   /// True or false as the user answered; null when no answer came in time.
-  Future<bool?> _ask(ChatKey key, String name) async {
+  Future<bool?> _ask(ChatKey key, String name, String fingerprint) async {
     final answer = Completer<bool?>();
     final request = ConnectionRequest(
-      device: Device(id: key.id, name: name, type: 'unknown', ip: key.address),
+      device: Device(id: key.id, name: name, type: 'unknown', ip: key.address, fingerprint: fingerprint),
+      fingerprint: fingerprint,
+      keyChanged: pins.keyChanged(key.id, fingerprint),
       fileName: '',
       fileCount: 0,
       kind: RequestKind.chat,

@@ -9,6 +9,7 @@ import '../../../models/device.dart';
 import '../../../models/transfer_progress.dart';
 import '../../../services/transfer_progress_service.dart';
 import '../../../utils/apex_logger.dart';
+import '../../identity/fingerprint.dart';
 
 enum SendOutcome { sent, declined, noAnswer, updateRequired, busy, tooManyFiles, noSpace, failed, cancelled }
 
@@ -16,16 +17,38 @@ enum ChatOutcome { sent, declined, noAnswer, updateRequired, busy, tooLong, fail
 
 typedef OutgoingFile = ({String path, String name, int size});
 
+/// Every connection to another device: it shows this device's certificate
+/// ([own], from DeviceIdentity.clientContext) and goes on only when the
+/// server's certificate has the fingerprint discovery heard from [target].
+/// [own] trusts no certificate, so every server goes through this check.
+HttpClient pinnedClient(SecurityContext own, Device target) {
+  final expected = target.fingerprint;
+  return HttpClient(context: own)
+    ..badCertificateCallback = (cert, host, port) => isFingerprint(expected) && fingerprintOf(cert.der) == expected;
+}
+
+/// The address of [path] on [target], over TLS.
+Uri deviceUri(Device target, String path, [Map<String, String>? query]) =>
+    Uri.https('${target.ip}:${target.port}', path, query);
+
 /// Sends a batch: one offer with every name and size, then one upload per file
 /// with the token the receiver issued when its user accepted.
 class SendHttp {
-  SendHttp({required this.getLocalName, required this.getLocalId});
+  SendHttp({required this.getLocalName, required this.getLocalId, required this.getContext});
 
   final String? Function() getLocalName;
 
   /// The id this device announces: the receiver keeps its chat by it and
   /// the address together, and refuses a message or offer without it.
   final String? Function() getLocalId;
+
+  /// This device's certificate for the TLS handshake; null before it is read.
+  final SecurityContext? Function() getContext;
+
+  HttpClient? _client(Device target) {
+    final own = getContext();
+    return own == null || !isFingerprint(target.fingerprint) ? null : pinnedClient(own, target);
+  }
 
   /// The receiver's answer when its user cancelled.
   static const _cancelledStatus = 499;
@@ -77,9 +100,12 @@ class SendHttp {
       return (outcome: ChatOutcome.tooLong, token: null);
     }
     const failed = (outcome: ChatOutcome.failed, token: null);
-    final client = HttpClient()..connectionTimeout = const Duration(seconds: 5);
+    final client = _client(target)?..connectionTimeout = const Duration(seconds: 5);
+    if (client == null) {
+      return failed;
+    }
     try {
-      final req = await client.postUrl(Uri.http('${target.ip}:${target.port}', ApexProtocol.chatPath));
+      final req = await client.postUrl(deviceUri(target, ApexProtocol.chatPath));
       req.headers
         ..set(ApexProtocol.versionHeader, '${ApexProtocol.version}')
         ..contentType = ContentType.json;
@@ -148,9 +174,12 @@ class SendHttp {
   Future<({SendOutcome outcome, List<String>? tokens})> _offer(
       List<OutgoingFile> files, Device target) async {
     const failed = (outcome: SendOutcome.failed, tokens: null);
-    final client = HttpClient()..connectionTimeout = const Duration(seconds: 5);
+    final client = _client(target)?..connectionTimeout = const Duration(seconds: 5);
+    if (client == null) {
+      return failed;
+    }
     try {
-      final req = await client.postUrl(Uri.http('${target.ip}:${target.port}', ApexProtocol.offerPath));
+      final req = await client.postUrl(deviceUri(target, ApexProtocol.offerPath));
       req.headers
         ..set(ApexProtocol.versionHeader, '${ApexProtocol.version}')
         ..contentType = ContentType.json;
@@ -215,14 +244,17 @@ class SendHttp {
           startTime: started,
         ));
 
-    final client = HttpClient()
-      ..connectionTimeout = const Duration(seconds: 30)
+    final client = _client(target)
+      ?..connectionTimeout = const Duration(seconds: 30)
       ..idleTimeout = Duration(seconds: (file.size / (100 * 1024) + 60).ceil());
+    if (client == null) {
+      return SendOutcome.failed;
+    }
     HttpClientRequest? req;
     RandomAccessFile? source;
     try {
       report(0);
-      req = await client.postUrl(Uri.http('${target.ip}:${target.port}', ApexProtocol.uploadPath));
+      req = await client.postUrl(deviceUri(target, ApexProtocol.uploadPath));
       req.headers
         ..set(ApexProtocol.versionHeader, '${ApexProtocol.version}')
         ..set(ApexProtocol.tokenHeader, token);

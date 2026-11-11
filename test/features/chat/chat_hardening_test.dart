@@ -13,9 +13,15 @@ import 'package:apex_file_share/features/send/data/send_http.dart';
 import 'package:apex_file_share/models/device.dart';
 import 'package:flutter_test/flutter_test.dart';
 
+import '../identity/tls_peer.dart';
+
+/// Any certificate's fingerprint: these tests are about tokens, not identity.
+const _fp = 'aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa';
+
 /// No widget test here: one in the file replaces HttpClient with a fake
 /// that answers 400 to everything, and the reply tests would pass for nothing.
 void main() {
+  setUpAll(loadPeers);
   test('a question nobody answered is not raised again by the same address for a while', () {
     var now = DateTime(2026, 11, 12, 9);
     final access = ChatAccess(clock: () => now);
@@ -28,7 +34,7 @@ void main() {
 
   test('accepting ends the quiet period', () {
     final access = ChatAccess()..unanswered(chatKey('x', '10.0.0.9'));
-    access.admit(chatKey('x', '10.0.0.9'), 'Phone');
+    access.admit(chatKey('x', '10.0.0.9'), 'Phone', _fp);
     expect(access.isQuiet(chatKey('x', '10.0.0.9')), isFalse);
   });
 
@@ -76,12 +82,12 @@ void main() {
     tearDown(() => server.close(force: true));
 
     Future<Device> serve(Future<void> Function(HttpResponse) answer) async {
-      server = await HttpServer.bind(InternetAddress.loopbackIPv4, 0);
+      server = await bindReceiver();
       server.listen((req) async {
         await req.drain<void>();
         await answer(req.response);
       });
-      return Device(id: 'x', name: 'X', type: 'desktop', ip: '127.0.0.1', port: server.port);
+      return Device(id: 'x', name: 'X', type: 'desktop', ip: '127.0.0.1', port: server.port, fingerprint: testReceiver.fingerprint);
     }
 
     test('a huge one fails the message instead of filling the memory', () async {
@@ -89,14 +95,15 @@ void main() {
         res.write('{"delivered": true, "pad": "${'x' * (64 * 1024)}"}');
         await res.close();
       });
-      final r = await SendHttp(getLocalName: () => 'Me', getLocalId: () => 'test-id').sendChat('hi', target, null);
+      final r = await SendHttp(getContext: senderContext, getLocalName: () => 'Me', getLocalId: () => 'test-id').sendChat('hi', target, null);
       expect(r.outcome, ChatOutcome.failed);
     });
 
     test('one that never ends fails the message instead of leaving it "sending"', () async {
       // Promises 1000 bytes, sends a few, then goes quiet with the line open.
-      final raw = await ServerSocket.bind(InternetAddress.loopbackIPv4, 0);
-      server = await HttpServer.bind(InternetAddress.loopbackIPv4, 0);
+      final raw = await SecureServerSocket.bind(
+          InternetAddress.loopbackIPv4, 0, testReceiver.identity.serverContext());
+      server = await bindReceiver();
       raw.listen((s) {
         s.listen((_) {
           final crlf = String.fromCharCodes(const [13, 10]);
@@ -104,9 +111,9 @@ void main() {
               'Content-Length: 1000$crlf$crlf{"delivered"');
         });
       });
-      final target = Device(id: 'x', name: 'X', type: 'desktop', ip: '127.0.0.1', port: raw.port);
+      final target = Device(id: 'x', name: 'X', type: 'desktop', ip: '127.0.0.1', port: raw.port, fingerprint: testReceiver.fingerprint);
       final sw = Stopwatch()..start();
-      final r = await SendHttp(getLocalName: () => 'Me', getLocalId: () => 'test-id').sendChat('hi', target, null);
+      final r = await SendHttp(getContext: senderContext, getLocalName: () => 'Me', getLocalId: () => 'test-id').sendChat('hi', target, null);
       expect(r.outcome, ChatOutcome.failed);
       expect(sw.elapsed, greaterThanOrEqualTo(const Duration(seconds: 9)),
           reason: 'it ended by the reply time limit, not by an error');

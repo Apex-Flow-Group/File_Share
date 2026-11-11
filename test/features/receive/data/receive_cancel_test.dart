@@ -7,9 +7,11 @@ import 'package:apex_file_share/models/device.dart';
 import 'package:apex_file_share/services/transfer_progress_service.dart';
 import 'package:flutter_test/flutter_test.dart';
 
+import '../../identity/tls_peer.dart';
 import 'receive_test_server.dart';
 
 void main() {
+  setUpAll(loadPeers);
   const bytes = [1, 2, 3, 4];
 
   test('after the receiving user cancels, the rest of the batch is refused and nothing more is saved',
@@ -31,7 +33,7 @@ void main() {
 
   test('the sender stops the batch when the receiver answers "cancelled" (499)', () async {
     final root = await Directory.systemTemp.createTemp('apex_send_cancel_');
-    final server = await HttpServer.bind(InternetAddress.loopbackIPv4, 0);
+    final server = await bindReceiver();
     addTearDown(() async {
       await server.close(force: true);
       TransferProgressService().clearProgress();
@@ -59,8 +61,8 @@ void main() {
         (path: (File('${root.path}/$name')..writeAsBytesSync(bytes)).path, name: name, size: 4),
     ];
 
-    final outcome = await SendHttp(getLocalName: () => 'Test Phone', getLocalId: () => 'test-id').sendFiles(
-        files, Device(id: 't', name: 'Receiver', type: 'desktop', ip: '127.0.0.1', port: server.port));
+    final outcome = await SendHttp(getContext: senderContext, getLocalName: () => 'Test Phone', getLocalId: () => 'test-id').sendFiles(
+        files, Device(id: 't', name: 'Receiver', type: 'desktop', ip: '127.0.0.1', port: server.port, fingerprint: testReceiver.fingerprint));
 
     expect(outcome, SendOutcome.cancelled);
     expect(uploaded, ['a', 'b'], reason: 'The sender kept sending after the receiver cancelled.');

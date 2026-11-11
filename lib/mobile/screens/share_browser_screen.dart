@@ -14,6 +14,7 @@ import '../../core/files/save_download.dart';
 import '../../core/protocol/apex_protocol.dart';
 import '../../core/protocol/transfer_rules.dart';
 import '../../core/share_folder_http.dart';
+import '../../features/send/data/send_http.dart';
 import '../../l10n/generated/app_localizations.dart';
 import '../../models/device.dart';
 import '../../services/share_folder_service.dart';
@@ -26,7 +27,12 @@ import '../../utils/path_utils.dart';
 class ShareBrowserScreen extends StatefulWidget {
   final Device device;
 
-  const ShareBrowserScreen({required this.device, super.key});
+  /// This device's certificate for the handshake, and the id discovery
+  /// heard with it; ApexCore's when not given.
+  final SecurityContext? clientContext;
+  final String? localId;
+
+  const ShareBrowserScreen({required this.device, this.clientContext, this.localId, super.key});
 
   @override
   State<ShareBrowserScreen> createState() => _ShareBrowserScreenState();
@@ -65,8 +71,7 @@ class _ShareBrowserScreenState extends State<ShareBrowserScreen> {
     });
     try {
       await _ensureAccess();
-      final client = HttpClient()
-        ..connectionTimeout = const Duration(seconds: 8);
+      final client = _client()..connectionTimeout = const Duration(seconds: 8);
       var res = await (await _request(client, 'GET', ShareFolderHttp.listPath)).close();
       if (res.statusCode == HttpStatus.forbidden) {
         // The token ended (folder turned off, or unused): ask once more.
@@ -123,11 +128,18 @@ class _ShareBrowserScreenState extends State<ShareBrowserScreen> {
     }
   }
 
+  /// Shows this device's certificate and talks only to the device whose
+  /// fingerprint discovery heard.
+  HttpClient _client() {
+    final own = widget.clientContext ?? ApexCore.instance.clientContext;
+    if (own == null) throw const SocketException('No identity yet');
+    return pinnedClient(own, widget.device);
+  }
+
   /// Every request carries the protocol version and, once given, the token.
   Future<HttpClientRequest> _request(HttpClient client, String method, String path,
       [Map<String, String>? query]) async {
-    final req = await client.openUrl(
-        method, Uri.http('${widget.device.ip}:${widget.device.port}', path, query));
+    final req = await client.openUrl(method, deviceUri(widget.device, path, query));
     req.headers.set(ApexProtocol.versionHeader, '${ApexProtocol.version}');
     final token = _token;
     if (token != null) req.headers.set(ApexProtocol.tokenHeader, token);
@@ -138,10 +150,13 @@ class _ShareBrowserScreenState extends State<ShareBrowserScreen> {
   /// decision time.
   Future<void> _ensureAccess() async {
     if (_token != null) return;
-    final client = HttpClient()..connectionTimeout = const Duration(seconds: 8);
+    final client = _client()..connectionTimeout = const Duration(seconds: 8);
     try {
       final req = await _request(client, 'POST', ShareFolderHttp.accessPath);
-      final body = utf8.encode(jsonEncode({'name': ApexCore.instance.localDevice?.name ?? ''}));
+      final body = utf8.encode(jsonEncode({
+        'id': widget.localId ?? ApexCore.instance.localDevice?.id ?? '',
+        'name': ApexCore.instance.localDevice?.name ?? '',
+      }));
       req.headers.contentType = ContentType.json;
       req.contentLength = body.length;
       req.add(body);
@@ -172,8 +187,7 @@ class _ShareBrowserScreenState extends State<ShareBrowserScreen> {
     final l10n = AppLocalizations.of(context);
     setState(() => _progress[file.name] = 0.0);
     try {
-      final client = HttpClient()
-        ..connectionTimeout = const Duration(seconds: 10);
+      final client = _client()..connectionTimeout = const Duration(seconds: 10);
       final req = await _request(client, 'GET', ShareFolderHttp.filePath, {'name': file.name});
       final res = await req.close();
 
@@ -224,7 +238,7 @@ class _ShareBrowserScreenState extends State<ShareBrowserScreen> {
 
     setState(() => _progress[name] = 0.0);
     try {
-      final client = HttpClient()
+      final client = _client()
         ..connectionTimeout = const Duration(seconds: 30)
         ..idleTimeout = Duration(seconds: ((size / (100 * 1024)) + 60).ceil());
 

@@ -13,19 +13,25 @@ import '../../../models/device.dart';
 import '../../../models/transfer_progress.dart';
 import '../../../services/transfer_progress_service.dart';
 import '../../../utils/apex_logger.dart';
+import '../../identity/caller.dart';
+import '../../identity/pin_store.dart';
 import '../logic/offer.dart';
 import '../logic/receive_gate.dart';
 import 'receive_store.dart';
 
-/// The receiving door: /ping, /offer, /upload. Every request must carry the
-/// current protocol version; every upload must carry a token the user's
-/// acceptance issued. Anything else is refused before a byte is written.
+/// The receiving door: /ping, /offer, /upload. Every request must come with a
+/// client certificate and the current protocol version; an offer's
+/// certificate must be the one discovery heard from the id it gives; every
+/// upload must carry a token the user's acceptance issued to that address and
+/// certificate. Anything else is refused before a byte is written.
 class ReceiveHttp {
   ReceiveHttp({
     required this.gate,
     required this.store,
     required this.onConnectionRequest,
     required this.onFileReceived,
+    required this.expectedFingerprint,
+    required this.pins,
     this.freeBytes,
     OneQuestion? question,
     this.decisionTimeout = TransferRules.decisionTimeout,
@@ -36,6 +42,10 @@ class ReceiveHttp {
   final ReceiveStore store;
   final void Function(ConnectionRequest) onConnectionRequest;
   final void Function(FileReceivedEvent) onFileReceived;
+  final ExpectedFingerprint expectedFingerprint;
+
+  /// Written when the user accepts a batch.
+  final PinStore pins;
 
   /// Free space where files are saved; null when it cannot be read.
   final Future<int?> Function()? freeBytes;
@@ -54,7 +64,8 @@ class ReceiveHttp {
     if (path != ApexProtocol.pingPath && path != ApexProtocol.offerPath && path != ApexProtocol.uploadPath) {
       return false;
     }
-    if (!ApexProtocol.accepts(req.headers.value(ApexProtocol.versionHeader))) {
+    final fingerprint = callerFingerprint(req);
+    if (fingerprint == null || !ApexProtocol.accepts(req.headers.value(ApexProtocol.versionHeader))) {
       await _reply(req, HttpStatus.upgradeRequired,
           {'error': ApexProtocol.updateRequired, 'version': ApexProtocol.version});
       return true;
@@ -68,16 +79,16 @@ class ReceiveHttp {
       case ApexProtocol.pingPath:
         await _reply(req, HttpStatus.ok, {'version': ApexProtocol.version});
       case ApexProtocol.offerPath:
-        await _offer(req);
+        await _offer(req, fingerprint);
       case ApexProtocol.uploadPath:
-        await _upload(req);
+        await _upload(req, fingerprint);
     }
     return true;
   }
 
   // ─── Offer ─────────────────────────────────────────────────────────────────
 
-  Future<void> _offer(HttpRequest req) async {
+  Future<void> _offer(HttpRequest req, String fingerprint) async {
     final address = req.connectionInfo?.remoteAddress.address;
     final String? text;
     try {
@@ -87,9 +98,13 @@ class ReceiveHttp {
       // is not reading, so it gets no answer.
       return;
     }
-    final offer = address == null || text == null ? null : _parseOffer(text, address);
+    final offer = address == null || text == null ? null : _parseOffer(text, address, fingerprint);
     if (offer == null) {
       await _reply(req, HttpStatus.badRequest, {'error': 'bad_offer'});
+      return;
+    }
+    if (expectedFingerprint(offer.senderId, offer.senderAddress) != fingerprint) {
+      await _reply(req, HttpStatus.forbidden, {'error': ApexProtocol.wrongIdentity});
       return;
     }
     final problem = checkOffer(offer, freeBytes: await freeBytes?.call());
@@ -112,6 +127,7 @@ class ReceiveHttp {
           {'accepted': false, if (accepted == null) 'reason': ApexProtocol.noAnswer});
       return;
     }
+    await pins.pin(offer.senderId, fingerprint);
     final tokens = gate.admit(offer);
     _progress.startReceive(senderDeviceName: offer.senderName, totalFiles: offer.files.length);
     await _reply(req, HttpStatus.ok, {'accepted': true, 'tokens': tokens});
@@ -125,7 +141,10 @@ class ReceiveHttp {
           id: offer.senderId,
           name: offer.senderName,
           type: 'unknown',
-          ip: offer.senderAddress),
+          ip: offer.senderAddress,
+          fingerprint: offer.senderFingerprint),
+      fingerprint: offer.senderFingerprint,
+      keyChanged: pins.keyChanged(offer.senderId, offer.senderFingerprint),
       fileName: offer.files.first.name,
       fileSize: offer.totalBytes,
       fileCount: offer.files.length,
@@ -145,7 +164,7 @@ class ReceiveHttp {
   }
 
   /// The address comes from the connection; any address in the body is ignored.
-  Offer? _parseOffer(String text, String address) {
+  Offer? _parseOffer(String text, String address, String fingerprint) {
     try {
       final json = jsonDecode(text);
       final files = json is Map ? json['files'] : null;
@@ -170,6 +189,7 @@ class ReceiveHttp {
       return Offer(
         senderAddress: address,
         senderId: senderId,
+        senderFingerprint: fingerprint,
         senderName: senderName.isEmpty ? address : senderName,
         files: parsed,
       );
@@ -180,9 +200,9 @@ class ReceiveHttp {
 
   // ─── Upload ────────────────────────────────────────────────────────────────
 
-  Future<void> _upload(HttpRequest req) async {
+  Future<void> _upload(HttpRequest req, String fingerprint) async {
     final address = req.connectionInfo?.remoteAddress.address ?? '';
-    final upload = gate.take(req.headers.value(ApexProtocol.tokenHeader), address);
+    final upload = gate.take(req.headers.value(ApexProtocol.tokenHeader), address, fingerprint);
     if (upload == null) {
       await _reply(req, HttpStatus.forbidden, {'error': 'not_accepted'});
       return;
@@ -295,6 +315,7 @@ class ReceiveHttp {
       fromDevice: sender,
       fromAddress: req.connectionInfo?.remoteAddress.address,
       fromId: upload.senderId,
+      fromFingerprint: upload.senderFingerprint,
       batchId: upload.batchId,
       filePath: path,
       isLastInBatch: isLast,

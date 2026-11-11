@@ -3,10 +3,21 @@ import 'dart:convert';
 import 'package:apex_file_share/core/protocol/apex_protocol.dart';
 import 'package:apex_file_share/core/protocol/discovery_packet.dart';
 import 'package:apex_file_share/core/text/clean_label.dart';
+import 'package:apex_file_share/features/identity/fingerprint.dart';
 import 'package:flutter_test/flutter_test.dart';
 
-String _packet(String id) =>
-    '${DiscoveryPacket.magic}${jsonEncode({'version': ApexProtocol.version, 'id': id, 'name': 'PC', 'type': 'desktop', 'port': 4000})}';
+/// Any bytes: discovery only checks that the fingerprint is of them.
+const _cert = [1, 2, 3];
+
+String _packet(String id) => '${DiscoveryPacket.magic}${jsonEncode({
+      'version': ApexProtocol.version,
+      'id': id,
+      'name': 'PC',
+      'type': 'desktop',
+      'port': 4000,
+      'fp': fingerprintOf(_cert),
+      'cert': base64.encode(_cert),
+    })}';
 
 void main() {
   test('the id from discovery is cleaned as the chat door cleans it, so both are one key', () {

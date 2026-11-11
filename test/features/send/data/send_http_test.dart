@@ -3,6 +3,7 @@ import 'dart:io';
 
 import 'package:apex_file_share/core/files/move_into_folder.dart';
 import 'package:apex_file_share/core/protocol/apex_protocol.dart';
+import 'package:apex_file_share/features/identity/pin_store.dart';
 import 'package:apex_file_share/features/receive/data/receive_http.dart';
 import 'package:apex_file_share/features/receive/data/receive_store.dart';
 import 'package:apex_file_share/features/receive/logic/receive_gate.dart';
@@ -11,8 +12,11 @@ import 'package:apex_file_share/models/device.dart';
 import 'package:apex_file_share/services/transfer_progress_service.dart';
 import 'package:flutter_test/flutter_test.dart';
 
+import '../../identity/tls_peer.dart';
+
 /// The real sender talks to the real receiver over 127.0.0.1.
 void main() {
+  setUpAll(loadPeers);
   late Directory root;
   late Directory saveDir;
   late Directory tempDir;
@@ -20,10 +24,10 @@ void main() {
   late bool accept;
   late void Function() onFileArrived;
 
-  final sender = SendHttp(getLocalName: () => 'Test Phone', getLocalId: () => 'test-id');
+  final sender = SendHttp(getContext: senderContext, getLocalName: () => 'Test Phone', getLocalId: () => 'test-id');
 
   Device target(int port) =>
-      Device(id: 'target', name: 'Receiver', type: 'desktop', ip: '127.0.0.1', port: port);
+      Device(id: 'target', name: 'Receiver', type: 'desktop', ip: '127.0.0.1', port: port, fingerprint: testReceiver.fingerprint);
 
   setUp(() async {
     root = await Directory.systemTemp.createTemp('apex_send_http_');
@@ -34,6 +38,8 @@ void main() {
     TransferProgressService().clearProgress();
 
     final receive = ReceiveHttp(
+      expectedFingerprint: await heardSender(),
+      pins: PinStore.memory(),
       gate: ReceiveGate(),
       store: ReceiveStore(
         tempFolder: () async => tempDir,
@@ -42,7 +48,7 @@ void main() {
       onConnectionRequest: (r) => r.onResponse(accept),
       onFileReceived: (_) => onFileArrived(),
     );
-    server = await HttpServer.bind(InternetAddress.loopbackIPv4, 0);
+    server = await bindReceiver();
     server.listen((req) async {
       if (!await receive.handle(req)) {
         req.response.statusCode = HttpStatus.notFound;
@@ -91,7 +97,7 @@ void main() {
 
   test('a receiver on an old version is reported as "update required"', () async {
     // An old copy has no /offer and answers 404.
-    final old = await HttpServer.bind(InternetAddress.loopbackIPv4, 0);
+    final old = await bindReceiver();
     old.listen((req) async {
       req.response.statusCode = HttpStatus.notFound;
       await req.response.close();
@@ -105,7 +111,7 @@ void main() {
   });
 
   test('a receiver on another version is reported as "update required"', () async {
-    final other = await HttpServer.bind(InternetAddress.loopbackIPv4, 0);
+    final other = await bindReceiver();
     other.listen((req) async {
       req.response
         ..statusCode = HttpStatus.upgradeRequired

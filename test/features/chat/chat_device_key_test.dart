@@ -12,6 +12,7 @@ import 'package:apex_file_share/features/chat/data/chat_http.dart';
 import 'package:apex_file_share/features/chat/logic/chat_access.dart';
 import 'package:apex_file_share/features/chat/logic/chat_key.dart';
 import 'package:apex_file_share/features/chat/logic/chat_store.dart';
+import 'package:apex_file_share/features/identity/pin_store.dart';
 import 'package:apex_file_share/features/receive/data/receive_http.dart';
 import 'package:apex_file_share/features/receive/data/receive_store.dart';
 import 'package:apex_file_share/features/receive/logic/receive_gate.dart';
@@ -19,6 +20,8 @@ import 'package:apex_file_share/features/send/data/send_http.dart';
 import 'package:apex_file_share/models/device.dart';
 import 'package:apex_file_share/services/transfer_progress_service.dart';
 import 'package:flutter_test/flutter_test.dart';
+
+import '../identity/tls_peer.dart';
 
 /// The router gives an address to another device the next day: the chat,
 /// its unread count, its token and its block belong to the id together with
@@ -40,9 +43,11 @@ class _Door {
   bool? Function(ConnectionRequest) decide = (_) => true;
 
   static Future<_Door> start(ChatAccess access, {Duration wait = const Duration(seconds: 5)}) async {
-    final server = await HttpServer.bind(InternetAddress.loopbackIPv4, 0);
+    final server = await bindReceiver();
     final d = _Door._(server);
     final door = ChatHttp(
+      expectedFingerprint: await heardSender(),
+      pins: PinStore.memory(),
       onRequest: (r) {
         d.asked.add(r);
         final answer = d.decide(r);
@@ -70,8 +75,7 @@ class _Door {
   Future<({int status, Map json})> post(Map<String, Object?> body,
       {String from = '127.0.0.1', String? token}) async {
     final bytes = utf8.encode(jsonEncode(body));
-    final socket = await Socket.connect(InternetAddress.loopbackIPv4, _server.port,
-        sourceAddress: InternetAddress(from));
+    final socket = await senderSocket(_server.port, from: from);
     final crlf = String.fromCharCodes(const [13, 10]);
     final head = StringBuffer()
       ..write('POST ${ApexProtocol.chatPath} HTTP/1.1$crlf')
@@ -100,6 +104,7 @@ class _Door {
 Map<String, Object?> _msg(String id, String text) => {'id': id, 'name': 'Phone', 'text': text};
 
 void main() {
+  setUpAll(loadPeers);
   group('the store', () {
     test('a new device at the same address gets an empty chat, with nothing unread', () {
       final store = _store()..receive(_first.chatKey, 'Office PC', 'the wifi key is 8812');
@@ -264,8 +269,8 @@ void main() {
     test('a chat message carries this device id', () async {
       final door = await _Door.start(ChatAccess());
       try {
-        final target = Device(id: 't', name: 'TV', type: 'tv', ip: '127.0.0.1', port: door._server.port);
-        final r = await SendHttp(getLocalName: () => 'My PC', getLocalId: () => 'laptop-1')
+        final target = Device(id: 't', name: 'TV', type: 'tv', ip: '127.0.0.1', port: door._server.port, fingerprint: testReceiver.fingerprint);
+        final r = await SendHttp(getContext: senderContext, getLocalName: () => 'My PC', getLocalId: () => 'laptop-1')
             .sendChat('hi', target, null);
         expect(r.outcome, ChatOutcome.sent);
         expect(door.delivered.single.id, 'laptop-1');
@@ -288,6 +293,8 @@ void main() {
       events = [];
       asked = [];
       final receive = ReceiveHttp(
+        expectedFingerprint: await heardSender(),
+        pins: PinStore.memory(),
         gate: ReceiveGate(),
         store: ReceiveStore(
           tempFolder: () async => Directory('${root.path}/tmp'),
@@ -299,7 +306,7 @@ void main() {
         },
         onFileReceived: events.add,
       );
-      server = await HttpServer.bind(InternetAddress.loopbackIPv4, 0);
+      server = await bindReceiver();
       server.listen((req) async {
         if (!await receive.handle(req)) {
           req.response.statusCode = HttpStatus.notFound;
@@ -315,10 +322,10 @@ void main() {
     });
 
     test('an offer without an id is refused and asks nobody', () async {
-      final client = HttpClient();
+      final client = await senderClient();
       try {
         for (final id in [null, 7, '']) {
-          final req = await client.postUrl(Uri.http('127.0.0.1:${server.port}', ApexProtocol.offerPath));
+          final req = await client.postUrl(Uri.https('127.0.0.1:${server.port}', ApexProtocol.offerPath));
           req.headers.set(ApexProtocol.versionHeader, '${ApexProtocol.version}');
           req.write(jsonEncode({
             if (id != null) 'id': id,
@@ -338,8 +345,8 @@ void main() {
 
     test('files sent carry this device id, and their line goes to its chat at its address', () async {
       final file = File('${root.path}/a.txt')..writeAsStringSync('abc');
-      final target = Device(id: 'r', name: 'Receiver', type: 'desktop', ip: '127.0.0.1', port: server.port);
-      final outcome = await SendHttp(getLocalName: () => 'Office PC', getLocalId: () => 'laptop-1')
+      final target = Device(id: 'r', name: 'Receiver', type: 'desktop', ip: '127.0.0.1', port: server.port, fingerprint: testReceiver.fingerprint);
+      final outcome = await SendHttp(getContext: senderContext, getLocalName: () => 'Office PC', getLocalId: () => 'laptop-1')
           .sendFiles([(path: file.path, name: 'a.txt', size: 3)], target);
       expect(outcome, SendOutcome.sent);
       final deadline = DateTime.now().add(const Duration(seconds: 5));

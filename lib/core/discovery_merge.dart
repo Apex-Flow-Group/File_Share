@@ -35,6 +35,8 @@ void mergeFound(Map<String, Device> known, Device device) {
       port: device.port,
       shareEnabled: device.shareEnabled,
       lastSeen: device.lastSeen,
+      fingerprint: device.fingerprint,
+      certificate: device.certificate,
     );
     return;
   }

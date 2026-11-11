@@ -14,6 +14,7 @@ class Offer {
   const Offer({
     required this.senderAddress,
     required this.senderId,
+    required this.senderFingerprint,
     required this.senderName,
     required this.files,
   });
@@ -23,6 +24,9 @@ class Offer {
   /// The id the sender gave, already cleaned: its files go to the chat of
   /// this id at [senderAddress].
   final String senderId;
+
+  /// From the certificate the offer came with, never from its body.
+  final String senderFingerprint;
   final String senderName;
   final List<OfferedFile> files;
 

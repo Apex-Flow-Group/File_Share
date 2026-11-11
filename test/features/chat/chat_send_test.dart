@@ -7,23 +7,29 @@ import 'package:apex_file_share/core/core_models.dart';
 import 'package:apex_file_share/core/one_question.dart';
 import 'package:apex_file_share/core/protocol/transfer_rules.dart';
 import 'package:apex_file_share/features/chat/data/chat_http.dart';
+import 'package:apex_file_share/features/identity/pin_store.dart';
 import 'package:apex_file_share/features/send/data/send_http.dart';
 import 'package:apex_file_share/models/device.dart';
 import 'package:flutter_test/flutter_test.dart';
 
+import '../identity/tls_peer.dart';
+
 void main() {
+  setUpAll(loadPeers);
   late HttpServer server;
   late List<ConnectionRequest> asked;
   late List<IncomingChat> delivered;
   late OneQuestion question;
-  final send = SendHttp(getLocalName: () => 'My PC', getLocalId: () => 'test-id');
+  final send = SendHttp(getContext: senderContext, getLocalName: () => 'My PC', getLocalId: () => 'test-id');
 
   Future<Device> start({bool? Function(ConnectionRequest)? decide, bool withChat = true}) async {
     asked = [];
     delivered = [];
     question = OneQuestion();
-    server = await HttpServer.bind(InternetAddress.loopbackIPv4, 0);
+    server = await bindReceiver();
     final door = ChatHttp(
+      expectedFingerprint: await heardSender(),
+      pins: PinStore.memory(),
       onRequest: (r) {
         asked.add(r);
         final answer = decide == null ? true : decide(r);
@@ -41,7 +47,7 @@ void main() {
         await req.response.close();
       }
     });
-    return Device(id: 't', name: 'TV', type: 'tv', ip: '127.0.0.1', port: server.port);
+    return Device(id: 't', name: 'TV', type: 'tv', ip: '127.0.0.1', port: server.port, fingerprint: testReceiver.fingerprint);
   }
 
   tearDown(() => server.close(force: true));

@@ -2,10 +2,13 @@ import 'dart:convert';
 import 'dart:io';
 
 import 'package:apex_file_share/core/share_folder_http.dart';
+import 'package:apex_file_share/features/identity/pin_store.dart';
 import 'package:apex_file_share/services/settings_service.dart';
 import 'package:apex_file_share/services/share_folder_service.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:shared_preferences/shared_preferences.dart';
+
+import '../features/identity/tls_peer.dart';
 
 class _TempShareService extends ShareFolderService {
   _TempShareService(this._path) : super.forTesting();
@@ -17,8 +20,8 @@ class _TempShareService extends ShareFolderService {
 
 Future<HttpClientResponse> _send(String method, int port, String path,
     [Map<String, String>? query, List<int>? body]) async {
-  final client = HttpClient();
-  final req = await client.openUrl(method, Uri.http('127.0.0.1:$port', path, query));
+  final client = await senderClient();
+  final req = await client.openUrl(method, Uri.https('127.0.0.1:$port', path, query));
   if (body != null) {
     req.contentLength = body.length;
     req.add(body);
@@ -29,6 +32,7 @@ Future<HttpClientResponse> _send(String method, int port, String path,
 String _read(String path) => File(path).readAsStringSync();
 
 void main() {
+  setUpAll(loadPeers);
   group('Share folder (Windows, Linux, macOS)', () {
     late Directory dir;
     late HttpServer server;
@@ -37,12 +41,14 @@ void main() {
       dir = await Directory.systemTemp.createTemp('apex_share_sec_');
       File('${dir.path}/salary.xlsx').writeAsStringSync('private');
       final share = ShareFolderHttp(
+        expectedFingerprint: await heardSender(),
+        pins: PinStore.memory(),
         isEnabled: () => true,
         allowUploads: () => true,
         getLocalName: () => 'Office PC',
         service: _TempShareService(dir.path),
       );
-      server = await HttpServer.bind(InternetAddress.loopbackIPv4, 0);
+      server = await bindReceiver();
       server.listen((req) async {
         if (!await share.handle(req)) {
           req.response.statusCode = 404;
