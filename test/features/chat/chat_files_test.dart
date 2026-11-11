@@ -97,9 +97,9 @@ void main() {
       expect(heard, isEmpty);
     });
 
-    test('a device that only sent files cannot be blocked: its chat was never accepted', () {
+    test('a device that only sent files can be blocked, like any other', () {
       store.receivedFile(_got('a.pdf', 1, 1));
-      expect(store.canBlock('10.0.0.7'), isFalse);
+      expect(store.canBlock('10.0.0.7'), isTrue);
     });
   });
 

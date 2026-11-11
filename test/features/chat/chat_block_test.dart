@@ -57,11 +57,10 @@ void main() {
       );
     });
 
-    test('only a device whose messages arrived here can be blocked', () async {
-      await store.write(_pc, 'hello');
-      expect(store.canBlock(_pc.ip), isFalse, reason: 'only my own message so far');
-      store.receive(_pc.ip, 'PC', 'hi back');
+    test('any device can be blocked, before it ever writes, but not twice', () {
       expect(store.canBlock(_pc.ip), isTrue);
+      store.block(_pc.ip);
+      expect(store.canBlock(_pc.ip), isFalse);
     });
 
     test('blocking tells the door, and nothing more arrives or goes', () async {
