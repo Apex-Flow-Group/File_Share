@@ -845,11 +845,11 @@ class AppLocalizationsEn extends AppLocalizations {
   String get chatUnblock => 'Unblock';
 
   @override
-  String get chatAttach => 'Attach files';
+  String get chatAttach => 'Send files';
 
   @override
   String get chatTransferBusy =>
-      'A transfer is in progress. Wait until it ends.';
+      'Another transfer is in progress. Try again when it ends.';
 
   @override
   String chatMoreFiles(int count) {
@@ -858,6 +858,25 @@ class AppLocalizationsEn extends AppLocalizations {
       locale: localeName,
       other: 'and $count more files',
       one: 'and 1 more file',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String get chatFilesFailed => 'Sending did not finish';
+
+  @override
+  String chatFilesDelivered(int delivered, int total) {
+    return '$delivered of $total arrived';
+  }
+
+  @override
+  String chatUnread(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '$count new messages',
+      one: '1 new message',
     );
     return '$_temp0';
   }

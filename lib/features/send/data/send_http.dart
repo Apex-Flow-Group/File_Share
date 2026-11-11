@@ -28,7 +28,10 @@ class SendHttp {
 
   TransferProgressService get _progress => TransferProgressService();
 
-  Future<SendOutcome> sendFiles(List<OutgoingFile> files, Device target) async {
+  /// [onDelivered] hears how many files have arrived so far, so a batch cut
+  /// short can be resumed without sending the arrived ones again.
+  Future<SendOutcome> sendFiles(List<OutgoingFile> files, Device target,
+      {void Function(int delivered)? onDelivered}) async {
     // Checked here first, so the user hears why at once; the receiver checks
     // again and refuses with 422.
     if (files.length > TransferRules.maxFilesPerBatch) {
@@ -53,6 +56,7 @@ class SendHttp {
         if (outcome != SendOutcome.sent) {
           return outcome;
         }
+        onDelivered?.call(i + 1);
       }
       return progress.isCancelled ? SendOutcome.cancelled : SendOutcome.sent;
     } finally {

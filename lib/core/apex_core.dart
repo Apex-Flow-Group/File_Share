@@ -87,8 +87,11 @@ class ApexCore {
   /// The chats of this run, in memory only.
   late final ChatStore chat = ChatStore(
     send: _sendChat,
-    sendFilesNow: (files, target) =>
-        _send.sendFiles([for (final f in files) (path: f.path, name: f.name, size: f.size)], target),
+    // Sizes are read now: a file that changed since its line was made would
+    // otherwise go cut to its old size and be taken as complete.
+    sendFilesNow: (files, target, onDelivered) async => _send.sendFiles(
+        [for (final f in files) (path: f.path, name: f.name, size: await File(f.path).length())], target,
+        onDelivered: onDelivered),
     onBlock: _chat.block,
     onUnblock: _chat.unblock,
   );

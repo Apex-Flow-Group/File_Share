@@ -14,6 +14,7 @@ FileReceivedEvent _got(String name, int index, int total) => FileReceivedEvent(
       fileSize: 1024,
       fromDevice: 'PC',
       fromAddress: _pc.ip,
+      batchId: 1,
       filePath: '/save/$name',
       batchIndex: index,
       batchTotal: total,
@@ -24,7 +25,7 @@ void main() {
   late ChatStore store;
   setUp(() => store = ChatStore(
         send: (t, d, k) async => (outcome: ChatOutcome.sent, token: null),
-        sendFilesNow: (files, target) async => SendOutcome.declined,
+        sendFilesNow: (files, target, onDelivered) async => SendOutcome.declined,
       ));
 
   Future<AppLocalizations> show(WidgetTester tester, {required bool canWrite, VoidCallback? onAttach}) async {
@@ -72,6 +73,18 @@ void main() {
     await store.sendFiles(_pc, const [ChatFile('a.pdf', 10, '/tmp/a.pdf')]);
     final l10n = await show(tester, canWrite: true);
     expect(find.text(l10n.sendDeclined), findsOneWidget);
+    expect(find.text(l10n.retry), findsNothing);
+  });
+
+  testWidgets('the TV shows why a send of its own failed, with no retry', (tester) async {
+    store = ChatStore(
+      send: (t, d, k) async => (outcome: ChatOutcome.sent, token: null),
+      sendFilesNow: (files, target, onDelivered) async => SendOutcome.busy,
+    );
+    await store.sendFiles(_pc, const [ChatFile('a.pdf', 10, 'test/features/chat/chat_files_view_test.dart')]);
+    final l10n = await show(tester, canWrite: true);
+    expect(find.text(l10n.retry), findsOneWidget, reason: 'the phone can retry: the file exists');
+    await show(tester, canWrite: false);
     expect(find.text(l10n.retry), findsNothing);
   });
 

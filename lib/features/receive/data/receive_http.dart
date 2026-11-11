@@ -239,7 +239,7 @@ class ReceiveHttp {
       // arrive, and the idle time must already count from here.
       upload.finish();
       await _reply(req, HttpStatus.ok, {'success': true});
-      _finished(file, path, req);
+      _finished(file, path, req, upload);
     } catch (e) {
       await _discard(sink, temp);
       if (e is TimeoutException) {
@@ -274,10 +274,11 @@ class ReceiveHttp {
     } catch (_) {}
   }
 
-  void _finished(OfferedFile file, String path, HttpRequest req) {
+  void _finished(OfferedFile file, String path, HttpRequest req, Upload upload) {
     final progress = _progress..nextFile();
     final isLast = progress.currentFileIndex >= progress.totalFiles;
-    final sender = progress.senderDeviceName ?? req.connectionInfo?.remoteAddress.address ?? '';
+    // The batch's own name: the shared progress may already be another batch's.
+    final sender = upload.senderName;
     final total = progress.totalFiles;
     final index = progress.currentFileIndex;
     if (isLast) {
@@ -288,6 +289,7 @@ class ReceiveHttp {
       fileSize: file.size,
       fromDevice: sender,
       fromAddress: req.connectionInfo?.remoteAddress.address,
+      batchId: upload.batchId,
       filePath: path,
       isLastInBatch: isLast,
       batchTotal: total,

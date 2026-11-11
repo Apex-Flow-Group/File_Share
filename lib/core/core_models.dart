@@ -10,6 +10,10 @@ class FileReceivedEvent {
   /// The sender's real address, from the connection; null over Nearby.
   /// The file's line goes to this address's chat, not to the name it gave.
   final String? fromAddress;
+
+  /// Which accepted batch the file belongs to; null over Nearby. A chat
+  /// groups by it, since two batches can be received at the same time.
+  final int? batchId;
   final String filePath;
   final bool isLastInBatch;
   final int batchTotal;
@@ -20,6 +24,7 @@ class FileReceivedEvent {
     required this.fromDevice,
     required this.filePath,
     this.fromAddress,
+    this.batchId,
     this.isLastInBatch = true,
     this.batchTotal = 1,
     this.batchIndex = 1,

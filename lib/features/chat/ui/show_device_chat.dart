@@ -1,3 +1,5 @@
+import 'dart:async';
+
 import 'package:file_picker/file_picker.dart';
 import 'package:flutter/material.dart';
 
@@ -11,7 +13,8 @@ import 'confirm_block.dart';
 import 'device_chat_view.dart';
 
 /// Opens [device]'s chat in a bottom sheet (phone and computer).
-Future<void> showDeviceChat(BuildContext context, Device device) {
+/// With [focus], the writing line takes the keyboard at once.
+Future<void> showDeviceChat(BuildContext context, Device device, {bool focus = false}) {
   final store = ApexCore.instance.chat;
   return ApexBottomSheet.show<void>(
     context,
@@ -66,7 +69,8 @@ Future<void> showDeviceChat(BuildContext context, Device device) {
                 child: DeviceChatView(
                   store: store,
                   device: device,
-                  onAttach: () => _attach(context, device),
+                  autofocus: focus,
+                  onAttach: () => attachFiles(context, device),
                 ),
               ),
             ],
@@ -77,17 +81,19 @@ Future<void> showDeviceChat(BuildContext context, Device device) {
   );
 }
 
-/// Files picked here go through the same send as the card's button, so they
-/// show as a line in this chat. One transfer at a time, as on the card.
-Future<void> _attach(BuildContext context, Device device) async {
+/// Picks files and starts sending them to [device] through the same send as
+/// the card's buttons, so they show as a line in its chat. False when nothing
+/// was picked or another transfer is running (one at a time, as on the card).
+Future<bool> attachFiles(BuildContext context, Device device) async {
   if (TransferProgressService().isTransferring) {
     ApexSnackBar.info(context, AppLocalizations.of(context).chatTransferBusy);
-    return;
+    return false;
   }
   final picked = await FilePicker.platform.pickFiles(allowMultiple: true);
   final paths = [for (final f in picked?.files ?? const <PlatformFile>[]) if (f.path != null) f.path!];
   if (paths.isEmpty) {
-    return;
+    return false;
   }
-  await ApexCore.instance.sendFiles(paths, device);
+  unawaited(ApexCore.instance.sendFiles(paths, device));
+  return true;
 }

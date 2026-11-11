@@ -317,10 +317,19 @@
   "chatBlockDetail": "Its messages are refused while it is blocked, and you can't write to it. The block ends when the app closes.",
   "chatBlocked": "This device is blocked: no messages to or from it.",
   "chatUnblock": "Unblock",
-  "chatAttach": "Attach files",
-  "chatTransferBusy": "A transfer is in progress. Wait until it ends.",
+  "chatAttach": "Send files",
+  "chatTransferBusy": "Another transfer is in progress. Try again when it ends.",
   "chatMoreFiles": "{count, plural, one{and 1 more file} other{and {count} more files}}",
   "@chatMoreFiles": {
+    "placeholders": { "count": { "type": "int" } }
+  },
+  "chatFilesFailed": "Sending did not finish",
+  "chatFilesDelivered": "{delivered} of {total} arrived",
+  "@chatFilesDelivered": {
+    "placeholders": { "delivered": { "type": "int" }, "total": { "type": "int" } }
+  },
+  "chatUnread": "{count, plural, one{1 new message} other{{count} new messages}}",
+  "@chatUnread": {
     "placeholders": { "count": { "type": "int" } }
   }
 }

@@ -13,6 +13,7 @@ import '../../services/clipboard_monitor_service.dart';
 import '../../services/desktop_notification_service.dart';
 import '../../services/transfer_progress_service.dart';
 import '../../shared/device_look.dart';
+import '../../shared/framed_capsule_input.dart';
 import '../screens/share_browser_screen.dart';
 import 'connection_send_actions.dart';
 import 'transfer_progress_indicator.dart';
@@ -161,7 +162,7 @@ class _ConnectionWidgetState extends State<ConnectionWidget>
               // Chat goes over the local network only, not over Nearby.
               if (usable && widget.device.isMdns) ...[
                 const SizedBox(height: 10),
-                _ChatButton(device: widget.device, isDark: isDark),
+                _ChatButton(device: widget.device),
               ],
             ],
           ),
@@ -678,46 +679,31 @@ class _ActionButton extends StatelessWidget {
 // ─── Chat Button ──────────────────────────────────────────────────────────────
 
 class _ChatButton extends StatelessWidget {
-  const _ChatButton({required this.device, required this.isDark});
+  const _ChatButton({required this.device});
 
   final Device device;
-  final bool isDark;
 
+  /// The chat's own writing line, as an entry: touching it opens the chat
+  /// with the keyboard up, and the clip sends files, then shows their line.
   @override
   Widget build(BuildContext context) {
     final l10n = AppLocalizations.of(context);
-    final color = Theme.of(context).colorScheme.secondary;
     final store = ApexCore.instance.chat;
     return ListenableBuilder(
       listenable: store,
       builder: (context, _) {
         final unread = store.unread(device.ip);
-        return Material(
-          color: color.withValues(alpha: isDark ? 0.18 : 0.1),
-          shape: RoundedRectangleBorder(
-            borderRadius: BorderRadius.circular(14),
-            side: BorderSide(color: color.withValues(alpha: isDark ? 0.3 : 0.2)),
-          ),
-          child: InkWell(
-            borderRadius: BorderRadius.circular(14),
-            onTap: () => showDeviceChat(context, device),
-            child: Padding(
-              padding: const EdgeInsets.symmetric(vertical: 12, horizontal: 14),
-              child: Row(
-                mainAxisAlignment: MainAxisAlignment.center,
-                children: [
-                  Icon(Icons.chat_bubble_rounded, color: color, size: 20),
-                  const SizedBox(width: 8),
-                  Text(l10n.chatOpen,
-                      style: TextStyle(fontSize: 13, fontWeight: FontWeight.w600, color: color)),
-                  if (unread > 0) ...[
-                    const SizedBox(width: 8),
-                    Badge(label: Text('$unread'), backgroundColor: color),
-                  ],
-                ],
-              ),
-            ),
-          ),
+        return FramedCapsuleInput(
+          hint: unread > 0 ? l10n.chatUnread(unread) : l10n.chatHint,
+          sendLabel: l10n.chatOpen,
+          onSend: (_) => false,
+          onOpen: () => showDeviceChat(context, device, focus: true),
+          onAttach: () async {
+            if (await attachFiles(context, device) && context.mounted) {
+              await showDeviceChat(context, device);
+            }
+          },
+          attachLabel: l10n.chatAttach,
         );
       },
     );

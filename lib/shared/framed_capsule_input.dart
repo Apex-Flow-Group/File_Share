@@ -66,6 +66,8 @@ class FramedCapsuleInput extends StatefulWidget {
     required this.onSend,
     this.onAttach,
     this.attachLabel,
+    this.onOpen,
+    this.autofocus = false,
     super.key,
   });
 
@@ -80,6 +82,11 @@ class FramedCapsuleInput extends StatefulWidget {
   /// A plain circle before the send one; none when null (the TV).
   final VoidCallback? onAttach;
   final String? attachLabel;
+
+  /// Set on a device card: the line only leads to the chat. Touching it
+  /// opens the chat, where the writing happens and the replies are.
+  final VoidCallback? onOpen;
+  final bool autofocus;
 
   @override
   State<FramedCapsuleInput> createState() => _FramedCapsuleInputState();
@@ -126,9 +133,29 @@ class _FramedCapsuleInputState extends State<FramedCapsuleInput> {
   @override
   Widget build(BuildContext context) {
     final c = FramedCapsuleColors.of(context);
+    if (widget.onOpen != null) {
+      return _capsule(
+        c,
+        Semantics(
+          button: true,
+          child: GestureDetector(
+            behavior: HitTestBehavior.opaque,
+            onTap: widget.onOpen,
+            child: Padding(
+              padding: const EdgeInsets.symmetric(vertical: 18),
+              child: Text(widget.hint,
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
+                  style: TextStyle(color: c.hint, fontSize: 16)),
+            ),
+          ),
+        ),
+      );
+    }
     Widget field = TextField(
       controller: _controller,
       focusNode: _focus,
+      autofocus: widget.autofocus,
       minLines: 1,
       maxLines: 6,
       keyboardType: TextInputType.multiline,
@@ -149,40 +176,47 @@ class _FramedCapsuleInputState extends State<FramedCapsuleInput> {
         child: field,
       );
     }
-    return Container(
-      constraints: const BoxConstraints(minHeight: _height),
-      decoration: BoxDecoration(
-        color: c.capsule,
-        borderRadius: BorderRadius.circular(_height / 2),
-        border: Border.all(color: c.border),
-      ),
-      padding: const EdgeInsetsDirectional.only(start: 20, end: _margin - _touchExtra),
-      child: Row(
-        crossAxisAlignment: CrossAxisAlignment.end,
-        children: [
-          Expanded(child: field),
-          const SizedBox(width: 4),
-          if (widget.onAttach != null)
-            _circleButton(
-              label: widget.attachLabel ?? '',
-              enabled: true,
-              onTap: widget.onAttach!,
-              background: c.circle,
-              icon: Icons.attach_file_rounded,
-              iconColor: c.onCircle,
-            ),
-          _circleButton(
-            label: widget.sendLabel,
-            enabled: _canSend,
-            onTap: _send,
-            background: c.filled,
-            icon: Icons.arrow_upward_rounded,
-            iconColor: c.onFilled,
-          ),
-        ],
-      ),
-    );
+    return _capsule(c, field);
   }
+
+  Widget _capsule(FramedCapsuleColors c, Widget field) => Container(
+        constraints: const BoxConstraints(minHeight: _height),
+        decoration: BoxDecoration(
+          color: c.capsule,
+          borderRadius: BorderRadius.circular(_height / 2),
+          border: Border.all(color: c.border),
+        ),
+        padding: EdgeInsetsDirectional.only(
+            start: widget.onAttach != null ? _margin - _touchExtra : 20, end: _margin - _touchExtra),
+        child: Row(
+          crossAxisAlignment: CrossAxisAlignment.end,
+          children: [
+            // At the start, as in the owner's reference; send stays at the end.
+            if (widget.onAttach != null) ...[
+              _circleButton(
+                label: widget.attachLabel ?? '',
+                enabled: true,
+                onTap: widget.onAttach!,
+                background: c.circle,
+                icon: Icons.attach_file_rounded,
+                iconColor: c.onCircle,
+              ),
+              const SizedBox(width: 4),
+            ],
+            Expanded(child: field),
+            const SizedBox(width: 4),
+            // On a card it leads to the chat too, instead of sitting dim.
+            _circleButton(
+              label: widget.sendLabel,
+              enabled: widget.onOpen != null || _canSend,
+              onTap: widget.onOpen ?? _send,
+              background: c.filled,
+              icon: Icons.arrow_upward_rounded,
+              iconColor: c.onFilled,
+            ),
+          ],
+        ),
+      );
 
   /// One circle of the line, all of the same size; under 48dp, so the touch
   /// area reaches past it.

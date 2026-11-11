@@ -19,12 +19,14 @@ import 'package:flutter_test/flutter_test.dart';
 const _pc = Device(id: 'p', name: 'Office PC', type: 'desktop', ip: '10.0.0.7', port: 4000);
 const _nearbyPhone = Device(id: 'n', name: 'Phone', type: 'phone', endpointId: 'ep1');
 
-FileReceivedEvent _got(String name, int index, int total, {String? from = '10.0.0.7', String sender = 'PC'}) =>
+FileReceivedEvent _got(String name, int index, int total,
+        {String? from = '10.0.0.7', String sender = 'PC', int batch = 1}) =>
     FileReceivedEvent(
       fileName: name,
       fileSize: 10,
       fromDevice: sender,
       fromAddress: from,
+      batchId: from == null ? null : batch,
       filePath: '/save/$name',
       batchIndex: index,
       batchTotal: total,
@@ -52,15 +54,25 @@ void main() {
       store
         ..receivedFile(_got('a.pdf', 1, 2))
         ..receivedFile(_got('b.pdf', 2, 2))
-        ..receivedFile(_got('c.pdf', 1, 1));
+        ..receivedFile(_got('c.pdf', 1, 1, batch: 2));
       expect(store.thread('10.0.0.7')!.messages, hasLength(2));
       expect(store.unread('10.0.0.7'), 2);
+    });
+
+    test('two batches received at once keep their own lines', () {
+      // The shared progress counts both together: index and total lie here.
+      store
+        ..receivedFile(_got('a1.pdf', 1, 3, batch: 7))
+        ..receivedFile(_got('b1.pdf', 2, 3, from: '10.0.0.9', batch: 8))
+        ..receivedFile(_got('a2.pdf', 1, 1, batch: 7));
+      expect(store.thread('10.0.0.7')!.messages.single.files.map((f) => f.name), ['a1.pdf', 'a2.pdf']);
+      expect(store.thread('10.0.0.9')!.messages.single.files.map((f) => f.name), ['b1.pdf']);
     });
 
     test('the line follows the address, not the name the device gave', () {
       store
         ..receivedFile(_got('a.pdf', 1, 1, from: '10.0.0.7', sender: 'Office PC'))
-        ..receivedFile(_got('b.pdf', 1, 1, from: '10.0.0.9', sender: 'Office PC'));
+        ..receivedFile(_got('b.pdf', 1, 1, from: '10.0.0.9', sender: 'Office PC', batch: 2));
       expect(store.thread('10.0.0.7')!.messages.single.files.single.name, 'a.pdf');
       expect(store.thread('10.0.0.9')!.messages.single.files.single.name, 'b.pdf');
     });
@@ -94,16 +106,23 @@ void main() {
   group('sent files', () {
     late List<List<String>> sent;
     late List<SendOutcome> answers;
+    late int arrivedBeforeFailure;
     late ChatStore store;
 
     setUp(() {
       sent = [];
       answers = [];
+      arrivedBeforeFailure = 0;
       store = ChatStore(
         send: (t, d, k) async => (outcome: ChatOutcome.sent, token: null),
-        sendFilesNow: (files, target) async {
+        sendFilesNow: (files, target, onDelivered) async {
           sent.add([for (final f in files) f.name]);
-          return answers.isEmpty ? SendOutcome.sent : answers.removeAt(0);
+          final outcome = answers.isEmpty ? SendOutcome.sent : answers.removeAt(0);
+          final arrived = outcome == SendOutcome.sent ? files.length : arrivedBeforeFailure;
+          for (var i = 1; i <= arrived; i++) {
+            onDelivered(i);
+          }
+          return outcome;
         },
       );
     });
@@ -132,6 +151,26 @@ void main() {
       expect(store.thread(_pc.ip)!.messages, hasLength(1));
     });
 
+    test('a batch cut short resumes with the files that did not arrive, not all again', () async {
+      const three = [
+        ChatFile('a.pdf', 10, '/tmp/a.pdf'),
+        ChatFile('b.pdf', 10, '/tmp/b.pdf'),
+        ChatFile('c.pdf', 10, '/tmp/c.pdf'),
+      ];
+      answers.add(SendOutcome.failed);
+      arrivedBeforeFailure = 1;
+      await store.sendFiles(_pc, three);
+      final line = store.thread(_pc.ip)!.messages.single;
+      expect(line.delivered, 1);
+      await store.retryFiles(_pc, line);
+      expect(sent, [
+        ['a.pdf', 'b.pdf', 'c.pdf'],
+        ['b.pdf', 'c.pdf'],
+      ], reason: 'a.pdf already arrived: sending it again makes a copy there');
+      expect(line.delivered, 3);
+      expect(line.status, ChatStatus.sent);
+    });
+
     test('no retry where it fails the same way again', () async {
       for (final o in [SendOutcome.declined, SendOutcome.updateRequired, SendOutcome.cancelled,
           SendOutcome.tooManyFiles, SendOutcome.noSpace]) {
@@ -141,6 +180,15 @@ void main() {
       await store.sendFiles(_pc, files);
       await store.retryFiles(_pc, store.thread(_pc.ip)!.messages.single);
       expect(sent, hasLength(1));
+    });
+
+    test('a send that throws ends as failed, never "sending" for ever', () async {
+      final throwing = ChatStore(
+        send: (t, d, k) async => (outcome: ChatOutcome.sent, token: null),
+        sendFilesNow: (files, target, onDelivered) => throw const FileSystemException('disk gone'),
+      );
+      expect(await throwing.sendFiles(_pc, files), SendOutcome.failed);
+      expect(throwing.thread(_pc.ip)!.messages.single.status, ChatStatus.failed);
     });
 
     test('a text retry never resends a file line as text', () async {
@@ -164,6 +212,8 @@ void main() {
     expect('_send.sendFiles('.allMatches(core), hasLength(1),
         reason: 'only inside sendFilesNow; anything else would skip the chat line');
     expect(core, contains('chat.receivedFile(e)'));
+    expect(core, contains('size: await File(f.path).length()'),
+        reason: 'a retry reads the size now; the old one would cut a grown file and call it sent');
     expect('return _send.sendFiles'.allMatches(core), isEmpty);
   });
 

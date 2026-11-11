@@ -37,6 +37,14 @@ class ChatMessage {
 
   /// Why files of mine did not arrive.
   SendOutcome? filesFailure;
+
+  /// Files of mine that arrived, in order: a retry sends only the rest.
+  int delivered = 0;
+
+  /// The received batch this line shows.
+  int? batchId;
+
+  List<ChatFile> get undelivered => files.sublist(delivered);
 }
 
 class ChatThread {
@@ -62,7 +70,9 @@ class ChatStore extends ChangeNotifier {
   }) : _clock = clock ?? DateTime.now;
 
   /// Sends files to [target] without adding a line; [sendFiles] adds it.
-  final Future<SendOutcome> Function(List<ChatFile> files, Device target)? sendFilesNow;
+  /// [onDelivered] counts the files that arrived.
+  final Future<SendOutcome> Function(
+      List<ChatFile> files, Device target, void Function(int delivered) onDelivered)? sendFilesNow;
 
   /// Tell the door, which refuses a blocked device's messages.
   final void Function(String address)? onBlock;
@@ -177,11 +187,14 @@ class ChatStore extends ChangeNotifier {
     }
     final t = _thread(address, event.fromDevice);
     final file = ChatFile(event.fileName, event.fileSize, event.filePath);
-    final last = t.messages.isEmpty ? null : t.messages.last;
-    if (event.batchIndex > 1 && last != null && !last.mine && last.isFiles) {
-      last.files.add(file);
+    final id = event.batchId;
+    final line = id == null
+        ? null
+        : t.messages.where((m) => !m.mine && m.isFiles && m.batchId == id).lastOrNull;
+    if (line != null) {
+      line.files.add(file);
     } else {
-      _add(t, ChatMessage._(_nextId++, false, '', ChatStatus.sent, [file]));
+      _add(t, ChatMessage._(_nextId++, false, '', ChatStatus.sent, [file])..batchId = id);
       if (_open != address) {
         t.unread++;
       }
@@ -197,7 +210,7 @@ class ChatStore extends ChangeNotifier {
       return SendOutcome.failed;
     }
     if (!target.isMdns || isBlocked(target.ip)) {
-      return now(files, target);
+      return now(files, target, (_) {});
     }
     final m = ChatMessage._(_nextId++, true, '', ChatStatus.sending, List.of(files));
     _add(_thread(target.ip, target.name), m);
@@ -226,7 +239,14 @@ class ChatStore extends ChangeNotifier {
   }
 
   Future<void> _deliverFiles(Device target, ChatMessage m) async {
-    final outcome = await sendFilesNow!(m.files, target);
+    final before = m.delivered;
+    SendOutcome outcome;
+    try {
+      outcome = await sendFilesNow!(m.undelivered, target, (n) => m.delivered = before + n);
+    } catch (_) {
+      // A line never stays "sending": the send threw (a disk removed mid-read).
+      outcome = SendOutcome.failed;
+    }
     if (outcome == SendOutcome.sent) {
       m.status = ChatStatus.sent;
     } else {

@@ -14,11 +14,12 @@ class ReceiveGate {
   final Random _random;
   final DateTime Function() _clock;
   final _tickets = <String, _Ticket>{};
+  var _nextBatch = 0;
 
   /// Call only after the user accepted [offer]. Tokens follow the file order.
   List<String> admit(Offer offer) {
     _dropExpired();
-    final batch = _Batch(offer.senderAddress, _clock());
+    final batch = _Batch(offer.senderAddress, _clock(), _nextBatch++, offer.senderName);
     return [
       for (final file in offer.files) _issue(_Ticket(batch, file)),
     ];
@@ -76,6 +77,12 @@ class Upload {
   final _Batch _batch;
   final OfferedFile file;
 
+  /// Tells this file's batch from any other, even one accepted meanwhile.
+  int get batchId => _batch.id;
+
+  /// The name its sender gave in the offer the user accepted.
+  String get senderName => _batch.senderName;
+
   bool _finished = false;
 
   /// The receiving user cancelled: no other file of this batch is accepted.
@@ -94,8 +101,10 @@ class Upload {
 }
 
 class _Batch {
-  _Batch(this.address, this.lastUse);
+  _Batch(this.address, this.lastUse, this.id, this.senderName);
   final String address;
+  final int id;
+  final String senderName;
   DateTime lastUse;
   int moving = 0;
 }

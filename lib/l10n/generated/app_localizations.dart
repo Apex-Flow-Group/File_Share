@@ -1625,13 +1625,13 @@ abstract class AppLocalizations {
   /// No description provided for @chatAttach.
   ///
   /// In en, this message translates to:
-  /// **'Attach files'**
+  /// **'Send files'**
   String get chatAttach;
 
   /// No description provided for @chatTransferBusy.
   ///
   /// In en, this message translates to:
-  /// **'A transfer is in progress. Wait until it ends.'**
+  /// **'Another transfer is in progress. Try again when it ends.'**
   String get chatTransferBusy;
 
   /// No description provided for @chatMoreFiles.
@@ -1639,6 +1639,24 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'{count, plural, one{and 1 more file} other{and {count} more files}}'**
   String chatMoreFiles(int count);
+
+  /// No description provided for @chatFilesFailed.
+  ///
+  /// In en, this message translates to:
+  /// **'Sending did not finish'**
+  String get chatFilesFailed;
+
+  /// No description provided for @chatFilesDelivered.
+  ///
+  /// In en, this message translates to:
+  /// **'{delivered} of {total} arrived'**
+  String chatFilesDelivered(int delivered, int total);
+
+  /// No description provided for @chatUnread.
+  ///
+  /// In en, this message translates to:
+  /// **'{count, plural, one{1 new message} other{{count} new messages}}'**
+  String chatUnread(int count);
 }
 
 class _AppLocalizationsDelegate

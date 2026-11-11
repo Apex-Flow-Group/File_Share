@@ -866,10 +866,10 @@ class AppLocalizationsAr extends AppLocalizations {
   String get chatUnblock => 'إلغاء الحظر';
 
   @override
-  String get chatAttach => 'إرفاق ملفات';
+  String get chatAttach => 'إرسال ملفات';
 
   @override
-  String get chatTransferBusy => 'يوجد إرسال جارٍ. انتظر حتى ينتهي.';
+  String get chatTransferBusy => 'نقل آخر جارٍ. حاول بعد انتهائه.';
 
   @override
   String chatMoreFiles(int count) {
@@ -881,6 +881,28 @@ class AppLocalizationsAr extends AppLocalizations {
       few: 'و$count ملفات أخرى',
       two: 'وملفان آخران',
       one: 'وملف آخر',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String get chatFilesFailed => 'لم يكتمل الإرسال';
+
+  @override
+  String chatFilesDelivered(int delivered, int total) {
+    return 'وصل $delivered من $total';
+  }
+
+  @override
+  String chatUnread(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '$count رسالة جديدة',
+      many: '$count رسالة جديدة',
+      few: '$count رسائل جديدة',
+      two: 'رسالتان جديدتان',
+      one: 'رسالة جديدة',
     );
     return '$_temp0';
   }

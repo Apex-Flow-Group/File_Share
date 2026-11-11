@@ -13,6 +13,7 @@ class ChatFilesBubble extends StatelessWidget {
   const ChatFilesBubble({
     required this.message,
     required this.canOpenFolder,
+    required this.canRetry,
     required this.onOpen,
     required this.onOpenFolder,
     required this.onRetry,
@@ -23,6 +24,9 @@ class ChatFilesBubble extends StatelessWidget {
 
   /// False on the TV, which has no app that opens folders.
   final bool canOpenFolder;
+
+  /// False on the TV: it only receives and shows.
+  final bool canRetry;
   final void Function(ChatFile) onOpen;
   final void Function(ChatFile) onOpenFolder;
   final void Function(ChatMessage) onRetry;
@@ -45,9 +49,10 @@ class ChatFilesBubble extends StatelessWidget {
         : (isDark ? const Color(0xFF2C2C2E) : const Color(0xFFF0F0F2));
     // A folder sent as a zip, or a copied text, is gone once sent: retrying
     // would fail the same way, so it is not offered.
-    final canRetry = failure != null &&
+    final retry = canRetry &&
+        failure != null &&
         ChatStore.retryHelps(failure) &&
-        files.every((f) => File(f.path).existsSync());
+        message.undelivered.every((f) => File(f.path).existsSync());
 
     return Align(
       alignment: mine ? AlignmentDirectional.centerEnd : AlignmentDirectional.centerStart,
@@ -69,7 +74,7 @@ class ChatFilesBubble extends StatelessWidget {
                   mainAxisSize: MainAxisSize.min,
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    Icon(files.length == 1 ? Icons.insert_drive_file_rounded : Icons.folder_copy_rounded,
+                    Icon(files.length == 1 ? Icons.insert_drive_file_rounded : Icons.file_copy_rounded,
                         size: 22),
                     const SizedBox(width: 10),
                     Flexible(
@@ -115,10 +120,14 @@ class ChatFilesBubble extends StatelessWidget {
                 Padding(
                   padding: const EdgeInsets.only(top: 4),
                   child: Text(
-                      sendOutcomeMessage(l10n, failure, sent: '', failed: l10n.fileSendFailed),
+                      sendOutcomeMessage(l10n, failure, sent: '', failed: l10n.chatFilesFailed),
                       style: const TextStyle(fontSize: 12, color: Colors.red)),
                 ),
-                if (canRetry)
+                // Some of the batch arrived before it stopped; a retry sends the rest.
+                if (message.delivered > 0)
+                  Text(l10n.chatFilesDelivered(message.delivered, files.length),
+                      style: TextStyle(fontSize: 12, color: hint)),
+                if (retry)
                   TextButton.icon(
                     onPressed: () => onRetry(message),
                     icon: const Icon(Icons.refresh_rounded, size: 16),

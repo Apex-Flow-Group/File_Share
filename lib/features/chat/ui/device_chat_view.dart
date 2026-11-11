@@ -1,3 +1,5 @@
+import 'dart:io';
+
 import 'package:flutter/material.dart';
 import 'package:intl/intl.dart' show Bidi;
 
@@ -23,6 +25,7 @@ class DeviceChatView extends StatefulWidget {
     required this.device,
     this.canWrite = true,
     this.onAttach,
+    this.autofocus = false,
     super.key,
   });
 
@@ -31,6 +34,9 @@ class DeviceChatView extends StatefulWidget {
 
   /// Picks files and sends them to [device]; none on the TV.
   final VoidCallback? onAttach;
+
+  /// Opened from the card's writing line: the keyboard comes up at once.
+  final bool autofocus;
 
   /// False on the TV: it only receives and shows.
   final bool canWrite;
@@ -66,6 +72,13 @@ class _DeviceChatViewState extends State<DeviceChatView> {
   }
 
   Future<void> _open(ChatFile f) async {
+    // Another file may have taken the name since (deleted, then a new one
+    // arrived): a different size means it is not this line's file.
+    final file = File(f.path);
+    if (!file.existsSync() || file.lengthSync() != f.size) {
+      ApexSnackBar.error(context, AppLocalizations.of(context).fileMissing);
+      return;
+    }
     try {
       await FileUtils.openFile(f.path);
     } catch (e) {
@@ -128,6 +141,7 @@ class _DeviceChatViewState extends State<DeviceChatView> {
                             ? ChatFilesBubble(
                                 message: m,
                                 canOpenFolder: widget.canWrite,
+                                canRetry: widget.canWrite,
                                 onOpen: _open,
                                 onOpenFolder: _openFolder,
                                 onRetry: _retryFiles,
@@ -159,6 +173,7 @@ class _DeviceChatViewState extends State<DeviceChatView> {
                 onSend: _send,
                 onAttach: widget.onAttach,
                 attachLabel: l10n.chatAttach,
+                autofocus: widget.autofocus,
               ),
             ],
           ],
