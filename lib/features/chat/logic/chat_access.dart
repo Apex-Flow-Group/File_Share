@@ -58,8 +58,8 @@ class ChatAccess {
     return grant == null || grant.address != address ? null : grant;
   }
 
-  /// Proposal awaiting the owner: a refused device is not asked about again
-  /// until the app closes, so a stranger cannot keep raising the question.
+  /// Owner decision: a refused device is not asked about again until the app
+  /// closes, so a stranger cannot keep raising the question.
   void decline(String address) => _declined.add(address);
 
   bool isDeclined(String address) => _declined.contains(address);
