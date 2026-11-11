@@ -4,6 +4,8 @@ import 'dart:async';
 import 'dart:convert';
 import 'dart:io';
 
+import '../features/identity/caller.dart';
+import '../features/identity/pin_store.dart';
 import '../features/share/logic/share_access.dart';
 import '../models/device.dart';
 import '../services/desktop_notification_service.dart';
@@ -19,8 +21,10 @@ import 'text/clean_label.dart';
 /// يعالج HTTP endpoints الخاصة بمجلد Share.
 /// لا يُنشئ server خاصاً به — يتكامل مع server ApexCore الحالي.
 ///
-/// Every route needs the protocol version; every route but /share/access
-/// needs a token the user's agreement issued to that address.
+/// Every route needs a client certificate and the protocol version;
+/// /share/access needs the certificate discovery heard from the id it gives,
+/// and every other route a token the user's agreement issued to that address
+/// and certificate.
 ///
 /// Endpoints:
 ///   POST /share/access   → يسأل المستخدم ويُرجع { accepted, token }
@@ -43,6 +47,10 @@ class ShareFolderHttp {
 
   /// Asks the user; with nobody to ask, no device gets in.
   final void Function(ConnectionRequest)? onAccessRequest;
+  final ExpectedFingerprint expectedFingerprint;
+
+  /// Written when the user lets a device in.
+  final PinStore pins;
   final Duration decisionTimeout;
   final int maxUploadBytes;
   final ShareAccess _access;
@@ -58,6 +66,8 @@ class ShareFolderHttp {
     required this.isEnabled,
     required this.allowUploads,
     required this.getLocalName,
+    required this.expectedFingerprint,
+    required this.pins,
     ShareFolderService? service,
     ShareAccess? access,
     OneQuestion? question,
@@ -74,6 +84,13 @@ class ShareFolderHttp {
   Future<bool> handle(HttpRequest req) async {
     final path = req.uri.path;
     if (path != listPath && !path.startsWith('$listPath/')) return false;
+
+    final fingerprint = callerFingerprint(req);
+    if (fingerprint == null) {
+      await _json(req, HttpStatus.upgradeRequired,
+          {'error': ApexProtocol.updateRequired, 'version': ApexProtocol.version});
+      return true;
+    }
 
     // desktop only
     if (!PlatformDetector.instance.isDesktop) {
@@ -97,10 +114,10 @@ class ShareFolderHttp {
     try {
       final address = req.connectionInfo?.remoteAddress.address ?? '';
       if (req.method == 'POST' && path == accessPath) {
-        await _handleAccess(req, address);
+        await _handleAccess(req, address, fingerprint);
         return true;
       }
-      final grant = _access.check(req.headers.value(ApexProtocol.tokenHeader), address);
+      final grant = _access.check(req.headers.value(ApexProtocol.tokenHeader), address, fingerprint);
       if (grant == null) {
         await _json(req, HttpStatus.forbidden, {'error': 'not_allowed'});
         return true;
@@ -128,30 +145,43 @@ class ShareFolderHttp {
 
   // ─── POST /share/access ────────────────────────────────────────────────────
 
-  Future<void> _handleAccess(HttpRequest req, String address) async {
-    final name = cleanLabel(await _readName(req));
+  Future<void> _handleAccess(HttpRequest req, String address, String fingerprint) async {
+    final body = await _readBody(req);
+    final id = cleanDeviceId(body?['id']);
+    if (id == null || expectedFingerprint(id, address) != fingerprint) {
+      await _json(req, HttpStatus.forbidden, {'error': ApexProtocol.wrongIdentity});
+      return;
+    }
+    final rawName = body?['name'];
+    final name = cleanLabel(rawName is String ? rawName : null);
     final shown = name.isEmpty ? address : name;
     final uploads = allowUploads();
-    final answer = await _ask(shown, address, uploads);
+    final answer = await _ask(id, shown, address, fingerprint, uploads);
     if (answer != _Answer.accepted) {
       await _json(req, HttpStatus.ok,
           {'accepted': false, 'reason': answer == _Answer.refused ? 'refused' : 'no_answer'});
       return;
     }
-    await _json(req, HttpStatus.ok,
-        {'accepted': true, 'uploads': uploads, 'token': _access.admit(address, shown, uploads: uploads)});
+    await pins.pin(id, fingerprint);
+    await _json(req, HttpStatus.ok, {
+      'accepted': true,
+      'uploads': uploads,
+      'token': _access.admit(address, shown, fingerprint, uploads: uploads),
+    });
   }
 
   /// One question at a time: a new one must not appear under the finger that
   /// is about to press Accept on the last.
   /// Busy, nobody to ask and no answer in time are not a refusal: the asker
   /// is told to try again, not that the owner said no.
-  Future<_Answer> _ask(String name, String address, bool uploads) async {
+  Future<_Answer> _ask(String id, String name, String address, String fingerprint, bool uploads) async {
     final ask = onAccessRequest;
     if (ask == null || !_question.take()) return _Answer.none;
     final answer = Completer<_Answer>();
     final request = ConnectionRequest(
-      device: Device(id: 'http:$address', name: name, type: 'unknown', ip: address),
+      device: Device(id: id, name: name, type: 'unknown', ip: address, fingerprint: fingerprint),
+      fingerprint: fingerprint,
+      keyChanged: pins.keyChanged(id, fingerprint),
       fileName: '',
       fileCount: 0,
       kind: RequestKind.shareFolder,
@@ -169,7 +199,7 @@ class ShareFolderHttp {
     }
   }
 
-  Future<String?> _readName(HttpRequest req) async {
+  Future<Map?> _readBody(HttpRequest req) async {
     if (req.contentLength > _accessBodyLimit) return null;
     final bytes = <int>[];
     await for (final chunk in req) {
@@ -178,8 +208,7 @@ class ShareFolderHttp {
     }
     try {
       final json = jsonDecode(utf8.decode(bytes));
-      final name = json is Map ? json['name'] : null;
-      return name is String ? name : null;
+      return json is Map ? json : null;
     } on FormatException {
       return null;
     }

@@ -5,7 +5,7 @@ import '../../../core/protocol/transfer_rules.dart';
 import 'offer.dart';
 
 /// Issues one single-use token per accepted file, bound to the sender's real
-/// address. An upload without a valid token writes nothing.
+/// address and its certificate. An upload without a valid token writes nothing.
 class ReceiveGate {
   ReceiveGate({Random? random, DateTime Function()? clock})
       : _random = random ?? Random.secure(),
@@ -19,24 +19,25 @@ class ReceiveGate {
   /// Call only after the user accepted [offer]. Tokens follow the file order.
   List<String> admit(Offer offer) {
     _dropExpired();
-    final batch = _Batch(offer.senderAddress, _clock(), _nextBatch++, offer.senderName, offer.senderId);
+    final batch = _Batch(offer.senderAddress, offer.senderFingerprint, _clock(), _nextBatch++,
+        offer.senderName, offer.senderId);
     return [
       for (final file in offer.files) _issue(_Ticket(batch, file)),
     ];
   }
 
   /// The accepted file for [token], once. Null for a missing, unknown, used or
-  /// expired token, or one sent from another address.
-  OfferedFile? claim(String? token, String senderAddress) {
-    final upload = take(token, senderAddress);
+  /// expired token, or one sent from another address or certificate.
+  OfferedFile? claim(String? token, String senderAddress, String fingerprint) {
+    final upload = take(token, senderAddress, fingerprint);
     upload?.finish();
     return upload?.file;
   }
 
   /// Like [claim], with a handle on the batch for the upload that follows.
-  Upload? take(String? token, String senderAddress) {
+  Upload? take(String? token, String senderAddress, String fingerprint) {
     final ticket = _tickets[token];
-    if (ticket == null || ticket.batch.address != senderAddress) {
+    if (ticket == null || ticket.batch.address != senderAddress || ticket.batch.fingerprint != fingerprint) {
       return null;
     }
     if (_isExpired(ticket.batch)) {
@@ -86,6 +87,9 @@ class Upload {
   /// The id its sender gave in that offer.
   String get senderId => _batch.senderId;
 
+  /// The fingerprint of the certificate that offer came with.
+  String get senderFingerprint => _batch.fingerprint;
+
   bool _finished = false;
 
   /// The receiving user cancelled: no other file of this batch is accepted.
@@ -104,8 +108,9 @@ class Upload {
 }
 
 class _Batch {
-  _Batch(this.address, this.lastUse, this.id, this.senderName, this.senderId);
+  _Batch(this.address, this.fingerprint, this.lastUse, this.id, this.senderName, this.senderId);
   final String address;
+  final String fingerprint;
   final int id;
   final String senderName;
   final String senderId;

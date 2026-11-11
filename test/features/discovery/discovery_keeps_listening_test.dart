@@ -3,6 +3,7 @@ import 'dart:convert';
 import 'dart:io';
 
 import 'package:apex_file_share/core/protocol/discovery_packet.dart';
+import 'package:apex_file_share/features/identity/fingerprint.dart';
 import 'package:apex_file_share/models/device.dart';
 import 'package:apex_file_share/services/discovery_service.dart';
 import 'package:flutter_test/flutter_test.dart';
@@ -23,7 +24,14 @@ Future<int> _freePort() async {
 Future<void> _announce(int port, {String id = 'phone-1', String name = 'Phone'}) async {
   final s = await RawDatagramSocket.bind(InternetAddress.loopbackIPv4, 0);
   final packet = DiscoveryPacket.encode(
-      Device(id: id, name: name, type: 'phone', port: 40100), shareEnabled: false);
+      Device(
+          id: id,
+          name: name,
+          type: 'phone',
+          port: 40100,
+          fingerprint: fingerprintOf(const [1, 2, 3]),
+          certificate: const [1, 2, 3]),
+      shareEnabled: false);
   s.send(utf8.encode(packet), InternetAddress.loopbackIPv4, port);
   await Future<void>.delayed(const Duration(milliseconds: 50));
   s.close();

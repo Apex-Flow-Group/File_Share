@@ -12,7 +12,10 @@ import 'package:apex_file_share/core/protocol/transfer_rules.dart';
 import 'package:apex_file_share/features/chat/data/chat_http.dart';
 import 'package:apex_file_share/features/chat/logic/chat_access.dart';
 import 'package:apex_file_share/features/chat/logic/chat_key.dart';
+import 'package:apex_file_share/features/identity/pin_store.dart';
 import 'package:flutter_test/flutter_test.dart';
+
+import '../identity/tls_peer.dart';
 
 /// The real chat door behind a real server on 127.0.0.1. Every first message
 /// is accepted unless [decide] says otherwise (null: the user never answers).
@@ -31,9 +34,11 @@ class _Server {
     Duration decisionTimeout = TransferRules.decisionTimeout,
     ChatAccess? access,
   }) async {
-    final server = await HttpServer.bind(InternetAddress.loopbackIPv4, 0);
+    final server = await bindReceiver();
     final s = _Server._(server, OneQuestion());
     final door = ChatHttp(
+      expectedFingerprint: await heardSender(),
+      pins: PinStore.memory(),
       onRequest: (r) {
         s.asked.add(r);
         final answer = decide == null ? true : decide(r);
@@ -69,8 +74,7 @@ class _Server {
     String id = 'test-phone',
   }) async {
     final body = utf8.encode(jsonEncode({'id': id, 'name': name, 'text': text}));
-    final socket = await Socket.connect(InternetAddress.loopbackIPv4, port,
-        sourceAddress: InternetAddress(from));
+    final socket = await senderSocket(port, from: from);
     final head = StringBuffer()
       ..write('$method ${ApexProtocol.chatPath} HTTP/1.1\r\n')
       ..write('Host: 127.0.0.1:$port\r\n')
@@ -99,6 +103,7 @@ class _Server {
 }
 
 void main() {
+  setUpAll(loadPeers);
   late _Server server;
   tearDown(() => server.stop());
 

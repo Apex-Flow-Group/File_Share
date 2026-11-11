@@ -169,11 +169,15 @@ class NearbyDoor {
       senderAddress: endpointId,
       // Nearby has no chat: the endpoint is all there is to tell it by.
       senderId: endpointId,
+      // Nearby has no certificate; its tokens are bound to the endpoint.
+      senderFingerprint: _noCertificate,
       // The name shown when the user agreed to connect wins over a new claim.
       senderName: _names[endpointId] ?? (claimed.isEmpty ? endpointId : claimed),
       files: parsed,
     );
   }
+
+  static const _noCertificate = '';
 
   Future<void> _answer(String endpointId, Map<String, Object?> body) =>
       send(endpointId, {'type': NearbyMessage.answer, ...body});
@@ -186,7 +190,7 @@ class NearbyDoor {
     if (id is! int || token is! String || !(_tokens[endpointId]?.remove(token) ?? false)) {
       return;
     }
-    final file = _gate.claim(token, endpointId);
+    final file = _gate.claim(token, endpointId, _noCertificate);
     if (file == null) {
       return;
     }

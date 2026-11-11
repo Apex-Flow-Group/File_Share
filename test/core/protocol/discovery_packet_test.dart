@@ -3,11 +3,22 @@ import 'dart:io';
 
 import 'package:apex_file_share/core/protocol/apex_protocol.dart';
 import 'package:apex_file_share/core/protocol/discovery_packet.dart';
+import 'package:apex_file_share/features/identity/fingerprint.dart';
 import 'package:apex_file_share/models/device.dart';
 import 'package:flutter_test/flutter_test.dart';
 
-const _pc = Device(
-    id: 'pc-1', name: 'Office PC', type: 'desktop', ip: '192.168.1.5', port: 40100, hostname: 'office');
+/// Any bytes: discovery only checks that the fingerprint is of them.
+const _cert = [1, 2, 3];
+
+final _pc = Device(
+    id: 'pc-1',
+    name: 'Office PC',
+    type: 'desktop',
+    ip: '192.168.1.5',
+    port: 40100,
+    hostname: 'office',
+    fingerprint: fingerprintOf(_cert),
+    certificate: _cert);
 
 String _raw(Map<String, Object?> body) => '${DiscoveryPacket.magic}${jsonEncode(body)}';
 
@@ -17,6 +28,8 @@ Map<String, Object?> _body([Map<String, Object?> change = const {}]) => {
       'name': 'Office PC',
       'type': 'desktop',
       'port': 40100,
+      'fp': fingerprintOf(_cert),
+      'cert': base64.encode(_cert),
       ...change,
     };
 

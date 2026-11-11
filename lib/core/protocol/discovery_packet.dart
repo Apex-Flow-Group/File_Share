@@ -1,12 +1,14 @@
 import 'dart:convert';
 
+import '../../features/identity/fingerprint.dart';
 import '../../models/device.dart';
 import '../text/clean_label.dart';
 import 'apex_protocol.dart';
 
 /// The one reader and writer of the UDP presence packet. A packet with no
 /// version or another version is ignored, so a copy that speaks another
-/// protocol never appears in the device list.
+/// protocol never appears in the device list. Nor does one without its
+/// certificate and the fingerprint of it: no request could reach it.
 class DiscoveryPacket {
   DiscoveryPacket._();
 
@@ -22,6 +24,8 @@ class DiscoveryPacket {
         'name': d.name,
         'type': d.type,
         'port': d.port,
+        'fp': d.fingerprint,
+        'cert': base64.encode(d.certificate ?? const []),
         if (d.hostname != null && d.hostname!.isNotEmpty) 'hostname': d.hostname,
         if (shareEnabled) 'share': true,
       })}';
@@ -52,6 +56,11 @@ class DiscoveryPacket {
     if (port is! int || port < 1 || port > 65535) {
       return null;
     }
+    final certificate = _certificate(json['cert']);
+    final fp = json['fp'];
+    if (!isFingerprint(fp) || certificate == null || fingerprintOf(certificate) != fp) {
+      return null;
+    }
     final type = json['type'];
     final hostname = json['hostname'];
     final shown = cleanLabel(name);
@@ -64,7 +73,25 @@ class DiscoveryPacket {
       hostname: hostname is String ? cleanLabel(hostname) : null,
       shareEnabled: json['share'] == true,
       lastSeen: DateTime.now(),
+      fingerprint: fp as String,
+      certificate: certificate,
     );
+  }
+
+  /// A P-256 certificate is a few hundred bytes; the limit keeps a made-up
+  /// one from growing the packet or the server's trust list.
+  static const _certificateLimit = 2048;
+
+  static List<int>? _certificate(Object? value) {
+    if (value is! String || value.length > _certificateLimit * 4 ~/ 3 + 4) {
+      return null;
+    }
+    try {
+      final der = base64.decode(value);
+      return der.isEmpty || der.length > _certificateLimit ? null : der;
+    } on FormatException {
+      return null;
+    }
   }
 
   /// A device on another version, or one so old its packet has no version:

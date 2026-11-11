@@ -4,16 +4,18 @@ import 'dart:io';
 import 'package:apex_file_share/core/protocol/apex_protocol.dart';
 import 'package:flutter_test/flutter_test.dart';
 
+import '../../identity/tls_peer.dart';
 import 'receive_test_server.dart';
 
 /// Before the user accepts, a device on the network must not be able to pile
 /// up dialogs (a new one could appear under the finger as the user taps) or
 /// hold the door open by sending a body that never ends.
 void main() {
+  setUpAll(loadPeers);
   const limit = Duration(milliseconds: 300);
 
   Future<HttpClientRequest> open(int port, String path, {String? token}) async {
-    final req = await HttpClient().postUrl(Uri.http('127.0.0.1:$port', path));
+    final req = await (await senderClient()).postUrl(Uri.https('127.0.0.1:$port', path));
     req.headers.set(ApexProtocol.versionHeader, '${ApexProtocol.version}');
     if (token != null) {
       req.headers.set(ApexProtocol.tokenHeader, token);

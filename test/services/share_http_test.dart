@@ -3,8 +3,11 @@
 import 'dart:io';
 
 import 'package:apex_file_share/core/share_folder_http.dart';
+import 'package:apex_file_share/features/identity/pin_store.dart';
 import 'package:apex_file_share/services/share_folder_service.dart';
 import 'package:flutter_test/flutter_test.dart';
+
+import '../features/identity/tls_peer.dart';
 // ─── Share HTTP Server stub ───────────────────────────────────────────────────
 
 /// يُنشئ HTTP server حقيقي يستخدم ShareFolderHttp كـ handler
@@ -20,12 +23,14 @@ class _TestShareServer {
     shareDir = await Directory.systemTemp.createTemp('apex_share_http_');
     final svc = _OverrideSvc(shareDir.path);
     handler = ShareFolderHttp(
+      expectedFingerprint: await heardSender(),
+      pins: PinStore.memory(),
       isEnabled: () => _shareEnabled,
       allowUploads: () => _uploadsEnabled,
       getLocalName: () => 'TestServer',
       service: svc,
     );
-    _server = await HttpServer.bind(InternetAddress.loopbackIPv4, 0);
+    _server = await bindReceiver();
     _server!.listen(_handle);
     return _server!.port;
   }
@@ -56,8 +61,8 @@ class _OverrideSvc extends ShareFolderService {
 
 Future<HttpClientResponse> _get(int port, String path,
     [Map<String, String>? params]) async {
-  final uri = Uri.http('127.0.0.1:$port', path, params);
-  final c = HttpClient()..connectionTimeout = const Duration(seconds: 5);
+  final uri = Uri.https('127.0.0.1:$port', path, params);
+  final c = (await senderClient())..connectionTimeout = const Duration(seconds: 5);
   final req = await c.getUrl(uri);
   return req.close();
 }
@@ -65,6 +70,7 @@ Future<HttpClientResponse> _get(int port, String path,
 // ─── Tests ────────────────────────────────────────────────────────────────────
 
 void main() {
+  setUpAll(loadPeers);
   late _TestShareServer srv;
   late int port;
 

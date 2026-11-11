@@ -18,6 +18,14 @@ class Device {
   /// It announced another protocol version (or none): listed, but disabled.
   final bool versionMismatch;
 
+  /// SHA-256 of [certificate]: whom a request to this device must reach.
+  /// Empty when discovery gave none (Nearby, another version).
+  final String fingerprint;
+
+  /// The certificate (DER) it announced, which this device's server must
+  /// trust before that device can connect to it.
+  final List<int>? certificate;
+
   const Device({
     required this.id,
     required this.name,
@@ -29,6 +37,8 @@ class Device {
     this.lastSeen,
     this.shareEnabled = false,
     this.versionMismatch = false,
+    this.fingerprint = '',
+    this.certificate,
   });
 
   bool get isNearby => endpointId != null;
@@ -49,6 +59,8 @@ class Device {
     bool clearEndpointId = false,
     DateTime? lastSeen,
     bool? shareEnabled,
+    String? fingerprint,
+    List<int>? certificate,
   }) =>
       Device(
         id: id ?? this.id,
@@ -61,6 +73,8 @@ class Device {
         lastSeen: lastSeen ?? this.lastSeen,
         shareEnabled: shareEnabled ?? this.shareEnabled,
         versionMismatch: versionMismatch,
+        fingerprint: fingerprint ?? this.fingerprint,
+        certificate: certificate ?? this.certificate,
       );
 
   Map<String, dynamic> toJson() => {

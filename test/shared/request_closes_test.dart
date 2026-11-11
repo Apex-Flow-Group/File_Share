@@ -5,6 +5,7 @@ import 'package:apex_file_share/core/core_models.dart';
 import 'package:apex_file_share/core/protocol/apex_protocol.dart';
 import 'package:apex_file_share/core/protocol/nearby_messages.dart';
 import 'package:apex_file_share/core/share_folder_http.dart';
+import 'package:apex_file_share/features/identity/pin_store.dart';
 import 'package:apex_file_share/features/receive/data/receive_http.dart';
 import 'package:apex_file_share/features/receive/data/receive_store.dart';
 import 'package:apex_file_share/features/receive/logic/nearby_door.dart';
@@ -17,6 +18,8 @@ import 'package:apex_file_share/services/transfer_progress_service.dart';
 import 'package:apex_file_share/tv/widgets/tv_accept_dialog.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
+
+import '../features/identity/tls_peer.dart';
 
 /// When the asker stops waiting (no answer in time), the request is closed and
 /// a dialog still showing it goes away: a late "Accept" must not look accepted.
@@ -66,19 +69,22 @@ Widget _app(Widget home) => MaterialApp(
     );
 
 void main() {
+  setUpAll(loadPeers);
   group('every door closes its request when it stops waiting', () {
     test('HTTP receive: no answer in time', () async {
       HttpOverrides.global = null;
       final root = await Directory.systemTemp.createTemp('apex_close_http_');
       final shown = <ConnectionRequest>[];
       final receive = ReceiveHttp(
+        expectedFingerprint: await heardSender(),
+        pins: PinStore.memory(),
         gate: ReceiveGate(),
         store: ReceiveStore(tempFolder: () async => root, place: (t, n) async => t.path),
         onConnectionRequest: shown.add,
         onFileReceived: (_) {},
         decisionTimeout: _wait,
       );
-      final server = await HttpServer.bind(InternetAddress.loopbackIPv4, 0);
+      final server = await bindReceiver();
       server.listen((req) async {
         if (!await receive.handle(req)) {
           req.response.statusCode = 404;
@@ -86,8 +92,8 @@ void main() {
         }
       });
       try {
-        final client = HttpClient();
-        final req = await client.postUrl(Uri.http('127.0.0.1:${server.port}', ApexProtocol.offerPath));
+        final client = await senderClient();
+        final req = await client.postUrl(Uri.https('127.0.0.1:${server.port}', ApexProtocol.offerPath));
         req.headers.set(ApexProtocol.versionHeader, '${ApexProtocol.version}');
         final body = utf8.encode(jsonEncode({
           'id': 'test-phone',
@@ -143,6 +149,8 @@ void main() {
       final dir = await Directory.systemTemp.createTemp('apex_close_share_');
       final shown = <ConnectionRequest>[];
       final share = ShareFolderHttp(
+        expectedFingerprint: await heardSender(),
+        pins: PinStore.memory(),
         isEnabled: () => true,
         allowUploads: () => false,
         getLocalName: () => 'PC',
@@ -150,7 +158,7 @@ void main() {
         onAccessRequest: shown.add,
         decisionTimeout: _wait,
       );
-      final server = await HttpServer.bind(InternetAddress.loopbackIPv4, 0);
+      final server = await bindReceiver();
       server.listen((req) async {
         if (!await share.handle(req)) {
           req.response.statusCode = 404;
@@ -158,11 +166,12 @@ void main() {
         }
       });
       try {
-        final client = HttpClient();
-        final req = await client.postUrl(Uri.http('127.0.0.1:${server.port}', ShareFolderHttp.accessPath));
+        final client = await senderClient();
+        final req = await client.postUrl(Uri.https('127.0.0.1:${server.port}', ShareFolderHttp.accessPath));
         req.headers.set(ApexProtocol.versionHeader, '${ApexProtocol.version}');
-        req.contentLength = 2;
-        req.add(utf8.encode('{}'));
+        final body = utf8.encode('{"id":"phone"}');
+        req.contentLength = body.length;
+        req.add(body);
         await (await req.close()).drain<void>();
         client.close(force: true);
         expect(shown.single.isClosed, isTrue);

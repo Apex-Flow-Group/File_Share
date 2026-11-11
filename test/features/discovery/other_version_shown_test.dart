@@ -4,6 +4,7 @@ import 'dart:io';
 import 'package:apex_file_share/core/apex_core.dart';
 import 'package:apex_file_share/core/protocol/apex_protocol.dart';
 import 'package:apex_file_share/core/protocol/discovery_packet.dart';
+import 'package:apex_file_share/features/identity/fingerprint.dart';
 import 'package:apex_file_share/features/send/data/send_http.dart';
 import 'package:apex_file_share/l10n/generated/app_localizations.dart';
 import 'package:apex_file_share/mobile/widgets/connection_widget.dart';
@@ -56,7 +57,12 @@ void main() {
     }
 
     test('a current packet is not another version', () {
-      final d = _read(_raw({..._old, 'version': ApexProtocol.version}))!;
+      final d = _read(_raw({
+        ..._old,
+        'version': ApexProtocol.version,
+        'fp': fingerprintOf(const [1, 2, 3]),
+        'cert': base64.encode(const [1, 2, 3]),
+      }))!;
       expect(d.versionMismatch, isFalse);
       expect(d.port, 40100);
     });

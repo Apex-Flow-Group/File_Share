@@ -16,6 +16,9 @@ class FileReceivedEvent {
   /// the router gets its own.
   final String? fromId;
 
+  /// The sender's certificate fingerprint; null over Nearby.
+  final String? fromFingerprint;
+
   /// Which accepted batch the file belongs to; null over Nearby. A chat
   /// groups by it, since two batches can be received at the same time.
   final int? batchId;
@@ -30,6 +33,7 @@ class FileReceivedEvent {
     required this.filePath,
     this.fromAddress,
     this.fromId,
+    this.fromFingerprint,
     this.batchId,
     this.isLastInBatch = true,
     this.batchTotal = 1,
@@ -62,6 +66,13 @@ class ConnectionRequest {
 
   /// For [RequestKind.shareFolder]: the device could also upload.
   final bool allowsUploads;
+
+  /// Who is asking: the fingerprint of its certificate; null over Nearby.
+  final String? fingerprint;
+
+  /// The user accepted this device id before, holding another certificate.
+  /// It is asked about as a new device, never trusted by its id.
+  final bool keyChanged;
   final Function(bool) onResponse;
   ConnectionRequest({
     required this.device,
@@ -72,6 +83,8 @@ class ConnectionRequest {
     this.fileNames = const [],
     this.kind = RequestKind.files,
     this.allowsUploads = false,
+    this.fingerprint,
+    this.keyChanged = false,
   });
 
   bool get asksToConnect => kind == RequestKind.connect;

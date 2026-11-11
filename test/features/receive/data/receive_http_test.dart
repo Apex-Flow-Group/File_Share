@@ -5,15 +5,19 @@ import 'package:apex_file_share/core/core_models.dart';
 import 'package:apex_file_share/core/files/move_into_folder.dart';
 import 'package:apex_file_share/core/protocol/apex_protocol.dart';
 import 'package:apex_file_share/core/protocol/transfer_rules.dart';
+import 'package:apex_file_share/features/identity/pin_store.dart';
 import 'package:apex_file_share/features/receive/data/receive_http.dart';
 import 'package:apex_file_share/features/receive/data/receive_store.dart';
 import 'package:apex_file_share/features/receive/logic/receive_gate.dart';
 import 'package:apex_file_share/services/transfer_progress_service.dart';
 import 'package:flutter_test/flutter_test.dart';
 
+import '../../identity/tls_peer.dart';
+
 /// A real server on 127.0.0.1 runs the real receive code. The save and temp
 /// folders are passed in, so no test touches the user's files on any system.
 void main() {
+  setUpAll(loadPeers);
   late Directory root;
   late Directory saveDir;
   late Directory tempDir;
@@ -33,6 +37,8 @@ void main() {
     TransferProgressService().clearProgress();
 
     final receive = ReceiveHttp(
+      expectedFingerprint: await heardSender(),
+      pins: PinStore.memory(),
       gate: ReceiveGate(),
       store: ReceiveStore(
         tempFolder: () async => tempDir,
@@ -49,7 +55,7 @@ void main() {
       freeBytes: () async => freeBytes,
       decisionTimeout: const Duration(milliseconds: 300),
     );
-    server = await HttpServer.bind(InternetAddress.loopbackIPv4, 0);
+    server = await bindReceiver();
     server.listen((req) async {
       if (!await receive.handle(req)) {
         req.response.statusCode = HttpStatus.notFound;
@@ -71,9 +77,9 @@ void main() {
     String? token,
     List<int>? body,
   }) async {
-    final client = HttpClient();
+    final client = await senderClient();
     try {
-      final req = await client.openUrl(method, Uri.http('127.0.0.1:${server.port}', path));
+      final req = await client.openUrl(method, Uri.https('127.0.0.1:${server.port}', path));
       if (version != null) {
         req.headers.set(ApexProtocol.versionHeader, version);
       }
@@ -255,7 +261,7 @@ void main() {
 
     test('a sender that disconnects mid-file leaves no partial file', () async {
       final token = (await accepted({'big.bin': 1000})).single;
-      final socket = await Socket.connect(InternetAddress.loopbackIPv4, server.port);
+      final socket = await senderSocket(server.port);
       socket.write('POST ${ApexProtocol.uploadPath} HTTP/1.1\r\n'
           'Host: 127.0.0.1\r\n'
           '${ApexProtocol.versionHeader}: ${ApexProtocol.version}\r\n'

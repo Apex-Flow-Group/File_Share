@@ -4,16 +4,19 @@ import 'dart:math';
 import 'chat_key.dart';
 
 class ChatGrant {
-  ChatGrant(this.key, this.name);
+  ChatGrant(this.key, this.name, this.fingerprint);
   final ChatKey key;
+
+  /// The certificate the device held when the user agreed.
+  final String fingerprint;
 
   /// The name the device gave when the user agreed, already cleaned.
   final String name;
 }
 
 /// Who may chat: a device the user agreed to gets a token bound to its real
-/// address and to the id it gave, kept in memory only, so closing the app
-/// ends every agreement.
+/// address, to the id it gave and to its certificate, kept in memory only, so
+/// closing the app ends every agreement.
 class ChatAccess {
   ChatAccess({Random? random, DateTime Function()? clock})
       : _random = random ?? Random.secure(),
@@ -44,22 +47,22 @@ class ChatAccess {
     return true;
   }
 
-  String admit(ChatKey key, String name) {
+  String admit(ChatKey key, String name, String fingerprint) {
     _blocked.remove(key);
     _unanswered.remove(key);
     String token;
     do {
       token = base64Url.encode(List.generate(24, (_) => _random.nextInt(256)));
     } while (_grants.containsKey(token));
-    _grants[token] = ChatGrant(key, name);
+    _grants[token] = ChatGrant(key, name, fingerprint);
     return token;
   }
 
-  /// Null for a missing or unknown token, or one sent from another address
-  /// or with another id than it was issued for.
-  ChatGrant? check(String? token, ChatKey key) {
+  /// Null for a missing or unknown token, or one sent from another address,
+  /// with another id or with another certificate than it was issued for.
+  ChatGrant? check(String? token, ChatKey key, String fingerprint) {
     final grant = _grants[token];
-    return grant == null || grant.key != key ? null : grant;
+    return grant == null || grant.key != key || grant.fingerprint != fingerprint ? null : grant;
   }
 
   /// Owner decision: refusing the question, or the block button, blocks the

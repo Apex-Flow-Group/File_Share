@@ -4,8 +4,11 @@ import 'dart:io';
 import 'package:apex_file_share/core/core_models.dart';
 import 'package:apex_file_share/core/protocol/apex_protocol.dart';
 import 'package:apex_file_share/core/share_folder_http.dart';
+import 'package:apex_file_share/features/identity/pin_store.dart';
 import 'package:apex_file_share/services/share_folder_service.dart';
 import 'package:flutter_test/flutter_test.dart';
+
+import '../identity/tls_peer.dart';
 
 class _TempShareService extends ShareFolderService {
   _TempShareService(this._path) : super.forTesting();
@@ -17,6 +20,7 @@ class _TempShareService extends ShareFolderService {
 
 /// What the asker is told must match what happened on the other side.
 void main() {
+  setUpAll(loadPeers);
   late Directory dir;
   late HttpServer server;
   late ShareFolderHttp share;
@@ -32,6 +36,8 @@ void main() {
     uploads = false;
     dir = await Directory.systemTemp.createTemp('apex_share_answer_');
     share = ShareFolderHttp(
+      expectedFingerprint: await heardSender(),
+      pins: PinStore.memory(),
       isEnabled: () => enabled,
       allowUploads: () => uploads,
       getLocalName: () => 'Office PC',
@@ -45,7 +51,7 @@ void main() {
       },
       decisionTimeout: const Duration(milliseconds: 200),
     );
-    server = await HttpServer.bind(InternetAddress.loopbackIPv4, 0);
+    server = await bindReceiver();
     server.listen((req) async {
       if (!await share.handle(req)) {
         req.response.statusCode = 404;
@@ -61,9 +67,9 @@ void main() {
 
   Future<({int status, Map json})> send(String method, String path,
       {String? token, Map<String, String>? query, List<int>? body}) async {
-    final client = HttpClient();
+    final client = await senderClient();
     try {
-      final req = await client.openUrl(method, Uri.http('127.0.0.1:${server.port}', path, query));
+      final req = await client.openUrl(method, Uri.https('127.0.0.1:${server.port}', path, query));
       req.headers.set(ApexProtocol.versionHeader, '${ApexProtocol.version}');
       if (token != null) {
         req.headers.set(ApexProtocol.tokenHeader, token);
@@ -82,7 +88,7 @@ void main() {
   }
 
   Future<Map> access() async =>
-      (await send('POST', ShareFolderHttp.accessPath, body: utf8.encode('{"name":"Phone"}'))).json;
+      (await send('POST', ShareFolderHttp.accessPath, body: utf8.encode('{"id":"phone","name":"Phone"}'))).json;
 
   test('a refusal says refused', () async {
     answer = false;

@@ -8,33 +8,36 @@ import 'package:apex_file_share/models/device.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 
+/// Any certificate's fingerprint: these tests are about tokens, not identity.
+const _fp = 'aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa';
+
 const _pc = Device(id: 'p', name: 'Office PC', type: 'desktop', ip: '10.0.0.7', port: 4000);
 
 void main() {
   group('the door', () {
     test('a blocked device loses its token and is not asked about', () {
       final access = ChatAccess();
-      final token = access.admit(_pc.chatKey, 'PC');
+      final token = access.admit(_pc.chatKey, 'PC', _fp);
       access.block(_pc.chatKey);
-      expect(access.check(token, _pc.chatKey), isNull);
+      expect(access.check(token, _pc.chatKey, _fp), isNull);
       expect(access.isBlocked(_pc.chatKey), isTrue);
     });
 
     test('unblocking does not let it in: its next message asks again', () {
       final access = ChatAccess();
-      final token = access.admit(_pc.chatKey, 'PC');
+      final token = access.admit(_pc.chatKey, 'PC', _fp);
       access
         ..block(_pc.chatKey)
         ..unblock(_pc.chatKey);
       expect(access.isBlocked(_pc.chatKey), isFalse);
-      expect(access.check(token, _pc.chatKey), isNull, reason: 'the old token stays dead');
+      expect(access.check(token, _pc.chatKey, _fp), isNull, reason: 'the old token stays dead');
     });
 
     test('blocking one address leaves the others alone', () {
       final access = ChatAccess();
-      final other = access.admit(chatKey('ph', '10.0.0.8'), 'Phone');
+      final other = access.admit(chatKey('ph', '10.0.0.8'), 'Phone', _fp);
       access.block(_pc.chatKey);
-      expect(access.check(other, chatKey('ph', '10.0.0.8')), isNotNull);
+      expect(access.check(other, chatKey('ph', '10.0.0.8'), _fp), isNotNull);
     });
   });
 

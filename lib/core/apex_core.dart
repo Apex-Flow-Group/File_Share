@@ -2,11 +2,15 @@ import 'dart:async';
 import 'dart:io';
 
 import 'package:flutter/foundation.dart';
+import 'package:path_provider/path_provider.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
 import '../features/chat/data/chat_http.dart';
 import '../features/chat/logic/chat_key.dart';
 import '../features/chat/logic/chat_store.dart';
+import '../features/identity/device_identity.dart';
+import '../features/identity/peer_trust.dart';
+import '../features/identity/pin_store.dart';
 import '../features/receive/data/receive_http.dart';
 import '../features/receive/data/receive_store.dart';
 import '../features/receive/logic/receive_gate.dart';
@@ -14,6 +18,7 @@ import '../features/send/data/send_http.dart';
 import '../managers/device_manager.dart';
 import '../models/device.dart';
 import '../platform/free_space.dart';
+import '../platform/owner_only.dart';
 import '../services/discovery_service.dart';
 import '../services/settings_service.dart';
 import '../services/transfer_progress_service.dart';
@@ -37,6 +42,15 @@ class ApexCore {
   final Map<String, Device> _discoveredDevices = {};
 
   HttpServer? _httpServer;
+
+  /// This install's certificate, read in [initialize].
+  DeviceIdentity? _identity;
+  SecurityContext? _clientContext;
+  SecurityContext? _serverContext;
+  PeerTrust? _peerTrust;
+
+  /// Whom the user accepted, by id and fingerprint; on disk once [initialize] ran.
+  final _pins = PinStore.memory();
   DiscoveryService? _discoveryService;
   Timer? _cleanupTimer;
   bool _isRunning = false;
@@ -66,17 +80,23 @@ class ApexCore {
       chat.receivedFile(e);
     },
     freeBytes: () async => freeBytesAt(await PathUtils.getDownloadPath()),
+    expectedFingerprint: _expectedFingerprint,
+    pins: _pins,
     question: _question,
   );
 
-  late final SendHttp _send =
-      SendHttp(getLocalName: () => _localDevice?.name, getLocalId: () => _localDevice?.id);
+  late final SendHttp _send = SendHttp(
+      getLocalName: () => _localDevice?.name,
+      getLocalId: () => _localDevice?.id,
+      getContext: () => _clientContext);
 
   late final ShareFolderHttp _share = ShareFolderHttp(
     isEnabled: () => _settings?.sharedFolderEnabled ?? false,
     allowUploads: () => _settings?.allowShareUploads ?? false,
     getLocalName: () => _localDevice?.name,
     onAccessRequest: _connectionRequestController.add,
+    expectedFingerprint: _expectedFingerprint,
+    pins: _pins,
     question: _question,
   );
 
@@ -84,6 +104,8 @@ class ApexCore {
     onRequest: _connectionRequestController.add,
     onMessage: (m) => chat.receive(chatKey(m.id, m.address), m.name, m.text),
     onBlocked: (key) => chat.blocked(key),
+    expectedFingerprint: _expectedFingerprint,
+    pins: _pins,
     question: _question,
   );
 
@@ -118,6 +140,20 @@ class ApexCore {
   List<Device> get devices => _discoveredDevices.values.toList();
   bool get isRunning => _isRunning;
 
+  /// This device's certificate for requests to other devices; null before
+  /// [initialize].
+  SecurityContext? get clientContext => _clientContext;
+
+  /// The fingerprint discovery heard from [id] at [address]: a request that
+  /// claims to be that device must come with that certificate.
+  String? _expectedFingerprint(String id, String address) {
+    final d = _discoveredDevices[id];
+    if (d == null || d.versionMismatch || d.ip != address || d.fingerprint.isEmpty) {
+      return null;
+    }
+    return d.fingerprint;
+  }
+
   bool get _isAndroid => !kIsWeb && Platform.isAndroid;
 
   /// يُمرِّر SettingsService لقراءة إعدادات Share في runtime
@@ -150,12 +186,23 @@ class ApexCore {
       deviceId = 'local-${DateTime.now().millisecondsSinceEpoch}';
       await prefs.setString('device_id', deviceId);
     }
+    // The app's private folder, never Downloads or a shared one.
+    final folder = identityFolder(await getApplicationSupportDirectory());
+    final identity = _identity ??= await DeviceIdentity.loadOrCreate(folder);
+    _clientContext ??= identity.clientContext();
+    if (_serverContext == null) {
+      _serverContext = identity.serverContext();
+      _peerTrust = PeerTrust(_serverContext!);
+    }
+    await _pins.useFile(File('${folder.path}/pins.json'));
     _localDevice = Device(
       id: deviceId,
       name: name,
       type: type,
       ip: ip,
       hostname: hostname,
+      fingerprint: identity.fingerprint,
+      certificate: identity.certificate,
     );
   }
 
@@ -180,6 +227,12 @@ class ApexCore {
         _discoveredDevices[device.id] = device;
         _devicesController.add(devices);
         return;
+      }
+      // Its requests to this device can only finish the handshake once its
+      // certificate is trusted; the doors then check it is the one it claims.
+      final certificate = device.certificate;
+      if (certificate != null) {
+        _peerTrust?.trust(certificate);
       }
       mergeFound(_discoveredDevices, device);
       _devicesController.add(devices);
@@ -260,10 +313,14 @@ class ApexCore {
   // ─── HTTP Server ───────────────────────────────────────────────────────────
 
   Future<void> _startHttpServer() async {
-    _httpServer = await HttpServer.bind(InternetAddress.anyIPv4, 0);
+    // TLS both ways: every client must show its certificate too.
+    _httpServer = await HttpServer.bindSecure(InternetAddress.anyIPv4, 0, _serverContext!,
+        requestClientCertificate: true);
     _httpPort = _httpServer!.port;
     _localDevice = _localDevice!.copyWith(port: _httpPort);
-    _httpServer!.listen(_handleRequest);
+    // A failed handshake (a stranger's certificate) ends that connection only.
+    _httpServer!.listen(_handleRequest,
+        onError: (Object e) => ApexLogger.instance.log('HTTP', 'Handshake: $e', LogLevel.warning));
     ApexLogger.instance.log('HTTP', '✅ Port: $_httpPort', LogLevel.success);
   }
 

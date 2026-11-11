@@ -6,10 +6,13 @@ import 'package:apex_file_share/core/core_models.dart';
 import 'package:apex_file_share/core/files/move_into_folder.dart';
 import 'package:apex_file_share/core/protocol/apex_protocol.dart';
 import 'package:apex_file_share/core/protocol/transfer_rules.dart';
+import 'package:apex_file_share/features/identity/pin_store.dart';
 import 'package:apex_file_share/features/receive/data/receive_http.dart';
 import 'package:apex_file_share/features/receive/data/receive_store.dart';
 import 'package:apex_file_share/features/receive/logic/receive_gate.dart';
 import 'package:apex_file_share/services/transfer_progress_service.dart';
+
+import '../../identity/tls_peer.dart';
 
 /// The real receive code behind a real server on 127.0.0.1, with its own
 /// folders and a gate clock the test moves. Every offer is accepted unless
@@ -35,9 +38,11 @@ class ReceiveTestServer {
     TransferProgressService().clearProgress();
     final root = await Directory.systemTemp.createTemp('apex_receive_server_');
     Directory('${root.path}/tmp').createSync();
-    final server = await HttpServer.bind(InternetAddress.loopbackIPv4, 0);
+    final server = await bindReceiver();
     final s = ReceiveTestServer._(root, server);
     final receive = ReceiveHttp(
+      expectedFingerprint: await heardSender(),
+      pins: PinStore.memory(),
       gate: ReceiveGate(clock: () => s.now),
       store: ReceiveStore(
         tempFolder: () async => s.tempDir,
@@ -72,9 +77,9 @@ class ReceiveTestServer {
 
   /// Offers [files] (name to size) and returns the tokens of the accepted batch.
   Future<List<String>> offer(Map<String, int> files) async {
-    final client = HttpClient();
+    final client = await senderClient();
     try {
-      final req = await client.postUrl(Uri.http('127.0.0.1:${_server.port}', ApexProtocol.offerPath));
+      final req = await client.postUrl(Uri.https('127.0.0.1:${_server.port}', ApexProtocol.offerPath));
       req.headers.set(ApexProtocol.versionHeader, '${ApexProtocol.version}');
       req.write(jsonEncode({
         'id': 'test-phone',
@@ -92,9 +97,9 @@ class ReceiveTestServer {
   /// Uploads [bytes] with [token] and returns the status. With [midway], the
   /// first half is sent, [midway] runs, then the rest is sent.
   Future<int> upload(String token, List<int> bytes, {Future<void> Function()? midway}) async {
-    final client = HttpClient();
+    final client = await senderClient();
     try {
-      final req = await client.postUrl(Uri.http('127.0.0.1:${_server.port}', ApexProtocol.uploadPath));
+      final req = await client.postUrl(Uri.https('127.0.0.1:${_server.port}', ApexProtocol.uploadPath));
       req.headers
         ..set(ApexProtocol.versionHeader, '${ApexProtocol.version}')
         ..set(ApexProtocol.tokenHeader, token);

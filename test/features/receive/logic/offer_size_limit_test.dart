@@ -2,8 +2,11 @@ import 'package:apex_file_share/core/protocol/transfer_rules.dart';
 import 'package:apex_file_share/features/receive/logic/offer.dart';
 import 'package:flutter_test/flutter_test.dart';
 
+/// Any certificate's fingerprint: these tests are about tokens, not identity.
+const _fp = 'aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa';
+
 Offer _offer(List<OfferedFile> files) =>
-    Offer(senderAddress: '192.168.1.20', senderId: 'phone', senderName: 'Phone', files: files);
+    Offer(senderAddress: '192.168.1.20', senderId: 'phone', senderFingerprint: _fp, senderName: 'Phone', files: files);
 
 void main() {
   test('sizes whose sum overflows are refused, not counted as zero', () {

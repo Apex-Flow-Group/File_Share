@@ -2,8 +2,11 @@ import 'dart:convert';
 import 'dart:math';
 
 class ShareGrant {
-  ShareGrant(this.address, this.name, this.uploads, this.lastUse);
+  ShareGrant(this.address, this.fingerprint, this.name, this.uploads, this.lastUse);
   final String address;
+
+  /// The certificate the device held when the user agreed.
+  final String fingerprint;
 
   /// The name the device gave when the user agreed, already cleaned.
   final String name;
@@ -14,7 +17,8 @@ class ShareGrant {
 }
 
 /// Who may open the shared folder: a device the user agreed to gets a token
-/// bound to its real address. Turning the folder off ends every token.
+/// bound to its real address and its certificate. Turning the folder off ends
+/// every token.
 class ShareAccess {
   ShareAccess({Random? random, DateTime Function()? clock})
       : _random = random ?? Random.secure(),
@@ -27,20 +31,21 @@ class ShareAccess {
   final DateTime Function() _clock;
   final _grants = <String, ShareGrant>{};
 
-  String admit(String address, String name, {bool uploads = false}) {
+  String admit(String address, String name, String fingerprint, {bool uploads = false}) {
     _dropExpired();
     String token;
     do {
       token = base64Url.encode(List.generate(24, (_) => _random.nextInt(256)));
     } while (_grants.containsKey(token));
-    _grants[token] = ShareGrant(address, name, uploads, _clock());
+    _grants[token] = ShareGrant(address, fingerprint, name, uploads, _clock());
     return token;
   }
 
-  /// Null for a missing, unknown or expired token, or one sent from another address.
-  ShareGrant? check(String? token, String address) {
+  /// Null for a missing, unknown or expired token, or one sent from another
+  /// address or certificate.
+  ShareGrant? check(String? token, String address, String fingerprint) {
     final grant = _grants[token];
-    if (grant == null || grant.address != address) {
+    if (grant == null || grant.address != address || grant.fingerprint != fingerprint) {
       return null;
     }
     if (_clock().difference(grant.lastUse) > idleLimit) {
