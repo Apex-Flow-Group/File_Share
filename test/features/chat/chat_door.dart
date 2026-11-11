@@ -5,6 +5,7 @@ import 'package:apex_file_share/core/core_models.dart';
 import 'package:apex_file_share/core/one_question.dart';
 import 'package:apex_file_share/core/protocol/apex_protocol.dart';
 import 'package:apex_file_share/features/chat/data/chat_http.dart';
+import 'package:apex_file_share/features/chat/logic/block_list.dart';
 import 'package:apex_file_share/features/chat/logic/chat_access.dart';
 import 'package:apex_file_share/features/chat/logic/chat_key.dart';
 import 'package:apex_file_share/features/chat/logic/chat_store.dart';
@@ -18,9 +19,12 @@ import '../identity/tls_peer.dart';
 /// certificate; [hear] is what discovery heard: which certificate an id came
 /// with at an address.
 class ChatDoor {
-  ChatDoor._(this._server, this.access, this.pins);
+  ChatDoor._(this._server, this.blocks, this.pins) : access = ChatAccess(blocks: blocks);
 
   final HttpServer _server;
+
+  /// One list for the door and the chats, decided with [pins], as in ApexCore.
+  final BlockList blocks;
   final ChatAccess access;
   final PinStore pins;
   late final ChatHttp _door;
@@ -28,6 +32,7 @@ class ChatDoor {
     send: (t, d, k) async => (outcome: ChatOutcome.sent, token: null),
     onBlock: _door.block,
     onUnblock: _door.unblock,
+    blocks: blocks,
   );
   final _heard = <String, String>{};
   final asked = <ConnectionRequest>[];
@@ -41,7 +46,8 @@ class ChatDoor {
   static Future<ChatDoor> start(TlsPeer me, List<TlsPeer> peers,
       {Duration wait = const Duration(seconds: 5), PinStore? pins}) async {
     final server = await me.bind(peers);
-    final d = ChatDoor._(server, ChatAccess(), pins ?? PinStore.memory());
+    final kept = pins ?? PinStore.memory();
+    final d = ChatDoor._(server, BlockList(kept), kept);
     d._door = ChatHttp(
       expectedFingerprint: (id, address) => d._heard['$id@$address'],
       pins: d.pins,
