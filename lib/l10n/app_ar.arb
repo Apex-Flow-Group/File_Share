@@ -265,6 +265,7 @@
   "chatRequestTitle": "طلب محادثة",
   "chatRequestQuestion": "قبول محادثة؟",
   "requestNewKey": "هذا الجهاز بمفتاح جديد",
+  "sendNewKey": "مُنع الإرسال: الجهاز الآخر بمفتاح جديد",
   "chatHint": "اكتب رسالة",
   "chatEmpty": "لا رسائل بعد",
   "chatCopy": "نسخ",

@@ -6,11 +6,14 @@ import 'dart:io';
 
 import 'package:apex_file_share/core/core_models.dart';
 import 'package:apex_file_share/core/files/move_into_folder.dart';
+import 'package:apex_file_share/features/chat/ui/chat_outcome_message.dart';
 import 'package:apex_file_share/features/identity/pin_store.dart';
 import 'package:apex_file_share/features/receive/data/receive_http.dart';
 import 'package:apex_file_share/features/receive/data/receive_store.dart';
 import 'package:apex_file_share/features/receive/logic/receive_gate.dart';
 import 'package:apex_file_share/features/send/data/send_http.dart';
+import 'package:apex_file_share/features/send/ui/send_outcome_message.dart';
+import 'package:apex_file_share/l10n/generated/app_localizations.dart';
 import 'package:apex_file_share/models/device.dart';
 import 'package:apex_file_share/services/transfer_progress_service.dart';
 import 'package:flutter_test/flutter_test.dart';
@@ -82,6 +85,16 @@ void main() {
       expect(pins.pinned('office-pc'), other.fingerprint);
     });
   });
+
+  for (final locale in AppLocalizations.supportedLocales) {
+    test('the sender reads that nothing went, not the warning of the request dialog (${locale.languageCode})',
+        () async {
+      final l10n = await AppLocalizations.delegate.load(locale);
+      expect(chatOutcomeMessage(l10n, ChatOutcome.keyChanged), l10n.sendNewKey);
+      expect(sendOutcomeMessage(l10n, SendOutcome.keyChanged, sent: '', failed: ''), l10n.sendNewKey);
+      expect(l10n.sendNewKey, isNot(l10n.requestNewKey));
+    });
+  }
 
   group('files', () {
     late Directory root;

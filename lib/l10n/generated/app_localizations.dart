@@ -1550,6 +1550,12 @@ abstract class AppLocalizations {
   /// **'This device has a new key'**
   String get requestNewKey;
 
+  /// No description provided for @sendNewKey.
+  ///
+  /// In en, this message translates to:
+  /// **'Sending blocked: the other device has a new key'**
+  String get sendNewKey;
+
   /// No description provided for @chatHint.
   ///
   /// In en, this message translates to:

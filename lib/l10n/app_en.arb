@@ -296,6 +296,7 @@
   "chatRequestTitle": "Chat request",
   "chatRequestQuestion": "Accept chat?",
   "requestNewKey": "This device has a new key",
+  "sendNewKey": "Sending blocked: the other device has a new key",
   "chatHint": "Write a message",
   "chatEmpty": "No messages yet",
   "chatCopy": "Copy",

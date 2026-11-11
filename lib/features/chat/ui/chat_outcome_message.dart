@@ -11,5 +11,5 @@ String chatOutcomeMessage(AppLocalizations l10n, ChatOutcome outcome) => switch 
       ChatOutcome.noAnswer => l10n.sendNoAnswer,
       ChatOutcome.busy => l10n.sendReceiverBusy,
       ChatOutcome.tooLong => l10n.chatTooLong(TransferRules.chatTextLimit),
-      ChatOutcome.keyChanged => l10n.requestNewKey,
+      ChatOutcome.keyChanged => l10n.sendNewKey,
     };

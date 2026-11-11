@@ -22,7 +22,7 @@ String sendOutcomeMessage(
       SendOutcome.busy => l10n.sendReceiverBusy,
       SendOutcome.tooManyFiles => l10n.sendTooManyFiles(TransferRules.maxFilesPerBatch),
       SendOutcome.noSpace => l10n.sendNoSpace,
-      SendOutcome.keyChanged => l10n.requestNewKey,
+      SendOutcome.keyChanged => l10n.sendNewKey,
       SendOutcome.cancelled => l10n.sendCancelled,
     };
 
