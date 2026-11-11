@@ -47,7 +47,7 @@ void main() {
       await tester.pumpWidget(host(locale: locale));
       await press(tester, LogicalKeyboardKey.select);
       final l10n = await AppLocalizations.delegate.load(locale);
-      expect(find.text(l10n.sendFile), findsOneWidget);
+      expect(find.text(l10n.sendFilesNow), findsOneWidget);
       expect(find.text(l10n.sendApp), findsOneWidget);
       expect(find.text(l10n.sendFolder), findsOneWidget,
           reason: 'Owner decision 2026-11-03: the TV sends a folder too.');
@@ -80,7 +80,7 @@ void main() {
     final l10n = await AppLocalizations.delegate.load(const Locale('en'));
     expect(find.text(l10n.deviceOffline), findsOneWidget);
     await press(tester, LogicalKeyboardKey.select);
-    expect(find.text(l10n.sendFile), findsNothing);
+    expect(find.text(l10n.sendFilesNow), findsNothing);
     expect(find.text(l10n.sendApp), findsNothing);
   });
 
