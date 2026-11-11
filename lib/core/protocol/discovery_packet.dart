@@ -41,10 +41,12 @@ class DiscoveryPacket {
     if (json is! Map || json['version'] != ApexProtocol.version) {
       return null;
     }
-    final id = json['id'];
+    // Cleaned as the chat and offer doors clean it, so the card and the
+    // chat it opens are under one key.
+    final id = cleanDeviceId(json['id']);
     final name = json['name'];
     final port = json['port'];
-    if (id is! String || id.isEmpty || id == selfId || name is! String) {
+    if (id == null || id == selfId || name is! String) {
       return null;
     }
     if (port is! int || port < 1 || port > 65535) {
@@ -82,9 +84,9 @@ class DiscoveryPacket {
     if (json is! Map || json['version'] == ApexProtocol.version) {
       return null;
     }
-    final id = json['id'];
+    final id = cleanDeviceId(json['id']);
     final name = json['name'];
-    if (id is! String || id.isEmpty || id == selfId || name is! String) {
+    if (id == null || id == selfId || name is! String) {
       return null;
     }
     final type = json['type'];
