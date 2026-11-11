@@ -789,7 +789,7 @@ class AppLocalizationsEn extends AppLocalizations {
   }
 
   @override
-  String get chatOpen => 'Chat';
+  String get chatOpen => 'Open chat';
 
   @override
   String get chatRequestTitle => 'Chat request';
@@ -885,5 +885,8 @@ class AppLocalizationsEn extends AppLocalizations {
   String get chatPaste => 'Paste';
 
   @override
-  String get chatClipboardEmpty => 'Nothing is copied';
+  String get chatClipboardEmpty => 'No copied text';
+
+  @override
+  String get chatClose => 'Close chat';
 }

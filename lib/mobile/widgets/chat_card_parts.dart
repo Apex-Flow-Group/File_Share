@@ -35,6 +35,8 @@ class ChatProfileRow extends StatelessWidget {
       listenable: store,
       builder: (context, _) {
         final unread = store.unread(device.ip);
+        // Blocked: no messages to or from it, so nothing to paste or send.
+        final blocked = store.isBlocked(device.ip);
         return Semantics(
           button: true,
           label: l10n.chatOpen,
@@ -69,16 +71,11 @@ class ChatProfileRow extends StatelessWidget {
                     ],
                   ),
                 ),
-                if (unread > 0) ...[
-                  Badge(
-                    label: Text('$unread'),
-                    backgroundColor: Theme.of(context).colorScheme.secondary,
-                  ),
-                  const SizedBox(width: 8),
+                if (!blocked) ...[
+                  _RowCircle(icon: Icons.content_paste_rounded, label: l10n.chatPaste, onTap: onPaste),
+                  const SizedBox(width: 6),
+                  _RowCircle(icon: Icons.attach_file_rounded, label: l10n.chatAttach, onTap: onAttach),
                 ],
-                _RowCircle(icon: Icons.content_paste_rounded, label: l10n.chatPaste, onTap: onPaste),
-                const SizedBox(width: 6),
-                _RowCircle(icon: Icons.attach_file_rounded, label: l10n.chatAttach, onTap: onAttach),
               ],
             ),
           ),

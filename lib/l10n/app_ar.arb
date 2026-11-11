@@ -261,7 +261,7 @@
   "clipboardTextLength": "{count, plural, one{نص (حرف واحد)} two{نص (حرفان)} few{نص ({count} أحرف)} many{نص ({count} حرفاً)} other{نص ({count} حرف)}}",
   "clipboardCharCount": "{count, plural, one{حرف واحد} two{حرفان} few{{count} أحرف} many{{count} حرفاً} other{{count} حرف}}",
   "clipboardFileCount": "{count, plural, one{ملف واحد} two{ملفان} few{{count} ملفات} many{{count} ملفاً} other{{count} ملف}}",
-  "chatOpen": "محادثة",
+  "chatOpen": "فتح المحادثة",
   "chatRequestTitle": "طلب محادثة",
   "chatRequestQuestion": "قبول محادثة؟",
   "chatHint": "اكتب رسالة",
@@ -302,5 +302,6 @@
     "placeholders": { "count": { "type": "int" } }
   },
   "chatPaste": "لصق",
-  "chatClipboardEmpty": "لا يوجد نص منسوخ"
+  "chatClipboardEmpty": "لا يوجد نص منسوخ",
+  "chatClose": "إغلاق المحادثة"
 }

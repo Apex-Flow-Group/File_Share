@@ -1529,7 +1529,7 @@ abstract class AppLocalizations {
   /// No description provided for @chatOpen.
   ///
   /// In en, this message translates to:
-  /// **'Chat'**
+  /// **'Open chat'**
   String get chatOpen;
 
   /// No description provided for @chatRequestTitle.
@@ -1667,8 +1667,14 @@ abstract class AppLocalizations {
   /// No description provided for @chatClipboardEmpty.
   ///
   /// In en, this message translates to:
-  /// **'Nothing is copied'**
+  /// **'No copied text'**
   String get chatClipboardEmpty;
+
+  /// No description provided for @chatClose.
+  ///
+  /// In en, this message translates to:
+  /// **'Close chat'**
+  String get chatClose;
 }
 
 class _AppLocalizationsDelegate

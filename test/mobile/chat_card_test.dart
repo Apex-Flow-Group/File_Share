@@ -101,10 +101,29 @@ void main() {
     expect(find.byType(DeviceChatView), findsNothing);
   });
 
+  testWidgets('a blocked device: no paste and no send-files on its row', (tester) async {
+    const blocked = Device(id: 'b', name: 'Stranger', type: 'phone', ip: '192.168.8.66', port: 4000);
+    ApexCore.instance.chat.blocked(blocked.ip);
+    final l10n = await show(tester, [blocked]);
+    expect(find.bySemanticsLabel(l10n.chatPaste), findsNothing);
+    expect(find.bySemanticsLabel(l10n.chatAttach), findsNothing);
+  });
+
+  testWidgets('the opened head says it closes the chat, and does', (tester) async {
+    final l10n = await show(tester, [_pc]);
+    await tester.tap(find.text('Office PC'));
+    await tester.pumpAndSettle();
+    // The name inside the head is read with it, after the action.
+    expect(find.bySemanticsLabel(RegExp('^${l10n.chatClose}')), findsOneWidget);
+    await tester.tap(find.byIcon(Icons.expand_less_rounded));
+    await tester.pumpAndSettle();
+    expect(find.byType(DeviceChatView), findsNothing);
+  });
+
   testWidgets('a Nearby-only phone keeps the old card: no chat row', (tester) async {
     const phone = Device(id: 'nearby:x', name: 'Ali Phone', type: 'phone', endpointId: 'x');
     final l10n = await show(tester, [phone]);
     expect(find.bySemanticsLabel(l10n.chatPaste), findsNothing);
-    expect(find.text(l10n.sendFile), findsOneWidget);
+    expect(find.text(l10n.chatAttach), findsOneWidget);
   });
 }

@@ -292,7 +292,7 @@
       }
     }
   },
-  "chatOpen": "Chat",
+  "chatOpen": "Open chat",
   "chatRequestTitle": "Chat request",
   "chatRequestQuestion": "Accept chat?",
   "chatHint": "Write a message",
@@ -333,5 +333,6 @@
     "placeholders": { "count": { "type": "int" } }
   },
   "chatPaste": "Paste",
-  "chatClipboardEmpty": "Nothing is copied"
+  "chatClipboardEmpty": "No copied text",
+  "chatClose": "Close chat"
 }

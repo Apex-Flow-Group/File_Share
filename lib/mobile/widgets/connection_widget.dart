@@ -243,10 +243,20 @@ class _ConnectionWidgetState extends State<ConnectionWidget>
             crossAxisAlignment: CrossAxisAlignment.stretch,
             children: [
               // Touching the head folds the card again.
-              GestureDetector(
+              Semantics(
+                button: true,
+                label: l10n.chatClose,
+                child: GestureDetector(
                   behavior: HitTestBehavior.opaque,
                   onTap: _toggle,
-                  child: _buildHeader(isDark)),
+                  child: Row(children: [
+                    Expanded(child: _buildHeader(isDark)),
+                    const SizedBox(width: 6),
+                    Icon(Icons.expand_less_rounded,
+                        color: Theme.of(context).colorScheme.onSurfaceVariant),
+                  ]),
+                ),
+              ),
               const SizedBox(height: 14),
               ...banners,
               _status == _Status.sending
@@ -635,8 +645,8 @@ class _ConnectionWidgetState extends State<ConnectionWidget>
         if (!widget.device.isMdns) ...[
           Expanded(
               child: _ActionButton(
-            icon: Icons.folder_open_rounded,
-            label: l10n.sendFile,
+            icon: Icons.attach_file_rounded,
+            label: l10n.chatAttach,
             color: Theme.of(context).colorScheme.primary,
             isDark: isDark,
             onTap: sendFile,

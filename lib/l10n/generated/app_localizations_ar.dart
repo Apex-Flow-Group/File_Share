@@ -804,7 +804,7 @@ class AppLocalizationsAr extends AppLocalizations {
   }
 
   @override
-  String get chatOpen => 'محادثة';
+  String get chatOpen => 'فتح المحادثة';
 
   @override
   String get chatRequestTitle => 'طلب محادثة';
@@ -912,4 +912,7 @@ class AppLocalizationsAr extends AppLocalizations {
 
   @override
   String get chatClipboardEmpty => 'لا يوجد نص منسوخ';
+
+  @override
+  String get chatClose => 'إغلاق المحادثة';
 }
