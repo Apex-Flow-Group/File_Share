@@ -102,8 +102,8 @@ class ApexCore {
 
   late final ChatHttp _chat = ChatHttp(
     onRequest: _connectionRequestController.add,
-    onMessage: (m) => chat.receive(chatKey(m.id, m.address), m.name, m.text),
-    onBlocked: (key) => chat.blocked(key),
+    onMessage: (m) => chat.receive(chatPeer(m.fingerprint, m.id, m.address), m.name, m.text),
+    onBlocked: (peer) => chat.blocked(peer),
     expectedFingerprint: _expectedFingerprint,
     pins: _pins,
     question: _question,
@@ -143,6 +143,12 @@ class ApexCore {
   /// This device's certificate for requests to other devices; null before
   /// [initialize].
   SecurityContext? get clientContext => _clientContext;
+
+  /// [device] as a favorite kept it, with the fingerprint pinned when the
+  /// user last accepted it, while discovery has not heard it this run (owner
+  /// decision): sends reach only that certificate. Without a pin it stays
+  /// without one, and sending to it fails as before.
+  Device withPinnedKey(Device device) => _pins.withPin(device);
 
   /// The fingerprint discovery heard from [id] at [address]: a request that
   /// claims to be that device must come with that certificate.

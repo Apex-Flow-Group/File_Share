@@ -38,7 +38,7 @@ class ChatProfileRow extends StatelessWidget {
       builder: (context, _) {
         final unread = store.unread(device.chatKey);
         // Blocked: no messages to or from it, so nothing to paste or send.
-        final blocked = store.isBlocked(device.chatKey);
+        final blocked = store.isBlocked(device.chatPeer);
         return Semantics(
           button: true,
           label: l10n.chatOpen,

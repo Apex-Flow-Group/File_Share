@@ -36,14 +36,14 @@ void main() {
   }
 
   testWidgets('a received message is shown with a copy button', (tester) async {
-    store.receive(_pc.chatKey, 'Office PC', 'the wifi key');
+    store.receive(_pc.chatPeer, 'Office PC', 'the wifi key');
     final l10n = await show(tester, canWrite: true);
     expect(find.text('the wifi key'), findsOneWidget);
     expect(find.text(l10n.chatCopy), findsOneWidget);
   });
 
   testWidgets('the TV only shows: no writing line and no copy', (tester) async {
-    store.receive(_pc.chatKey, 'Office PC', 'hello TV');
+    store.receive(_pc.chatPeer, 'Office PC', 'hello TV');
     final l10n = await show(tester, canWrite: false);
     expect(find.text('hello TV'), findsOneWidget);
     expect(find.byType(TextField), findsNothing);
@@ -105,7 +105,7 @@ void main() {
   });
 
   testWidgets('opening the chat marks its messages read', (tester) async {
-    store.receive(_pc.chatKey, 'Office PC', 'a');
+    store.receive(_pc.chatPeer, 'Office PC', 'a');
     expect(store.unread(_pc.chatKey), 1);
     await show(tester, canWrite: true);
     expect(store.unread(_pc.chatKey), 0);
@@ -114,7 +114,7 @@ void main() {
   testWidgets('on the TV a message cannot be selected, since it cannot be copied', (tester) async {
     final store = ChatStore(send: (t, d, k) async => (outcome: ChatOutcome.sent, token: null));
     const pc = Device(id: 'p', name: 'PC', type: 'desktop', ip: '10.0.0.7', port: 1);
-    store.receive(pc.chatKey, 'PC', 'hello');
+    store.receive(pc.chatPeer, 'PC', 'hello');
     await tester.pumpWidget(MaterialApp(
       localizationsDelegates: AppLocalizations.localizationsDelegates,
       supportedLocales: AppLocalizations.supportedLocales,

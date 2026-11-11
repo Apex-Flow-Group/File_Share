@@ -1544,6 +1544,12 @@ abstract class AppLocalizations {
   /// **'Accept chat?'**
   String get chatRequestQuestion;
 
+  /// No description provided for @requestNewKey.
+  ///
+  /// In en, this message translates to:
+  /// **'This device has a new key'**
+  String get requestNewKey;
+
   /// No description provided for @chatHint.
   ///
   /// In en, this message translates to:

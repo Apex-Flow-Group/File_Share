@@ -73,6 +73,7 @@ class DeviceChatView extends StatefulWidget {
 
 class _DeviceChatViewState extends State<DeviceChatView> {
   ChatKey get _key => widget.device.chatKey;
+  ChatPeer get _peer => widget.device.chatPeer;
 
   late final _text = TextEditingController(text: widget.initialText);
   late final _files = [for (final p in widget.initialFiles) ComposerFile(p)];
@@ -270,14 +271,14 @@ class _DeviceChatViewState extends State<DeviceChatView> {
                       },
                     ),
             ),
-            if (widget.store.isBlocked(_key)) ...[
+            if (widget.store.isBlocked(_peer)) ...[
               const SizedBox(height: 8),
               Text(l10n.chatBlocked,
                   textAlign: TextAlign.center, style: TextStyle(color: Theme.of(context).hintColor)),
               // The TV has its own buttons, reached by the remote.
               if (widget.canWrite)
                 TextButton(
-                  onPressed: () => widget.store.unblock(_key),
+                  onPressed: () => widget.store.unblock(_peer),
                   child: Text(l10n.chatUnblock),
                 ),
             ] else if (widget.canWrite) ...[
