@@ -66,6 +66,11 @@ class PinStore {
     return known != null && known != fingerprint;
   }
 
+  /// [device] shows another key than the one pinned for its id: nothing is
+  /// sent to it and nothing is read from its shared folder.
+  bool shownKeyChanged(Device device) =>
+      isFingerprint(device.fingerprint) && keyChanged(device.id, device.fingerprint);
+
   /// The user accepted [id] holding [fingerprint].
   Future<void> pin(String id, String fingerprint) {
     if (_pins[id] == fingerprint) {

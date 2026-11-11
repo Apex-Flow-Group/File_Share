@@ -162,6 +162,10 @@ class ApexCore {
   /// without one, and sending to it fails as before.
   Device withPinnedKey(Device device) => _pins.withPin(device);
 
+  /// Whom the user accepted, for the shared-folder browser, which talks to
+  /// another device by the same rule as a send.
+  PinStore get pins => _pins;
+
   /// The fingerprint discovery heard from [id] at [address]: a request that
   /// claims to be that device must come with that certificate.
   String? _expectedFingerprint(String id, String address) {
