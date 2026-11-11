@@ -24,13 +24,17 @@ import 'package:flutter_test/flutter_test.dart';
 import '../identity/tls_peer.dart';
 
 /// The router gives an address to another device the next day: the chat,
-/// its unread count, its token and its block belong to the id together with
-/// the address. No widget test here: one in the file replaces HttpClient
-/// with a fake that answers 400, and the door tests would pass for nothing.
+/// its unread count, its token and its block belong to the certificate of
+/// the device (owner decision), not to its address. No widget test here: one
+/// in the file replaces HttpClient with a fake that answers 400, and the door
+/// tests would pass for nothing. The door with several certificates is in
+/// chat_fingerprint_test.dart.
 
 /// Yesterday's device at 10.0.0.7, and today's, given the same address.
-const _first = Device(id: 'laptop-1', name: 'Office PC', type: 'desktop', ip: '10.0.0.7', port: 4000);
-const _second = Device(id: 'phone-2', name: 'Guest Phone', type: 'phone', ip: '10.0.0.7', port: 4000);
+final _first = Device(
+    id: 'laptop-1', name: 'Office PC', type: 'desktop', ip: '10.0.0.7', port: 4000, fingerprint: 'a' * 64);
+final _second = Device(
+    id: 'phone-2', name: 'Guest Phone', type: 'phone', ip: '10.0.0.7', port: 4000, fingerprint: 'b' * 64);
 
 ChatStore _store() => ChatStore(send: (t, d, k) async => (outcome: ChatOutcome.sent, token: null));
 
@@ -107,17 +111,17 @@ void main() {
   setUpAll(loadPeers);
   group('the store', () {
     test('a new device at the same address gets an empty chat, with nothing unread', () {
-      final store = _store()..receive(_first.chatKey, 'Office PC', 'the wifi key is 8812');
+      final store = _store()..receive(_first.chatPeer, 'Office PC', 'the wifi key is 8812');
       expect(store.thread(_second.chatKey), isNull);
       expect(store.unread(_second.chatKey), 0);
       expect(store.unread(_first.chatKey), 1);
     });
 
     test('a new device at the same address does not inherit the block', () {
-      final store = _store()..block(_first.chatKey);
-      expect(store.isBlocked(_second.chatKey), isFalse);
-      expect(store.canBlock(_second.chatKey), isTrue);
-      store.receive(_second.chatKey, 'Guest Phone', 'hello');
+      final store = _store()..block(_first.chatPeer);
+      expect(store.isBlocked(_second.chatPeer), isFalse);
+      expect(store.canBlock(_second.chatPeer), isTrue);
+      store.receive(_second.chatPeer, 'Guest Phone', 'hello');
       expect(store.thread(_second.chatKey)!.messages.single.text, 'hello');
     });
 
@@ -127,17 +131,17 @@ void main() {
         to.add(d.id);
         return (outcome: ChatOutcome.sent, token: null);
       })
-        ..receive(_first.chatKey, 'Office PC', 'old');
+        ..receive(_first.chatPeer, 'Office PC', 'old');
       await store.write(_second, 'new');
       expect(store.thread(_first.chatKey)!.messages.map((m) => m.text), ['old']);
       expect(store.thread(_second.chatKey)!.messages.map((m) => m.text), ['new']);
       expect(to, ['phone-2']);
     });
 
-    test('the same device back at its address after sleep keeps its chat', () {
-      final store = _store()..receive(_first.chatKey, 'Office PC', 'before sleep');
-      const back = Device(id: 'laptop-1', name: 'Office PC', type: 'desktop', ip: '10.0.0.7', port: 4123);
-      store.receive(back.chatKey, 'Office PC', 'after sleep');
+    test('the same device back at another address after sleep keeps its chat', () {
+      final store = _store()..receive(_first.chatPeer, 'Office PC', 'before sleep');
+      final back = _first.copyWith(ip: '10.0.0.8', port: 4123);
+      store.receive(back.chatPeer, 'Office PC', 'after sleep');
       expect(store.thread(back.chatKey)!.messages.map((m) => m.text), ['before sleep', 'after sleep']);
     });
 
@@ -153,31 +157,33 @@ void main() {
       expect(tokens, [null, null, 'issued-to-laptop-1']);
     });
 
-    FileReceivedEvent got(String id, int batch) => FileReceivedEvent(
+    FileReceivedEvent got(Device from, int batch, {bool withCertificate = true}) => FileReceivedEvent(
           fileName: 'report.pdf',
           fileSize: 10,
           fromDevice: 'PC',
-          fromAddress: '10.0.0.7',
-          fromId: id,
+          fromAddress: from.ip,
+          fromId: from.id,
+          fromFingerprint: withCertificate ? from.fingerprint : null,
           batchId: batch,
           filePath: '/save/report.pdf',
         );
 
-    test('a received file goes to the chat of its sender id at its address', () {
+    test("a received file goes to the chat of its sender's certificate", () {
       final store = _store()
-        ..receivedFile(got('laptop-1', 1))
-        ..receivedFile(got('phone-2', 2));
+        ..receivedFile(got(_first, 1))
+        ..receivedFile(got(_second, 2));
       expect(store.thread(_first.chatKey)!.messages.single.files.single.name, 'report.pdf');
       expect(store.thread(_second.chatKey)!.messages, hasLength(1),
           reason: 'its own line, not added to the first device line');
     });
 
-    test('a file without a sender id gets no line', () {
+    test('a file without a sender id or certificate gets no line', () {
       var changed = 0;
       _store()
         ..addListener(() => changed++)
         ..receivedFile(FileReceivedEvent(
-            fileName: 'a.pdf', fileSize: 1, fromDevice: 'PC', fromAddress: '10.0.0.7', filePath: '/a'));
+            fileName: 'a.pdf', fileSize: 1, fromDevice: 'PC', fromAddress: '10.0.0.7', filePath: '/a'))
+        ..receivedFile(got(_first, 3, withCertificate: false));
       expect(changed, 0);
     });
   });
@@ -212,57 +218,12 @@ void main() {
       expect(door.asked.single.device.id, 'laptop-1');
     });
 
-    test('a token issued to one id at an address is refused for another id there', () async {
-      final token = (await door.post(_msg('laptop-1', 'one'))).json['token'] as String;
-      door.decide = (_) => false;
-      final r = await door.post(_msg('phone-2', 'two'), token: token);
-      expect(r.json['delivered'], isNot(true));
-      expect(door.asked, hasLength(2), reason: 'the other id is asked about');
-      expect(door.asked.last.device.id, 'phone-2');
-      expect(door.delivered.map((m) => m.text), ['one']);
-    });
-
-    test('the same id back at the same address goes on unasked', () async {
+    test('the same device back at the same address goes on unasked', () async {
       final token = (await door.post(_msg('laptop-1', 'before sleep'))).json['token'] as String;
       final r = await door.post(_msg('laptop-1', 'after sleep'), token: token);
       expect(r.json['delivered'], isTrue);
       expect(door.asked, hasLength(1));
     });
-
-    test('the token stays bound to the address as well', () async {
-      final token = (await door.post(_msg('laptop-1', 'one'))).json['token'] as String;
-      await door.post(_msg('laptop-1', 'two'), token: token, from: '127.0.0.2');
-      expect(door.asked, hasLength(2));
-      expect(door.asked.last.device.ip, '127.0.0.2');
-    });
-
-    test('a block on one device is not inherited by the next one at its address', () async {
-      door.decide = (_) => false;
-      await door.post(_msg('laptop-1', 'spam'));
-      expect(access.isBlocked(chatKey('laptop-1', '127.0.0.1')), isTrue);
-      door.decide = (_) => true;
-      final r = await door.post(_msg('phone-2', 'hello'));
-      expect(r.json['delivered'], isTrue);
-      expect(door.asked, hasLength(2));
-      final again = await door.post(_msg('laptop-1', 'spam again'));
-      expect(again.json['accepted'], isFalse, reason: 'the blocked one stays blocked');
-      expect(door.asked, hasLength(2));
-    });
-  });
-
-  test('a question nobody answered quiets that device only, not the next one at its address', () async {
-    final access = ChatAccess();
-    final door = await _Door.start(access, wait: const Duration(milliseconds: 100));
-    try {
-      door.decide = (_) => null;
-      await door.post(_msg('laptop-1', 'one'));
-      expect(access.isQuiet(chatKey('laptop-1', '127.0.0.1')), isTrue);
-      door.decide = (_) => true;
-      final r = await door.post(_msg('phone-2', 'two'));
-      expect(r.json['delivered'], isTrue);
-    } finally {
-      await door.stop();
-    }
   });
 
   group('the sender', () {
@@ -343,7 +304,7 @@ void main() {
       }
     });
 
-    test('files sent carry this device id, and their line goes to its chat at its address', () async {
+    test("files sent carry this device id, and their line goes to its certificate's chat", () async {
       final file = File('${root.path}/a.txt')..writeAsStringSync('abc');
       final target = Device(id: 'r', name: 'Receiver', type: 'desktop', ip: '127.0.0.1', port: server.port, fingerprint: testReceiver.fingerprint);
       final outcome = await SendHttp(getContext: senderContext, getLocalName: () => 'Office PC', getLocalId: () => 'laptop-1')
@@ -354,10 +315,11 @@ void main() {
         await Future<void>.delayed(const Duration(milliseconds: 10));
       }
       expect(events.single.fromId, 'laptop-1');
+      expect(events.single.fromFingerprint, testSender.fingerprint);
       expect(asked.single.device.id, 'laptop-1');
       final store = _store()..receivedFile(events.single);
-      expect(store.thread(chatKey('laptop-1', '127.0.0.1'))!.messages.single.files.single.name, 'a.txt');
-      expect(store.thread(chatKey('phone-2', '127.0.0.1')), isNull);
+      expect(store.thread(ChatKey(testSender.fingerprint))!.messages.single.files.single.name, 'a.txt');
+      expect(store.thread(ChatKey(testReceiver.fingerprint)), isNull);
     });
   });
 }

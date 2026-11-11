@@ -5,6 +5,8 @@ import 'package:apex_file_share/models/device.dart';
 import 'package:flutter_test/flutter_test.dart';
 
 const _tv = Device(id: 't', name: 'TV', type: 'tv', ip: '10.0.0.5', port: 4000);
+final _fpA = 'a' * 64;
+final _fpB = 'b' * 64;
 
 void main() {
   late List<({String text, String? token})> sent;
@@ -61,7 +63,7 @@ void main() {
   });
 
   test('only a failed message of mine can be retried', () async {
-    store.receive(_tv.chatKey, 'TV', 'from tv');
+    store.receive(_tv.chatPeer, 'TV', 'from tv');
     await store.retry(_tv, store.thread(_tv.chatKey)!.messages.single);
     await store.write(_tv, 'mine');
     await store.retry(_tv, store.thread(_tv.chatKey)!.messages.last);
@@ -69,39 +71,39 @@ void main() {
   });
 
   test('received messages count as unread until the chat is opened', () {
-    store.receive(_tv.chatKey, 'TV', 'a');
-    store.receive(_tv.chatKey, 'TV', 'b');
+    store.receive(_tv.chatPeer, 'TV', 'a');
+    store.receive(_tv.chatPeer, 'TV', 'b');
     expect(store.unread(_tv.chatKey), 2);
     store.opened(_tv.chatKey);
     expect(store.unread(_tv.chatKey), 0);
-    store.receive(_tv.chatKey, 'TV', 'c');
+    store.receive(_tv.chatPeer, 'TV', 'c');
     expect(store.unread(_tv.chatKey), 0, reason: 'the user is looking at it');
     store.closed(_tv.chatKey);
-    store.receive(_tv.chatKey, 'TV', 'd');
+    store.receive(_tv.chatPeer, 'TV', 'd');
     expect(store.unread(_tv.chatKey), 1);
   });
 
   test('a new message is announced only when its chat is not open', () async {
     final heard = <String>[];
     final sub = store.incoming.listen((t) => heard.add(t.address));
-    store.receive(chatKey('x', '10.0.0.9'), 'Phone', 'hi');
+    store.receive(chatPeer(_fpA, 'x', '10.0.0.9'), 'Phone', 'hi');
     store.opened(_tv.chatKey);
-    store.receive(_tv.chatKey, 'TV', 'seen');
+    store.receive(_tv.chatPeer, 'TV', 'seen');
     await Future<void>.delayed(Duration.zero);
     expect(heard, ['10.0.0.9']);
     await sub.cancel();
   });
 
-  test('chats are kept apart by address', () async {
-    store.receive(chatKey('x', '10.0.0.1'), 'A', 'one');
-    store.receive(chatKey('x', '10.0.0.2'), 'B', 'two');
-    expect(store.thread(chatKey('x', '10.0.0.1'))!.messages.single.text, 'one');
-    expect(store.thread(chatKey('x', '10.0.0.2'))!.messages.single.text, 'two');
+  test('chats are kept apart by certificate', () async {
+    store.receive(chatPeer(_fpA, 'x', '10.0.0.1'), 'A', 'one');
+    store.receive(chatPeer(_fpB, 'x', '10.0.0.1'), 'B', 'two');
+    expect(store.thread(ChatKey(_fpA))!.messages.single.text, 'one');
+    expect(store.thread(ChatKey(_fpB))!.messages.single.text, 'two');
   });
 
   test('a chat keeps at most the latest messages, so memory has a ceiling', () {
     for (var i = 0; i < ChatStore.maxMessagesPerThread + 5; i++) {
-      store.receive(_tv.chatKey, 'TV', '$i');
+      store.receive(_tv.chatPeer, 'TV', '$i');
     }
     final messages = store.thread(_tv.chatKey)!.messages;
     expect(messages, hasLength(ChatStore.maxMessagesPerThread));
