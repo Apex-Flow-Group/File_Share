@@ -50,7 +50,7 @@ void main() {
   }, skip: Platform.isLinux ? false : 'chmod is for Linux and macOS; Windows AppData is per user');
 
   test('on Windows the key stays in the local AppData, which a roaming profile does not copy', () {
-    final support = Directory(r'C:\Users\x\AppData\Roaming\apex');
+    final support = Directory('${Directory.systemTemp.path}/support');
     final dir = identityFolder(support).path;
     expect(dir, startsWith(Platform.environment['LOCALAPPDATA']!));
     expect(dir.toLowerCase(), isNot(contains('download')));
