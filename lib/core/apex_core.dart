@@ -88,6 +88,7 @@ class ApexCore {
     freeBytes: () async => freeBytesAt(await PathUtils.getDownloadPath()),
     expectedFingerprint: _expectedFingerprint,
     pins: _pins,
+    blocks: _blocks,
     question: _question,
   );
 

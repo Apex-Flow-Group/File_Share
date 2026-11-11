@@ -13,6 +13,8 @@ import '../../../models/device.dart';
 import '../../../models/transfer_progress.dart';
 import '../../../services/transfer_progress_service.dart';
 import '../../../utils/apex_logger.dart';
+import '../../chat/logic/block_list.dart';
+import '../../chat/logic/chat_key.dart';
 import '../../identity/caller.dart';
 import '../../identity/pin_store.dart';
 import '../logic/offer.dart';
@@ -33,10 +35,12 @@ class ReceiveHttp {
     required this.expectedFingerprint,
     required this.pins,
     this.freeBytes,
+    BlockList? blocks,
     OneQuestion? question,
     this.decisionTimeout = TransferRules.decisionTimeout,
     this.bodyIdleLimit = TransferRules.bodyIdleLimit,
-  }) : _question = question ?? OneQuestion();
+  })  : _blocks = blocks ?? BlockList(pins),
+        _question = question ?? OneQuestion();
 
   final ReceiveGate gate;
   final ReceiveStore store;
@@ -46,6 +50,9 @@ class ReceiveHttp {
 
   /// Written when the user accepts a batch.
   final PinStore pins;
+
+  /// The chat's blocks: a blocked device offers no files either.
+  final BlockList _blocks;
 
   /// Free space where files are saved; null when it cannot be read.
   final Future<int?> Function()? freeBytes;
@@ -105,6 +112,11 @@ class ReceiveHttp {
     }
     if (expectedFingerprint(offer.senderId, offer.senderAddress) != fingerprint) {
       await _reply(req, HttpStatus.forbidden, {'error': ApexProtocol.wrongIdentity});
+      return;
+    }
+    // Unasked, and the answer a blocked device gets in the chat.
+    if (_blocks.isBlocked(chatPeer(fingerprint, offer.senderId, offer.senderAddress))) {
+      await _reply(req, HttpStatus.ok, {'accepted': false});
       return;
     }
     final problem = checkOffer(offer, freeBytes: await freeBytes?.call());
