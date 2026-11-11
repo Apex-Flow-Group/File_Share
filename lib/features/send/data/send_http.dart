@@ -10,10 +10,13 @@ import '../../../models/transfer_progress.dart';
 import '../../../services/transfer_progress_service.dart';
 import '../../../utils/apex_logger.dart';
 import '../../identity/fingerprint.dart';
+import '../../identity/pin_store.dart';
 
-enum SendOutcome { sent, declined, noAnswer, updateRequired, busy, tooManyFiles, noSpace, failed, cancelled }
+/// [keyChanged]: the device shows another key than the one pinned for its
+/// id, so nothing was sent to it.
+enum SendOutcome { sent, declined, noAnswer, updateRequired, busy, tooManyFiles, noSpace, keyChanged, failed, cancelled }
 
-enum ChatOutcome { sent, declined, noAnswer, updateRequired, busy, tooLong, failed }
+enum ChatOutcome { sent, declined, noAnswer, updateRequired, busy, tooLong, keyChanged, failed }
 
 typedef OutgoingFile = ({String path, String name, int size});
 
@@ -34,7 +37,7 @@ Uri deviceUri(Device target, String path, [Map<String, String>? query]) =>
 /// Sends a batch: one offer with every name and size, then one upload per file
 /// with the token the receiver issued when its user accepted.
 class SendHttp {
-  SendHttp({required this.getLocalName, required this.getLocalId, required this.getContext});
+  SendHttp({required this.getLocalName, required this.getLocalId, required this.getContext, this.pins});
 
   final String? Function() getLocalName;
 
@@ -45,9 +48,27 @@ class SendHttp {
   /// This device's certificate for the TLS handshake; null before it is read.
   final SecurityContext? Function() getContext;
 
+  /// The key each device id had when last accepted. A device that accepts a
+  /// send and has none gets the one it showed; one showing another key than
+  /// its pin is not sent to. Never written over here.
+  final PinStore? pins;
+
   HttpClient? _client(Device target) {
     final own = getContext();
     return own == null || !isFingerprint(target.fingerprint) ? null : pinnedClient(own, target);
+  }
+
+  /// [target] is known by another key than the one it shows now.
+  bool _keyChanged(Device target) =>
+      isFingerprint(target.fingerprint) && (pins?.keyChanged(target.id, target.fingerprint) ?? false);
+
+  /// [target] accepted: the key it showed in the handshake is pinned, unless
+  /// it has a pin already.
+  Future<void> _pinShown(Device target, HttpClientResponse res) async {
+    final shown = res.certificate;
+    if (shown != null) {
+      await pins?.pinFirst(target.id, fingerprintOf(shown.der));
+    }
   }
 
   /// The receiver's answer when its user cancelled.
@@ -63,6 +84,9 @@ class SendHttp {
     // again and refuses with 422.
     if (files.length > TransferRules.maxFilesPerBatch) {
       return SendOutcome.tooManyFiles;
+    }
+    if (_keyChanged(target)) {
+      return SendOutcome.keyChanged;
     }
     final progress = _progress..startBatch(files.length, targetDeviceId: target.id);
     try {
@@ -98,6 +122,9 @@ class SendHttp {
       String text, Device target, String? token) async {
     if (text.runes.length > TransferRules.chatTextLimit) {
       return (outcome: ChatOutcome.tooLong, token: null);
+    }
+    if (_keyChanged(target)) {
+      return (outcome: ChatOutcome.keyChanged, token: null);
     }
     const failed = (outcome: ChatOutcome.failed, token: null);
     final client = _client(target)?..connectionTimeout = const Duration(seconds: 5);
@@ -137,6 +164,7 @@ class SendHttp {
         return failed;
       }
       if (json['delivered'] == true) {
+        await _pinShown(target, res);
         final issued = json['token'];
         return (outcome: ChatOutcome.sent, token: issued is String ? issued : token);
       }
@@ -224,6 +252,7 @@ class SendHttp {
       if (tokens is! List || tokens.length != files.length || tokens.any((t) => t is! String)) {
         return failed;
       }
+      await _pinShown(target, res);
       return (outcome: SendOutcome.sent, tokens: tokens.cast<String>());
     } catch (e) {
       ApexLogger.instance.log('SEND', 'Offer failed: $e', LogLevel.error);

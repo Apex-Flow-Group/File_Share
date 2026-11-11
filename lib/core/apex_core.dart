@@ -95,7 +95,8 @@ class ApexCore {
   late final SendHttp _send = SendHttp(
       getLocalName: () => _localDevice?.name,
       getLocalId: () => _localDevice?.id,
-      getContext: () => _clientContext);
+      getContext: () => _clientContext,
+      pins: _pins);
 
   late final ShareFolderHttp _share = ShareFolderHttp(
     isEnabled: () => _settings?.sharedFolderEnabled ?? false,

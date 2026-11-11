@@ -76,6 +76,12 @@ class PinStore {
     return _writing = _writing.then((_) => _save()).catchError((_) {});
   }
 
+  /// [id] accepted a send from this device holding [fingerprint]: pinned
+  /// only when it has no pin, since a pin is never written over without the
+  /// user accepting the device.
+  Future<void> pinFirst(String id, String fingerprint) =>
+      _pins.containsKey(id) ? _writing : pin(id, fingerprint);
+
   Future<void> _save() async {
     final file = _file;
     if (file == null) {
