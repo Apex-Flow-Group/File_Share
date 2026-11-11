@@ -62,11 +62,12 @@ void main() {
         SendOutcome.busy,
         SendOutcome.tooManyFiles,
         SendOutcome.noSpace,
+        SendOutcome.keyChanged,
         SendOutcome.cancelled,
       ].map(message).toList();
       expect(reasons.toSet(), hasLength(reasons.length));
       expect(reasons, everyElement(isNot(anyOf('SENT', 'FAILED', isEmpty))));
-      expect(SendOutcome.values, hasLength(9), reason: 'A new outcome needs its message here.');
+      expect(SendOutcome.values, hasLength(10), reason: 'A new outcome needs its message here.');
     });
   }
 }
