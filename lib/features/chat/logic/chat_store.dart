@@ -115,11 +115,8 @@ class ChatStore extends ChangeNotifier {
 
   bool isBlocked(String address) => _blocked.contains(address);
 
-  /// A device whose chat this one accepted (a text from it arrived) can be
-  /// blocked; files come through their own question, per batch.
-  bool canBlock(String address) =>
-      !isBlocked(address) &&
-      (_threads[address]?.messages.any((m) => !m.mine && !m.isFiles) ?? false);
+  /// Owner decision: any device can be blocked, before it ever writes too.
+  bool canBlock(String address) => !isBlocked(address);
 
   void block(String address) {
     if (!_blocked.add(address)) {

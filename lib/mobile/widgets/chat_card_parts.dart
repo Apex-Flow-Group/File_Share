@@ -1,7 +1,6 @@
 import 'package:flutter/material.dart';
 
 import '../../core/apex_core.dart';
-import '../../features/chat/ui/confirm_block.dart';
 import '../../features/chat/ui/device_chat_view.dart';
 import '../../l10n/generated/app_localizations.dart';
 import '../../models/device.dart';
@@ -116,7 +115,7 @@ class _RowCircle extends StatelessWidget {
   }
 }
 
-/// The chat inside an opened card: block, the messages and the writing line.
+/// The chat inside an opened card: the messages and the writing line.
 class ChatCardPanel extends StatelessWidget {
   const ChatCardPanel({
     required this.device,
@@ -134,28 +133,10 @@ class ChatCardPanel extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final l10n = AppLocalizations.of(context);
     final store = ApexCore.instance.chat;
     return Column(
       crossAxisAlignment: CrossAxisAlignment.stretch,
       children: [
-        ListenableBuilder(
-          listenable: store,
-          builder: (context, _) => store.canBlock(device.ip)
-              ? Align(
-                  alignment: AlignmentDirectional.centerEnd,
-                  child: TextButton.icon(
-                    onPressed: () async {
-                      if (await confirmBlock(context, device.name)) {
-                        store.block(device.ip);
-                      }
-                    },
-                    icon: const Icon(Icons.block_rounded, size: 18, color: Colors.red),
-                    label: Text(l10n.chatBlock, style: const TextStyle(color: Colors.red)),
-                  ),
-                )
-              : const SizedBox.shrink(),
-        ),
         ConstrainedBox(
           constraints: const BoxConstraints(maxHeight: maxHeight),
           child: DeviceChatView(

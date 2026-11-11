@@ -5,6 +5,7 @@ import 'package:flutter/services.dart';
 
 import '../../core/apex_core.dart';
 import '../../features/chat/ui/chat_attach.dart';
+import '../../features/chat/ui/confirm_block.dart';
 import '../../features/clipboard/ui/clipboard_label.dart';
 import '../../features/send/data/send_http.dart';
 import '../../features/send/ui/send_outcome_message.dart';
@@ -215,6 +216,34 @@ class _ConnectionWidgetState extends State<ConnectionWidget>
     }
   }
 
+  /// The opened card's head: the shared folder and block, in the room
+  /// beside the favourite star (owner decision).
+  List<Widget> _headTools(AppLocalizations l10n) {
+    final store = ApexCore.instance.chat;
+    return [
+      if (widget.device.hasShare)
+        IconButton(
+          tooltip: l10n.sharedFolder,
+          onPressed: _openShareBrowser,
+          icon: const Icon(Icons.folder_shared_rounded, color: Color(0xFFFF9500)),
+        ),
+      ListenableBuilder(
+        listenable: store,
+        builder: (context, _) => !store.canBlock(widget.device.ip)
+            ? const SizedBox.shrink()
+            : IconButton(
+                tooltip: l10n.chatBlock,
+                onPressed: () async {
+                  if (await confirmBlock(context, widget.device.name)) {
+                    store.block(widget.device.ip);
+                  }
+                },
+                icon: const Icon(Icons.block_rounded, color: Colors.red),
+              ),
+      ),
+    ];
+  }
+
   Widget _buildChatCard(AppLocalizations l10n, bool isDark) =>
       ValueListenableBuilder<String?>(
         valueListenable: _openChat,
@@ -250,7 +279,7 @@ class _ConnectionWidgetState extends State<ConnectionWidget>
                   behavior: HitTestBehavior.opaque,
                   onTap: _toggle,
                   child: Row(children: [
-                    Expanded(child: _buildHeader(isDark)),
+                    Expanded(child: _buildHeader(isDark, trailing: _headTools(l10n))),
                     const SizedBox(width: 6),
                     Icon(Icons.expand_less_rounded,
                         color: Theme.of(context).colorScheme.onSurfaceVariant),
@@ -261,7 +290,7 @@ class _ConnectionWidgetState extends State<ConnectionWidget>
               ...banners,
               _status == _Status.sending
                   ? _buildSendingState()
-                  : _buildActions(l10n, isDark),
+                  : _buildActions(l10n, isDark, withShare: false),
               const SizedBox(height: 10),
               ChatCardPanel(
                 key: ValueKey(_pasteSeq),
@@ -274,7 +303,7 @@ class _ConnectionWidgetState extends State<ConnectionWidget>
         },
       );
 
-  Widget _buildHeader(bool isDark) {
+  Widget _buildHeader(bool isDark, {List<Widget> trailing = const []}) {
     final color = _deviceColor;
     return Row(
       children: [
@@ -374,6 +403,7 @@ class _ConnectionWidgetState extends State<ConnectionWidget>
             ],
           ),
         ),
+        ...trailing,
         // ─── زر المفضلة
         if (widget.onPin != null || widget.onUnpin != null)
           Tooltip(
@@ -630,7 +660,8 @@ class _ConnectionWidgetState extends State<ConnectionWidget>
     }
   }
 
-  Widget _buildActions(AppLocalizations l10n, bool isDark) {
+  /// [withShare] false on a chat card, where the shared folder is in the head.
+  Widget _buildActions(AppLocalizations l10n, bool isDark, {bool withShare = true}) {
     final svc = TransferProgressService();
     final isThisDeviceTarget = svc.targetDeviceId == widget.device.id;
     if (widget.isGloballyBusy &&
@@ -672,7 +703,7 @@ class _ConnectionWidgetState extends State<ConnectionWidget>
             onTap: sendFolder,
           )),
         // زر المجلد المشترك — يظهر فقط إذا الجهاز desktop وأعلن عن Share
-        if (widget.device.hasShare) ...[
+        if (withShare && widget.device.hasShare) ...[
           const SizedBox(width: 10),
           Expanded(
             child: _ActionButton(

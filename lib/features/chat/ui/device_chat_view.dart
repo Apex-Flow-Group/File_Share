@@ -55,7 +55,13 @@ class _DeviceChatViewState extends State<DeviceChatView> {
   @override
   void initState() {
     super.initState();
-    widget.store.opened(_address);
+    // After the frame: inside a card, marking read rebuilds the card's own
+    // head and row, which are being built right now.
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (mounted) {
+        widget.store.opened(_address);
+      }
+    });
   }
 
   @override
