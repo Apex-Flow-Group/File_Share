@@ -845,8 +845,14 @@ abstract class AppLocalizations {
   /// No description provided for @fileReceived.
   ///
   /// In en, this message translates to:
-  /// **'File received!'**
+  /// **'File received'**
   String get fileReceived;
+
+  /// No description provided for @filesReceivedTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'{count, plural, one{File received} other{{count} files received}}'**
+  String filesReceivedTitle(int count);
 
   /// No description provided for @openFiles.
   ///
@@ -857,7 +863,7 @@ abstract class AppLocalizations {
   /// No description provided for @openFileFailed.
   ///
   /// In en, this message translates to:
-  /// **'Failed to open file'**
+  /// **'Couldn\'t open the file.'**
   String get openFileFailed;
 
   /// No description provided for @openLocationFailed.
@@ -1277,7 +1283,7 @@ abstract class AppLocalizations {
   /// No description provided for @watchClipboardDesc.
   ///
   /// In en, this message translates to:
-  /// **'Each time you copy, the app opens the Send tab and shows what you copied with a button to send it. It reads everything you copy, passwords included.'**
+  /// **'Each time you copy, a button to send what you copied appears on the connected device cards in the Send tab. It reads everything you copy, passwords included.'**
   String get watchClipboardDesc;
 
   /// No description provided for @pinnedDevices.

@@ -402,10 +402,9 @@ class _HomeScreenState extends State<HomeScreen>
   Future<void> _openFile(File file) async {
     try {
       await _ctrl.fileOpsService.openFile(file.path);
-    } catch (e) {
+    } catch (_) {
       if (mounted) {
-        ApexSnackBar.error(
-            context, '${AppLocalizations.of(context).openFileFailed}: $e');
+        ApexSnackBar.error(context, AppLocalizations.of(context).openFileFailed);
       }
     }
   }

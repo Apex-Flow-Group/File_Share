@@ -395,13 +395,24 @@ class AppLocalizationsEn extends AppLocalizations {
   String get systemStartFailed => 'System start failed';
 
   @override
-  String get fileReceived => 'File received!';
+  String get fileReceived => 'File received';
+
+  @override
+  String filesReceivedTitle(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '$count files received',
+      one: 'File received',
+    );
+    return '$_temp0';
+  }
 
   @override
   String get openFiles => 'Show Files';
 
   @override
-  String get openFileFailed => 'Failed to open file';
+  String get openFileFailed => 'Couldn\'t open the file.';
 
   @override
   String get openLocationFailed => 'Couldn\'t open the folder.';
@@ -617,7 +628,7 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get watchClipboardDesc =>
-      'Each time you copy, the app opens the Send tab and shows what you copied with a button to send it. It reads everything you copy, passwords included.';
+      'Each time you copy, a button to send what you copied appears on the connected device cards in the Send tab. It reads everything you copy, passwords included.';
 
   @override
   String get pinnedDevices => 'Favorite Devices';

@@ -133,9 +133,13 @@
   "finish": "Get Started",
   "textCopied": "Text copied",
   "systemStartFailed": "System start failed",
-  "fileReceived": "File received!",
+  "fileReceived": "File received",
+  "filesReceivedTitle": "{count, plural, one{File received} other{{count} files received}}",
+  "@filesReceivedTitle": {
+    "placeholders": { "count": { "type": "int" } }
+  },
   "openFiles": "Show Files",
-  "openFileFailed": "Failed to open file",
+  "openFileFailed": "Couldn't open the file.",
   "openLocationFailed": "Couldn't open the folder.",
   "folderMissing": "The folder was deleted or moved.",
   "filesDeletedCount": "files deleted",
@@ -212,7 +216,7 @@
   "clipboardSendTooltip": "Send from clipboard",
   "clipboardSettings": "Clipboard",
   "watchClipboard": "Offer to send what you copy",
-  "watchClipboardDesc": "Each time you copy, the app opens the Send tab and shows what you copied with a button to send it. It reads everything you copy, passwords included.",
+  "watchClipboardDesc": "Each time you copy, a button to send what you copied appears on the connected device cards in the Send tab. It reads everything you copy, passwords included.",
   "pinnedDevices": "Favorite Devices",
   "newDevices": "New Devices",
 

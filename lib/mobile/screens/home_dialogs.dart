@@ -140,7 +140,7 @@ mixin HomeDialogs<T extends StatefulWidget> on State<T> {
       context,
       headerIcon: Icons.check_circle_rounded,
       headerColor: Colors.green,
-      headerTitle: '${l10n.fileReceived} ($totalFiles)',
+      headerTitle: l10n.filesReceivedTitle(totalFiles),
       isDismissible: true,
       enableDrag: false,
       content: _rememberRoute(Column(mainAxisSize: MainAxisSize.min, children: [
@@ -152,14 +152,7 @@ mixin HomeDialogs<T extends StatefulWidget> on State<T> {
             borderRadius: BorderRadius.circular(14),
             border: Border.all(color: Colors.green.withValues(alpha: 0.2)),
           ),
-          child: Column(children: [
-            const Icon(Icons.folder_rounded, size: 36, color: Colors.green),
-            const SizedBox(height: 8),
-            Text(
-                '$totalFiles ${l10n.localeName == 'ar' ? 'ملفات تم استلامها بنجاح' : 'files received successfully'}',
-                textAlign: TextAlign.center,
-                style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 16)),
-          ]),
+          child: const Icon(Icons.folder_rounded, size: 36, color: Colors.green),
         ),
         const SizedBox(height: 10),
         Text('${l10n.from}: $fromDevice',

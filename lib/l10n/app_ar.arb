@@ -131,9 +131,13 @@
   "finish": "ابدأ الآن",
   "textCopied": "تم النسخ",
   "systemStartFailed": "فشل بدء النظام",
-  "fileReceived": "تم استلام ملف!",
+  "fileReceived": "تم استلام ملف",
+  "filesReceivedTitle": "{count, plural, one{تم استلام ملف} two{تم استلام ملفين} few{تم استلام {count} ملفات} many{تم استلام {count} ملفاً} other{تم استلام {count} ملف}}",
+  "@filesReceivedTitle": {
+    "placeholders": { "count": { "type": "int" } }
+  },
   "openFiles": "عرض الملفات",
-  "openFileFailed": "فشل فتح الملف",
+  "openFileFailed": "تعذّر فتح الملف.",
   "openLocationFailed": "تعذّر فتح المجلد.",
   "folderMissing": "المجلد محذوف أو منقول.",
   "filesDeletedCount": "ملف تم حذفه",
@@ -209,7 +213,7 @@
   "clipboardSendTooltip": "إرسال من الحافظة",
   "clipboardSettings": "الحافظة",
   "watchClipboard": "اقتراح إرسال ما تنسخه",
-  "watchClipboardDesc": "عند كل نسخ ينتقل التطبيق إلى تبويب الإرسال ويعرض ما نسخته مع زر لإرساله. ويقرأ كل ما تنسخه، ومنه كلمات المرور.",
+  "watchClipboardDesc": "عند كل نسخ يظهر على بطاقات الأجهزة المتصلة في تبويب الإرسال زر لإرسال ما نسخته. ويقرأ كل ما تنسخه، ومنه كلمات المرور.",
   "pinnedDevices": "الأجهزة المفضلة",
   "newDevices": "أجهزة جديدة",
 

@@ -193,10 +193,9 @@ class _TVFilesTabState extends State<TVFilesTab> {
   Future<void> _openFile(File file) async {
     try {
       await _fileOpsService.openFile(file.path);
-    } catch (e) {
+    } catch (_) {
       if (mounted) {
-        ApexSnackBar.error(
-            context, '${AppLocalizations.of(context).openFileFailed}: $e');
+        ApexSnackBar.error(context, AppLocalizations.of(context).openFileFailed);
       }
     }
   }

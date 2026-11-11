@@ -397,13 +397,27 @@ class AppLocalizationsAr extends AppLocalizations {
   String get systemStartFailed => 'فشل بدء النظام';
 
   @override
-  String get fileReceived => 'تم استلام ملف!';
+  String get fileReceived => 'تم استلام ملف';
+
+  @override
+  String filesReceivedTitle(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: 'تم استلام $count ملف',
+      many: 'تم استلام $count ملفاً',
+      few: 'تم استلام $count ملفات',
+      two: 'تم استلام ملفين',
+      one: 'تم استلام ملف',
+    );
+    return '$_temp0';
+  }
 
   @override
   String get openFiles => 'عرض الملفات';
 
   @override
-  String get openFileFailed => 'فشل فتح الملف';
+  String get openFileFailed => 'تعذّر فتح الملف.';
 
   @override
   String get openLocationFailed => 'تعذّر فتح المجلد.';
@@ -617,7 +631,7 @@ class AppLocalizationsAr extends AppLocalizations {
 
   @override
   String get watchClipboardDesc =>
-      'عند كل نسخ ينتقل التطبيق إلى تبويب الإرسال ويعرض ما نسخته مع زر لإرساله. ويقرأ كل ما تنسخه، ومنه كلمات المرور.';
+      'عند كل نسخ يظهر على بطاقات الأجهزة المتصلة في تبويب الإرسال زر لإرسال ما نسخته. ويقرأ كل ما تنسخه، ومنه كلمات المرور.';
 
   @override
   String get pinnedDevices => 'الأجهزة المفضلة';
