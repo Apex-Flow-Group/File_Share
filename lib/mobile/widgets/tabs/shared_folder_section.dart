@@ -8,6 +8,7 @@ import 'package:flutter/material.dart';
 import '../../../l10n/generated/app_localizations.dart';
 import '../../../services/share_folder_service.dart';
 import '../../../shared/apex_snackbar.dart';
+import '../../../shared/folder_open_message.dart';
 import '../../../utils/file_utils.dart';
 
 /// قسم المجلد المشترك — يُعرض داخل FilesTab على desktop فقط.
@@ -129,7 +130,11 @@ class _SharedFolderSectionState extends State<SharedFolderSection> {
   Future<void> _openInExplorer() async {
     try {
       await ShareFolderService.instance.openInExplorer();
-    } catch (_) {}
+    } catch (e) {
+      if (mounted) {
+        ApexSnackBar.error(context, folderOpenMessage(e, AppLocalizations.of(context)));
+      }
+    }
   }
 
   @override
@@ -222,8 +227,8 @@ class _SharedFolderSectionState extends State<SharedFolderSection> {
                   const SizedBox(width: 8),
                   // زر فتح المجلد
                   _HeaderButton(
-                    icon: Icons.open_in_new_rounded,
-                    label: l10n.openInExplorer,
+                    icon: Icons.folder_open_rounded,
+                    label: l10n.openFolder,
                     color: color,
                     isDark: isDark,
                     onTap: _openInExplorer,

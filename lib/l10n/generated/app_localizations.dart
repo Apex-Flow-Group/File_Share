@@ -851,7 +851,7 @@ abstract class AppLocalizations {
   /// No description provided for @openFiles.
   ///
   /// In en, this message translates to:
-  /// **'Show in Files'**
+  /// **'Show Files'**
   String get openFiles;
 
   /// No description provided for @openFileFailed.
@@ -863,8 +863,14 @@ abstract class AppLocalizations {
   /// No description provided for @openLocationFailed.
   ///
   /// In en, this message translates to:
-  /// **'Failed to open location'**
+  /// **'Couldn\'t open the folder.'**
   String get openLocationFailed;
+
+  /// No description provided for @folderMissing.
+  ///
+  /// In en, this message translates to:
+  /// **'The folder was deleted or moved.'**
+  String get folderMissing;
 
   /// No description provided for @filesDeletedCount.
   ///
@@ -1291,12 +1297,6 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Shared Folder'**
   String get sharedFolder;
-
-  /// No description provided for @openInExplorer.
-  ///
-  /// In en, this message translates to:
-  /// **'Open in Explorer'**
-  String get openInExplorer;
 
   /// No description provided for @uploadToSharedFolder.
   ///

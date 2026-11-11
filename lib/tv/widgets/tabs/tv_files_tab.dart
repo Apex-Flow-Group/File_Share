@@ -8,6 +8,7 @@ import '../../../core/apex_core.dart';
 import '../../../l10n/generated/app_localizations.dart';
 import '../../../services/file_operations_service.dart';
 import '../../../shared/apex_snackbar.dart';
+import '../../../shared/folder_open_message.dart';
 import '../tv_focusable_widgets.dart';
 import 'tv_file_tile.dart';
 
@@ -205,8 +206,7 @@ class _TVFilesTabState extends State<TVFilesTab> {
       await _fileOpsService.openFileLocation(file.path);
     } catch (e) {
       if (mounted) {
-        ApexSnackBar.error(
-            context, '${AppLocalizations.of(context).openLocationFailed}: $e');
+        ApexSnackBar.error(context, folderOpenMessage(e, AppLocalizations.of(context)));
       }
     }
   }

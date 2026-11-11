@@ -172,21 +172,7 @@ class ShareFolderService {
   // ─── فتح المجلد ───────────────────────────────────────────────────────────
 
   Future<void> openInExplorer() async {
-    final folder = await getFolderPath();
-    // نستخدم dummy file path لـ openFileLocation الذي يفتح المجلد الأب
-    final dummyPath = '$folder${Platform.pathSeparator}.apex_placeholder';
-    try {
-      await FileUtils.openFileLocation(dummyPath);
-    } catch (_) {
-      // fallback: افتح المجلد مباشرةً
-      if (Platform.isWindows) {
-        await Process.run('explorer', [folder]);
-      } else if (Platform.isLinux) {
-        await Process.run('xdg-open', [folder]);
-      } else if (Platform.isMacOS) {
-        await Process.run('open', [folder]);
-      }
-    }
+    await FileUtils.openFolder(await getFolderPath());
   }
 
   // ─── مساعدات ──────────────────────────────────────────────────────────────

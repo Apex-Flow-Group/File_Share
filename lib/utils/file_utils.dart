@@ -129,25 +129,55 @@ class FileUtils {
     }
   }
 
+  /// Opens the folder that holds [filePath], or throws [FolderOpenError].
+  /// Never opens the file instead: for an APK that starts installing it.
   static Future<void> openFileLocation(String filePath) async {
     if (Platform.isAndroid) {
       try {
         await _channel.invokeMethod('openFileLocation', {'path': filePath});
         return;
-      } catch (_) {
-        // fallback
+      } on PlatformException catch (e) {
+        throw FolderOpenError(missing: e.code == 'FOLDER_MISSING');
       }
     }
     final dir = File(filePath).parent;
     if (!await dir.exists()) {
-      throw Exception('المجلد غير موجود');
+      throw const FolderOpenError(missing: true);
     }
-    if (await revealOnDesktop(filePath)) {
+    final revealed = await revealOnDesktop(filePath);
+    if (revealed != null) {
+      if (!revealed) {
+        throw const FolderOpenError();
+      }
       return;
     }
     final result = await OpenFilex.open(dir.path);
     if (result.type == ResultType.noAppToOpen || result.type == ResultType.error) {
-      throw Exception(result.message);
+      throw const FolderOpenError();
     }
   }
+
+  /// Opens [dirPath] itself, with nothing selected in it.
+  static Future<void> openFolder(String dirPath) async {
+    if (!await Directory(dirPath).exists()) {
+      throw const FolderOpenError(missing: true);
+    }
+    final opened = await openFolderOnDesktop(dirPath);
+    if (opened != null) {
+      if (!opened) {
+        throw const FolderOpenError();
+      }
+      return;
+    }
+    // The Android side opens the parent of the path it is given.
+    await openFileLocation('$dirPath/.');
+  }
+}
+
+/// The folder could not be opened: [missing] when it was deleted or moved,
+/// otherwise no app on the device opens folders.
+class FolderOpenError implements Exception {
+  const FolderOpenError({this.missing = false});
+
+  final bool missing;
 }

@@ -398,13 +398,16 @@ class AppLocalizationsEn extends AppLocalizations {
   String get fileReceived => 'File received!';
 
   @override
-  String get openFiles => 'Show in Files';
+  String get openFiles => 'Show Files';
 
   @override
   String get openFileFailed => 'Failed to open file';
 
   @override
-  String get openLocationFailed => 'Failed to open location';
+  String get openLocationFailed => 'Couldn\'t open the folder.';
+
+  @override
+  String get folderMissing => 'The folder was deleted or moved.';
 
   @override
   String get filesDeletedCount => 'files deleted';
@@ -624,9 +627,6 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get sharedFolder => 'Shared Folder';
-
-  @override
-  String get openInExplorer => 'Open in Explorer';
 
   @override
   String get uploadToSharedFolder => 'Upload to Shared Folder';

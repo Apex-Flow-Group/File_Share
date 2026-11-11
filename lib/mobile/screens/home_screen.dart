@@ -9,6 +9,7 @@ import '../../services/settings_service.dart';
 import '../../services/update_service.dart';
 import '../../shared/apex_bottom_sheet.dart';
 import '../../shared/apex_snackbar.dart';
+import '../../shared/folder_open_message.dart';
 import '../controllers/home_controller.dart';
 import '../widgets/home_nav_bar.dart';
 import '../widgets/home_sidebar.dart';
@@ -414,8 +415,7 @@ class _HomeScreenState extends State<HomeScreen>
       await _ctrl.fileOpsService.openFileLocation(file.path);
     } catch (e) {
       if (mounted) {
-        ApexSnackBar.error(
-            context, '${AppLocalizations.of(context).openLocationFailed}: $e');
+        ApexSnackBar.error(context, folderOpenMessage(e, AppLocalizations.of(context)));
       }
     }
   }

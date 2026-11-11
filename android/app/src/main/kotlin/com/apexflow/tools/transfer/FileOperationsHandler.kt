@@ -270,13 +270,15 @@ class FileOperationsHandler(private val context: Context) {
                 return
             }
 
-            // Try multiple approaches to open folder
-            val opened = tryOpenFolder(directory)
-            if (opened) {
+            if (!directory.isDirectory) {
+                result.error("FOLDER_MISSING", directory.path, null)
+                return
+            }
+            // Never the file instead: for an APK that starts installing it.
+            if (tryOpenFolder(directory)) {
                 result.success(true)
             } else {
-                // Last resort: open the file itself
-                openFile(path, result)
+                result.error("NO_FOLDER_APP", directory.path, null)
             }
         } catch (e: Exception) {
             result.error("OPEN_FAILED", e.message, null)
@@ -304,28 +306,9 @@ class FileOperationsHandler(private val context: Context) {
             }
         } catch (_: Exception) {}
 
-        // Approach 2: Files app via EXTRA_INITIAL_URI
-        try {
-            val relativePath = directory.absolutePath
-                .removePrefix("/storage/emulated/0/")
-            // Encoded: with raw "/" the document id stops at "primary:Download",
-            // and the Files app opened Download instead of ApexShare/<category>.
-            val uri = DocumentsContract.buildDocumentUri(
-                "com.android.externalstorage.documents", "primary:$relativePath"
-            )
-            val intent = Intent(Intent.ACTION_GET_CONTENT).apply {
-                addCategory(Intent.CATEGORY_OPENABLE)
-                type = "*/*"
-                putExtra("android.provider.extra.INITIAL_URI", uri)
-                addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
-            }
-            if (intent.resolveActivity(context.packageManager) != null) {
-                context.startActivity(intent)
-                return true
-            }
-        } catch (_: Exception) {}
+        // No ACTION_GET_CONTENT: it shows "pick a file", and the pick goes nowhere.
 
-        // Approach 3: Generic file manager via file:// URI
+        // Approach 2: Generic file manager via file:// URI
         try {
             val uri = Uri.fromFile(directory)
             val intent = Intent(Intent.ACTION_VIEW).apply {

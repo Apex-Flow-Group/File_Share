@@ -400,13 +400,16 @@ class AppLocalizationsAr extends AppLocalizations {
   String get fileReceived => 'تم استلام ملف!';
 
   @override
-  String get openFiles => 'عرض في ملفات';
+  String get openFiles => 'عرض الملفات';
 
   @override
   String get openFileFailed => 'فشل فتح الملف';
 
   @override
-  String get openLocationFailed => 'فشل فتح الموقع';
+  String get openLocationFailed => 'تعذّر فتح المجلد.';
+
+  @override
+  String get folderMissing => 'المجلد محذوف أو منقول.';
 
   @override
   String get filesDeletedCount => 'ملف تم حذفه';
@@ -624,9 +627,6 @@ class AppLocalizationsAr extends AppLocalizations {
 
   @override
   String get sharedFolder => 'المجلد المشترك';
-
-  @override
-  String get openInExplorer => 'فتح في المستكشف';
 
   @override
   String get uploadToSharedFolder => 'رفع إلى المجلد المشترك';
