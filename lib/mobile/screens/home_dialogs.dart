@@ -39,7 +39,7 @@ mixin HomeDialogs<T extends StatefulWidget> on State<T> {
     }
   }
 
-  /// Called when the user taps "Open File" in the sheet.
+  /// The sheet's open button: the file's folder, or the files tab for a batch.
   void onOpenFilesFromSheet([String? filePath]);
 
   void _showFileReceivedSheetInternal(FileReceivedEvent event) {
@@ -98,7 +98,7 @@ mixin HomeDialogs<T extends StatefulWidget> on State<T> {
             onOpenFilesFromSheet(event.filePath);
           },
           icon: const Icon(Icons.folder_open_rounded, size: 18),
-          label: Text(l10n.openFiles,
+          label: Text(l10n.openFolder,
               maxLines: 1, overflow: TextOverflow.ellipsis),
           style: FilledButton.styleFrom(
             backgroundColor: Colors.green,
@@ -174,7 +174,7 @@ mixin HomeDialogs<T extends StatefulWidget> on State<T> {
             Navigator.pop(context);
             onOpenFilesFromSheet();
           },
-          icon: const Icon(Icons.folder_open_rounded, size: 18),
+          icon: const Icon(Icons.folder_rounded, size: 18),
           label: Text(l10n.openFiles, maxLines: 1, overflow: TextOverflow.ellipsis),
           style: FilledButton.styleFrom(
             backgroundColor: Colors.green,

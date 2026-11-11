@@ -400,7 +400,7 @@ class AppLocalizationsAr extends AppLocalizations {
   String get fileReceived => 'تم استلام ملف!';
 
   @override
-  String get openFiles => 'فتح الملفات';
+  String get openFiles => 'عرض في ملفات';
 
   @override
   String get openFileFailed => 'فشل فتح الملف';

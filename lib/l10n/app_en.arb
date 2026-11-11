@@ -134,7 +134,7 @@
   "textCopied": "Text copied",
   "systemStartFailed": "System start failed",
   "fileReceived": "File received!",
-  "openFiles": "Open Files",
+  "openFiles": "Show in Files",
   "openFileFailed": "Failed to open file",
   "openLocationFailed": "Failed to open location",
   "filesDeletedCount": "files deleted",

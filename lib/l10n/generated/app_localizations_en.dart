@@ -398,7 +398,7 @@ class AppLocalizationsEn extends AppLocalizations {
   String get fileReceived => 'File received!';
 
   @override
-  String get openFiles => 'Open Files';
+  String get openFiles => 'Show in Files';
 
   @override
   String get openFileFailed => 'Failed to open file';

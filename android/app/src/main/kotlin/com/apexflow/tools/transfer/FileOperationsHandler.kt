@@ -7,6 +7,7 @@ import android.net.Uri
 import android.os.Build
 import android.os.Environment
 import android.os.StatFs
+import android.provider.DocumentsContract
 import android.provider.MediaStore
 import android.webkit.MimeTypeMap
 import androidx.core.content.FileProvider
@@ -287,8 +288,10 @@ class FileOperationsHandler(private val context: Context) {
         try {
             val relativePath = directory.absolutePath
                 .removePrefix("/storage/emulated/0/")
-            val uri = Uri.parse(
-                "content://com.android.externalstorage.documents/document/primary:$relativePath"
+            // Encoded: with raw "/" the document id stops at "primary:Download",
+            // and the Files app opened Download instead of ApexShare/<category>.
+            val uri = DocumentsContract.buildDocumentUri(
+                "com.android.externalstorage.documents", "primary:$relativePath"
             )
             val intent = Intent(Intent.ACTION_VIEW).apply {
                 setDataAndType(uri, "vnd.android.document/directory")
@@ -305,8 +308,10 @@ class FileOperationsHandler(private val context: Context) {
         try {
             val relativePath = directory.absolutePath
                 .removePrefix("/storage/emulated/0/")
-            val uri = Uri.parse(
-                "content://com.android.externalstorage.documents/document/primary:$relativePath"
+            // Encoded: with raw "/" the document id stops at "primary:Download",
+            // and the Files app opened Download instead of ApexShare/<category>.
+            val uri = DocumentsContract.buildDocumentUri(
+                "com.android.externalstorage.documents", "primary:$relativePath"
             )
             val intent = Intent(Intent.ACTION_GET_CONTENT).apply {
                 addCategory(Intent.CATEGORY_OPENABLE)

@@ -4,6 +4,8 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:open_filex/open_filex.dart';
 
+import '../platform/reveal_in_folder.dart';
+
 class FileUtils {
 
   static const _channel = MethodChannel('com.apex.core/file_ops');
@@ -107,7 +109,7 @@ class FileUtils {
 
     // Never through cmd: it runs "&" in a name, so "report&calc" starts calc.
     if (Platform.isWindows) {
-      await Process.run('explorer.exe', [filePath]);
+      await Process.run('explorer.exe', [windowsPath(filePath)]);
       return;
     }
 
@@ -140,14 +142,12 @@ class FileUtils {
     if (!await dir.exists()) {
       throw Exception('المجلد غير موجود');
     }
+    if (await revealOnDesktop(filePath)) {
+      return;
+    }
     final result = await OpenFilex.open(dir.path);
     if (result.type == ResultType.noAppToOpen || result.type == ResultType.error) {
-      final files = await dir.list().toList();
-      if (files.isNotEmpty) {
-        await OpenFilex.open(files.first.path);
-      } else {
-        throw Exception('المجلد فارغ');
-      }
+      throw Exception(result.message);
     }
   }
 }

@@ -48,7 +48,7 @@ class _HomeScreenState extends State<HomeScreen>
   @override
   void onOpenFilesFromSheet([String? filePath]) {
     if (filePath != null) {
-      _openFile(File(filePath));
+      _openFileLocation(File(filePath));
     } else {
       _ctrl.setCurrentIndex(2);
     }

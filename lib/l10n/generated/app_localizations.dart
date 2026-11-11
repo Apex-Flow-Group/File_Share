@@ -851,7 +851,7 @@ abstract class AppLocalizations {
   /// No description provided for @openFiles.
   ///
   /// In en, this message translates to:
-  /// **'Open Files'**
+  /// **'Show in Files'**
   String get openFiles;
 
   /// No description provided for @openFileFailed.
