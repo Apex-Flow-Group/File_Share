@@ -17,6 +17,7 @@ import '../../send/data/send_http.dart';
 import '../logic/chat_store.dart';
 import 'chat_files_bubble.dart';
 import 'chat_outcome_message.dart';
+import 'composer_tiles.dart';
 
 /// One device's chat. The TV shows it read only: no writing line, no copy.
 class DeviceChatView extends StatefulWidget {
@@ -24,26 +25,42 @@ class DeviceChatView extends StatefulWidget {
     required this.store,
     required this.device,
     this.canWrite = true,
-    this.onAttach,
+    this.pickFiles,
+    this.sendFiles,
     this.autofocus = false,
     this.initialText,
+    this.initialFiles = const [],
+    this.copied,
+    this.onCopiedUsed,
     super.key,
   });
 
   final ChatStore store;
   final Device device;
 
-  /// Picks files and sends them to [device]; none on the TV.
-  final VoidCallback? onAttach;
+  /// False on the TV: it only receives and shows.
+  final bool canWrite;
+
+  /// Picks files for the box; none on the TV, which does not write.
+  final Future<List<String>> Function()? pickFiles;
+
+  /// Sends files to [device]; they show as a line of the chat.
+  final Future<void> Function(List<String> paths)? sendFiles;
 
   /// Opened from the card's writing line: the keyboard comes up at once.
   final bool autofocus;
 
-  /// What the card's paste put in the writing line, not sent yet.
+  /// What the card's paste put in the box, not sent yet.
   final String? initialText;
 
-  /// False on the TV: it only receives and shows.
-  final bool canWrite;
+  /// Files the card's clip picked, in the box, not sent yet.
+  final List<String> initialFiles;
+
+  /// What was just copied on a computer, offered above the box to add.
+  final ClipboardItem? copied;
+
+  /// The copied item was added and sent, or dropped: it is no longer offered.
+  final void Function({required bool sent})? onCopiedUsed;
 
   @override
   State<DeviceChatView> createState() => _DeviceChatViewState();
@@ -52,9 +69,19 @@ class DeviceChatView extends StatefulWidget {
 class _DeviceChatViewState extends State<DeviceChatView> {
   String get _address => widget.device.ip;
 
+  late final _text = TextEditingController(text: widget.initialText);
+  late final _files = [for (final p in widget.initialFiles) ComposerFile(p)];
+
+  /// The copy last offered or added, by identity: a new copy is offered.
+  ClipboardItem? _seen;
+
+  /// Offered above the box, not added yet.
+  ClipboardItem? _offered;
+
   @override
   void initState() {
     super.initState();
+    _offerCopied();
     // After the frame: inside a card, marking read rebuilds the card's own
     // head and row, which are being built right now.
     WidgetsBinding.instance.addPostFrameCallback((_) {
@@ -65,19 +92,92 @@ class _DeviceChatViewState extends State<DeviceChatView> {
   }
 
   @override
+  void didUpdateWidget(DeviceChatView old) {
+    super.didUpdateWidget(old);
+    if (!identical(widget.copied, _seen)) {
+      setState(_offerCopied);
+    }
+  }
+
+  @override
   void dispose() {
     widget.store.closed(_address);
+    _text.dispose();
     super.dispose();
+  }
+
+  /// A new copy is offered above the box with a floating add button.
+  void _offerCopied() {
+    _seen = widget.copied;
+    _offered = widget.copied;
+  }
+
+  /// Copied text goes in the box, as a paste: there it is seen before it is
+  /// sent. A picture or files become tiles of the box.
+  void _addCopied() {
+    final item = _offered;
+    if (item == null) {
+      return;
+    }
+    setState(() {
+      _offered = null;
+      if (item.type == ClipboardItemType.text) {
+        final text = item.text ?? '';
+        _text.text = _text.text.isEmpty ? text : '${_text.text} $text';
+        _text.selection = TextSelection.collapsed(offset: _text.text.length);
+      } else {
+        _files.addAll([for (final p in item.paths) ComposerFile(p, fromClipboard: true)]);
+      }
+    });
+    if (item.type == ClipboardItemType.text) {
+      widget.onCopiedUsed?.call(sent: true);
+    }
+  }
+
+  void _dropCopied() {
+    setState(() => _offered = null);
+    widget.onCopiedUsed?.call(sent: false);
+  }
+
+  void _remove(ComposerFile f) {
+    setState(() => _files.remove(f));
+    if (f.fromClipboard && !_files.any((c) => c.fromClipboard)) {
+      widget.onCopiedUsed?.call(sent: false);
+    }
+  }
+
+  Future<void> _attach() async {
+    final picked = await widget.pickFiles?.call() ?? const <String>[];
+    if (picked.isNotEmpty && mounted) {
+      setState(() => _files.addAll([for (final p in picked) ComposerFile(p)]));
+    }
   }
 
   /// A text over the limit stays in the line with the reason, so nothing is
   /// cut off unseen (a field limit would silently drop the end of a paste).
   bool _send(String text) {
+    final l10n = AppLocalizations.of(context);
     if (text.runes.length > TransferRules.chatTextLimit) {
-      ApexSnackBar.error(context, AppLocalizations.of(context).chatTooLong(TransferRules.chatTextLimit));
+      ApexSnackBar.error(context, l10n.chatTooLong(TransferRules.chatTextLimit));
       return false;
     }
-    widget.store.write(widget.device, text);
+    final added = List.of(_files);
+    // One transfer at a time, as on the device card: the box keeps it all.
+    if (added.isNotEmpty && TransferProgressService().isTransferring) {
+      ApexSnackBar.info(context, l10n.chatTransferBusy);
+      return false;
+    }
+    if (text.trim().isNotEmpty) {
+      widget.store.write(widget.device, text);
+    }
+    if (added.isNotEmpty) {
+      final fromClipboard = added.any((f) => f.fromClipboard);
+      setState(() => _files.removeWhere(added.contains));
+      final sending = widget.sendFiles?.call([for (final f in added) f.path]);
+      if (fromClipboard) {
+        sending?.then((_) => widget.onCopiedUsed?.call(sent: true));
+      }
+    }
     return true;
   }
 
@@ -176,17 +276,25 @@ class _DeviceChatViewState extends State<DeviceChatView> {
                   child: Text(l10n.chatUnblock),
                 ),
             ] else if (widget.canWrite) ...[
+              if (_offered != null) ...[
+                const SizedBox(height: 8),
+                CopiedSuggestion(item: _offered!, onAdd: _addCopied, onDismiss: _dropCopied),
+              ],
               const SizedBox(height: 8),
               FramedCapsuleInput(
                 hint: l10n.chatHint,
                 sendLabel: l10n.send,
                 onSend: _send,
-                onAttach: widget.onAttach,
+                controller: _text,
+                hasAttachments: _files.isNotEmpty,
+                onAttach: widget.pickFiles == null ? null : _attach,
                 attachLabel: l10n.chatAttach,
-                autofocus: widget.autofocus || widget.initialText != null,
-                initialText: widget.initialText,
+                autofocus: widget.autofocus || widget.initialText != null || widget.initialFiles.isNotEmpty,
                 pasteLabel: l10n.chatPaste,
                 onPasteEmpty: () => ApexSnackBar.info(context, l10n.chatClipboardEmpty),
+                top: _files.isEmpty
+                    ? null
+                    : ComposerTiles(files: _files, onRemove: _remove),
               ),
             ],
           ],

@@ -1625,7 +1625,7 @@ abstract class AppLocalizations {
   /// No description provided for @chatAttach.
   ///
   /// In en, this message translates to:
-  /// **'Send files'**
+  /// **'Add files'**
   String get chatAttach;
 
   /// No description provided for @chatTransferBusy.
@@ -1675,6 +1675,24 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Close chat'**
   String get chatClose;
+
+  /// No description provided for @chatAdd.
+  ///
+  /// In en, this message translates to:
+  /// **'Add'**
+  String get chatAdd;
+
+  /// No description provided for @chatRemoveFile.
+  ///
+  /// In en, this message translates to:
+  /// **'Remove {name}'**
+  String chatRemoveFile(String name);
+
+  /// No description provided for @sendFilesNow.
+  ///
+  /// In en, this message translates to:
+  /// **'Send files'**
+  String get sendFilesNow;
 }
 
 class _AppLocalizationsDelegate

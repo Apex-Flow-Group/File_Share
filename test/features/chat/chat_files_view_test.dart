@@ -28,14 +28,15 @@ void main() {
         sendFilesNow: (files, target, onDelivered) async => SendOutcome.declined,
       ));
 
-  Future<AppLocalizations> show(WidgetTester tester, {required bool canWrite, VoidCallback? onAttach}) async {
+  Future<AppLocalizations> show(WidgetTester tester,
+      {required bool canWrite, Future<List<String>> Function()? pickFiles}) async {
     const locale = Locale('ar');
     await tester.pumpWidget(MaterialApp(
       locale: locale,
       localizationsDelegates: AppLocalizations.localizationsDelegates,
       supportedLocales: AppLocalizations.supportedLocales,
       home: Scaffold(
-          body: DeviceChatView(store: store, device: _pc, canWrite: canWrite, onAttach: onAttach)),
+          body: DeviceChatView(store: store, device: _pc, canWrite: canWrite, pickFiles: pickFiles)),
     ));
     return AppLocalizations.delegate.load(locale);
   }
@@ -90,7 +91,10 @@ void main() {
 
   testWidgets('the attach circle is there only where files can be sent', (tester) async {
     var attached = 0;
-    final l10n = await show(tester, canWrite: true, onAttach: () => attached++);
+    final l10n = await show(tester, canWrite: true, pickFiles: () async {
+      attached++;
+      return const <String>[];
+    });
     await tester.tap(find.bySemanticsLabel(l10n.chatAttach));
     expect(attached, 1);
 

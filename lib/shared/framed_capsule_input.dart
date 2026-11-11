@@ -56,20 +56,24 @@ class FramedCapsuleColors {
       Theme.of(context).brightness == Brightness.dark ? _dark : _light;
 }
 
-/// A writing line: one line while empty, growing upward as the text grows,
-/// with the send circle staying at the bottom. On a computer Enter sends and
-/// Shift+Enter starts a new line.
+/// A message box as in chat apps (owner's reference): what is attached on
+/// top, the text across the whole box, and a row of buttons under it, the
+/// clip and paste at the start and send at the end. On a computer Enter
+/// sends and Shift+Enter starts a new line.
 class FramedCapsuleInput extends StatefulWidget {
   const FramedCapsuleInput({
     required this.hint,
     required this.sendLabel,
     required this.onSend,
+    this.hasAttachments = false,
     this.onAttach,
     this.attachLabel,
     this.autofocus = false,
     this.initialText,
     this.pasteLabel,
     this.onPasteEmpty,
+    this.top,
+    this.controller,
     super.key,
   });
 
@@ -78,46 +82,56 @@ class FramedCapsuleInput extends StatefulWidget {
   /// Read by screen readers for the send circle, which has no text.
   final String sendLabel;
 
-  /// False keeps the text in the line (the caller said why).
+  /// False keeps the text in the box (the caller said why).
   final bool Function(String text) onSend;
 
-  /// A plain circle before the send one; none when null (the TV).
+  /// Something is attached, so send works with no text too.
+  final bool hasAttachments;
+
+  /// The clip; none when null (the TV).
   final VoidCallback? onAttach;
   final String? attachLabel;
 
   final bool autofocus;
 
-  /// Text already in the line when it opens (a paste from the card).
+  /// Text already in the box when it opens (a paste from the card).
   final String? initialText;
 
   /// Shows a paste circle after the clip. The clipboard is read only when
-  /// the user presses it (owner decision), and the text goes in the line,
+  /// the user presses it (owner decision), and the text goes in the box,
   /// never straight out.
   final String? pasteLabel;
   final VoidCallback? onPasteEmpty;
+
+  /// Above the text, inside the box: the attached files.
+  final Widget? top;
+
+  /// Given by a caller that puts text in the box itself (a copied text).
+  final TextEditingController? controller;
 
   @override
   State<FramedCapsuleInput> createState() => _FramedCapsuleInputState();
 }
 
 class _FramedCapsuleInputState extends State<FramedCapsuleInput> {
-  /// Capsule height while one line; the circle is ~69% of it, the margin ~15%.
-  static const _height = 56.0;
-  static const _circle = 38.0;
-  static const _margin = (_height - _circle) / 2;
+  static const _circle = 40.0;
   static const _touch = 48.0;
-  static const _touchExtra = (_touch - _circle) / 2;
 
-  final _controller = TextEditingController();
+  late final TextEditingController _controller = widget.controller ?? TextEditingController();
   final _focus = FocusNode();
+
+  /// The field moves between the one-line and the full box: the key carries
+  /// its state along, or the text typed at that moment would be lost.
+  final _fieldKey = GlobalKey();
 
   static bool get _desktop => PlatformDetector.instance.isDesktop;
 
-  bool get _canSend => _controller.text.trim().isNotEmpty;
+  bool get _canSend => widget.hasAttachments || _controller.text.trim().isNotEmpty;
 
   @override
   void initState() {
     super.initState();
+    _focus.addListener(() => setState(() {}));
     final initial = widget.initialText;
     if (initial != null) {
       _controller.text = initial;
@@ -128,7 +142,9 @@ class _FramedCapsuleInputState extends State<FramedCapsuleInput> {
 
   @override
   void dispose() {
-    _controller.dispose();
+    if (widget.controller == null) {
+      _controller.dispose();
+    }
     _focus.dispose();
     super.dispose();
   }
@@ -177,7 +193,7 @@ class _FramedCapsuleInputState extends State<FramedCapsuleInput> {
         hintStyle: TextStyle(color: c.hint, fontSize: 16),
         border: InputBorder.none,
         isCollapsed: true,
-        contentPadding: const EdgeInsets.symmetric(vertical: 18),
+        contentPadding: const EdgeInsets.symmetric(vertical: 10),
       ),
     );
     if (_desktop) {
@@ -186,59 +202,73 @@ class _FramedCapsuleInputState extends State<FramedCapsuleInput> {
         child: field,
       );
     }
-    return _capsule(c, field);
-  }
-
-  Widget _capsule(FramedCapsuleColors c, Widget field) => Container(
-        constraints: const BoxConstraints(minHeight: _height),
+    field = KeyedSubtree(key: _fieldKey, child: field);
+    final top = widget.top;
+    final buttons = [
+      if (widget.onAttach != null)
+        _circleButton(
+          label: widget.attachLabel ?? '',
+          enabled: true,
+          onTap: widget.onAttach!,
+          background: c.circle,
+          icon: Icons.add_rounded,
+          iconColor: c.onCircle,
+        ),
+      if (widget.pasteLabel != null)
+        _circleButton(
+          label: widget.pasteLabel!,
+          enabled: true,
+          onTap: _paste,
+          background: c.circle,
+          icon: Icons.content_paste_rounded,
+          iconColor: c.onCircle,
+        ),
+    ];
+    final send = _circleButton(
+      label: widget.sendLabel,
+      enabled: _canSend,
+      onTap: _send,
+      background: c.filled,
+      icon: Icons.arrow_upward_rounded,
+      iconColor: c.onFilled,
+    );
+    // One line until it is touched or holds something (owner's picture);
+    // then the text takes the whole width above the buttons.
+    if (top == null && !_focus.hasFocus && _controller.text.isEmpty) {
+      return Container(
         decoration: BoxDecoration(
           color: c.capsule,
-          borderRadius: BorderRadius.circular(_height / 2),
+          borderRadius: BorderRadius.circular(32),
           border: Border.all(color: c.border),
         ),
-        padding: EdgeInsetsDirectional.only(
-            start: widget.onAttach != null ? _margin - _touchExtra : 20, end: _margin - _touchExtra),
-        child: Row(
-          crossAxisAlignment: CrossAxisAlignment.end,
-          children: [
-            // At the start, as in the owner's reference; send stays at the end.
-            if (widget.onAttach != null) ...[
-              _circleButton(
-                label: widget.attachLabel ?? '',
-                enabled: true,
-                onTap: widget.onAttach!,
-                background: c.circle,
-                icon: Icons.attach_file_rounded,
-                iconColor: c.onCircle,
-              ),
-              const SizedBox(width: 4),
-            ],
-            if (widget.pasteLabel != null) ...[
-              _circleButton(
-                label: widget.pasteLabel!,
-                enabled: true,
-                onTap: _paste,
-                background: c.circle,
-                icon: Icons.content_paste_rounded,
-                iconColor: c.onCircle,
-              ),
-              const SizedBox(width: 4),
-            ],
-            Expanded(child: field),
-            const SizedBox(width: 4),
-            _circleButton(
-              label: widget.sendLabel,
-              enabled: _canSend,
-              onTap: _send,
-              background: c.filled,
-              icon: Icons.arrow_upward_rounded,
-              iconColor: c.onFilled,
-            ),
-          ],
-        ),
+        padding: const EdgeInsets.all(8),
+        child: Row(children: [
+          ...buttons,
+          Expanded(child: Padding(padding: const EdgeInsets.symmetric(horizontal: 8), child: field)),
+          send,
+        ]),
       );
+    }
+    return Container(
+      decoration: BoxDecoration(
+        color: c.capsule,
+        borderRadius: BorderRadius.circular(28),
+        border: Border.all(color: c.border),
+      ),
+      padding: const EdgeInsets.all(8),
+      child: Column(
+        mainAxisSize: MainAxisSize.min,
+        crossAxisAlignment: CrossAxisAlignment.stretch,
+        children: [
+          if (top != null) Padding(padding: const EdgeInsets.all(4), child: top),
+          Padding(padding: const EdgeInsets.symmetric(horizontal: 12), child: field),
+          Row(children: [...buttons, const Spacer(), send]),
+        ],
+      ),
+    );
+  }
 
-  /// One circle of the line, all of the same size; under 48dp, so the touch
+  /// One circle of the box, all of the same size; under 48dp, so the touch
   /// area reaches past it.
   Widget _circleButton({
     required String label,
@@ -248,30 +278,27 @@ class _FramedCapsuleInputState extends State<FramedCapsuleInput> {
     required IconData icon,
     required Color iconColor,
   }) =>
-      Padding(
-        padding: const EdgeInsets.only(bottom: _margin - _touchExtra),
-        child: Tooltip(
-          message: label,
-          excludeFromSemantics: true,
-          child: Semantics(
-            button: true,
-            label: label,
-            enabled: enabled,
-            child: GestureDetector(
-              behavior: HitTestBehavior.opaque,
-              onTap: enabled ? onTap : null,
-              child: SizedBox.square(
-                dimension: _touch,
-                child: Center(
-                  child: AnimatedOpacity(
-                    opacity: enabled ? 1 : 0.4,
-                    duration: const Duration(milliseconds: 150),
-                    child: Container(
-                      width: _circle,
-                      height: _circle,
-                      decoration: BoxDecoration(color: background, shape: BoxShape.circle),
-                      child: Icon(icon, color: iconColor, size: 22),
-                    ),
+      Tooltip(
+        message: label,
+        excludeFromSemantics: true,
+        child: Semantics(
+          button: true,
+          label: label,
+          enabled: enabled,
+          child: GestureDetector(
+            behavior: HitTestBehavior.opaque,
+            onTap: enabled ? onTap : null,
+            child: SizedBox.square(
+              dimension: _touch,
+              child: Center(
+                child: AnimatedOpacity(
+                  opacity: enabled ? 1 : 0.4,
+                  duration: const Duration(milliseconds: 150),
+                  child: Container(
+                    width: _circle,
+                    height: _circle,
+                    decoration: BoxDecoration(color: background, shape: BoxShape.circle),
+                    child: Icon(icon, color: iconColor, size: 22),
                   ),
                 ),
               ),

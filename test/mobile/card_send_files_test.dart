@@ -27,8 +27,8 @@ void main() {
   testWidgets('a Nearby-only phone has no chat line, so it keeps the send button', (tester) async {
     const phone = Device(id: 'nearby:x', name: 'Ali Phone', type: 'phone', endpointId: 'x');
     final l10n = await show(tester, phone);
-    // The same action as the chat's clip, under the same name.
-    expect(find.text(l10n.chatAttach), findsOneWidget);
+    // It sends at once, so it is not named like the chat's "add files".
+    expect(find.text(l10n.sendFilesNow), findsOneWidget);
     expect(find.text(l10n.chatPaste), findsNothing, reason: 'no chat over Nearby');
   });
 }

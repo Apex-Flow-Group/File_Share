@@ -159,7 +159,9 @@ class _ConnectionWidgetState extends State<ConnectionWidget>
     );
   }
 
-  List<Widget> _banners(AppLocalizations l10n, bool usable) {
+  /// [withClipboard] false on a chat card: what was copied shows inside the
+  /// writing line there (owner decision).
+  List<Widget> _banners(AppLocalizations l10n, bool usable, {bool withClipboard = true}) {
     final idle = usable && _status == _Status.idle && !widget.isGloballyBusy;
     return [
       if (idle &&
@@ -167,7 +169,7 @@ class _ConnectionWidgetState extends State<ConnectionWidget>
           widget.pendingSharedFiles!.isNotEmpty)
         _buildSharedFilesBanner(l10n),
       if (idle && widget.pendingFilePath != null) _buildPendingFileBanner(l10n),
-      if (idle && widget.pendingClipboardItem != null)
+      if (withClipboard && idle && widget.pendingClipboardItem != null)
         _ClipboardBanner(
           item: widget.pendingClipboardItem!,
           onSend: _sendClipboardItem,
@@ -181,14 +183,18 @@ class _ConnectionWidgetState extends State<ConnectionWidget>
   /// What the card's paste took from the clipboard, for the writing line.
   String? _paste;
 
-  /// A new paste rebuilds the writing line with its text.
+  /// What the row's clip picked, for the message box.
+  List<String> _picked = const [];
+
+  /// A new paste or pick rebuilds the message box with it.
   int _pasteSeq = 0;
 
   bool get _expanded => _openChat.value == widget.device.ip;
 
-  void _open({String? paste}) {
+  void _open({String? paste, List<String> picked = const []}) {
     setState(() {
       _paste = paste;
+      _picked = picked;
       _pasteSeq++;
     });
     _openChat.value = widget.device.ip;
@@ -210,9 +216,20 @@ class _ConnectionWidgetState extends State<ConnectionWidget>
     _open(paste: text);
   }
 
+  /// The clip adds, it does not send: the card opens with the files in the
+  /// message box, sent with its send button.
   Future<void> _attachFromRow() async {
-    if (await attachFiles(context, widget.device) && mounted) {
-      _open();
+    final picked = await pickFilePaths();
+    if (picked.isNotEmpty && mounted) {
+      _open(picked: picked);
+    }
+  }
+
+  /// The copy was added and sent, or dropped: it is no longer offered.
+  void _copiedUsed({required bool sent}) {
+    widget.onClipboardItemSent?.call();
+    if (sent) {
+      ClipboardMonitorService.instance.cleanupTempImages();
     }
   }
 
@@ -248,7 +265,8 @@ class _ConnectionWidgetState extends State<ConnectionWidget>
       ValueListenableBuilder<String?>(
         valueListenable: _openChat,
         builder: (context, open, _) {
-          final banners = _banners(l10n, true);
+          final banners = _banners(l10n, true, withClipboard: false);
+          final copied = _status != _Status.idle || widget.isGloballyBusy ? null : widget.pendingClipboardItem;
           if (open != widget.device.ip) {
             return Column(
               crossAxisAlignment: CrossAxisAlignment.stretch,
@@ -295,8 +313,10 @@ class _ConnectionWidgetState extends State<ConnectionWidget>
               ChatCardPanel(
                 key: ValueKey(_pasteSeq),
                 device: widget.device,
-                onAttach: () => attachFiles(context, widget.device),
                 initialText: _paste,
+                initialFiles: _picked,
+                copied: copied,
+                onCopiedUsed: _copiedUsed,
               ),
             ],
           );
@@ -676,8 +696,8 @@ class _ConnectionWidgetState extends State<ConnectionWidget>
         if (!widget.device.isMdns) ...[
           Expanded(
               child: _ActionButton(
-            icon: Icons.attach_file_rounded,
-            label: l10n.chatAttach,
+            icon: Icons.upload_file_rounded,
+            label: l10n.sendFilesNow,
             color: Theme.of(context).colorScheme.primary,
             isDark: isDark,
             onTap: sendFile,

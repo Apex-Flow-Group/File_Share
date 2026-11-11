@@ -124,6 +124,6 @@ void main() {
     const phone = Device(id: 'nearby:x', name: 'Ali Phone', type: 'phone', endpointId: 'x');
     final l10n = await show(tester, [phone]);
     expect(find.bySemanticsLabel(l10n.chatPaste), findsNothing);
-    expect(find.text(l10n.chatAttach), findsOneWidget);
+    expect(find.text(l10n.sendFilesNow), findsOneWidget);
   });
 }

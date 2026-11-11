@@ -845,7 +845,7 @@ class AppLocalizationsEn extends AppLocalizations {
   String get chatUnblock => 'Unblock';
 
   @override
-  String get chatAttach => 'Send files';
+  String get chatAttach => 'Add files';
 
   @override
   String get chatTransferBusy =>
@@ -889,4 +889,15 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get chatClose => 'Close chat';
+
+  @override
+  String get chatAdd => 'Add';
+
+  @override
+  String chatRemoveFile(String name) {
+    return 'Remove $name';
+  }
+
+  @override
+  String get sendFilesNow => 'Send files';
 }

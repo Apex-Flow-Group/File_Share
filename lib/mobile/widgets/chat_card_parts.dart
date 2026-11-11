@@ -1,9 +1,11 @@
 import 'package:flutter/material.dart';
 
 import '../../core/apex_core.dart';
+import '../../features/chat/ui/chat_attach.dart';
 import '../../features/chat/ui/device_chat_view.dart';
 import '../../l10n/generated/app_localizations.dart';
 import '../../models/device.dart';
+import '../../services/clipboard_monitor_service.dart';
 import '../../shared/device_look.dart';
 import '../../shared/framed_capsule_input.dart';
 
@@ -73,7 +75,7 @@ class ChatProfileRow extends StatelessWidget {
                 if (!blocked) ...[
                   _RowCircle(icon: Icons.content_paste_rounded, label: l10n.chatPaste, onTap: onPaste),
                   const SizedBox(width: 6),
-                  _RowCircle(icon: Icons.attach_file_rounded, label: l10n.chatAttach, onTap: onAttach),
+                  _RowCircle(icon: Icons.add_rounded, label: l10n.chatAttach, onTap: onAttach),
                 ],
               ],
             ),
@@ -115,38 +117,42 @@ class _RowCircle extends StatelessWidget {
   }
 }
 
-/// The chat inside an opened card: the messages and the writing line.
+/// The chat inside an opened card: the messages and the message box.
 class ChatCardPanel extends StatelessWidget {
   const ChatCardPanel({
     required this.device,
-    required this.onAttach,
     this.initialText,
+    this.initialFiles = const [],
+    this.copied,
+    this.onCopiedUsed,
     super.key,
   });
 
   final Device device;
-  final VoidCallback onAttach;
   final String? initialText;
+  final List<String> initialFiles;
+  final ClipboardItem? copied;
+  final void Function({required bool sent})? onCopiedUsed;
 
   /// Grows with the messages up to here, so the other cards stay in reach.
-  static const maxHeight = 380.0;
+  static const maxHeight = 420.0;
 
   @override
   Widget build(BuildContext context) {
     final store = ApexCore.instance.chat;
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.stretch,
-      children: [
-        ConstrainedBox(
-          constraints: const BoxConstraints(maxHeight: maxHeight),
-          child: DeviceChatView(
-            store: store,
-            device: device,
-            onAttach: onAttach,
-            initialText: initialText,
-          ),
-        ),
-      ],
+    return ConstrainedBox(
+      constraints: const BoxConstraints(maxHeight: maxHeight),
+      child: DeviceChatView(
+        store: store,
+        device: device,
+        pickFiles: pickFilePaths,
+        // The same send as every other, so the files show as a line here.
+        sendFiles: (paths) => ApexCore.instance.sendFiles(paths, device),
+        initialText: initialText,
+        initialFiles: initialFiles,
+        copied: copied,
+        onCopiedUsed: onCopiedUsed,
+      ),
     );
   }
 }

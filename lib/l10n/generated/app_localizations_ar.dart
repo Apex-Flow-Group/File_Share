@@ -866,7 +866,7 @@ class AppLocalizationsAr extends AppLocalizations {
   String get chatUnblock => 'إلغاء الحظر';
 
   @override
-  String get chatAttach => 'إرسال ملفات';
+  String get chatAttach => 'إضافة ملفات';
 
   @override
   String get chatTransferBusy => 'نقل آخر جارٍ. حاول بعد انتهائه.';
@@ -915,4 +915,15 @@ class AppLocalizationsAr extends AppLocalizations {
 
   @override
   String get chatClose => 'إغلاق المحادثة';
+
+  @override
+  String get chatAdd => 'إضافة';
+
+  @override
+  String chatRemoveFile(String name) {
+    return 'إزالة $name';
+  }
+
+  @override
+  String get sendFilesNow => 'إرسال ملفات';
 }
