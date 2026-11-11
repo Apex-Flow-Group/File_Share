@@ -1553,8 +1553,14 @@ abstract class AppLocalizations {
   /// No description provided for @sendNewKey.
   ///
   /// In en, this message translates to:
-  /// **'Sending blocked: the other device has a new key'**
+  /// **'Not sent: the other device has a new key. Send a message or a file from it to this device, then press Accept here'**
   String get sendNewKey;
+
+  /// No description provided for @shareNewKey.
+  ///
+  /// In en, this message translates to:
+  /// **'Folder not opened: the other device has a new key. Send a message or a file from it to this device, then press Accept here'**
+  String get shareNewKey;
 
   /// No description provided for @chatHint.
   ///
