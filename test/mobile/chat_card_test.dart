@@ -53,7 +53,7 @@ void main() {
     expect(find.bySemanticsLabel(l10n.chatPaste), findsOneWidget);
     expect(find.bySemanticsLabel(l10n.chatAttach), findsOneWidget);
     expect(find.byType(DeviceChatView), findsNothing);
-    expect(find.text(l10n.sendFolder), findsNothing);
+    expect(find.bySemanticsLabel(l10n.sendFolder), findsNothing);
   });
 
   testWidgets('folded, it counts new messages and never shows their text', (tester) async {
@@ -68,7 +68,7 @@ void main() {
     await tester.tap(find.text('Office PC'));
     await tester.pumpAndSettle();
     expect(find.byType(DeviceChatView), findsOneWidget);
-    expect(find.text(l10n.sendFolder), findsOneWidget);
+    expect(find.bySemanticsLabel(l10n.sendFolder), findsOneWidget, reason: 'a circle of the box');
     expect(find.text(l10n.sendFile), findsNothing, reason: 'the clip sends files');
   });
 
