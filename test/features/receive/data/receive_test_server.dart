@@ -77,6 +77,7 @@ class ReceiveTestServer {
       final req = await client.postUrl(Uri.http('127.0.0.1:${_server.port}', ApexProtocol.offerPath));
       req.headers.set(ApexProtocol.versionHeader, '${ApexProtocol.version}');
       req.write(jsonEncode({
+        'id': 'test-phone',
         'name': 'Test Phone',
         'files': [for (final f in files.entries) {'name': f.key, 'size': f.value}],
       }));

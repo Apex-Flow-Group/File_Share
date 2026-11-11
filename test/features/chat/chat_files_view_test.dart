@@ -14,6 +14,7 @@ FileReceivedEvent _got(String name, int index, int total) => FileReceivedEvent(
       fileSize: 1024,
       fromDevice: 'PC',
       fromAddress: _pc.ip,
+      fromId: _pc.id,
       batchId: 1,
       filePath: '/save/$name',
       batchIndex: index,

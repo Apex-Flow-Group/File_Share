@@ -1,4 +1,5 @@
 import 'package:apex_file_share/core/protocol/transfer_rules.dart';
+import 'package:apex_file_share/features/chat/logic/chat_key.dart';
 import 'package:apex_file_share/features/chat/logic/chat_store.dart';
 import 'package:apex_file_share/features/chat/ui/device_chat_view.dart';
 import 'package:apex_file_share/features/send/data/send_http.dart';
@@ -35,14 +36,14 @@ void main() {
   }
 
   testWidgets('a received message is shown with a copy button', (tester) async {
-    store.receive(_pc.ip, 'Office PC', 'the wifi key');
+    store.receive(_pc.chatKey, 'Office PC', 'the wifi key');
     final l10n = await show(tester, canWrite: true);
     expect(find.text('the wifi key'), findsOneWidget);
     expect(find.text(l10n.chatCopy), findsOneWidget);
   });
 
   testWidgets('the TV only shows: no writing line and no copy', (tester) async {
-    store.receive(_pc.ip, 'Office PC', 'hello TV');
+    store.receive(_pc.chatKey, 'Office PC', 'hello TV');
     final l10n = await show(tester, canWrite: false);
     expect(find.text('hello TV'), findsOneWidget);
     expect(find.byType(TextField), findsNothing);
@@ -104,16 +105,16 @@ void main() {
   });
 
   testWidgets('opening the chat marks its messages read', (tester) async {
-    store.receive(_pc.ip, 'Office PC', 'a');
-    expect(store.unread(_pc.ip), 1);
+    store.receive(_pc.chatKey, 'Office PC', 'a');
+    expect(store.unread(_pc.chatKey), 1);
     await show(tester, canWrite: true);
-    expect(store.unread(_pc.ip), 0);
+    expect(store.unread(_pc.chatKey), 0);
   });
 
   testWidgets('on the TV a message cannot be selected, since it cannot be copied', (tester) async {
     final store = ChatStore(send: (t, d, k) async => (outcome: ChatOutcome.sent, token: null));
     const pc = Device(id: 'p', name: 'PC', type: 'desktop', ip: '10.0.0.7', port: 1);
-    store.receive(pc.ip, 'PC', 'hello');
+    store.receive(pc.chatKey, 'PC', 'hello');
     await tester.pumpWidget(MaterialApp(
       localizationsDelegates: AppLocalizations.localizationsDelegates,
       supportedLocales: AppLocalizations.supportedLocales,

@@ -5,6 +5,7 @@ import 'package:flutter/foundation.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
 import '../features/chat/data/chat_http.dart';
+import '../features/chat/logic/chat_key.dart';
 import '../features/chat/logic/chat_store.dart';
 import '../features/receive/data/receive_http.dart';
 import '../features/receive/data/receive_store.dart';
@@ -68,7 +69,8 @@ class ApexCore {
     question: _question,
   );
 
-  late final SendHttp _send = SendHttp(getLocalName: () => _localDevice?.name);
+  late final SendHttp _send =
+      SendHttp(getLocalName: () => _localDevice?.name, getLocalId: () => _localDevice?.id);
 
   late final ShareFolderHttp _share = ShareFolderHttp(
     isEnabled: () => _settings?.sharedFolderEnabled ?? false,
@@ -80,8 +82,8 @@ class ApexCore {
 
   late final ChatHttp _chat = ChatHttp(
     onRequest: _connectionRequestController.add,
-    onMessage: (m) => chat.receive(m.address, m.name, m.text),
-    onBlocked: (address) => chat.blocked(address),
+    onMessage: (m) => chat.receive(chatKey(m.id, m.address), m.name, m.text),
+    onBlocked: (key) => chat.blocked(key),
     question: _question,
   );
 

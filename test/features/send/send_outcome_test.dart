@@ -20,11 +20,11 @@ void main() {
     final files = [(path: file.path, name: 'a.txt', size: 1)];
     final target = Device(id: 't', name: 'Receiver', type: 'desktop', ip: '127.0.0.1', port: s.port);
 
-    final first = SendHttp(getLocalName: () => 'Phone A').sendFiles(files, target);
+    final first = SendHttp(getLocalName: () => 'Phone A', getLocalId: () => 'test-id').sendFiles(files, target);
     while (s.shown.isEmpty) {
       await Future<void>.delayed(const Duration(milliseconds: 10));
     }
-    final second = await SendHttp(getLocalName: () => 'Phone B').sendFiles(files, target);
+    final second = await SendHttp(getLocalName: () => 'Phone B', getLocalId: () => 'test-id').sendFiles(files, target);
 
     expect(second, SendOutcome.busy);
     s.shown.single.onResponse(false);
@@ -40,7 +40,7 @@ void main() {
     final file = File('${root.path}/a.txt')..writeAsStringSync('x');
     final target = Device(id: 't', name: 'Receiver', type: 'desktop', ip: '127.0.0.1', port: s.port);
 
-    final outcome = await SendHttp(getLocalName: () => 'Phone')
+    final outcome = await SendHttp(getLocalName: () => 'Phone', getLocalId: () => 'test-id')
         .sendFiles([(path: file.path, name: 'a.txt', size: 1)], target);
 
     expect(outcome, SendOutcome.noAnswer);

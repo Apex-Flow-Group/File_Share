@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 
 import '../../core/apex_core.dart';
+import '../../features/chat/logic/chat_key.dart';
 import '../../features/chat/ui/chat_attach.dart';
 import '../../features/chat/ui/device_chat_view.dart';
 import '../../l10n/generated/app_localizations.dart';
@@ -35,9 +36,9 @@ class ChatProfileRow extends StatelessWidget {
     return ListenableBuilder(
       listenable: store,
       builder: (context, _) {
-        final unread = store.unread(device.ip);
+        final unread = store.unread(device.chatKey);
         // Blocked: no messages to or from it, so nothing to paste or send.
-        final blocked = store.isBlocked(device.ip);
+        final blocked = store.isBlocked(device.chatKey);
         return Semantics(
           button: true,
           label: l10n.chatOpen,

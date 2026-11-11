@@ -19,9 +19,13 @@ typedef OutgoingFile = ({String path, String name, int size});
 /// Sends a batch: one offer with every name and size, then one upload per file
 /// with the token the receiver issued when its user accepted.
 class SendHttp {
-  SendHttp({required this.getLocalName});
+  SendHttp({required this.getLocalName, required this.getLocalId});
 
   final String? Function() getLocalName;
+
+  /// The id this device announces: the receiver keeps its chat by it and
+  /// the address together, and refuses a message or offer without it.
+  final String? Function() getLocalId;
 
   /// The receiver's answer when its user cancelled.
   static const _cancelledStatus = 499;
@@ -82,7 +86,7 @@ class SendHttp {
       if (token != null) {
         req.headers.set(ApexProtocol.tokenHeader, token);
       }
-      final body = utf8.encode(jsonEncode({'name': getLocalName() ?? '', 'text': text}));
+      final body = utf8.encode(jsonEncode({'id': getLocalId() ?? '', 'name': getLocalName() ?? '', 'text': text}));
       req.contentLength = body.length;
       req.add(body);
       final res = await req.close().timeout(TransferRules.decisionTimeout + const Duration(seconds: 10));
@@ -151,6 +155,7 @@ class SendHttp {
         ..set(ApexProtocol.versionHeader, '${ApexProtocol.version}')
         ..contentType = ContentType.json;
       final body = utf8.encode(jsonEncode({
+        'id': getLocalId() ?? '',
         'name': getLocalName() ?? '',
         'files': [for (final f in files) {'name': f.name, 'size': f.size}],
       }));

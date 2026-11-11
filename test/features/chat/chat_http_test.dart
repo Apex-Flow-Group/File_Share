@@ -11,6 +11,7 @@ import 'package:apex_file_share/core/protocol/apex_protocol.dart';
 import 'package:apex_file_share/core/protocol/transfer_rules.dart';
 import 'package:apex_file_share/features/chat/data/chat_http.dart';
 import 'package:apex_file_share/features/chat/logic/chat_access.dart';
+import 'package:apex_file_share/features/chat/logic/chat_key.dart';
 import 'package:flutter_test/flutter_test.dart';
 
 /// The real chat door behind a real server on 127.0.0.1. Every first message
@@ -22,7 +23,7 @@ class _Server {
   final OneQuestion question;
   final asked = <ConnectionRequest>[];
   final delivered = <IncomingChat>[];
-  final blocked = <String>[];
+  final blocked = <ChatKey>[];
   int get port => _server.port;
 
   static Future<_Server> start({
@@ -65,8 +66,9 @@ class _Server {
     String method = 'POST',
     String from = '127.0.0.1',
     String name = 'Test Phone',
+    String id = 'test-phone',
   }) async {
-    final body = utf8.encode(jsonEncode({'name': name, 'text': text}));
+    final body = utf8.encode(jsonEncode({'id': id, 'name': name, 'text': text}));
     final socket = await Socket.connect(InternetAddress.loopbackIPv4, port,
         sourceAddress: InternetAddress(from));
     final head = StringBuffer()
@@ -168,11 +170,11 @@ void main() {
     final access = ChatAccess();
     server = await _Server.start(access: access);
     final token = (await server.send('one')).json['token'] as String;
-    access.block('127.0.0.1');
+    access.block(chatKey('test-phone', '127.0.0.1'));
     final blocked = await server.send('two', token: token);
     expect(blocked.json['accepted'], isFalse);
     expect(server.asked, hasLength(1));
-    access.unblock('127.0.0.1');
+    access.unblock(chatKey('test-phone', '127.0.0.1'));
     await server.send('three', token: token);
     expect(server.asked, hasLength(2), reason: 'asked again, the old token stays dead');
     expect(server.delivered.map((m) => m.text), ['one', 'three']);
@@ -187,7 +189,7 @@ void main() {
     expect(second.json['accepted'], isFalse);
     expect(server.asked, hasLength(1));
     expect(server.delivered, isEmpty);
-    expect(server.blocked, ['127.0.0.1'], reason: 'the screen learns it is blocked');
+    expect(server.blocked, [chatKey('test-phone', '127.0.0.1')], reason: 'the screen learns it is blocked');
   });
 
   test('no answer in time is not a refusal, and the same address is not asked again at once', () async {

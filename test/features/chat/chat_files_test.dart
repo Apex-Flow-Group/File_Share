@@ -7,6 +7,7 @@ import 'dart:io';
 import 'package:apex_file_share/core/core_models.dart';
 import 'package:apex_file_share/core/files/move_into_folder.dart';
 import 'package:apex_file_share/core/protocol/apex_protocol.dart';
+import 'package:apex_file_share/features/chat/logic/chat_key.dart';
 import 'package:apex_file_share/features/chat/logic/chat_store.dart';
 import 'package:apex_file_share/features/receive/data/receive_http.dart';
 import 'package:apex_file_share/features/receive/data/receive_store.dart';
@@ -20,12 +21,13 @@ const _pc = Device(id: 'p', name: 'Office PC', type: 'desktop', ip: '10.0.0.7', 
 const _nearbyPhone = Device(id: 'n', name: 'Phone', type: 'phone', endpointId: 'ep1');
 
 FileReceivedEvent _got(String name, int index, int total,
-        {String? from = '10.0.0.7', String sender = 'PC', int batch = 1}) =>
+        {String? from = '10.0.0.7', String id = 'p', String sender = 'PC', int batch = 1}) =>
     FileReceivedEvent(
       fileName: name,
       fileSize: 10,
       fromDevice: sender,
       fromAddress: from,
+      fromId: id,
       batchId: from == null ? null : batch,
       filePath: '/save/$name',
       batchIndex: index,
@@ -43,7 +45,7 @@ void main() {
         ..receivedFile(_got('a.pdf', 1, 3))
         ..receivedFile(_got('b.pdf', 2, 3))
         ..receivedFile(_got('c.pdf', 3, 3));
-      final line = store.thread('10.0.0.7')!.messages.single;
+      final line = store.thread(chatKey('p', '10.0.0.7'))!.messages.single;
       expect(line.isFiles, isTrue);
       expect(line.mine, isFalse);
       expect(line.files.map((f) => f.name), ['a.pdf', 'b.pdf', 'c.pdf']);
@@ -55,8 +57,8 @@ void main() {
         ..receivedFile(_got('a.pdf', 1, 2))
         ..receivedFile(_got('b.pdf', 2, 2))
         ..receivedFile(_got('c.pdf', 1, 1, batch: 2));
-      expect(store.thread('10.0.0.7')!.messages, hasLength(2));
-      expect(store.unread('10.0.0.7'), 2);
+      expect(store.thread(chatKey('p', '10.0.0.7'))!.messages, hasLength(2));
+      expect(store.unread(chatKey('p', '10.0.0.7')), 2);
     });
 
     test('two batches received at once keep their own lines', () {
@@ -65,28 +67,28 @@ void main() {
         ..receivedFile(_got('a1.pdf', 1, 3, batch: 7))
         ..receivedFile(_got('b1.pdf', 2, 3, from: '10.0.0.9', batch: 8))
         ..receivedFile(_got('a2.pdf', 1, 1, batch: 7));
-      expect(store.thread('10.0.0.7')!.messages.single.files.map((f) => f.name), ['a1.pdf', 'a2.pdf']);
-      expect(store.thread('10.0.0.9')!.messages.single.files.map((f) => f.name), ['b1.pdf']);
+      expect(store.thread(chatKey('p', '10.0.0.7'))!.messages.single.files.map((f) => f.name), ['a1.pdf', 'a2.pdf']);
+      expect(store.thread(chatKey('p', '10.0.0.9'))!.messages.single.files.map((f) => f.name), ['b1.pdf']);
     });
 
     test('the line follows the address, not the name the device gave', () {
       store
         ..receivedFile(_got('a.pdf', 1, 1, from: '10.0.0.7', sender: 'Office PC'))
         ..receivedFile(_got('b.pdf', 1, 1, from: '10.0.0.9', sender: 'Office PC', batch: 2));
-      expect(store.thread('10.0.0.7')!.messages.single.files.single.name, 'a.pdf');
-      expect(store.thread('10.0.0.9')!.messages.single.files.single.name, 'b.pdf');
+      expect(store.thread(chatKey('p', '10.0.0.7'))!.messages.single.files.single.name, 'a.pdf');
+      expect(store.thread(chatKey('p', '10.0.0.9'))!.messages.single.files.single.name, 'b.pdf');
     });
 
     test('a file over Nearby has no address and no chat', () {
       store.receivedFile(_got('a.pdf', 1, 1, from: null));
-      expect(store.thread('10.0.0.7'), isNull);
+      expect(store.thread(chatKey('p', '10.0.0.7')), isNull);
     });
 
     test('a blocked device gets no line', () {
       store
-        ..block('10.0.0.7')
+        ..block(chatKey('p', '10.0.0.7'))
         ..receivedFile(_got('a.pdf', 1, 1));
-      expect(store.thread('10.0.0.7')?.messages ?? const [], isEmpty);
+      expect(store.thread(chatKey('p', '10.0.0.7'))?.messages ?? const [], isEmpty);
     });
 
     test('files are not announced: the received sheet already says so', () async {
@@ -99,7 +101,7 @@ void main() {
 
     test('a device that only sent files can be blocked, like any other', () {
       store.receivedFile(_got('a.pdf', 1, 1));
-      expect(store.canBlock('10.0.0.7'), isTrue);
+      expect(store.canBlock(chatKey('p', '10.0.0.7')), isTrue);
     });
   });
 
@@ -131,9 +133,9 @@ void main() {
 
     test('a send is a line of mine: sending, then sent', () async {
       final done = store.sendFiles(_pc, files);
-      expect(store.thread(_pc.ip)!.messages.single.status, ChatStatus.sending);
+      expect(store.thread(_pc.chatKey)!.messages.single.status, ChatStatus.sending);
       expect(await done, SendOutcome.sent);
-      final line = store.thread(_pc.ip)!.messages.single;
+      final line = store.thread(_pc.chatKey)!.messages.single;
       expect(line.mine, isTrue);
       expect(line.status, ChatStatus.sent);
       expect(line.files.map((f) => f.name), ['a.pdf', 'b.pdf']);
@@ -142,13 +144,13 @@ void main() {
     test('a failed send keeps its reason; retry resends the same line, only when asked', () async {
       answers.add(SendOutcome.busy);
       expect(await store.sendFiles(_pc, files), SendOutcome.busy);
-      final line = store.thread(_pc.ip)!.messages.single;
+      final line = store.thread(_pc.chatKey)!.messages.single;
       expect(line.filesFailure, SendOutcome.busy);
       expect(sent, hasLength(1));
       await store.retryFiles(_pc, line);
       expect(sent, hasLength(2));
       expect(line.status, ChatStatus.sent);
-      expect(store.thread(_pc.ip)!.messages, hasLength(1));
+      expect(store.thread(_pc.chatKey)!.messages, hasLength(1));
     });
 
     test('a batch cut short resumes with the files that did not arrive, not all again', () async {
@@ -160,7 +162,7 @@ void main() {
       answers.add(SendOutcome.failed);
       arrivedBeforeFailure = 1;
       await store.sendFiles(_pc, three);
-      final line = store.thread(_pc.ip)!.messages.single;
+      final line = store.thread(_pc.chatKey)!.messages.single;
       expect(line.delivered, 1);
       await store.retryFiles(_pc, line);
       expect(sent, [
@@ -178,7 +180,7 @@ void main() {
       }
       answers.add(SendOutcome.declined);
       await store.sendFiles(_pc, files);
-      await store.retryFiles(_pc, store.thread(_pc.ip)!.messages.single);
+      await store.retryFiles(_pc, store.thread(_pc.chatKey)!.messages.single);
       expect(sent, hasLength(1));
     });
 
@@ -188,22 +190,22 @@ void main() {
         sendFilesNow: (files, target, onDelivered) => throw const FileSystemException('disk gone'),
       );
       expect(await throwing.sendFiles(_pc, files), SendOutcome.failed);
-      expect(throwing.thread(_pc.ip)!.messages.single.status, ChatStatus.failed);
+      expect(throwing.thread(_pc.chatKey)!.messages.single.status, ChatStatus.failed);
     });
 
     test('a text retry never resends a file line as text', () async {
       answers.add(SendOutcome.failed);
       await store.sendFiles(_pc, files);
-      await store.retry(_pc, store.thread(_pc.ip)!.messages.single);
+      await store.retry(_pc, store.thread(_pc.chatKey)!.messages.single);
       expect(sent, hasLength(1));
     });
 
     test('Nearby and blocked devices are sent to without a line', () async {
       await store.sendFiles(_nearbyPhone, files);
-      store.block(_pc.ip);
+      store.block(_pc.chatKey);
       await store.sendFiles(_pc, files);
       expect(sent, hasLength(2));
-      expect(store.thread(_pc.ip)?.messages ?? const [], isEmpty);
+      expect(store.thread(_pc.chatKey)?.messages ?? const [], isEmpty);
     });
   });
 
@@ -243,6 +245,7 @@ void main() {
       final offer = await client.postUrl(Uri.http('127.0.0.1:${server.port}', ApexProtocol.offerPath));
       offer.headers.set(ApexProtocol.versionHeader, '${ApexProtocol.version}');
       offer.write(jsonEncode({
+        'id': 'test-phone',
         'name': 'Someone Else',
         'files': [{'name': 'a.txt', 'size': 3}],
       }));

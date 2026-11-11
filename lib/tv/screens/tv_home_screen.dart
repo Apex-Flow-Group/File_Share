@@ -116,7 +116,7 @@ class _TVHomeScreenState extends State<TVHomeScreen> {
         TVChatDialog.show(
             context,
             Device(
-                id: 'http:${thread.address}',
+                id: thread.id,
                 name: thread.name,
                 type: 'unknown',
                 ip: thread.address));

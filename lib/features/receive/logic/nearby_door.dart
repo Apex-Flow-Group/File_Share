@@ -167,6 +167,8 @@ class NearbyDoor {
     final claimed = cleanLabel(rawName is String ? rawName : null);
     return Offer(
       senderAddress: endpointId,
+      // Nearby has no chat: the endpoint is all there is to tell it by.
+      senderId: endpointId,
       // The name shown when the user agreed to connect wins over a new claim.
       senderName: _names[endpointId] ?? (claimed.isEmpty ? endpointId : claimed),
       files: parsed,

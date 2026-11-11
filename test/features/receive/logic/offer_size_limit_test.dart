@@ -3,7 +3,7 @@ import 'package:apex_file_share/features/receive/logic/offer.dart';
 import 'package:flutter_test/flutter_test.dart';
 
 Offer _offer(List<OfferedFile> files) =>
-    Offer(senderAddress: '192.168.1.20', senderName: 'Phone', files: files);
+    Offer(senderAddress: '192.168.1.20', senderId: 'phone', senderName: 'Phone', files: files);
 
 void main() {
   test('sizes whose sum overflows are refused, not counted as zero', () {

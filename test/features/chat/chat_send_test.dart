@@ -16,7 +16,7 @@ void main() {
   late List<ConnectionRequest> asked;
   late List<IncomingChat> delivered;
   late OneQuestion question;
-  final send = SendHttp(getLocalName: () => 'My PC');
+  final send = SendHttp(getLocalName: () => 'My PC', getLocalId: () => 'test-id');
 
   Future<Device> start({bool? Function(ConnectionRequest)? decide, bool withChat = true}) async {
     asked = [];

@@ -26,7 +26,7 @@ void main() {
     final s = await ReceiveTestServer.start(freeBytes: 4);
     addTearDown(s.stop);
 
-    final outcome = await SendHttp(getLocalName: () => 'Phone')
+    final outcome = await SendHttp(getLocalName: () => 'Phone', getLocalId: () => 'test-id')
         .sendFiles([(path: file.path, name: 'a.txt', size: 5)], target(s.port));
 
     expect(outcome, SendOutcome.noSpace);
@@ -39,7 +39,7 @@ void main() {
     final many = List.generate(
         TransferRules.maxFilesPerBatch + 1, (i) => (path: file.path, name: 'f$i.txt', size: 5));
 
-    final outcome = await SendHttp(getLocalName: () => 'Phone').sendFiles(many, target(s.port));
+    final outcome = await SendHttp(getLocalName: () => 'Phone', getLocalId: () => 'test-id').sendFiles(many, target(s.port));
 
     expect(outcome, SendOutcome.tooManyFiles);
     expect(s.shown, isEmpty);

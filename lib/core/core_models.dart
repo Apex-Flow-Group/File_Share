@@ -11,6 +11,11 @@ class FileReceivedEvent {
   /// The file's line goes to this address's chat, not to the name it gave.
   final String? fromAddress;
 
+  /// The id the sender gave in its offer; null over Nearby. With
+  /// [fromAddress] it picks the chat: a new device given that address by
+  /// the router gets its own.
+  final String? fromId;
+
   /// Which accepted batch the file belongs to; null over Nearby. A chat
   /// groups by it, since two batches can be received at the same time.
   final int? batchId;
@@ -24,6 +29,7 @@ class FileReceivedEvent {
     required this.fromDevice,
     required this.filePath,
     this.fromAddress,
+    this.fromId,
     this.batchId,
     this.isLastInBatch = true,
     this.batchTotal = 1,

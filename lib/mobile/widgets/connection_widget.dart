@@ -4,6 +4,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 
 import '../../core/apex_core.dart';
+import '../../features/chat/logic/chat_key.dart';
 import '../../features/chat/ui/chat_attach.dart';
 import '../../features/chat/ui/confirm_block.dart';
 import '../../features/clipboard/ui/clipboard_label.dart';
@@ -25,7 +26,7 @@ import 'transfer_progress_indicator.dart';
 enum _Status { idle, sending }
 
 /// One opened chat card at a time: opening another folds it (owner decision).
-final _openChat = ValueNotifier<String?>(null);
+final _openChat = ValueNotifier<ChatKey?>(null);
 
 @visibleForTesting
 void foldChatCards() => _openChat.value = null;
@@ -190,7 +191,7 @@ class _ConnectionWidgetState extends State<ConnectionWidget>
   /// A new paste or pick rebuilds the message box with it.
   int _pasteSeq = 0;
 
-  bool get _expanded => _openChat.value == widget.device.ip;
+  bool get _expanded => _openChat.value == widget.device.chatKey;
 
   void _open({String? paste, List<String> picked = const []}) {
     setState(() {
@@ -198,7 +199,7 @@ class _ConnectionWidgetState extends State<ConnectionWidget>
       _picked = picked;
       _pasteSeq++;
     });
-    _openChat.value = widget.device.ip;
+    _openChat.value = widget.device.chatKey;
   }
 
   void _toggle() => _expanded ? _openChat.value = null : _open();
@@ -247,13 +248,13 @@ class _ConnectionWidgetState extends State<ConnectionWidget>
         ),
       ListenableBuilder(
         listenable: store,
-        builder: (context, _) => !store.canBlock(widget.device.ip)
+        builder: (context, _) => !store.canBlock(widget.device.chatKey)
             ? const SizedBox.shrink()
             : IconButton(
                 tooltip: l10n.chatBlock,
                 onPressed: () async {
                   if (await confirmBlock(context, widget.device.name)) {
-                    store.block(widget.device.ip);
+                    store.block(widget.device.chatKey);
                   }
                 },
                 icon: const Icon(Icons.block_rounded, color: Colors.red),
@@ -263,12 +264,12 @@ class _ConnectionWidgetState extends State<ConnectionWidget>
   }
 
   Widget _buildChatCard(AppLocalizations l10n, bool isDark) =>
-      ValueListenableBuilder<String?>(
+      ValueListenableBuilder<ChatKey?>(
         valueListenable: _openChat,
         builder: (context, open, _) {
           final banners = _banners(l10n, true, withClipboard: false);
           final copied = _status != _Status.idle || widget.isGloballyBusy ? null : widget.pendingClipboardItem;
-          if (open != widget.device.ip) {
+          if (open != widget.device.chatKey) {
             return Column(
               crossAxisAlignment: CrossAxisAlignment.stretch,
               children: [

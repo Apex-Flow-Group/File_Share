@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 
 import '../../core/apex_core.dart';
+import '../../features/chat/logic/chat_key.dart';
 import '../../features/chat/ui/device_chat_view.dart';
 import '../../l10n/generated/app_localizations.dart';
 import '../../models/device.dart';
@@ -75,7 +76,7 @@ class TVChatDialog extends StatelessWidget {
       ),
     );
     if (yes == true) {
-      ApexCore.instance.chat.block(device.ip);
+      ApexCore.instance.chat.block(device.chatKey);
     }
   }
 
@@ -120,7 +121,7 @@ class TVChatDialog extends StatelessWidget {
                       onTap: () => Navigator.pop(context),
                     ),
                   ),
-                  if (store.canBlock(device.ip)) ...[
+                  if (store.canBlock(device.chatKey)) ...[
                     const SizedBox(width: 12),
                     Expanded(
                       child: TVDialogButton(
@@ -130,14 +131,14 @@ class TVChatDialog extends StatelessWidget {
                         onTap: () => _block(context),
                       ),
                     ),
-                  ] else if (store.isBlocked(device.ip)) ...[
+                  ] else if (store.isBlocked(device.chatKey)) ...[
                     const SizedBox(width: 12),
                     Expanded(
                       child: TVDialogButton(
                         label: l10n.chatUnblock,
                         color: Colors.grey,
                         autofocus: false,
-                        onTap: () => store.unblock(device.ip),
+                        onTap: () => store.unblock(device.chatKey),
                       ),
                     ),
                   ],

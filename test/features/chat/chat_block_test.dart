@@ -1,4 +1,5 @@
 import 'package:apex_file_share/features/chat/logic/chat_access.dart';
+import 'package:apex_file_share/features/chat/logic/chat_key.dart';
 import 'package:apex_file_share/features/chat/logic/chat_store.dart';
 import 'package:apex_file_share/features/chat/ui/device_chat_view.dart';
 import 'package:apex_file_share/features/send/data/send_http.dart';
@@ -13,33 +14,33 @@ void main() {
   group('the door', () {
     test('a blocked device loses its token and is not asked about', () {
       final access = ChatAccess();
-      final token = access.admit(_pc.ip, 'PC');
-      access.block(_pc.ip);
-      expect(access.check(token, _pc.ip), isNull);
-      expect(access.isBlocked(_pc.ip), isTrue);
+      final token = access.admit(_pc.chatKey, 'PC');
+      access.block(_pc.chatKey);
+      expect(access.check(token, _pc.chatKey), isNull);
+      expect(access.isBlocked(_pc.chatKey), isTrue);
     });
 
     test('unblocking does not let it in: its next message asks again', () {
       final access = ChatAccess();
-      final token = access.admit(_pc.ip, 'PC');
+      final token = access.admit(_pc.chatKey, 'PC');
       access
-        ..block(_pc.ip)
-        ..unblock(_pc.ip);
-      expect(access.isBlocked(_pc.ip), isFalse);
-      expect(access.check(token, _pc.ip), isNull, reason: 'the old token stays dead');
+        ..block(_pc.chatKey)
+        ..unblock(_pc.chatKey);
+      expect(access.isBlocked(_pc.chatKey), isFalse);
+      expect(access.check(token, _pc.chatKey), isNull, reason: 'the old token stays dead');
     });
 
     test('blocking one address leaves the others alone', () {
       final access = ChatAccess();
-      final other = access.admit('10.0.0.8', 'Phone');
-      access.block(_pc.ip);
-      expect(access.check(other, '10.0.0.8'), isNotNull);
+      final other = access.admit(chatKey('ph', '10.0.0.8'), 'Phone');
+      access.block(_pc.chatKey);
+      expect(access.check(other, chatKey('ph', '10.0.0.8')), isNotNull);
     });
   });
 
   group('the store', () {
-    late List<String> blockedAtDoor;
-    late List<String> unblockedAtDoor;
+    late List<ChatKey> blockedAtDoor;
+    late List<ChatKey> unblockedAtDoor;
     late List<String> sent;
     late ChatStore store;
 
@@ -58,28 +59,28 @@ void main() {
     });
 
     test('any device can be blocked, before it ever writes, but not twice', () {
-      expect(store.canBlock(_pc.ip), isTrue);
-      store.block(_pc.ip);
-      expect(store.canBlock(_pc.ip), isFalse);
+      expect(store.canBlock(_pc.chatKey), isTrue);
+      store.block(_pc.chatKey);
+      expect(store.canBlock(_pc.chatKey), isFalse);
     });
 
     test('blocking tells the door, and nothing more arrives or goes', () async {
-      store.receive(_pc.ip, 'PC', 'one');
-      store.block(_pc.ip);
-      expect(blockedAtDoor, [_pc.ip]);
-      store.receive(_pc.ip, 'PC', 'two');
+      store.receive(_pc.chatKey, 'PC', 'one');
+      store.block(_pc.chatKey);
+      expect(blockedAtDoor, [_pc.chatKey]);
+      store.receive(_pc.chatKey, 'PC', 'two');
       await store.write(_pc, 'mine');
-      expect(store.thread(_pc.ip)!.messages.map((m) => m.text), ['one']);
+      expect(store.thread(_pc.chatKey)!.messages.map((m) => m.text), ['one']);
       expect(sent, isEmpty);
-      expect(store.unread(_pc.ip), 0);
+      expect(store.unread(_pc.chatKey), 0);
     });
 
     test('unblocking tells the door and lets the chat go on', () async {
-      store.receive(_pc.ip, 'PC', 'one');
-      store.block(_pc.ip);
-      store.unblock(_pc.ip);
-      expect(unblockedAtDoor, [_pc.ip]);
-      expect(store.isBlocked(_pc.ip), isFalse);
+      store.receive(_pc.chatKey, 'PC', 'one');
+      store.block(_pc.chatKey);
+      store.unblock(_pc.chatKey);
+      expect(unblockedAtDoor, [_pc.chatKey]);
+      expect(store.isBlocked(_pc.chatKey), isFalse);
       await store.write(_pc, 'back');
       expect(sent, ['back']);
     });
@@ -87,8 +88,8 @@ void main() {
     test('a refusal at the question shows as blocked, without calling the door back', () {
       var notified = 0;
       store.addListener(() => notified++);
-      store.blocked(_pc.ip);
-      expect(store.isBlocked(_pc.ip), isTrue);
+      store.blocked(_pc.chatKey);
+      expect(store.isBlocked(_pc.chatKey), isTrue);
       expect(blockedAtDoor, isEmpty);
       expect(notified, 1);
     });
@@ -107,8 +108,8 @@ void main() {
 
   ChatStore blockedStore() {
     final store = ChatStore(send: (t, d, k) async => (outcome: ChatOutcome.sent, token: null));
-    store.receive(_pc.ip, 'PC', 'hello');
-    store.block(_pc.ip);
+    store.receive(_pc.chatKey, 'PC', 'hello');
+    store.block(_pc.chatKey);
     return store;
   }
 
@@ -119,7 +120,7 @@ void main() {
     expect(find.byType(TextField), findsNothing);
     await tester.tap(find.text(l10n.chatUnblock));
     await tester.pump();
-    expect(store.isBlocked(_pc.ip), isFalse);
+    expect(store.isBlocked(_pc.chatKey), isFalse);
     expect(find.byType(TextField), findsOneWidget);
   });
 

@@ -94,6 +94,7 @@ void main() {
 
   List<int> offerBody(Map<String, int> files, {String name = 'Linux PC', Map<String, Object>? extra}) =>
       utf8.encode(jsonEncode({
+        'id': 'test-phone',
         'name': name,
         'files': [for (final e in files.entries) {'name': e.key, 'size': e.value}],
         ...?extra,

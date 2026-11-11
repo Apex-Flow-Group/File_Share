@@ -122,7 +122,7 @@ class ReceiveHttp {
     final answer = Completer<bool?>();
     final request = ConnectionRequest(
       device: Device(
-          id: 'http:${offer.senderAddress}',
+          id: offer.senderId,
           name: offer.senderName,
           type: 'unknown',
           ip: offer.senderAddress),
@@ -161,10 +161,15 @@ class ReceiveHttp {
         final name = f['name'];
         parsed.add(OfferedFile(safeFileName(name is String ? name : null), size));
       }
+      final senderId = cleanDeviceId(json['id']);
+      if (senderId == null) {
+        return null;
+      }
       final rawName = json['name'];
       final senderName = cleanLabel(rawName is String ? rawName : null);
       return Offer(
         senderAddress: address,
+        senderId: senderId,
         senderName: senderName.isEmpty ? address : senderName,
         files: parsed,
       );
@@ -289,6 +294,7 @@ class ReceiveHttp {
       fileSize: file.size,
       fromDevice: sender,
       fromAddress: req.connectionInfo?.remoteAddress.address,
+      fromId: upload.senderId,
       batchId: upload.batchId,
       filePath: path,
       isLastInBatch: isLast,

@@ -20,7 +20,7 @@ void main() {
   late bool accept;
   late void Function() onFileArrived;
 
-  final sender = SendHttp(getLocalName: () => 'Test Phone');
+  final sender = SendHttp(getLocalName: () => 'Test Phone', getLocalId: () => 'test-id');
 
   Device target(int port) =>
       Device(id: 'target', name: 'Receiver', type: 'desktop', ip: '127.0.0.1', port: port);

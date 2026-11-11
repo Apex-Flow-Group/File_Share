@@ -4,7 +4,7 @@ import 'package:apex_file_share/features/receive/logic/receive_gate.dart';
 import 'package:flutter_test/flutter_test.dart';
 
 Offer _offer(List<OfferedFile> files, {String address = '192.168.1.20'}) =>
-    Offer(senderAddress: address, senderName: 'Phone', files: files);
+    Offer(senderAddress: address, senderId: 'phone', senderName: 'Phone', files: files);
 
 void main() {
   group('checkOffer: the batch is refused whole, before anything is written', () {

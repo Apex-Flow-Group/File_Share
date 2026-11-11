@@ -59,7 +59,7 @@ void main() {
         (path: (File('${root.path}/$name')..writeAsBytesSync(bytes)).path, name: name, size: 4),
     ];
 
-    final outcome = await SendHttp(getLocalName: () => 'Test Phone').sendFiles(
+    final outcome = await SendHttp(getLocalName: () => 'Test Phone', getLocalId: () => 'test-id').sendFiles(
         files, Device(id: 't', name: 'Receiver', type: 'desktop', ip: '127.0.0.1', port: server.port));
 
     expect(outcome, SendOutcome.cancelled);

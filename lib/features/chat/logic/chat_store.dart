@@ -5,6 +5,7 @@ import 'package:flutter/foundation.dart';
 import '../../../core/core_models.dart';
 import '../../../models/device.dart';
 import '../../send/data/send_http.dart';
+import 'chat_key.dart';
 
 enum ChatStatus { sending, sent, failed }
 
@@ -48,11 +49,13 @@ class ChatMessage {
 }
 
 class ChatThread {
-  ChatThread(this.address, this.name);
+  ChatThread(this.key, this.name);
 
-  /// The device's real address: messages are bound to it, not to the name
-  /// or id a device announces about itself.
-  final String address;
+  /// The device's id at its real address: messages are bound to both, not
+  /// to the name, and not to an address another device may get next.
+  final ChatKey key;
+  String get id => key.id;
+  String get address => key.address;
   String name;
   final messages = <ChatMessage>[];
   int unread = 0;
@@ -75,15 +78,15 @@ class ChatStore extends ChangeNotifier {
       List<ChatFile> files, Device target, void Function(int delivered) onDelivered)? sendFilesNow;
 
   /// Tell the door, which refuses a blocked device's messages.
-  final void Function(String address)? onBlock;
-  final void Function(String address)? onUnblock;
+  final void Function(ChatKey key)? onBlock;
+  final void Function(ChatKey key)? onUnblock;
 
   final DateTime Function() _clock;
 
   /// A device sending without pause announces itself at most this often, so
   /// it cannot keep reopening the TV's chat or stacking notices.
   static const announceEvery = Duration(seconds: 30);
-  final _announced = <String, DateTime>{};
+  final _announced = <ChatKey, DateTime>{};
 
   /// Sends one message to [target]; the store keeps the token it returns.
   final Future<({ChatOutcome outcome, String? token})> Function(String text, Device target, String? token)
@@ -93,81 +96,81 @@ class ChatStore extends ChangeNotifier {
   /// cannot fill the memory.
   static const maxMessagesPerThread = 500;
 
-  final _threads = <String, ChatThread>{};
+  final _threads = <ChatKey, ChatThread>{};
   final _incoming = StreamController<ChatThread>.broadcast();
 
   /// A thread that just received a message the user is not looking at, at
   /// most once per [announceEvery] for each device.
   Stream<ChatThread> get incoming => _incoming.stream;
-  final _tokens = <String, String>{};
+  final _tokens = <ChatKey, String>{};
   var _nextId = 0;
 
   /// The thread the user is looking at: its messages are not counted unread.
-  String? _open;
+  ChatKey? _open;
 
-  ChatThread? thread(String address) => _threads[address];
+  ChatThread? thread(ChatKey key) => _threads[key];
 
-  int unread(String address) => _threads[address]?.unread ?? 0;
+  int unread(ChatKey key) => _threads[key]?.unread ?? 0;
 
   /// Blocked here, by refusing the question or with the block button; in
   /// memory, like the chats, so closing the app lifts every block.
-  final _blocked = <String>{};
+  final _blocked = <ChatKey>{};
 
-  bool isBlocked(String address) => _blocked.contains(address);
+  bool isBlocked(ChatKey key) => _blocked.contains(key);
 
   /// Owner decision: any device can be blocked, before it ever writes too.
-  bool canBlock(String address) => !isBlocked(address);
+  bool canBlock(ChatKey key) => !isBlocked(key);
 
-  void block(String address) {
-    if (!_blocked.add(address)) {
+  void block(ChatKey key) {
+    if (!_blocked.add(key)) {
       return;
     }
-    _threads[address]?.unread = 0;
-    onBlock?.call(address);
+    _threads[key]?.unread = 0;
+    onBlock?.call(key);
     notifyListeners();
   }
 
-  void unblock(String address) {
-    if (!_blocked.remove(address)) {
+  void unblock(ChatKey key) {
+    if (!_blocked.remove(key)) {
       return;
     }
-    onUnblock?.call(address);
+    onUnblock?.call(key);
     notifyListeners();
   }
 
   /// The door blocked it, after the user refused its question.
-  void blocked(String address) {
-    if (_blocked.add(address)) {
+  void blocked(ChatKey key) {
+    if (_blocked.add(key)) {
       notifyListeners();
     }
   }
 
-  void opened(String address) {
-    _open = address;
-    final t = _threads[address];
+  void opened(ChatKey key) {
+    _open = key;
+    final t = _threads[key];
     if (t != null && t.unread > 0) {
       t.unread = 0;
       notifyListeners();
     }
   }
 
-  void closed(String address) {
-    if (_open == address) {
+  void closed(ChatKey key) {
+    if (_open == key) {
       _open = null;
     }
   }
 
-  void receive(String address, String name, String text) {
-    if (isBlocked(address)) {
+  void receive(ChatKey from, String name, String text) {
+    if (isBlocked(from)) {
       return;
     }
-    final t = _thread(address, name)..name = name;
+    final t = _thread(from, name)..name = name;
     _add(t, ChatMessage._(_nextId++, false, text, ChatStatus.sent));
-    if (_open != address) {
+    if (_open != from) {
       t.unread++;
-      final last = _announced[address];
+      final last = _announced[from];
       if (last == null || _clock().difference(last) >= announceEvery) {
-        _announced[address] = _clock();
+        _announced[from] = _clock();
         _incoming.add(t);
       }
     }
@@ -179,20 +182,25 @@ class ChatStore extends ChangeNotifier {
   /// sheet already says it arrived.
   void receivedFile(FileReceivedEvent event) {
     final address = event.fromAddress;
-    if (address == null || isBlocked(address)) {
+    final id = event.fromId;
+    if (address == null || id == null) {
       return;
     }
-    final t = _thread(address, event.fromDevice);
+    final from = chatKey(id, address);
+    if (isBlocked(from)) {
+      return;
+    }
+    final t = _thread(from, event.fromDevice);
     final file = ChatFile(event.fileName, event.fileSize, event.filePath);
-    final id = event.batchId;
-    final line = id == null
+    final batch = event.batchId;
+    final line = batch == null
         ? null
-        : t.messages.where((m) => !m.mine && m.isFiles && m.batchId == id).lastOrNull;
+        : t.messages.where((m) => !m.mine && m.isFiles && m.batchId == batch).lastOrNull;
     if (line != null) {
       line.files.add(file);
     } else {
-      _add(t, ChatMessage._(_nextId++, false, '', ChatStatus.sent, [file])..batchId = id);
-      if (_open != address) {
+      _add(t, ChatMessage._(_nextId++, false, '', ChatStatus.sent, [file])..batchId = batch);
+      if (_open != from) {
         t.unread++;
       }
     }
@@ -206,11 +214,11 @@ class ChatStore extends ChangeNotifier {
     if (now == null) {
       return SendOutcome.failed;
     }
-    if (!target.isMdns || isBlocked(target.ip)) {
+    if (!target.isMdns || isBlocked(target.chatKey)) {
       return now(files, target, (_) {});
     }
     final m = ChatMessage._(_nextId++, true, '', ChatStatus.sending, List.of(files));
-    _add(_thread(target.ip, target.name), m);
+    _add(_thread(target.chatKey, target.name), m);
     notifyListeners();
     await _deliverFiles(target, m);
     return m.filesFailure ?? SendOutcome.sent;
@@ -255,10 +263,10 @@ class ChatStore extends ChangeNotifier {
   }
 
   Future<void> write(Device target, String text) async {
-    if (isBlocked(target.ip)) {
+    if (isBlocked(target.chatKey)) {
       return;
     }
-    final t = _thread(target.ip, target.name);
+    final t = _thread(target.chatKey, target.name);
     final m = ChatMessage._(_nextId++, true, text, ChatStatus.sending);
     _add(t, m);
     notifyListeners();
@@ -278,13 +286,14 @@ class ChatStore extends ChangeNotifier {
   }
 
   Future<void> _deliver(Device target, ChatMessage m) async {
-    final result = await send(m.text, target, _tokens[target.ip]);
+    final key = target.chatKey;
+    final result = await send(m.text, target, _tokens[key]);
     final token = result.token;
     if (token != null) {
-      _tokens[target.ip] = token;
+      _tokens[key] = token;
     } else if (result.outcome == ChatOutcome.declined || result.outcome == ChatOutcome.noAnswer) {
       // The receiver asked its user again: the old token is no longer known there.
-      _tokens.remove(target.ip);
+      _tokens.remove(key);
     }
     if (result.outcome == ChatOutcome.sent) {
       m.status = ChatStatus.sent;
@@ -302,8 +311,8 @@ class ChatStore extends ChangeNotifier {
     super.dispose();
   }
 
-  ChatThread _thread(String address, String name) =>
-      _threads.putIfAbsent(address, () => ChatThread(address, name));
+  ChatThread _thread(ChatKey key, String name) =>
+      _threads.putIfAbsent(key, () => ChatThread(key, name));
 
   void _add(ChatThread t, ChatMessage m) {
     t.messages.add(m);

@@ -9,14 +9,15 @@ import '../../../core/protocol/transfer_rules.dart';
 import '../../../core/text/clean_label.dart';
 import '../../../models/device.dart';
 import '../logic/chat_access.dart';
+import '../logic/chat_key.dart';
 import '../logic/chat_text.dart';
 
-typedef IncomingChat = ({String address, String name, String text});
+typedef IncomingChat = ({String id, String address, String name, String text});
 
-/// The chat door: POST /chat. The first message from an address asks the user;
-/// once accepted, the reply carries a token bound to that address, and later
-/// messages with it arrive without asking. Nothing is shown before the user
-/// agrees, so a stranger cannot put text on the screen.
+/// The chat door: POST /chat. The first message from a device (its id at its
+/// address) asks the user; once accepted, the reply carries a token bound to
+/// both, and later messages with it arrive without asking. Nothing is shown
+/// before the user agrees, so a stranger cannot put text on the screen.
 class ChatHttp {
   ChatHttp({
     required this.onRequest,
@@ -33,15 +34,15 @@ class ChatHttp {
   final void Function(IncomingChat) onMessage;
 
   /// The user refused the question: the device is now blocked.
-  final void Function(String address)? onBlocked;
+  final void Function(ChatKey key)? onBlocked;
   final Duration decisionTimeout;
   final Duration bodyIdleLimit;
   final ChatAccess _access;
   final OneQuestion _question;
 
-  void block(String address) => _access.block(address);
+  void block(ChatKey key) => _access.block(key);
 
-  void unblock(String address) => _access.unblock(address);
+  void unblock(ChatKey key) => _access.unblock(key);
 
   /// False when [req] is not for this door.
   Future<bool> handle(HttpRequest req) async {
@@ -79,22 +80,24 @@ class ChatHttp {
       return;
     }
     final text = cleanChatText(raw);
-    if (address == null || body is! Map || text == null) {
+    final id = body is Map ? cleanDeviceId(body['id']) : null;
+    if (address == null || body is! Map || text == null || id == null) {
       await _reply(req, HttpStatus.badRequest, {'error': 'bad_message'});
       return;
     }
+    final key = chatKey(id, address);
 
-    final grant = _access.check(req.headers.value(ApexProtocol.tokenHeader), address);
+    final grant = _access.check(req.headers.value(ApexProtocol.tokenHeader), key);
     if (grant != null) {
-      onMessage((address: address, name: grant.name, text: text));
+      onMessage((id: id, address: address, name: grant.name, text: text));
       await _reply(req, HttpStatus.ok, {'delivered': true});
       return;
     }
-    if (_access.isBlocked(address)) {
+    if (_access.isBlocked(key)) {
       await _reply(req, HttpStatus.ok, {'accepted': false});
       return;
     }
-    if (_access.isQuiet(address)) {
+    if (_access.isQuiet(key)) {
       await _reply(req, HttpStatus.ok, {'accepted': false, 'reason': ApexProtocol.noAnswer});
       return;
     }
@@ -107,31 +110,31 @@ class ChatHttp {
     final name = claimed.isEmpty ? address : claimed;
     final bool? accepted;
     try {
-      accepted = await _ask(address, name);
+      accepted = await _ask(key, name);
     } finally {
       _question.release();
     }
     if (accepted == null) {
-      _access.unanswered(address);
+      _access.unanswered(key);
       await _reply(req, HttpStatus.ok, {'accepted': false, 'reason': ApexProtocol.noAnswer});
       return;
     }
     if (!accepted) {
-      _access.block(address);
-      onBlocked?.call(address);
+      _access.block(key);
+      onBlocked?.call(key);
       await _reply(req, HttpStatus.ok, {'accepted': false});
       return;
     }
-    final token = _access.admit(address, name);
-    onMessage((address: address, name: name, text: text));
+    final token = _access.admit(key, name);
+    onMessage((id: id, address: address, name: name, text: text));
     await _reply(req, HttpStatus.ok, {'delivered': true, 'token': token});
   }
 
   /// True or false as the user answered; null when no answer came in time.
-  Future<bool?> _ask(String address, String name) async {
+  Future<bool?> _ask(ChatKey key, String name) async {
     final answer = Completer<bool?>();
     final request = ConnectionRequest(
-      device: Device(id: 'http:$address', name: name, type: 'unknown', ip: address),
+      device: Device(id: key.id, name: name, type: 'unknown', ip: key.address),
       fileName: '',
       fileCount: 0,
       kind: RequestKind.chat,

@@ -1,3 +1,4 @@
+import 'package:apex_file_share/features/chat/logic/chat_key.dart';
 import 'package:apex_file_share/features/chat/logic/chat_store.dart';
 import 'package:apex_file_share/features/chat/ui/device_chat_view.dart';
 import 'package:apex_file_share/features/send/data/send_http.dart';
@@ -67,7 +68,7 @@ void main() {
     expect(sentFiles, [
       ['/tmp/report.pdf', '/tmp/notes.txt']
     ]);
-    expect(store.thread(_pc.ip)!.messages.single.text, 'here they are');
+    expect(store.thread(_pc.chatKey)!.messages.single.text, 'here they are');
     expect(find.text('report.pdf'), findsNothing, reason: 'the box is empty again');
   });
 
@@ -82,7 +83,7 @@ void main() {
     expect(sentFiles, [
       ['/tmp/b.pdf']
     ]);
-    expect(store.thread(_pc.ip)?.messages ?? const [], isEmpty, reason: 'no empty text message');
+    expect(store.thread(_pc.chatKey)?.messages ?? const [], isEmpty, reason: 'no empty text message');
   });
 
   testWidgets('a copied picture floats above the box; add puts it in, send sends it', (tester) async {
@@ -112,7 +113,7 @@ void main() {
     await tester.tap(find.text(l10n.chatAdd));
     await tester.pumpAndSettle();
     expect(tester.widget<TextField>(find.byType(TextField)).controller!.text, 'secret 8812');
-    expect(store.thread(_pc.ip)?.messages ?? const [], isEmpty);
+    expect(store.thread(_pc.chatKey)?.messages ?? const [], isEmpty);
     expect(copiedUsed, [true]);
   });
 

@@ -14,6 +14,7 @@ import '../../../shared/folder_open_message.dart';
 import '../../../shared/framed_capsule_input.dart';
 import '../../../utils/file_utils.dart';
 import '../../send/data/send_http.dart';
+import '../logic/chat_key.dart';
 import '../logic/chat_store.dart';
 import 'chat_files_bubble.dart';
 import 'chat_outcome_message.dart';
@@ -71,7 +72,7 @@ class DeviceChatView extends StatefulWidget {
 }
 
 class _DeviceChatViewState extends State<DeviceChatView> {
-  String get _address => widget.device.ip;
+  ChatKey get _key => widget.device.chatKey;
 
   late final _text = TextEditingController(text: widget.initialText);
   late final _files = [for (final p in widget.initialFiles) ComposerFile(p)];
@@ -90,7 +91,7 @@ class _DeviceChatViewState extends State<DeviceChatView> {
     // head and row, which are being built right now.
     WidgetsBinding.instance.addPostFrameCallback((_) {
       if (mounted) {
-        widget.store.opened(_address);
+        widget.store.opened(_key);
       }
     });
   }
@@ -105,7 +106,7 @@ class _DeviceChatViewState extends State<DeviceChatView> {
 
   @override
   void dispose() {
-    widget.store.closed(_address);
+    widget.store.closed(_key);
     _text.dispose();
     super.dispose();
   }
@@ -234,7 +235,7 @@ class _DeviceChatViewState extends State<DeviceChatView> {
     return ListenableBuilder(
       listenable: widget.store,
       builder: (context, _) {
-        final messages = widget.store.thread(_address)?.messages ?? const <ChatMessage>[];
+        final messages = widget.store.thread(_key)?.messages ?? const <ChatMessage>[];
         return Column(
           mainAxisSize: MainAxisSize.min,
           children: [
@@ -269,14 +270,14 @@ class _DeviceChatViewState extends State<DeviceChatView> {
                       },
                     ),
             ),
-            if (widget.store.isBlocked(_address)) ...[
+            if (widget.store.isBlocked(_key)) ...[
               const SizedBox(height: 8),
               Text(l10n.chatBlocked,
                   textAlign: TextAlign.center, style: TextStyle(color: Theme.of(context).hintColor)),
               // The TV has its own buttons, reached by the remote.
               if (widget.canWrite)
                 TextButton(
-                  onPressed: () => widget.store.unblock(_address),
+                  onPressed: () => widget.store.unblock(_key),
                   child: Text(l10n.chatUnblock),
                 ),
             ] else if (widget.canWrite) ...[

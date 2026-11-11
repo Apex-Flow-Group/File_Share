@@ -5,6 +5,7 @@ import 'dart:io';
 
 import 'package:apex_file_share/core/one_question.dart';
 import 'package:apex_file_share/features/chat/logic/chat_access.dart';
+import 'package:apex_file_share/features/chat/logic/chat_key.dart';
 import 'package:apex_file_share/features/chat/logic/chat_store.dart';
 import 'package:apex_file_share/features/chat/logic/chat_text.dart';
 import 'package:apex_file_share/features/receive/logic/nearby_door.dart';
@@ -18,17 +19,17 @@ void main() {
   test('a question nobody answered is not raised again by the same address for a while', () {
     var now = DateTime(2026, 11, 12, 9);
     final access = ChatAccess(clock: () => now);
-    access.unanswered('10.0.0.9');
-    expect(access.isQuiet('10.0.0.9'), isTrue);
-    expect(access.isQuiet('10.0.0.8'), isFalse, reason: 'other addresses are unaffected');
+    access.unanswered(chatKey('x', '10.0.0.9'));
+    expect(access.isQuiet(chatKey('x', '10.0.0.9')), isTrue);
+    expect(access.isQuiet(chatKey('x', '10.0.0.8')), isFalse, reason: 'other addresses are unaffected');
     now = now.add(ChatAccess.quietAfterNoAnswer);
-    expect(access.isQuiet('10.0.0.9'), isFalse);
+    expect(access.isQuiet(chatKey('x', '10.0.0.9')), isFalse);
   });
 
   test('accepting ends the quiet period', () {
-    final access = ChatAccess()..unanswered('10.0.0.9');
-    access.admit('10.0.0.9', 'Phone');
-    expect(access.isQuiet('10.0.0.9'), isFalse);
+    final access = ChatAccess()..unanswered(chatKey('x', '10.0.0.9'));
+    access.admit(chatKey('x', '10.0.0.9'), 'Phone');
+    expect(access.isQuiet(chatKey('x', '10.0.0.9')), isFalse);
   });
 
   test('invisible characters do not reach the screen', () {
@@ -46,13 +47,13 @@ void main() {
     final heard = <String>[];
     store.incoming.listen((t) => heard.add(t.address));
     for (var i = 0; i < 20; i++) {
-      store.receive('10.0.0.9', 'TV', '$i');
+      store.receive(chatKey('x', '10.0.0.9'), 'TV', '$i');
     }
     now = now.add(ChatStore.announceEvery);
-    store.receive('10.0.0.9', 'TV', 'later');
+    store.receive(chatKey('x', '10.0.0.9'), 'TV', 'later');
     await Future<void>.delayed(Duration.zero);
     expect(heard, ['10.0.0.9', '10.0.0.9']);
-    expect(store.unread('10.0.0.9'), 21, reason: 'every message is still kept and counted');
+    expect(store.unread(chatKey('x', '10.0.0.9')), 21, reason: 'every message is still kept and counted');
   });
 
   test('the Nearby door waits its turn behind a question from another door', () async {
@@ -88,7 +89,7 @@ void main() {
         res.write('{"delivered": true, "pad": "${'x' * (64 * 1024)}"}');
         await res.close();
       });
-      final r = await SendHttp(getLocalName: () => 'Me').sendChat('hi', target, null);
+      final r = await SendHttp(getLocalName: () => 'Me', getLocalId: () => 'test-id').sendChat('hi', target, null);
       expect(r.outcome, ChatOutcome.failed);
     });
 
@@ -105,7 +106,7 @@ void main() {
       });
       final target = Device(id: 'x', name: 'X', type: 'desktop', ip: '127.0.0.1', port: raw.port);
       final sw = Stopwatch()..start();
-      final r = await SendHttp(getLocalName: () => 'Me').sendChat('hi', target, null);
+      final r = await SendHttp(getLocalName: () => 'Me', getLocalId: () => 'test-id').sendChat('hi', target, null);
       expect(r.outcome, ChatOutcome.failed);
       expect(sw.elapsed, greaterThanOrEqualTo(const Duration(seconds: 9)),
           reason: 'it ended by the reply time limit, not by an error');

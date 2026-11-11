@@ -11,9 +11,18 @@ class OfferedFile {
 /// What a sender asks to send. [senderAddress] comes from the connection,
 /// never from the request body.
 class Offer {
-  const Offer({required this.senderAddress, required this.senderName, required this.files});
+  const Offer({
+    required this.senderAddress,
+    required this.senderId,
+    required this.senderName,
+    required this.files,
+  });
 
   final String senderAddress;
+
+  /// The id the sender gave, already cleaned: its files go to the chat of
+  /// this id at [senderAddress].
+  final String senderId;
   final String senderName;
   final List<OfferedFile> files;
 

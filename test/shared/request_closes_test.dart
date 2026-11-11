@@ -90,6 +90,7 @@ void main() {
         final req = await client.postUrl(Uri.http('127.0.0.1:${server.port}', ApexProtocol.offerPath));
         req.headers.set(ApexProtocol.versionHeader, '${ApexProtocol.version}');
         final body = utf8.encode(jsonEncode({
+          'id': 'test-phone',
           'name': 'Phone',
           'files': [
             {'name': 'a.txt', 'size': 1}

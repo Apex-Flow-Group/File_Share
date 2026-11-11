@@ -1,4 +1,5 @@
 import 'package:apex_file_share/core/apex_core.dart';
+import 'package:apex_file_share/features/chat/logic/chat_key.dart';
 import 'package:apex_file_share/features/chat/ui/device_chat_view.dart';
 import 'package:apex_file_share/l10n/generated/app_localizations.dart';
 import 'package:apex_file_share/mobile/widgets/connection_widget.dart';
@@ -57,7 +58,7 @@ void main() {
   });
 
   testWidgets('folded, it counts new messages and never shows their text', (tester) async {
-    ApexCore.instance.chat.receive(_pc.ip, 'Office PC', 'wifi password 8812');
+    ApexCore.instance.chat.receive(_pc.chatKey, 'Office PC', 'wifi password 8812');
     final l10n = await show(tester, [_pc]);
     expect(find.text(l10n.chatUnread(1)), findsOneWidget);
     expect(find.textContaining('8812'), findsNothing);
@@ -90,7 +91,7 @@ void main() {
     await tester.pumpAndSettle();
     final field = tester.widget<TextField>(find.byType(TextField));
     expect(field.controller!.text, 'copied on this phone');
-    expect(ApexCore.instance.chat.thread(_pc.ip)?.messages.where((m) => m.mine) ?? const [], isEmpty);
+    expect(ApexCore.instance.chat.thread(_pc.chatKey)?.messages.where((m) => m.mine) ?? const [], isEmpty);
   });
 
   testWidgets('with nothing copied, paste says so and opens nothing', (tester) async {
@@ -103,7 +104,7 @@ void main() {
 
   testWidgets('a blocked device: no paste and no send-files on its row', (tester) async {
     const blocked = Device(id: 'b', name: 'Stranger', type: 'phone', ip: '192.168.8.66', port: 4000);
-    ApexCore.instance.chat.blocked(blocked.ip);
+    ApexCore.instance.chat.blocked(blocked.chatKey);
     final l10n = await show(tester, [blocked]);
     expect(find.bySemanticsLabel(l10n.chatPaste), findsNothing);
     expect(find.bySemanticsLabel(l10n.chatAttach), findsNothing);

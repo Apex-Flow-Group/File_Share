@@ -38,6 +38,7 @@ void main() {
   Future<int> offer(int port) async {
     final req = await open(port, ApexProtocol.offerPath);
     req.write(jsonEncode({
+      'id': 'test-phone',
       'name': 'Phone',
       'files': [
         {'name': 'a.txt', 'size': 4},
