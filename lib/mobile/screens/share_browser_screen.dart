@@ -14,6 +14,7 @@ import '../../core/files/save_download.dart';
 import '../../core/protocol/apex_protocol.dart';
 import '../../core/protocol/transfer_rules.dart';
 import '../../core/share_folder_http.dart';
+import '../../features/identity/pin_store.dart';
 import '../../features/send/data/send_http.dart';
 import '../../l10n/generated/app_localizations.dart';
 import '../../models/device.dart';
@@ -32,7 +33,10 @@ class ShareBrowserScreen extends StatefulWidget {
   final SecurityContext? clientContext;
   final String? localId;
 
-  const ShareBrowserScreen({required this.device, this.clientContext, this.localId, super.key});
+  /// The key each device was accepted with; ApexCore's when not given.
+  final PinStore? pins;
+
+  const ShareBrowserScreen({required this.device, this.clientContext, this.localId, this.pins, super.key});
 
   @override
   State<ShareBrowserScreen> createState() => _ShareBrowserScreenState();
@@ -120,6 +124,7 @@ class _ShareBrowserScreenState extends State<ShareBrowserScreen> {
             _Refused() => l10n.shareAccessRefused,
             _NoAnswer() => l10n.shareNoAnswer,
             _ShareOff() => l10n.shareOffRemote,
+            _KeyChanged() => l10n.shareNewKey,
             _ => null,
           };
           _error = _refusal ?? '${l10n.shareNetworkError}\n$e';
@@ -130,11 +135,15 @@ class _ShareBrowserScreenState extends State<ShareBrowserScreen> {
 
   /// Shows this device's certificate and talks only to the device whose
   /// fingerprint discovery heard.
+  /// Like a send, nothing goes to a device showing another key than its pin.
   HttpClient _client() {
     final own = widget.clientContext ?? ApexCore.instance.clientContext;
     if (own == null) throw const SocketException('No identity yet');
+    if (_pins.shownKeyChanged(widget.device)) throw const _KeyChanged();
     return pinnedClient(own, widget.device);
   }
+
+  PinStore get _pins => widget.pins ?? ApexCore.instance.pins;
 
   /// Every request carries the protocol version and, once given, the token.
   Future<HttpClientRequest> _request(HttpClient client, String method, String path,
@@ -174,6 +183,8 @@ class _ShareBrowserScreenState extends State<ShareBrowserScreen> {
       if (token is! String) {
         throw json is Map && json['reason'] == 'refused' ? const _Refused() : const _NoAnswer();
       }
+      // Pinned in memory at once; the folder does not wait for the file write.
+      unawaited(pinShown(_pins, widget.device, res));
       _token = token;
       _canUpload = json['uploads'] == true;
     } finally {
@@ -763,4 +774,8 @@ class _NoAnswer implements Exception {
 
 class _ShareOff implements Exception {
   const _ShareOff();
+}
+
+class _KeyChanged implements Exception {
+  const _KeyChanged();
 }

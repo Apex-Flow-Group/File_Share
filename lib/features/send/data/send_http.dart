@@ -30,6 +30,15 @@ HttpClient pinnedClient(SecurityContext own, Device target) {
     ..badCertificateCallback = (cert, host, port) => isFingerprint(expected) && fingerprintOf(cert.der) == expected;
 }
 
+/// [target] accepted this device (a send, or its shared folder): the key it
+/// showed in the handshake is pinned, unless it has a pin already.
+Future<void> pinShown(PinStore? pins, Device target, HttpClientResponse res) async {
+  final shown = res.certificate;
+  if (shown != null) {
+    await pins?.pinFirst(target.id, fingerprintOf(shown.der));
+  }
+}
+
 /// The address of [path] on [target], over TLS.
 Uri deviceUri(Device target, String path, [Map<String, String>? query]) =>
     Uri.https('${target.ip}:${target.port}', path, query);
@@ -59,17 +68,9 @@ class SendHttp {
   }
 
   /// [target] is known by another key than the one it shows now.
-  bool _keyChanged(Device target) =>
-      isFingerprint(target.fingerprint) && (pins?.keyChanged(target.id, target.fingerprint) ?? false);
+  bool _keyChanged(Device target) => pins?.shownKeyChanged(target) ?? false;
 
-  /// [target] accepted: the key it showed in the handshake is pinned, unless
-  /// it has a pin already.
-  Future<void> _pinShown(Device target, HttpClientResponse res) async {
-    final shown = res.certificate;
-    if (shown != null) {
-      await pins?.pinFirst(target.id, fingerprintOf(shown.der));
-    }
-  }
+  Future<void> _pinShown(Device target, HttpClientResponse res) => pinShown(pins, target, res);
 
   /// The receiver's answer when its user cancelled.
   static const _cancelledStatus = 499;

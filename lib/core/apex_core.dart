@@ -70,8 +70,8 @@ class ApexCore {
   /// Files, chat and the shared folder never ask the user at the same time.
   final _question = OneQuestion();
 
-  /// The one list every block is decided by: the chats, the chat door and
-  /// the file door.
+  /// The one list every block is decided by: the chats, the chat door, the
+  /// file door and the shared folder.
   late final BlockList _blocks = BlockList(_pins);
 
   late final ReceiveHttp _receive = ReceiveHttp(
@@ -106,6 +106,7 @@ class ApexCore {
     onAccessRequest: _connectionRequestController.add,
     expectedFingerprint: _expectedFingerprint,
     pins: _pins,
+    blocks: _blocks,
     question: _question,
   );
 
@@ -160,6 +161,10 @@ class ApexCore {
   /// decision): sends reach only that certificate. Without a pin it stays
   /// without one, and sending to it fails as before.
   Device withPinnedKey(Device device) => _pins.withPin(device);
+
+  /// Whom the user accepted, for the shared-folder browser, which talks to
+  /// another device by the same rule as a send.
+  PinStore get pins => _pins;
 
   /// The fingerprint discovery heard from [id] at [address]: a request that
   /// claims to be that device must come with that certificate.

@@ -40,7 +40,9 @@ class ReceiveHttp {
     this.decisionTimeout = TransferRules.decisionTimeout,
     this.bodyIdleLimit = TransferRules.bodyIdleLimit,
   })  : _blocks = blocks ?? BlockList(pins),
-        _question = question ?? OneQuestion();
+        _question = question ?? OneQuestion() {
+    _blocks.onBlock(() => gate.revokeWhere(_blocks.isBlocked));
+  }
 
   final ReceiveGate gate;
   final ReceiveStore store;
@@ -51,7 +53,8 @@ class ReceiveHttp {
   /// Written when the user accepts a batch.
   final PinStore pins;
 
-  /// The chat's blocks: a blocked device offers no files either.
+  /// The chat's blocks: a blocked device offers no files either, and a block
+  /// ends the batches it was sending.
   final BlockList _blocks;
 
   /// Free space where files are saved; null when it cannot be read.
@@ -244,7 +247,7 @@ class ReceiveHttp {
         throw const _Cancelled();
       }
       await for (final chunk in req.timeout(bodyIdleLimit)) {
-        if (_progress.isCancelledReceive) {
+        if (_progress.isCancelledReceive || upload.revoked) {
           // Answer inside the loop: leaving it closes the connection first,
           // and the sender would never read the answer.
           await _discard(sink, temp);
@@ -270,6 +273,9 @@ class ReceiveHttp {
       sink = null;
       if (written != file.size) {
         throw const _WrongSize();
+      }
+      if (upload.revoked) {
+        throw const _Cancelled();
       }
       final path = await store.place(temp, file.name);
       // Before the answer: once the sender reads it, its next request may
