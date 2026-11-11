@@ -4,6 +4,13 @@ import 'package:flutter/material.dart';
 class ApexSnackBar {
   ApexSnackBar._();
 
+  /// Material's snackbar on a wide window: centered, 344 to 672 wide. On a
+  /// phone (narrower than 600) null keeps the full width with its margins.
+  static double? _width(BuildContext context) {
+    final w = MediaQuery.sizeOf(context).width;
+    return w < 600 ? null : (w - 48).clamp(344.0, 672.0);
+  }
+
   /// إظهار SnackBar نجاح
   static void success(BuildContext context, String message,
       {Duration duration = const Duration(seconds: 2)}) {
@@ -11,6 +18,7 @@ class ApexSnackBar {
       content: Text(message),
       backgroundColor: Colors.green,
       behavior: SnackBarBehavior.floating,
+      width: _width(context),
       shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
       duration: duration,
     ));
@@ -22,6 +30,7 @@ class ApexSnackBar {
       content: Text(message),
       backgroundColor: Colors.red,
       behavior: SnackBarBehavior.floating,
+      width: _width(context),
       shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
       duration: const Duration(seconds: 3),
     ));
@@ -32,6 +41,7 @@ class ApexSnackBar {
     ScaffoldMessenger.of(context).showSnackBar(SnackBar(
       content: Text(message),
       behavior: SnackBarBehavior.floating,
+      width: _width(context),
       shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
       duration: const Duration(seconds: 2),
     ));

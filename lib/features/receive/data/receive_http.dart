@@ -236,6 +236,9 @@ class ReceiveHttp {
         throw const _WrongSize();
       }
       final path = await store.place(temp, file.name);
+      // Before the answer: once the sender reads it, its next request may
+      // arrive, and the idle time must already count from here.
+      upload.finish();
       await _reply(req, HttpStatus.ok, {'success': true});
       _finished(file, path, req);
     } catch (e) {

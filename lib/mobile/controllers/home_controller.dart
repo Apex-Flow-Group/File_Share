@@ -113,7 +113,6 @@ class HomeController extends ChangeNotifier {
 
   Future<void> _startSystem() async {
     try {
-      ApexCore.instance.setNetworkMode(settings.networkMode);
       ApexCore.instance.setSettings(settings);
       await ApexCore.instance.start();
       _isRunning = true;
@@ -130,19 +129,10 @@ class HomeController extends ChangeNotifier {
     notifyListeners();
   }
 
-  Future<void> restartSystem() async {
-    ApexCore.instance.setNetworkMode(settings.networkMode);
-    ApexCore.instance.setSettings(settings);
-    await stopSystem();
-    await Future.delayed(const Duration(milliseconds: 400));
-    await _startSystem();
-  }
-
-  /// تحديث خفيف — يبث وجود الجهاز فوراً بدون إعادة تشغيل
-  void refreshDiscovery() {
-    // ping الأجهزة المثبتة فوراً قبل البحث العام
+  /// Pings favorites after the socket is reopened, so the ping is not lost.
+  Future<void> refreshDiscovery() async {
+    await ApexCore.instance.refreshDiscovery();
     _pingPinnedDevices();
-    ApexCore.instance.refreshDiscovery();
   }
 
   // ─── Pinned Devices ──────────────────────────────────────────────────────────

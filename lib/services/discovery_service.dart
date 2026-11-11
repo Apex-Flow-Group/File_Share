@@ -23,8 +23,20 @@ class DiscoveryService {
   /// callback يُسأل عنه عند كل بث — هل Share مُفعَّل؟ (desktop فقط)
   bool Function() isShareEnabled;
 
-  DiscoveryService({this.isShareEnabled = _defaultFalse});
+  DiscoveryService({
+    this.isShareEnabled = _defaultFalse,
+    this.port = defaultPort,
+    this.interval = const Duration(seconds: 2),
+    Future<List<NetworkInterface>> Function()? listInterfaces,
+  }) : _listInterfaces = listInterfaces ?? _systemInterfaces;
   static bool _defaultFalse() => false;
+  static Future<List<NetworkInterface>> _systemInterfaces() =>
+      NetworkInterface.list(includeLinkLocal: false, type: InternetAddressType.IPv4);
+
+  static const int defaultPort = 45679;
+  final int port;
+  final Duration interval;
+  final Future<List<NetworkInterface>> Function() _listInterfaces;
 
   // Nearby (Android phone ↔ phone)
   bool _nearbyAdvertising = false;
@@ -34,17 +46,32 @@ class DiscoveryService {
   RawDatagramSocket? _udpSocket;
   Timer? _broadcastTimer;
   Device? _localDevice;
-  static const int _udpPort = 45679;
+  bool _running = false;
+  bool _binding = false;
 
   bool get _isAndroid => !kIsWeb && Platform.isAndroid;
 
+  bool get isListening => _udpSocket != null;
+
+  @visibleForTesting
+  RawDatagramSocket? get debugSocket => _udpSocket;
+
   Future<void> start(Device localDevice) async {
     _localDevice = localDevice;
+    _running = true;
     // Always start UDP so Android can talk to PC and vice versa
-    await _startUdp(localDevice);
+    await _startUdp();
     if (_isAndroid) {
       await _startNearby(localDevice);
     }
+  }
+
+  /// Opens a fresh socket and announces at once: what the refresh button does.
+  Future<void> restart() async {
+    if (!_running) return;
+    _closeSocket();
+    await _bind();
+    forceBroadcast();
   }
 
   /// بث فوري متعدد — يُستخدم عند الضغط على refresh
@@ -61,72 +88,114 @@ class DiscoveryService {
     if (d == null || _udpSocket == null || device.ip.isEmpty) return;
     final data = utf8.encode(DiscoveryPacket.encode(d, shareEnabled: isShareEnabled()));
     try {
-      _udpSocket!.send(data, InternetAddress(device.ip), _udpPort);
+      _udpSocket!.send(data, InternetAddress(device.ip), port);
     } catch (_) {}
   }
 
   // ─── UDP Broadcast (works on all platforms) ───────────────────────────────
 
-  Future<void> _startUdp(Device localDevice) async {
+  Future<void> _startUdp() async {
+    await _bind();
+    // Each tick also reopens a socket that closed or never opened (the app
+    // started offline), so discovery comes back without a restart.
+    _broadcastTimer = Timer.periodic(interval, (_) async {
+      if (_udpSocket == null) await _bind();
+      await _broadcast();
+    });
+    await _broadcast();
+  }
+
+  Future<void> _bind() async {
+    if (!_running || _binding || _udpSocket != null) return;
+    _binding = true;
     try {
-      _udpSocket = await RawDatagramSocket.bind(
-          InternetAddress.anyIPv4, _udpPort,
+      final socket = await RawDatagramSocket.bind(InternetAddress.anyIPv4, port,
           reuseAddress: true, reusePort: false);
-      _udpSocket!.broadcastEnabled = true;
-      _udpSocket!.multicastHops = 128;
-
-      _udpSocket!.listen((event) {
-        if (event != RawSocketEvent.read) return;
-        final dg = _udpSocket!.receive();
-        if (dg == null) return;
-        if (dg.address.address == localDevice.ip) return; // ignore self by IP
-        try {
-          final text = utf8.decode(dg.data);
-          final from = dg.address.address;
-          final device = DiscoveryPacket.decode(text, from: from, selfId: localDevice.id) ??
-              DiscoveryPacket.otherVersion(text, from: from, selfId: localDevice.id);
-          if (device != null) _deviceFoundController.add(device);
-        } catch (_) {}
-      });
-
-      // Broadcast presence every 2 seconds
-      _broadcastTimer = Timer.periodic(const Duration(seconds: 2), (_) {
-        _broadcast();
-      });
-      _broadcast(); // immediate first broadcast
-
-      ApexLogger.instance
-          .log('UDP', '✅ Listening on port $_udpPort', LogLevel.success);
+      if (!_running) {
+        socket.close();
+        return;
+      }
+      socket.broadcastEnabled = true;
+      socket.multicastHops = 128;
+      _udpSocket = socket;
+      // Dart reports a failed send here, not at send(), and then closes the
+      // socket: a dropped Wi-Fi did exactly that and silenced the app.
+      socket.listen(
+        (event) => _onSocketEvent(socket, event),
+        onError: (Object e) =>
+            ApexLogger.instance.log('UDP', 'Send failed: $e', LogLevel.warning),
+        onDone: () {
+          if (identical(_udpSocket, socket)) _udpSocket = null;
+        },
+      );
+      ApexLogger.instance.log('UDP', '✅ Listening on port $port', LogLevel.success);
     } catch (e) {
       ApexLogger.instance.log('UDP', '❌ Failed: $e', LogLevel.error);
+    } finally {
+      _binding = false;
     }
   }
 
-  void _broadcast() {
+  void _onSocketEvent(RawDatagramSocket socket, RawSocketEvent event) {
+    if (event != RawSocketEvent.read) return;
+    final dg = socket.receive();
+    final self = _localDevice;
+    if (dg == null || self == null) return;
+    try {
+      final text = utf8.decode(dg.data);
+      final from = dg.address.address;
+      final device = DiscoveryPacket.decode(text, from: from, selfId: self.id) ??
+          DiscoveryPacket.otherVersion(text, from: from, selfId: self.id);
+      if (device != null) _deviceFoundController.add(device);
+    } catch (_) {}
+  }
+
+  Future<void> _broadcast() async {
     final d = _localDevice;
     if (d == null || _udpSocket == null) return;
     final data = utf8.encode(DiscoveryPacket.encode(d, shareEnabled: isShareEnabled()));
-    // Send to both general broadcast and subnet broadcast
-    for (final addr in _getBroadcastAddresses()) {
+    List<NetworkInterface> ifaces;
+    try {
+      ifaces = await _listInterfaces();
+    } catch (_) {
+      ifaces = const [];
+    }
+    final ips = [
+      for (final iface in ifaces)
+        for (final a in iface.addresses)
+          if (a.type == InternetAddressType.IPv4) a.address,
+    ];
+    for (final addr in broadcastTargets(ips)) {
+      final socket = _udpSocket;
+      if (socket == null) return;
       try {
-        _udpSocket!.send(data, InternetAddress(addr), _udpPort);
+        socket.send(data, InternetAddress(addr), port);
       } catch (_) {}
     }
   }
 
-  List<String> _getBroadcastAddresses() {
-    final addrs = <String>['255.255.255.255'];
-    try {
-      // Try to get subnet broadcast from local IP
-      final ip = _localDevice?.ip;
-      if (ip != null && ip != '127.0.0.1') {
-        final parts = ip.split('.');
-        if (parts.length == 4) {
-          addrs.add('${parts[0]}.${parts[1]}.${parts[2]}.255');
-        }
+  /// 255.255.255.255 leaves on the network the system picks; each network
+  /// the device is on also gets its own broadcast, read again every time so a
+  /// new address after a network change is used. A /24 mask is assumed:
+  /// Dart does not report the real one.
+  /// Takes plain IPv4 strings: the type of NetworkInterface.addresses differs
+  /// between Dart versions.
+  static List<String> broadcastTargets(Iterable<String> ipv4) {
+    final targets = <String>{'255.255.255.255'};
+    for (final ip in ipv4) {
+      final parts = ip.split('.');
+      if (parts.length != 4 || parts[0] == '127' || ip.startsWith('169.254.')) {
+        continue;
       }
-    } catch (_) {}
-    return addrs;
+      targets.add('${parts[0]}.${parts[1]}.${parts[2]}.255');
+    }
+    return targets.toList();
+  }
+
+  void _closeSocket() {
+    final socket = _udpSocket;
+    _udpSocket = null;
+    socket?.close();
   }
 
   // ─── Nearby Connections (Android phone ↔ phone) ───────────────────────────
@@ -186,9 +255,9 @@ class DiscoveryService {
   // ─── Stop ─────────────────────────────────────────────────────────────────
 
   Future<void> stop() async {
+    _running = false;
     _broadcastTimer?.cancel();
-    _udpSocket?.close();
-    _udpSocket = null;
+    _closeSocket();
 
     if (_nearbyAdvertising) {
       await Nearby().stopAdvertising();

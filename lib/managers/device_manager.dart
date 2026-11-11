@@ -4,6 +4,8 @@ import 'package:device_info_plus/device_info_plus.dart';
 import 'package:flutter/foundation.dart' show kIsWeb;
 import 'package:shared_preferences/shared_preferences.dart';
 
+import '../core/text/device_label.dart';
+
 class DeviceManager {
   /// يجلب اسم الجهاز على الشبكة أو موديله حسب المنصة.
   ///
@@ -22,7 +24,8 @@ class DeviceManager {
       } else if (Platform.isLinux) {
         // Not linuxInfo.prettyName: that is the distribution ("Fedora Linux
         // 44"), the same on every PC of that system.
-        return Platform.localHostname;
+        final host = Platform.localHostname;
+        return looksLikeMac(host) ? null : host;
       } else if (Platform.isMacOS) {
         final info = await DeviceInfoPlugin().macOsInfo;
         return info.hostName.isNotEmpty ? info.hostName : info.computerName;
@@ -44,7 +47,7 @@ class DeviceManager {
     try {
       final prefs = await SharedPreferences.getInstance();
       final savedName = prefs.getString('device_display_name');
-      if (savedName != null && savedName.isNotEmpty) {
+      if (savedName != null && savedNameStillValid(savedName)) {
         return savedName;
       }
 
@@ -61,7 +64,9 @@ class DeviceManager {
         final iosInfo = await deviceInfo.iosInfo;
         deviceName = iosInfo.name;
       } else if (Platform.isLinux) {
-        deviceName = Platform.localHostname.isNotEmpty ? Platform.localHostname : fallback;
+        final linuxInfo = await deviceInfo.linuxInfo;
+        deviceName = desktopName(Platform.localHostname,
+            user: Platform.environment['USER'] ?? '', system: linuxInfo.name);
       } else if (Platform.isWindows) {
         final windowsInfo = await deviceInfo.windowsInfo;
         deviceName = windowsInfo.computerName;

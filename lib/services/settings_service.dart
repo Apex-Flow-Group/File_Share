@@ -1,13 +1,10 @@
 import 'package:flutter/material.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
-enum NetworkMode { wifi, ethernet }
-
 class SettingsService extends ChangeNotifier {
   Locale? _locale;
   ThemeMode _themeMode = ThemeMode.system;
   bool _hasSeenIntro = false;
-  NetworkMode _networkMode = NetworkMode.wifi;
   // Off until the user turns them on: otherwise a fresh install shares its
   // folder with the whole network.
   bool _sharedFolderEnabled = false;
@@ -17,7 +14,6 @@ class SettingsService extends ChangeNotifier {
   Locale? get locale => _locale;
   ThemeMode get themeMode => _themeMode;
   bool get hasSeenIntro => _hasSeenIntro;
-  NetworkMode get networkMode => _networkMode;
   bool get sharedFolderEnabled => _sharedFolderEnabled;
   bool get allowShareUploads => _allowShareUploads;
   bool get clipboardMonitorEnabled => _clipboardMonitorEnabled;
@@ -40,10 +36,6 @@ class SettingsService extends ChangeNotifier {
 
     // Load intro seen status
     _hasSeenIntro = prefs.getBool('has_seen_intro') ?? false;
-
-    // Load network mode
-    final networkIndex = prefs.getInt('network_mode') ?? 0;
-    _networkMode = NetworkMode.values[networkIndex];
 
     // Load share folder settings
     _sharedFolderEnabled = prefs.getBool('share_folder_enabled') ?? false;
@@ -74,13 +66,6 @@ class SettingsService extends ChangeNotifier {
     _themeMode = mode;
     final prefs = await SharedPreferences.getInstance();
     await prefs.setInt('theme_mode', mode.index);
-    notifyListeners();
-  }
-
-  Future<void> setNetworkMode(NetworkMode mode) async {
-    _networkMode = mode;
-    final prefs = await SharedPreferences.getInstance();
-    await prefs.setInt('network_mode', mode.index);
     notifyListeners();
   }
 

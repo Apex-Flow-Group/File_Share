@@ -1,6 +1,6 @@
-import 'package:flutter/material.dart';
+import 'dart:async';
 
-import '../../services/settings_service.dart';
+import 'package:flutter/material.dart';
 
 /// عنصر القائمة الجانبية (Desktop)
 class SidebarItem extends StatelessWidget {
@@ -59,38 +59,92 @@ class SidebarItem extends StatelessWidget {
 }
 
 /// زر الإجراء في القائمة الجانبية (Desktop)
-class SidebarActionTile extends StatelessWidget {
+/// Lit from the press until what it started ends (a bottom sheet closes, a
+/// refresh finishes); with [spinWhileBusy] the icon turns meanwhile.
+class SidebarActionTile extends StatefulWidget {
   final IconData icon;
   final String label;
-  final VoidCallback onTap;
+  final Future<void> Function() onTap;
+  final bool spinWhileBusy;
 
   const SidebarActionTile({
     required this.icon,
     required this.label,
     required this.onTap,
+    this.spinWhileBusy = false,
     super.key,
   });
 
   @override
+  State<SidebarActionTile> createState() => _SidebarActionTileState();
+}
+
+class _SidebarActionTileState extends State<SidebarActionTile>
+    with SingleTickerProviderStateMixin {
+  late final AnimationController _spin =
+      AnimationController(vsync: this, duration: Durations.extralong2);
+  bool _busy = false;
+
+  Future<void> _run() async {
+    if (_busy) {
+      return;
+    }
+    setState(() => _busy = true);
+    if (widget.spinWhileBusy) {
+      unawaited(_spin.repeat());
+    }
+    try {
+      await widget.onTap();
+    } finally {
+      if (widget.spinWhileBusy && mounted) {
+        // Finish the turn under way so the icon ends upright.
+        await _spin.forward();
+        if (mounted) {
+          _spin.value = 0;
+        }
+      }
+      if (mounted) {
+        setState(() => _busy = false);
+      }
+    }
+  }
+
+  @override
+  void dispose() {
+    _spin.dispose();
+    super.dispose();
+  }
+
+  @override
   Widget build(BuildContext context) {
+    final scheme = Theme.of(context).colorScheme;
     final isDark = Theme.of(context).brightness == Brightness.dark;
+    final fg = _busy
+        ? scheme.onSurface
+        : (isDark ? Colors.white60 : Colors.black45);
     return Padding(
       padding: const EdgeInsets.symmetric(vertical: 2),
-      child: InkWell(
-        onTap: onTap,
-        borderRadius: BorderRadius.circular(10),
-        child: Padding(
-          padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 8),
-          child: Row(children: [
-            Icon(icon,
-                size: 18, color: isDark ? Colors.white54 : Colors.black45),
-            const SizedBox(width: 10),
-            Text(label,
-                style: TextStyle(
-                  fontSize: 13,
-                  color: isDark ? Colors.white60 : Colors.black45,
-                )),
-          ]),
+      child: AnimatedContainer(
+        duration: Durations.short4,
+        curve: Easing.standard,
+        decoration: BoxDecoration(
+          color: _busy ? scheme.surfaceContainerHigh : scheme.surfaceContainerHigh.withValues(alpha: 0),
+          borderRadius: BorderRadius.circular(10),
+        ),
+        child: InkWell(
+          onTap: _run,
+          borderRadius: BorderRadius.circular(10),
+          child: Padding(
+            padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 8),
+            child: Row(children: [
+              RotationTransition(
+                turns: _spin,
+                child: Icon(widget.icon, size: 18, color: fg),
+              ),
+              const SizedBox(width: 10),
+              Text(widget.label, style: TextStyle(fontSize: 13, color: fg)),
+            ]),
+          ),
         ),
       ),
     );
@@ -118,145 +172,6 @@ class RailIconButton extends StatelessWidget {
         onPressed: onTap,
         icon: Icon(icon, size: 22),
         color: Theme.of(context).colorScheme.onSurfaceVariant,
-      ),
-    );
-  }
-}
-
-/// تبديل نوع الشبكة WiFi / LAN (Desktop)
-class NetworkModeTile extends StatelessWidget {
-  final SettingsService settings;
-  final VoidCallback onChanged;
-  const NetworkModeTile(
-      {required this.settings, required this.onChanged, super.key});
-
-  @override
-  Widget build(BuildContext context) {
-    final isDark = Theme.of(context).brightness == Brightness.dark;
-    final isAr = Localizations.localeOf(context).languageCode == 'ar';
-
-    return AnimatedBuilder(
-      animation: settings,
-      builder: (context, _) {
-        final isWifi = settings.networkMode == NetworkMode.wifi;
-        return Container(
-          decoration: BoxDecoration(
-            color: isDark
-                ? Colors.white.withValues(alpha: 0.05)
-                : Colors.black.withValues(alpha: 0.04),
-            borderRadius: BorderRadius.circular(12),
-          ),
-          padding: const EdgeInsets.all(10),
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Row(children: [
-                Icon(
-                  isWifi ? Icons.wifi_rounded : Icons.cable_rounded,
-                  size: 15,
-                  color: isDark ? Colors.white54 : Colors.black45,
-                ),
-                const SizedBox(width: 6),
-                Text(
-                  isAr ? 'نوع الشبكة' : 'Network',
-                  style: TextStyle(
-                    fontSize: 11,
-                    fontWeight: FontWeight.w600,
-                    color: isDark ? Colors.white54 : Colors.black45,
-                  ),
-                ),
-              ]),
-              const SizedBox(height: 8),
-              Row(
-                children: [
-                  Expanded(
-                    child: _ModeBtn(
-                      icon: Icons.wifi_rounded,
-                      label: isAr ? 'واي فاي' : 'WiFi',
-                      selected: isWifi,
-                      onTap: () {
-                        settings.setNetworkMode(NetworkMode.wifi);
-                        onChanged();
-                      },
-                      isDark: isDark,
-                    ),
-                  ),
-                  const SizedBox(width: 6),
-                  Expanded(
-                    child: _ModeBtn(
-                      icon: Icons.cable_rounded,
-                      label: isAr ? 'شبكة' : 'LAN',
-                      selected: !isWifi,
-                      onTap: () {
-                        settings.setNetworkMode(NetworkMode.ethernet);
-                        onChanged();
-                      },
-                      isDark: isDark,
-                    ),
-                  ),
-                ],
-              ),
-            ],
-          ),
-        );
-      },
-    );
-  }
-}
-
-class _ModeBtn extends StatelessWidget {
-  final IconData icon;
-  final String label;
-  final bool selected;
-  final VoidCallback onTap;
-  final bool isDark;
-
-  const _ModeBtn({
-    required this.icon,
-    required this.label,
-    required this.selected,
-    required this.onTap,
-    required this.isDark,
-  });
-
-  @override
-  Widget build(BuildContext context) {
-    final color = Theme.of(context).colorScheme.primary;
-    return GestureDetector(
-      onTap: onTap,
-      child: AnimatedContainer(
-        duration: const Duration(milliseconds: 180),
-        padding: const EdgeInsets.symmetric(vertical: 6),
-        decoration: BoxDecoration(
-          color: selected
-              ? color.withValues(alpha: isDark ? 0.25 : 0.14)
-              : Colors.transparent,
-          borderRadius: BorderRadius.circular(8),
-          border: Border.all(
-            color: selected
-                ? color.withValues(alpha: 0.5)
-                : (isDark
-                    ? Colors.white.withValues(alpha: 0.1)
-                    : Colors.black.withValues(alpha: 0.1)),
-          ),
-        ),
-        child: Column(mainAxisSize: MainAxisSize.min, children: [
-          Icon(icon,
-              size: 16,
-              color: selected
-                  ? color
-                  : (isDark ? Colors.white54 : Colors.black45)),
-          const SizedBox(height: 2),
-          Text(
-            label,
-            style: TextStyle(
-              fontSize: 10,
-              fontWeight: selected ? FontWeight.w700 : FontWeight.normal,
-              color:
-                  selected ? color : (isDark ? Colors.white54 : Colors.black45),
-            ),
-          ),
-        ]),
       ),
     );
   }
