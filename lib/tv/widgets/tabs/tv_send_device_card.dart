@@ -192,16 +192,8 @@ class _TVDeviceCardState extends State<TVDeviceCard> {
     if (!mounted || selectedApps == null || selectedApps.isEmpty) {
       return;
     }
-    SendOutcome outcome;
-    if (selectedApps.length == 1) {
-      outcome = await ApexCore.instance.sendFileWithName(
-          selectedApps.first.file.path,
-          '${selectedApps.first.name}.apk',
-          widget.device);
-    } else {
-      final paths = selectedApps.map((a) => a.file.path).toList();
-      outcome = await ApexCore.instance.sendFiles(paths, widget.device);
-    }
+    final outcome = await ApexCore.instance.sendNamedFiles(
+        [for (final a in selectedApps) (path: a.file.path, name: '${a.name}.apk')], widget.device);
     if (!mounted) {
       return;
     }

@@ -310,14 +310,24 @@ class ApexCore {
       return SendOutcome.failed;
     }
 
+    return sendNamedFiles(
+        [for (final path in filePaths) (path: path, name: _extractFileName(path))], target);
+  }
+
+  /// Files sent under names other than their own: an app's APK is always
+  /// "base.apk" in a read-only system folder, so it cannot be renamed there.
+  Future<SendOutcome> sendNamedFiles(
+      List<({String path, String name})> named, Device target) async {
+    if (target.versionMismatch) {
+      return SendOutcome.updateRequired;
+    }
     final files = <({String path, String name, int size})>[];
-    for (final path in filePaths) {
-      final f = File(path);
+    for (final n in named) {
+      final f = File(n.path);
       if (!await f.exists()) {
         continue;
       }
-      files.add(
-          (path: path, name: _extractFileName(path), size: await f.length()));
+      files.add((path: n.path, name: n.name, size: await f.length()));
     }
     if (files.isEmpty) {
       return SendOutcome.failed;

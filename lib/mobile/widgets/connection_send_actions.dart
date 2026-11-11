@@ -1,4 +1,3 @@
-import 'dart:io';
 
 import 'package:file_picker/file_picker.dart';
 import 'package:flutter/material.dart';
@@ -65,35 +64,8 @@ mixin ConnectionSendActions<T extends StatefulWidget> on State<T> {
         }
         setSending();
         try {
-          final paths = selectedApps.map((a) => a.file.path).toList();
-          final names = selectedApps.map((a) => '${a.name}.apk').toList();
-
-          SendOutcome outcome;
-          if (selectedApps.length == 1) {
-            outcome = await ApexCore.instance
-                .sendFileWithName(paths.first, names.first, device);
-          } else {
-            final files = <String>[];
-            for (int i = 0; i < selectedApps.length; i++) {
-              final src = selectedApps[i].file;
-              final dir = src.parent.path;
-              final dest = File('$dir/${names[i]}');
-              if (dest.path != src.path) {
-                await src.copy(dest.path);
-                files.add(dest.path);
-              } else {
-                files.add(src.path);
-              }
-            }
-            outcome = await ApexCore.instance.sendFiles(files, device);
-            for (int i = 0; i < files.length; i++) {
-              if (files[i] != selectedApps[i].file.path) {
-                try {
-                  await File(files[i]).delete();
-                } catch (_) {}
-              }
-            }
-          }
+          final outcome = await ApexCore.instance.sendNamedFiles(
+              [for (final a in selectedApps) (path: a.file.path, name: '${a.name}.apk')], device);
 
           if (!mounted) {
             return;
