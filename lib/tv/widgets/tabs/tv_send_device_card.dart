@@ -310,8 +310,9 @@ class _TVSendOptionsDialog extends StatelessWidget {
             const SizedBox(height: 16),
             if (canSend) ...[
               TVDialogOption(
-                icon: Icons.folder_open_rounded,
-                label: l10n.sendFile,
+                // The TV browser picks several files, sent at once.
+                icon: Icons.upload_file_rounded,
+                label: l10n.sendFilesNow,
                 color: color,
                 autofocus: true,
                 onTap: onSendFile,

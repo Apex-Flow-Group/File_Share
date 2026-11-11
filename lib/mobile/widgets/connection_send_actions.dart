@@ -27,6 +27,7 @@ mixin ConnectionSendActions<T extends StatefulWidget> on State<T> {
     final paths =
         result.files.where((f) => f.path != null).map((f) => f.path!).toList();
 
+    final l10n = AppLocalizations.of(context);
     setSending();
     try {
       final outcome = await ApexCore.instance.sendFiles(paths, device);
@@ -36,9 +37,10 @@ mixin ConnectionSendActions<T extends StatefulWidget> on State<T> {
             sent: AppLocalizations.of(context).fileSentSuccess,
             failed: AppLocalizations.of(context).fileSendFailed);
       }
+      // Read before the awaits below, while the screen is still there.
       final label = paths.length == 1
           ? paths.first.split('/').last
-          : '${paths.length} files';
+          : l10n.clipboardFileCount(paths.length);
       if (ok) {
         await DesktopNotificationService.instance.showFileSent(label);
       } else {
