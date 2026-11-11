@@ -8,6 +8,7 @@ import 'package:flutter/material.dart';
 import '../../../l10n/generated/app_localizations.dart';
 import '../../../services/share_folder_service.dart';
 import '../../../shared/apex_snackbar.dart';
+import '../../../shared/file_open_message.dart';
 import '../../../shared/folder_open_message.dart';
 import '../../../utils/file_utils.dart';
 
@@ -119,8 +120,7 @@ class _SharedFolderSectionState extends State<SharedFolderSection> {
       await FileUtils.openFile(path);
     } catch (e) {
       if (mounted) {
-        ApexSnackBar.error(
-            context, AppLocalizations.of(context).openFileFailed);
+        ApexSnackBar.error(context, fileOpenMessage(e, AppLocalizations.of(context)));
       }
     }
   }

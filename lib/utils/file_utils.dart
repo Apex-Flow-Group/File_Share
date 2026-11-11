@@ -4,6 +4,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:open_filex/open_filex.dart';
 
+import '../platform/open_with_app.dart';
 import '../platform/reveal_in_folder.dart';
 
 class FileUtils {
@@ -108,13 +109,11 @@ class FileUtils {
     }
 
     // Never through cmd: it runs "&" in a name, so "report&calc" starts calc.
-    if (Platform.isWindows) {
-      await Process.run('explorer.exe', [windowsPath(filePath)]);
-      return;
-    }
-
-    if (Platform.isLinux) {
-      await Process.run('xdg-open', [filePath]);
+    final desktop = await openOnDesktop(filePath);
+    if (desktop != null) {
+      if (desktop != DesktopOpen.opened) {
+        throw FileOpenError(desktop);
+      }
       return;
     }
 
@@ -172,6 +171,13 @@ class FileUtils {
     // The Android side opens the parent of the path it is given.
     await openFileLocation('$dirPath/.');
   }
+}
+
+/// The file could not be opened on Windows or Linux, and why.
+class FileOpenError implements Exception {
+  const FileOpenError(this.result);
+
+  final DesktopOpen result;
 }
 
 /// The folder could not be opened: [missing] when it was deleted or moved,

@@ -421,6 +421,12 @@ class AppLocalizationsEn extends AppLocalizations {
   String get folderMissing => 'The folder was deleted or moved.';
 
   @override
+  String get fileMissing => 'The file was deleted or moved.';
+
+  @override
+  String get noAppForFile => 'No app can open this type of file.';
+
+  @override
   String get filesDeletedCount => 'files deleted';
 
   @override

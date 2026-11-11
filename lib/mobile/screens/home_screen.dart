@@ -11,6 +11,7 @@ import '../../services/settings_service.dart';
 import '../../services/update_service.dart';
 import '../../shared/apex_bottom_sheet.dart';
 import '../../shared/apex_snackbar.dart';
+import '../../shared/file_open_message.dart';
 import '../../shared/folder_open_message.dart';
 import '../controllers/home_controller.dart';
 import '../widgets/home_nav_bar.dart';
@@ -413,9 +414,9 @@ class _HomeScreenState extends State<HomeScreen>
   Future<void> _openFile(File file) async {
     try {
       await _ctrl.fileOpsService.openFile(file.path);
-    } catch (_) {
+    } catch (e) {
       if (mounted) {
-        ApexSnackBar.error(context, AppLocalizations.of(context).openFileFailed);
+        ApexSnackBar.error(context, fileOpenMessage(e, AppLocalizations.of(context)));
       }
     }
   }

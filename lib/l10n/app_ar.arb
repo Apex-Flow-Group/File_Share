@@ -140,6 +140,8 @@
   "openFileFailed": "تعذّر فتح الملف.",
   "openLocationFailed": "تعذّر فتح المجلد.",
   "folderMissing": "المجلد محذوف أو منقول.",
+  "fileMissing": "الملف محذوف أو منقول.",
+  "noAppForFile": "لا يوجد تطبيق يفتح هذا النوع من الملفات.",
   "filesDeletedCount": "ملف تم حذفه",
   "fileSentSuccess": "تم إرسال الملف بنجاح",
   "fileSendFailed": "فشل إرسال الملف",

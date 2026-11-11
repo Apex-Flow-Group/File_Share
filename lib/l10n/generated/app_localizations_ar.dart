@@ -426,6 +426,12 @@ class AppLocalizationsAr extends AppLocalizations {
   String get folderMissing => 'المجلد محذوف أو منقول.';
 
   @override
+  String get fileMissing => 'الملف محذوف أو منقول.';
+
+  @override
+  String get noAppForFile => 'لا يوجد تطبيق يفتح هذا النوع من الملفات.';
+
+  @override
   String get filesDeletedCount => 'ملف تم حذفه';
 
   @override

@@ -878,6 +878,18 @@ abstract class AppLocalizations {
   /// **'The folder was deleted or moved.'**
   String get folderMissing;
 
+  /// No description provided for @fileMissing.
+  ///
+  /// In en, this message translates to:
+  /// **'The file was deleted or moved.'**
+  String get fileMissing;
+
+  /// No description provided for @noAppForFile.
+  ///
+  /// In en, this message translates to:
+  /// **'No app can open this type of file.'**
+  String get noAppForFile;
+
   /// No description provided for @filesDeletedCount.
   ///
   /// In en, this message translates to:

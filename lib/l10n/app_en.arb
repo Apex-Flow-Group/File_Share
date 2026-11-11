@@ -142,6 +142,8 @@
   "openFileFailed": "Couldn't open the file.",
   "openLocationFailed": "Couldn't open the folder.",
   "folderMissing": "The folder was deleted or moved.",
+  "fileMissing": "The file was deleted or moved.",
+  "noAppForFile": "No app can open this type of file.",
   "filesDeletedCount": "files deleted",
   "fileSentSuccess": "File sent successfully",
   "fileSendFailed": "Failed to send file",

@@ -8,6 +8,7 @@ import '../../../core/apex_core.dart';
 import '../../../l10n/generated/app_localizations.dart';
 import '../../../services/file_operations_service.dart';
 import '../../../shared/apex_snackbar.dart';
+import '../../../shared/file_open_message.dart';
 import '../../../shared/folder_open_message.dart';
 import '../tv_focusable_widgets.dart';
 import 'tv_file_tile.dart';
@@ -193,9 +194,9 @@ class _TVFilesTabState extends State<TVFilesTab> {
   Future<void> _openFile(File file) async {
     try {
       await _fileOpsService.openFile(file.path);
-    } catch (_) {
+    } catch (e) {
       if (mounted) {
-        ApexSnackBar.error(context, AppLocalizations.of(context).openFileFailed);
+        ApexSnackBar.error(context, fileOpenMessage(e, AppLocalizations.of(context)));
       }
     }
   }
