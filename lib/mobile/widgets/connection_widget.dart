@@ -537,15 +537,19 @@ class _ConnectionWidgetState extends State<ConnectionWidget>
     }
     return Row(
       children: [
-        Expanded(
-            child: _ActionButton(
-          icon: Icons.folder_open_rounded,
-          label: l10n.sendFile,
-          color: Theme.of(context).colorScheme.primary,
-          isDark: isDark,
-          onTap: sendFile,
-        )),
-        const SizedBox(width: 10),
+        // Owner decision: on a network device the chat line's clip sends
+        // files. A Nearby-only phone has no chat line, so it keeps this button.
+        if (!widget.device.isMdns) ...[
+          Expanded(
+              child: _ActionButton(
+            icon: Icons.folder_open_rounded,
+            label: l10n.sendFile,
+            color: Theme.of(context).colorScheme.primary,
+            isDark: isDark,
+            onTap: sendFile,
+          )),
+          const SizedBox(width: 10),
+        ],
         if (Platform.isAndroid)
           Expanded(
               child: _ActionButton(
