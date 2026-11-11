@@ -1711,6 +1711,24 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Send files'**
   String get sendFilesNow;
+
+  /// No description provided for @senderLine.
+  ///
+  /// In en, this message translates to:
+  /// **'From: {name} · {when}'**
+  String senderLine(String name, String when);
+
+  /// No description provided for @whenToday.
+  ///
+  /// In en, this message translates to:
+  /// **'Today {time}'**
+  String whenToday(String time);
+
+  /// No description provided for @whenYesterday.
+  ///
+  /// In en, this message translates to:
+  /// **'Yesterday {time}'**
+  String whenYesterday(String time);
 }
 
 class _AppLocalizationsDelegate

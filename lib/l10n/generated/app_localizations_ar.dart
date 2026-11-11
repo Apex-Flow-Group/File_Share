@@ -937,4 +937,19 @@ class AppLocalizationsAr extends AppLocalizations {
 
   @override
   String get sendFilesNow => 'إرسال ملفات';
+
+  @override
+  String senderLine(String name, String when) {
+    return 'من: $name · $when';
+  }
+
+  @override
+  String whenToday(String time) {
+    return 'اليوم $time';
+  }
+
+  @override
+  String whenYesterday(String time) {
+    return 'أمس $time';
+  }
 }

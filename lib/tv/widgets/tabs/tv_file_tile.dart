@@ -3,8 +3,10 @@ import 'dart:io';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 
+import '../../../features/receive/data/sender_log.dart';
 import '../../../l10n/generated/app_localizations.dart';
 import '../../../shared/file_ui_utils.dart';
+import '../../../shared/sender_line_text.dart';
 import '../tv_focusable_widgets.dart';
 
 /// A focusable file tile for TV interfaces with remote support.
@@ -19,6 +21,9 @@ class TVFileTile extends StatefulWidget {
   final VoidCallback? onBackToSidebar;
   final FocusNode? contentFocusNode;
 
+  /// Who sent the file, when it was received over the network.
+  final SenderLine? sender;
+
   const TVFileTile({
     required this.file,
     required this.name,
@@ -29,6 +34,7 @@ class TVFileTile extends StatefulWidget {
     required this.onDelete,
     this.onBackToSidebar,
     this.contentFocusNode,
+    this.sender,
     super.key,
   });
 
@@ -148,6 +154,15 @@ class _TVFileTileState extends State<TVFileTile> {
                                   .onSurfaceVariant),
                         ),
                       ),
+                      if (widget.sender != null)
+                        Text(
+                          senderLineText(AppLocalizations.of(context), widget.sender!),
+                          maxLines: 1,
+                          overflow: TextOverflow.ellipsis,
+                          style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                                color: Theme.of(context).colorScheme.onSurfaceVariant,
+                              ),
+                        ),
                     ]),
               ),
               Icon(Icons.more_vert_rounded,

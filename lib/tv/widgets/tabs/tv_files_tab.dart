@@ -5,6 +5,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 
 import '../../../core/apex_core.dart';
+import '../../../features/receive/data/sender_log.dart';
 import '../../../l10n/generated/app_localizations.dart';
 import '../../../services/file_operations_service.dart';
 import '../../../shared/apex_snackbar.dart';
@@ -17,8 +18,12 @@ class TVFilesTab extends StatefulWidget {
   final Future<List<FileSystemEntity>> Function() getReceivedFiles;
   final VoidCallback? onBackToSidebar;
   final FocusNode? contentFocusNode;
+
+  /// Who sent each file; its line shows under the file.
+  final SenderLog? senders;
   const TVFilesTab({
     required this.getReceivedFiles,
+    this.senders,
     this.onBackToSidebar,
     this.contentFocusNode,
     super.key,
@@ -31,7 +36,7 @@ class TVFilesTab extends StatefulWidget {
 class _TVFilesTabState extends State<TVFilesTab> {
   List<FileSystemEntity>? _files;
   bool _isLoading = false;
-  final _fileOpsService = FileOperationsService();
+  final _fileOpsService = FileOperationsService(senders: ApexCore.instance.senders);
   StreamSubscription? _fileReceivedSub;
 
   @override
@@ -56,6 +61,8 @@ class _TVFilesTabState extends State<TVFilesTab> {
     setState(() => _isLoading = true);
     try {
       final f = await widget.getReceivedFiles();
+      // Files deleted outside the app since: their lines go too.
+      widget.senders?.prune();
       if (mounted) {
         setState(() {
           _files = f;
@@ -185,6 +192,7 @@ class _TVFilesTabState extends State<TVFilesTab> {
           onOpen: () => _openFile(file),
           onOpenLocation: () => _openLocation(file),
           onDelete: () => _deleteFile(file, l10n),
+          sender: widget.senders?.of(file.path),
           onBackToSidebar: widget.onBackToSidebar,
         );
       },

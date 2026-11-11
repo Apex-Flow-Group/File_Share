@@ -27,5 +27,13 @@ class ApexProtocol {
   /// A chat message over TransferRules.chatTextLimit.
   static const tooLong = 'too_long';
 
+  /// The answer, with 200, to a device turned away: a refused or blocked
+  /// offer or chat message, and a file of a batch whose sender was blocked
+  /// while it moved. The sender reads "refused" from it, never "cancelled".
+  static const Map<String, Object> refusal = {'accepted': false};
+
+  static bool isRefusal(int status, Object? json) =>
+      status == 200 && json is Map && json['accepted'] == false && json['reason'] == null;
+
   static bool accepts(String? sentVersion) => sentVersion == '$version';
 }

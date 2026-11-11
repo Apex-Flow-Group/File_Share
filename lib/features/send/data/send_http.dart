@@ -319,6 +319,10 @@ class SendHttp {
         return SendOutcome.cancelled;
       }
       final json = jsonDecode(text);
+      // Blocked while the file moved: refused, as its offer would be now.
+      if (ApexProtocol.isRefusal(res.statusCode, json)) {
+        return SendOutcome.declined;
+      }
       return res.statusCode == HttpStatus.ok && json is Map && json['success'] == true
           ? SendOutcome.sent
           : SendOutcome.failed;

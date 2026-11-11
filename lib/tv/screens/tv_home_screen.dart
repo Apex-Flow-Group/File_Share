@@ -393,6 +393,7 @@ class _TVHomeScreenState extends State<TVHomeScreen> {
       default:
         return TVFilesTab(
           getReceivedFiles: () => FileStorageService().getReceivedFiles(),
+          senders: ApexCore.instance.senders,
           onBackToSidebar: _moveToSidebar,
           contentFocusNode: _filesContentFocus,
         );

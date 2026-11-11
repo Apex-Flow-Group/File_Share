@@ -1,8 +1,15 @@
 import 'dart:io';
+
+import '../features/receive/data/sender_log.dart';
 import '../utils/apex_logger.dart';
 import '../utils/file_utils.dart';
 
 class FileOperationsService {
+  FileOperationsService({this.senders});
+
+  /// A deleted file's sender line goes with it.
+  final SenderLog? senders;
+
   Future<int> deleteFiles(
     Set<String> filePaths, {
     required bool deleteFromFolder,
@@ -14,6 +21,7 @@ class FileOperationsService {
         final file = File(filePath);
         if (deleteFromFolder && await file.exists()) {
           await file.delete();
+          senders?.forget(filePath);
           deletedCount++;
         } else if (!deleteFromFolder) {
           deletedCount++;

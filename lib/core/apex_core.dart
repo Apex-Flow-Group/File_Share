@@ -15,6 +15,7 @@ import '../features/identity/peer_trust.dart';
 import '../features/identity/pin_store.dart';
 import '../features/receive/data/receive_http.dart';
 import '../features/receive/data/receive_store.dart';
+import '../features/receive/data/sender_log.dart';
 import '../features/receive/logic/receive_gate.dart';
 import '../features/send/data/send_http.dart';
 import '../managers/device_manager.dart';
@@ -54,6 +55,10 @@ class ApexCore {
 
   /// Whom the user accepted, by id and fingerprint; on disk once [initialize] ran.
   final _pins = PinStore.memory();
+
+  /// Who sent each received file; on disk once [initialize] ran. Files from
+  /// Nearby have no line: the name alone is the sender's own word.
+  final senders = SenderLog.memory();
   DiscoveryService? _discoveryService;
   Timer? _cleanupTimer;
   bool _isRunning = false;
@@ -87,6 +92,7 @@ class ApexCore {
       chat.receivedFile(e);
     },
     freeBytes: () async => freeBytesAt(await PathUtils.getDownloadPath()),
+    senders: senders,
     expectedFingerprint: _expectedFingerprint,
     pins: _pins,
     blocks: _blocks,
@@ -217,6 +223,7 @@ class ApexCore {
       _peerTrust = PeerTrust(_serverContext!);
     }
     await _pins.useFile(File('${folder.path}/pins.json'));
+    await senders.useFile(File('${(await getApplicationSupportDirectory()).path}/senders.json'));
     _localDevice = Device(
       id: deviceId,
       name: name,

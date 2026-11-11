@@ -343,5 +343,17 @@
   "@chatRemoveFile": {
     "placeholders": { "name": { "type": "String" } }
   },
-  "sendFilesNow": "Send files"
+  "sendFilesNow": "Send files",
+  "senderLine": "From: {name} · {when}",
+  "@senderLine": {
+    "placeholders": { "name": { "type": "String" }, "when": { "type": "String" } }
+  },
+  "whenToday": "Today {time}",
+  "@whenToday": {
+    "placeholders": { "time": { "type": "String" } }
+  },
+  "whenYesterday": "Yesterday {time}",
+  "@whenYesterday": {
+    "placeholders": { "time": { "type": "String" } }
+  }
 }

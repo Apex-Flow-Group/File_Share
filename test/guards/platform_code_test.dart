@@ -15,7 +15,6 @@ const _legacyOsCode = <String, int>{
   'lib/mobile/controllers/home_controller.dart': 3,
   'lib/mobile/screens/settings_screen.dart': 2,
   'lib/mobile/screens/settings_sheets.dart': 3,
-  'lib/mobile/screens/share_browser_screen.dart': 1,
   'lib/mobile/widgets/connection_widget.dart': 1,
   'lib/mobile/widgets/tabs/receive_tab.dart': 1,
   'lib/screens/about_screen.dart': 6,
