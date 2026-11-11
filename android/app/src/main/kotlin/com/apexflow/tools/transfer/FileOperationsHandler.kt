@@ -1,5 +1,6 @@
 package com.apexflow.tools.transfer
 
+import android.content.ActivityNotFoundException
 import android.content.ContentValues
 import android.content.Context
 import android.content.Intent
@@ -257,6 +258,9 @@ class FileOperationsHandler(private val context: Context) {
 
             context.startActivity(Intent.createChooser(intent, null))
             result.success(true)
+        } catch (e: ActivityNotFoundException) {
+            // Nothing on the device opens it; Dart reads NO_APP (open_with_app.dart).
+            result.error("NO_APP", e.message, null)
         } catch (e: Exception) {
             result.error("OPEN_FAILED", e.message, null)
         }

@@ -100,18 +100,21 @@ class FileUtils {
   static Future<void> openFile(String filePath) async {
     if (Platform.isAndroid) {
       try {
-        // Use native FileProvider to get content:// URI - works on all Android versions
+        // Native FileProvider gives a content:// URI, which every Android version accepts.
         await _channel.invokeMethod('openFile', {'path': filePath});
         return;
-      } catch (_) {
-        // fallback to open_filex
+      } on PlatformException catch (e) {
+        // Its answer is the reason; falling back to open_filex lost it.
+        throw FileOpenError(androidOpenResult(e.code));
+      } on MissingPluginException {
+        // No native side: open_filex below.
       }
     }
 
     // Never through cmd: it runs "&" in a name, so "report&calc" starts calc.
     final desktop = await openOnDesktop(filePath);
     if (desktop != null) {
-      if (desktop != DesktopOpen.opened) {
+      if (desktop != FileOpenResult.opened) {
         throw FileOpenError(desktop);
       }
       return;
@@ -122,9 +125,9 @@ class FileUtils {
       return;
     }
 
-    final result = await OpenFilex.open(filePath);
-    if (result.type != ResultType.done && result.type != ResultType.noAppToOpen) {
-      throw Exception(result.message);
+    final result = openFilexResult((await OpenFilex.open(filePath)).type);
+    if (result != FileOpenResult.opened) {
+      throw FileOpenError(result);
     }
   }
 
@@ -177,7 +180,7 @@ class FileUtils {
 class FileOpenError implements Exception {
   const FileOpenError(this.result);
 
-  final DesktopOpen result;
+  final FileOpenResult result;
 }
 
 /// The folder could not be opened: [missing] when it was deleted or moved,

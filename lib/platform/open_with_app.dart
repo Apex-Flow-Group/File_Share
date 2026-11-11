@@ -4,23 +4,25 @@ import 'dart:isolate';
 
 import 'package:ffi/ffi.dart';
 import 'package:flutter/foundation.dart' show visibleForTesting;
+import 'package:open_filex/open_filex.dart' show ResultType;
 
 import 'reveal_in_folder.dart';
 
-enum DesktopOpen { opened, missing, noApp, failed }
+enum FileOpenResult { opened, missing, noApp, failed }
 
 /// Opens [path] with the app the system chose for its type, on Windows and
-/// Linux; null on other systems, which open files their own way.
+/// Linux; null on other systems, which open files their own way (Android
+/// through FileOperationsHandler.kt, answered by [androidOpenResult]).
 /// explorer.exe could not be used: its exit code is 1 whatever happened, so a
 /// failure showed nothing.
-Future<DesktopOpen?> openOnDesktop(String path) async {
+Future<FileOpenResult?> openOnDesktop(String path) async {
   if (!Platform.isWindows && !Platform.isLinux) {
     return null;
   }
   // Checked here: a missing file does not reach either system's own answer,
   // which for a desktop environment without xdg-open's codes is only "failed".
   if (!await File(path).exists()) {
-    return DesktopOpen.missing;
+    return FileOpenResult.missing;
   }
   if (Platform.isWindows) {
     final native = windowsPath(path);
@@ -39,19 +41,34 @@ Future<int> shellExecuteCode(String path) => Isolate.run(() => _shellExecute(pat
 
 /// ShellExecuteW answers above 32 on success; 2 and 3: file or path not found;
 /// 27 and 31: no app for this type.
-DesktopOpen windowsOpenResult(int code) => switch (code) {
-      > 32 => DesktopOpen.opened,
-      2 || 3 => DesktopOpen.missing,
-      27 || 31 => DesktopOpen.noApp,
-      _ => DesktopOpen.failed,
+FileOpenResult windowsOpenResult(int code) => switch (code) {
+      > 32 => FileOpenResult.opened,
+      2 || 3 => FileOpenResult.missing,
+      27 || 31 => FileOpenResult.noApp,
+      _ => FileOpenResult.failed,
+    };
+
+/// The Android side's error codes (FileOperationsHandler.kt, openFile).
+FileOpenResult androidOpenResult(String code) => switch (code) {
+      'FILE_NOT_FOUND' => FileOpenResult.missing,
+      'NO_APP' => FileOpenResult.noApp,
+      _ => FileOpenResult.failed,
+    };
+
+/// open_filex's answer; "no app" used to pass as success, so nothing showed.
+FileOpenResult openFilexResult(ResultType type) => switch (type) {
+      ResultType.done => FileOpenResult.opened,
+      ResultType.fileNotFound => FileOpenResult.missing,
+      ResultType.noAppToOpen => FileOpenResult.noApp,
+      _ => FileOpenResult.failed,
     };
 
 /// xdg-open exit codes: 2, a file does not exist; 3, no tool to open it.
-DesktopOpen linuxOpenResult(int code) => switch (code) {
-      0 => DesktopOpen.opened,
-      2 => DesktopOpen.missing,
-      3 => DesktopOpen.noApp,
-      _ => DesktopOpen.failed,
+FileOpenResult linuxOpenResult(int code) => switch (code) {
+      0 => FileOpenResult.opened,
+      2 => FileOpenResult.missing,
+      3 => FileOpenResult.noApp,
+      _ => FileOpenResult.failed,
     };
 
 typedef _ShellExecuteC = IntPtr Function(IntPtr hwnd, Pointer<Utf16> verb, Pointer<Utf16> file,
