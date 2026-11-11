@@ -11,6 +11,7 @@ import '../../../services/file_operations_service.dart';
 import '../../../shared/apex_snackbar.dart';
 import '../../../shared/file_open_message.dart';
 import '../../../shared/folder_open_message.dart';
+import '../../../utils/path_name.dart';
 import '../tv_focusable_widgets.dart';
 import 'tv_file_tile.dart';
 
@@ -182,7 +183,7 @@ class _TVFilesTabState extends State<TVFilesTab> {
       separatorBuilder: (_, __) => const SizedBox(height: 8),
       itemBuilder: (context, i) {
         final file = File(_files![i].path);
-        final name = file.path.split(Platform.pathSeparator).last;
+        final name = fileNameOf(file.path);
         return TVFileTile(
           file: file,
           name: name,
@@ -223,7 +224,7 @@ class _TVFilesTabState extends State<TVFilesTab> {
     final ok = await showDialog<bool>(
       context: context,
       builder: (_) => _TVDeleteConfirmDialog(
-        fileName: file.path.split(Platform.pathSeparator).last,
+        fileName: fileNameOf(file.path),
         l10n: l10n,
       ),
     );

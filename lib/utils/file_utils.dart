@@ -81,22 +81,6 @@ class FileUtils {
     return 'Others';
   }
   
-  static String formatDate(DateTime date) {
-    final now = DateTime.now();
-    final diff = now.difference(date);
-    
-    if (diff.inMinutes < 1) {
-      return 'الآن';
-    }
-    if (diff.inHours < 1) {
-      return 'منذ ${diff.inMinutes} دقيقة';
-    }
-    if (diff.inDays < 1) {
-      return 'منذ ${diff.inHours} ساعة';
-    }
-    return 'منذ ${diff.inDays} يوم';
-  }
-  
   static Future<void> openFile(String filePath) async {
     if (Platform.isAndroid) {
       try {

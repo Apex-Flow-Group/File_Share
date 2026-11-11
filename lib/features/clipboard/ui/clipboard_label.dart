@@ -1,5 +1,6 @@
 import '../../../l10n/generated/app_localizations.dart';
 import '../../../services/clipboard_monitor_service.dart';
+import '../../../utils/path_name.dart';
 
 /// How a copied item is named on screen and in notifications. Copied text is
 /// often a password, so only its length is shown, never its content.
@@ -18,5 +19,5 @@ String clipboardLabel(AppLocalizations l10n, ClipboardItem item, {bool typeShown
   if (item.paths.isEmpty) {
     return '';
   }
-  return item.paths.first.replaceAll('\\', '/').split('/').last;
+  return fileNameOf(item.paths.first);
 }

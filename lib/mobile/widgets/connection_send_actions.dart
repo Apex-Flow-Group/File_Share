@@ -10,6 +10,7 @@ import '../../l10n/generated/app_localizations.dart';
 import '../../models/device.dart';
 import '../../services/desktop_notification_service.dart';
 import '../../services/transfer_progress_service.dart';
+import '../../utils/path_name.dart';
 import '../screens/apps_selection_screen.dart';
 
 /// Mixin that encapsulates file/app/folder send actions for ConnectionWidget.
@@ -39,7 +40,7 @@ mixin ConnectionSendActions<T extends StatefulWidget> on State<T> {
       }
       // Read before the awaits below, while the screen is still there.
       final label = paths.length == 1
-          ? paths.first.split('/').last
+          ? fileNameOf(paths.first)
           : l10n.clipboardFileCount(paths.length);
       if (ok) {
         await DesktopNotificationService.instance.showFileSent(label);

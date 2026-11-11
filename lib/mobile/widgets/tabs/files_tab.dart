@@ -6,6 +6,7 @@ import '../../../features/receive/data/sender_log.dart';
 import '../../../l10n/generated/app_localizations.dart';
 import '../../../shared/apex_bottom_sheet.dart';
 import '../../../shared/apex_snackbar.dart';
+import '../../../utils/path_name.dart';
 import '../../../utils/platform_detector.dart';
 import '../delete_files_sheet.dart';
 import 'file_tile.dart';
@@ -463,9 +464,7 @@ class _FilesTabState extends State<FilesTab>
         }
         final index = isDesktop ? i - 2 : i;
         final file = File(sorted[index].path);
-        final name = file.path.split(Platform.pathSeparator).last.isNotEmpty
-            ? file.path.split(Platform.pathSeparator).last
-            : file.path.split('/').last;
+        final name = fileNameOf(file.path);
         final isSelected = widget.selectedFiles.contains(file.path);
         return Padding(
           padding: const EdgeInsets.only(bottom: 8),
@@ -493,11 +492,7 @@ class _FilesTabState extends State<FilesTab>
       try {
         switch (widget.sortBy) {
           case 'name':
-            return a.path
-                .split('/')
-                .last
-                .toLowerCase()
-                .compareTo(b.path.split('/').last.toLowerCase());
+            return fileNameOf(a.path).toLowerCase().compareTo(fileNameOf(b.path).toLowerCase());
           case 'size':
             return File(a.path)
                 .lengthSync()

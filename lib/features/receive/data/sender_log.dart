@@ -10,7 +10,9 @@ import '../../identity/fingerprint.dart';
 typedef SenderLine = ({String name, DateTime at, String fingerprint});
 
 /// One line per received file, by the path the file was placed at, for as
-/// long as the file is there. Never a message's text.
+/// long as that same file is there: a line is kept with the file's size, and
+/// a file of another size at the path (the first one deleted outside the app
+/// and another saved under its name) does not wear it. Never a message's text.
 ///
 /// Kept in one file in the app's own folder, written whole to a temp file
 /// then renamed, so a crash mid-write leaves the old file. A file that
@@ -21,7 +23,7 @@ class SenderLog {
 
   final DateTime Function() _clock;
   File? _file;
-  final _lines = <String, SenderLine>{};
+  final _lines = <String, _Entry>{};
   Future<void> _writing = Future.value();
 
   static Future<SenderLog> open(File file, {DateTime Function()? clock}) async {
@@ -36,16 +38,16 @@ class SenderLog {
     if (_file?.path == file.path) {
       return;
     }
-    final read = <String, SenderLine>{};
+    final read = <String, _Entry>{};
     try {
       if (await file.exists()) {
         final json = jsonDecode(await file.readAsString());
         final stored = json is Map ? json['lines'] : null;
         if (stored is Map) {
           for (final e in stored.entries) {
-            final line = _parse(e.value);
-            if (e.key is String && line != null) {
-              read[e.key as String] = line;
+            final entry = _parse(e.value);
+            if (e.key is String && entry != null) {
+              read[e.key as String] = entry;
             }
           }
         }
@@ -61,24 +63,26 @@ class SenderLog {
   /// Call once the file is complete at [path], where it stays. A line an
   /// older file at that path left is replaced.
   void record(String path, {required String name, required String fingerprint}) {
-    _lines[_key(path)] = (name: name, at: _clock().toUtc(), fingerprint: fingerprint);
+    final key = _key(path);
+    _lines[key] = _Entry((name: name, at: _clock().toUtc(), fingerprint: fingerprint), _sizeOf(key));
     _save();
   }
 
   /// The line of the file at [path]; null when it has none, or when the file
-  /// is gone (deleted outside the app), whose line is then dropped.
+  /// is gone or is not the one the line was made for (deleted and replaced
+  /// outside the app), whose line is then dropped.
   SenderLine? of(String path) {
     final key = _key(path);
-    final line = _lines[key];
-    if (line == null) {
+    final entry = _lines[key];
+    if (entry == null) {
       return null;
     }
-    if (!File(key).existsSync()) {
+    if (_sizeOf(key) != entry.size) {
       _lines.remove(key);
       _save();
       return null;
     }
-    return line;
+    return entry.line;
   }
 
   /// The app deleted or moved the file at [path].
@@ -91,7 +95,7 @@ class SenderLog {
   /// Drops the line of every file that is gone.
   void prune() {
     final before = _lines.length;
-    _lines.removeWhere((key, _) => !File(key).existsSync());
+    _lines.removeWhere((key, entry) => _sizeOf(key) != entry.size);
     if (_lines.length != before) {
       _save();
     }
@@ -104,7 +108,16 @@ class SenderLog {
   /// path a file was placed at and the one a folder listing gives differ in it.
   static String _key(String path) => path.replaceAll(r'\', '/');
 
-  static SenderLine? _parse(Object? v) {
+  /// -1 when there is no file, which no line matches.
+  static int _sizeOf(String path) {
+    try {
+      return File(path).lengthSync();
+    } on FileSystemException {
+      return -1;
+    }
+  }
+
+  static _Entry? _parse(Object? v) {
     if (v is! Map) {
       return null;
     }
@@ -114,7 +127,9 @@ class SenderLog {
     if (name is! String || at == null || !isFingerprint(fingerprint)) {
       return null;
     }
-    return (name: name, at: at, fingerprint: fingerprint as String);
+    // A line without a size is from before sizes were kept: it matches no file.
+    final size = v['size'];
+    return _Entry((name: name, at: at, fingerprint: fingerprint as String), size is int ? size : -1);
   }
 
   void _save() {
@@ -131,10 +146,22 @@ class SenderLog {
     final part = File('${file.path}.part');
     final lines = {
       for (final e in _lines.entries)
-        e.key: {'name': e.value.name, 'at': e.value.at.toIso8601String(), 'key': e.value.fingerprint},
+        e.key: {
+          'name': e.value.line.name,
+          'at': e.value.line.at.toIso8601String(),
+          'key': e.value.line.fingerprint,
+          'size': e.value.size,
+        },
     };
     await part.writeAsString(jsonEncode({'lines': lines}), flush: true);
     await keepOwnerOnly(part);
     await part.rename(file.path);
   }
+}
+
+class _Entry {
+  const _Entry(this.line, this.size);
+
+  final SenderLine line;
+  final int size;
 }
