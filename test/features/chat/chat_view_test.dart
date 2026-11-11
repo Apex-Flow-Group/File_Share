@@ -1,3 +1,4 @@
+import 'package:apex_file_share/core/protocol/transfer_rules.dart';
 import 'package:apex_file_share/features/chat/logic/chat_store.dart';
 import 'package:apex_file_share/features/chat/ui/device_chat_view.dart';
 import 'package:apex_file_share/features/send/data/send_http.dart';
@@ -62,21 +63,44 @@ void main() {
     expect(find.text('hi there'), findsOneWidget, reason: 'in the chat, no longer in the line');
   });
 
-  testWidgets('a message that did not arrive shows why, and resends only when asked', (tester) async {
-    answer = ChatOutcome.declined;
-    final l10n = await show(tester, canWrite: true);
-    await tester.enterText(find.byType(TextField), 'hello');
+  Future<void> write(WidgetTester tester, AppLocalizations l10n, String text) async {
+    await tester.enterText(find.byType(TextField), text);
     await tester.pump();
     await tester.tap(find.bySemanticsLabel(l10n.send));
     await tester.pumpAndSettle();
-    expect(find.text(l10n.chatDeclined), findsOneWidget);
+  }
+
+  testWidgets('a message that did not arrive shows why, and resends only when asked', (tester) async {
+    answer = ChatOutcome.busy;
+    final l10n = await show(tester, canWrite: true);
+    await write(tester, l10n, 'hello');
+    expect(find.text(l10n.sendReceiverBusy), findsOneWidget);
     expect(sent, hasLength(1));
 
     answer = ChatOutcome.sent;
     await tester.tap(find.text(l10n.retry));
     await tester.pumpAndSettle();
     expect(sent, hasLength(2));
-    expect(find.text(l10n.chatDeclined), findsNothing);
+    expect(find.text(l10n.sendReceiverBusy), findsNothing);
+  });
+
+  for (final outcome in [ChatOutcome.declined, ChatOutcome.updateRequired]) {
+    testWidgets('no retry where it would fail the same way again ($outcome)', (tester) async {
+      answer = outcome;
+      final l10n = await show(tester, canWrite: true);
+      await write(tester, l10n, 'hello');
+      expect(find.text(l10n.retry), findsNothing);
+    });
+  }
+
+  testWidgets('a text over the limit stays in the line, whole, and is not sent', (tester) async {
+    final l10n = await show(tester, canWrite: true);
+    final long = 'a' * (TransferRules.chatTextLimit + 5);
+    await write(tester, l10n, long);
+    expect(sent, isEmpty);
+    expect(tester.widget<TextField>(find.byType(TextField)).controller!.text, long,
+        reason: 'nothing cut off unseen');
+    expect(find.text(l10n.chatTooLong(TransferRules.chatTextLimit)), findsOneWidget);
   });
 
   testWidgets('opening the chat marks its messages read', (tester) async {

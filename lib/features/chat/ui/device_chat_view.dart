@@ -7,6 +7,7 @@ import '../../../models/device.dart';
 import '../../../services/clipboard_monitor_service.dart';
 import '../../../shared/apex_snackbar.dart';
 import '../../../shared/framed_capsule_input.dart';
+import '../../send/data/send_http.dart';
 import '../logic/chat_store.dart';
 import 'chat_outcome_message.dart';
 
@@ -44,10 +45,21 @@ class _DeviceChatViewState extends State<DeviceChatView> {
     super.dispose();
   }
 
+  /// A text over the limit stays in the line with the reason, so nothing is
+  /// cut off unseen (a field limit would silently drop the end of a paste).
+  bool _send(String text) {
+    if (text.runes.length > TransferRules.chatTextLimit) {
+      ApexSnackBar.error(context, AppLocalizations.of(context).chatTooLong(TransferRules.chatTextLimit));
+      return false;
+    }
+    widget.store.write(widget.device, text);
+    return true;
+  }
+
   Future<void> _copy(String text) async {
     await ClipboardMonitorService.instance.copyText(text);
     if (mounted) {
-      ApexSnackBar.success(context, AppLocalizations.of(context).chatCopied);
+      ApexSnackBar.success(context, AppLocalizations.of(context).textCopied);
     }
   }
 
@@ -65,8 +77,7 @@ class _DeviceChatViewState extends State<DeviceChatView> {
               child: messages.isEmpty
                   ? Padding(
                       padding: const EdgeInsets.symmetric(vertical: 32),
-                      child: Text(l10n.chatEmpty,
-                          style: TextStyle(color: Theme.of(context).hintColor)),
+                      child: Text(l10n.chatEmpty, style: TextStyle(color: Theme.of(context).hintColor)),
                     )
                   : ListView.builder(
                       reverse: true,
@@ -86,8 +97,7 @@ class _DeviceChatViewState extends State<DeviceChatView> {
               FramedCapsuleInput(
                 hint: l10n.chatHint,
                 sendLabel: l10n.send,
-                maxLength: TransferRules.chatTextLimit,
-                onSend: (text) => widget.store.write(widget.device, text),
+                onSend: _send,
               ),
             ],
           ],
@@ -96,6 +106,14 @@ class _DeviceChatViewState extends State<DeviceChatView> {
     );
   }
 }
+
+/// Retry is offered only where it can work: a refusal holds until the other
+/// app closes, and another version or a too-long text fails the same way again.
+bool _retryHelps(ChatOutcome failure) => switch (failure) {
+      ChatOutcome.failed || ChatOutcome.noAnswer || ChatOutcome.busy => true,
+      ChatOutcome.declined || ChatOutcome.updateRequired || ChatOutcome.tooLong => false,
+      ChatOutcome.sent => false,
+    };
 
 class _Bubble extends StatelessWidget {
   const _Bubble({
@@ -122,8 +140,7 @@ class _Bubble extends StatelessWidget {
         : (isDark ? const Color(0xFF2C2C2E) : const Color(0xFFF0F0F2));
     // Each message keeps its own direction: an English line inside an
     // Arabic screen still reads left to right.
-    final direction =
-        Bidi.detectRtlDirectionality(message.text) ? TextDirection.rtl : TextDirection.ltr;
+    final direction = Bidi.detectRtlDirectionality(message.text) ? TextDirection.rtl : TextDirection.ltr;
 
     return Align(
       alignment: mine ? AlignmentDirectional.centerEnd : AlignmentDirectional.centerStart,
@@ -153,8 +170,8 @@ class _Bubble extends StatelessWidget {
               if (mine && message.status == ChatStatus.sending)
                 Padding(
                   padding: const EdgeInsets.only(top: 4),
-                  child: Text(l10n.sending,
-                      style: TextStyle(fontSize: 12, color: Theme.of(context).hintColor)),
+                  child:
+                      Text(l10n.sending, style: TextStyle(fontSize: 12, color: Theme.of(context).hintColor)),
                 ),
               if (failed) ...[
                 Padding(
@@ -162,11 +179,12 @@ class _Bubble extends StatelessWidget {
                   child: Text(chatOutcomeMessage(l10n, message.failure!),
                       style: const TextStyle(fontSize: 12, color: Colors.red)),
                 ),
-                TextButton.icon(
-                  onPressed: () => onRetry(message),
-                  icon: const Icon(Icons.refresh_rounded, size: 16),
-                  label: Text(l10n.retry),
-                ),
+                if (_retryHelps(message.failure!))
+                  TextButton.icon(
+                    onPressed: () => onRetry(message),
+                    icon: const Icon(Icons.refresh_rounded, size: 16),
+                    label: Text(l10n.retry),
+                  ),
               ],
             ],
           ),

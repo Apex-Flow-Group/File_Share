@@ -54,7 +54,6 @@ class FramedCapsuleInput extends StatefulWidget {
     required this.hint,
     required this.sendLabel,
     required this.onSend,
-    this.maxLength,
     super.key,
   });
 
@@ -62,8 +61,9 @@ class FramedCapsuleInput extends StatefulWidget {
 
   /// Read by screen readers for the send circle, which has no text.
   final String sendLabel;
-  final void Function(String text) onSend;
-  final int? maxLength;
+
+  /// False keeps the text in the line (the caller said why).
+  final bool Function(String text) onSend;
 
   @override
   State<FramedCapsuleInput> createState() => _FramedCapsuleInputState();
@@ -101,8 +101,9 @@ class _FramedCapsuleInputState extends State<FramedCapsuleInput> {
     if (!_canSend) {
       return;
     }
-    widget.onSend(_controller.text);
-    _controller.clear();
+    if (widget.onSend(_controller.text)) {
+      _controller.clear();
+    }
     _focus.requestFocus();
   }
 
@@ -114,7 +115,6 @@ class _FramedCapsuleInputState extends State<FramedCapsuleInput> {
       focusNode: _focus,
       minLines: 1,
       maxLines: 6,
-      maxLength: widget.maxLength,
       keyboardType: TextInputType.multiline,
       textInputAction: TextInputAction.newline,
       style: TextStyle(color: c.text, fontSize: 16),
@@ -124,7 +124,6 @@ class _FramedCapsuleInputState extends State<FramedCapsuleInput> {
         hintStyle: TextStyle(color: c.hint, fontSize: 16),
         border: InputBorder.none,
         isCollapsed: true,
-        counterText: '',
         contentPadding: const EdgeInsets.symmetric(vertical: 18),
       ),
     );
@@ -149,25 +148,29 @@ class _FramedCapsuleInputState extends State<FramedCapsuleInput> {
           const SizedBox(width: 4),
           Padding(
             padding: const EdgeInsets.only(bottom: _margin - _touchExtra),
-            child: Semantics(
-              button: true,
-              label: widget.sendLabel,
-              enabled: _canSend,
-              child: GestureDetector(
-                behavior: HitTestBehavior.opaque,
-                onTap: _canSend ? _send : null,
-                // The circle is under 48dp, so the touch area reaches past it.
-                child: SizedBox.square(
-                  dimension: _touch,
-                  child: Center(
-                    child: AnimatedOpacity(
-                      opacity: _canSend ? 1 : 0.4,
-                      duration: const Duration(milliseconds: 150),
-                      child: Container(
-                        width: _circle,
-                        height: _circle,
-                        decoration: BoxDecoration(color: c.filled, shape: BoxShape.circle),
-                        child: Icon(Icons.arrow_upward_rounded, color: c.onFilled, size: 22),
+            child: Tooltip(
+              message: widget.sendLabel,
+              excludeFromSemantics: true,
+              child: Semantics(
+                button: true,
+                label: widget.sendLabel,
+                enabled: _canSend,
+                child: GestureDetector(
+                  behavior: HitTestBehavior.opaque,
+                  onTap: _canSend ? _send : null,
+                  // The circle is under 48dp, so the touch area reaches past it.
+                  child: SizedBox.square(
+                    dimension: _touch,
+                    child: Center(
+                      child: AnimatedOpacity(
+                        opacity: _canSend ? 1 : 0.4,
+                        duration: const Duration(milliseconds: 150),
+                        child: Container(
+                          width: _circle,
+                          height: _circle,
+                          decoration: BoxDecoration(color: c.filled, shape: BoxShape.circle),
+                          child: Icon(Icons.arrow_upward_rounded, color: c.onFilled, size: 22),
+                        ),
                       ),
                     ),
                   ),

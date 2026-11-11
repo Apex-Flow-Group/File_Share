@@ -337,7 +337,8 @@ class _TVSendOptionsDialog extends StatelessWidget {
               const SizedBox(height: 8),
               TVDialogOption(
                 icon: Icons.chat_bubble_rounded,
-                label: l10n.chatOpen,
+                // Read only on the TV: it shows messages, it does not chat.
+                label: l10n.chatMessages,
                 color: const Color(0xFF00897B),
                 autofocus: false,
                 onTap: onOpenChat!,

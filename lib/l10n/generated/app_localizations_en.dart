@@ -457,7 +457,7 @@ class AppLocalizationsEn extends AppLocalizations {
   String get message => 'Message';
 
   @override
-  String get sending => 'Sending...';
+  String get sending => 'Sending…';
 
   @override
   String get sendMessage => 'Send';
@@ -801,7 +801,7 @@ class AppLocalizationsEn extends AppLocalizations {
   String get chatCopy => 'Copy';
 
   @override
-  String get chatCopied => 'Text copied';
+  String get chatMessages => 'Messages';
 
   @override
   String get chatDeclined => 'The other device declined the chat';

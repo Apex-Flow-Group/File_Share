@@ -953,7 +953,7 @@ abstract class AppLocalizations {
   /// No description provided for @sending.
   ///
   /// In en, this message translates to:
-  /// **'Sending...'**
+  /// **'Sending…'**
   String get sending;
 
   /// No description provided for @sendMessage.
@@ -1550,11 +1550,11 @@ abstract class AppLocalizations {
   /// **'Copy'**
   String get chatCopy;
 
-  /// No description provided for @chatCopied.
+  /// No description provided for @chatMessages.
   ///
   /// In en, this message translates to:
-  /// **'Text copied'**
-  String get chatCopied;
+  /// **'Messages'**
+  String get chatMessages;
 
   /// No description provided for @chatDeclined.
   ///

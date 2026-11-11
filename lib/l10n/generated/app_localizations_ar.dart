@@ -391,7 +391,7 @@ class AppLocalizationsAr extends AppLocalizations {
   String get finish => 'ابدأ الآن';
 
   @override
-  String get textCopied => 'تم النسخ';
+  String get textCopied => 'نُسخ النص';
 
   @override
   String get systemStartFailed => 'فشل بدء النظام';
@@ -462,7 +462,7 @@ class AppLocalizationsAr extends AppLocalizations {
   String get message => 'الرسالة';
 
   @override
-  String get sending => 'جاري الإرسال...';
+  String get sending => 'جارٍ الإرسال…';
 
   @override
   String get sendMessage => 'إرسال';
@@ -816,7 +816,7 @@ class AppLocalizationsAr extends AppLocalizations {
   String get chatCopy => 'نسخ';
 
   @override
-  String get chatCopied => 'نُسخ النص';
+  String get chatMessages => 'الرسائل';
 
   @override
   String get chatDeclined => 'رفض الجهاز الآخر المحادثة';
