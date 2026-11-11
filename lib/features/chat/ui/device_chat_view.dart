@@ -32,6 +32,7 @@ class DeviceChatView extends StatefulWidget {
     this.initialFiles = const [],
     this.copied,
     this.onCopiedUsed,
+    this.extras = const [],
     super.key,
   });
 
@@ -61,6 +62,9 @@ class DeviceChatView extends StatefulWidget {
 
   /// The copied item was added and sent, or dropped: it is no longer offered.
   final void Function({required bool sent})? onCopiedUsed;
+
+  /// The card's other sends, as circles of the box (owner decision).
+  final List<CapsuleAction> extras;
 
   @override
   State<DeviceChatView> createState() => _DeviceChatViewState();
@@ -291,6 +295,7 @@ class _DeviceChatViewState extends State<DeviceChatView> {
                 attachLabel: l10n.chatAttach,
                 autofocus: widget.autofocus || widget.initialText != null || widget.initialFiles.isNotEmpty,
                 pasteLabel: l10n.chatPaste,
+                extras: widget.extras,
                 onPasteEmpty: () => ApexSnackBar.info(context, l10n.chatClipboardEmpty),
                 top: _files.isEmpty
                     ? null

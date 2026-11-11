@@ -125,10 +125,12 @@ class ChatCardPanel extends StatelessWidget {
     this.initialFiles = const [],
     this.copied,
     this.onCopiedUsed,
+    this.extras = const [],
     super.key,
   });
 
   final Device device;
+  final List<CapsuleAction> extras;
   final String? initialText;
   final List<String> initialFiles;
   final ClipboardItem? copied;
@@ -152,6 +154,7 @@ class ChatCardPanel extends StatelessWidget {
         initialFiles: initialFiles,
         copied: copied,
         onCopiedUsed: onCopiedUsed,
+        extras: extras,
       ),
     );
   }

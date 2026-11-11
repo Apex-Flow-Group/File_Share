@@ -56,6 +56,9 @@ class FramedCapsuleColors {
       Theme.of(context).brightness == Brightness.dark ? _dark : _light;
 }
 
+/// A plain circle of the box's button row.
+typedef CapsuleAction = ({IconData icon, String label, VoidCallback onTap});
+
 /// A message box as in chat apps (owner's reference): what is attached on
 /// top, the text across the whole box, and a row of buttons under it, the
 /// clip and paste at the start and send at the end. On a computer Enter
@@ -74,6 +77,7 @@ class FramedCapsuleInput extends StatefulWidget {
     this.onPasteEmpty,
     this.top,
     this.controller,
+    this.extras = const [],
     super.key,
   });
 
@@ -108,6 +112,10 @@ class FramedCapsuleInput extends StatefulWidget {
 
   /// Given by a caller that puts text in the box itself (a copied text).
   final TextEditingController? controller;
+
+  /// More plain circles after paste, each doing its own thing at once
+  /// (send a folder, send an app).
+  final List<CapsuleAction> extras;
 
   @override
   State<FramedCapsuleInput> createState() => _FramedCapsuleInputState();
@@ -221,6 +229,15 @@ class _FramedCapsuleInputState extends State<FramedCapsuleInput> {
           onTap: _paste,
           background: c.circle,
           icon: Icons.content_paste_rounded,
+          iconColor: c.onCircle,
+        ),
+      for (final x in widget.extras)
+        _circleButton(
+          label: x.label,
+          enabled: true,
+          onTap: x.onTap,
+          background: c.circle,
+          icon: x.icon,
           iconColor: c.onCircle,
         ),
     ];

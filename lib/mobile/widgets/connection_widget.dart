@@ -16,6 +16,7 @@ import '../../services/desktop_notification_service.dart';
 import '../../services/transfer_progress_service.dart';
 import '../../shared/apex_snackbar.dart';
 import '../../shared/device_look.dart';
+import '../../utils/platform_detector.dart';
 import '../screens/share_browser_screen.dart';
 import 'chat_card_parts.dart';
 import 'connection_send_actions.dart';
@@ -306,10 +307,16 @@ class _ConnectionWidgetState extends State<ConnectionWidget>
               ),
               const SizedBox(height: 14),
               ...banners,
-              _status == _Status.sending
-                  ? _buildSendingState()
-                  : _buildActions(l10n, isDark, withShare: false),
-              const SizedBox(height: 10),
+              // The send buttons are circles of the message box now; only
+              // a running send, or another device's, takes a row here.
+              if (_status == _Status.sending) ...[
+                _buildSendingState(),
+                const SizedBox(height: 10),
+              ] else if (widget.isGloballyBusy &&
+                  TransferProgressService().targetDeviceId != widget.device.id) ...[
+                _buildBusyBar(l10n),
+                const SizedBox(height: 10),
+              ],
               ChatCardPanel(
                 key: ValueKey(_pasteSeq),
                 device: widget.device,
@@ -317,6 +324,14 @@ class _ConnectionWidgetState extends State<ConnectionWidget>
                 initialFiles: _picked,
                 copied: copied,
                 onCopiedUsed: _copiedUsed,
+                extras: [
+                  // The same choice the button row made: an app on a phone,
+                  // a folder elsewhere.
+                  if (PlatformDetector.instance.isMobile)
+                    (icon: Icons.android_rounded, label: l10n.sendApp, onTap: sendApp)
+                  else
+                    (icon: Icons.folder_zip_rounded, label: l10n.sendFolder, onTap: sendFolder),
+                ],
               ),
             ],
           );
@@ -680,8 +695,7 @@ class _ConnectionWidgetState extends State<ConnectionWidget>
     }
   }
 
-  /// [withShare] false on a chat card, where the shared folder is in the head.
-  Widget _buildActions(AppLocalizations l10n, bool isDark, {bool withShare = true}) {
+  Widget _buildActions(AppLocalizations l10n, bool isDark) {
     final svc = TransferProgressService();
     final isThisDeviceTarget = svc.targetDeviceId == widget.device.id;
     if (widget.isGloballyBusy &&
@@ -723,7 +737,7 @@ class _ConnectionWidgetState extends State<ConnectionWidget>
             onTap: sendFolder,
           )),
         // زر المجلد المشترك — يظهر فقط إذا الجهاز desktop وأعلن عن Share
-        if (withShare && widget.device.hasShare) ...[
+        if (widget.device.hasShare) ...[
           const SizedBox(width: 10),
           Expanded(
             child: _ActionButton(
