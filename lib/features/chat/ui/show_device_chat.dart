@@ -26,6 +26,11 @@ Future<void> showDeviceChat(BuildContext context, Device device) {
                   maxLines: 1,
                   overflow: TextOverflow.ellipsis,
                   style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 16)),
+              // The chat is bound to this address; a name alone can be claimed.
+              Text(device.ip,
+                  textAlign: TextAlign.center,
+                  textDirection: TextDirection.ltr,
+                  style: TextStyle(fontSize: 12, color: Theme.of(context).hintColor)),
               const SizedBox(height: 8),
               Flexible(child: DeviceChatView(store: ApexCore.instance.chat, device: device)),
             ],

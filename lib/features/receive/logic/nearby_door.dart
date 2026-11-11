@@ -2,6 +2,7 @@ import 'dart:async';
 
 import '../../../core/core_models.dart';
 import '../../../core/files/safe_file_name.dart';
+import '../../../core/one_question.dart';
 import '../../../core/protocol/apex_protocol.dart';
 import '../../../core/protocol/nearby_messages.dart';
 import '../../../core/protocol/transfer_rules.dart';
@@ -20,9 +21,11 @@ class NearbyDoor {
     this.onAdmitted,
     this.freeBytes,
     ReceiveGate? gate,
+    OneQuestion? question,
     this.decisionTimeout = TransferRules.decisionTimeout,
     this.announceWait = const Duration(seconds: 10),
-  }) : _gate = gate ?? ReceiveGate();
+  })  : _gate = gate ?? ReceiveGate(),
+        _question = question ?? OneQuestion();
 
   final void Function(ConnectionRequest) onConnectionRequest;
   final Future<void> Function(String endpointId, Map<String, Object?> msg) send;
@@ -42,7 +45,7 @@ class NearbyDoor {
   final _bound = <(String, int), OfferedFile>{};
   final _waiting = <(String, int), Completer<OfferedFile?>>{};
   final _lastUse = <String, DateTime>{};
-  bool _asking = false;
+  final OneQuestion _question;
 
   /// Asks the user before a phone may connect at all.
   Future<bool> mayConnect(String endpointId, String endpointName) {
@@ -197,13 +200,10 @@ class NearbyDoor {
 
   // ─── Helpers ───────────────────────────────────────────────────────────────
 
-  /// One question at a time: a new one must not appear under the finger that
-  /// is about to press Accept on the last.
   Future<bool> _ask(ConnectionRequest Function(void Function(bool) respond) build) async {
-    if (_asking) {
+    if (!_question.take()) {
       return false;
     }
-    _asking = true;
     final answer = Completer<bool>();
     final request = build((v) {
       if (!answer.isCompleted) {
@@ -214,7 +214,7 @@ class NearbyDoor {
       onConnectionRequest(request);
       return await answer.future.timeout(decisionTimeout, onTimeout: () => false);
     } finally {
-      _asking = false;
+      _question.release();
       request.close();
     }
   }

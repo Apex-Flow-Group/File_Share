@@ -90,6 +90,7 @@ class ApexCore {
     onConnectionRequest: _connectionRequestController.add,
     place: _placeReceived,
     discoveredDevices: _discoveredDevices,
+    question: _question,
   );
 
   Stream<List<Device>> get devicesStream => _devicesController.stream;

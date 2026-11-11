@@ -115,6 +115,8 @@ bool _retryHelps(ChatOutcome failure) => switch (failure) {
       ChatOutcome.sent => false,
     };
 
+const _textStyle = TextStyle(fontSize: 15, height: 1.35);
+
 class _Bubble extends StatelessWidget {
   const _Bubble({
     required this.message,
@@ -158,8 +160,10 @@ class _Bubble extends StatelessWidget {
                   borderRadius: BorderRadius.circular(18),
                   border: failed ? Border.all(color: Colors.red.withValues(alpha: 0.6)) : null,
                 ),
-                child: SelectableText(message.text,
-                    textDirection: direction, style: const TextStyle(fontSize: 15, height: 1.35)),
+                // The TV has no copy, so nothing there can be selected either.
+                child: canCopy
+                    ? SelectableText(message.text, textDirection: direction, style: _textStyle)
+                    : Text(message.text, textDirection: direction, style: _textStyle),
               ),
               if (!mine && canCopy)
                 TextButton.icon(

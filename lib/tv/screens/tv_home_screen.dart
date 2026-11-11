@@ -110,7 +110,9 @@ class _TVHomeScreenState extends State<TVHomeScreen> {
       }
     });
     core.chat.incoming.listen((thread) {
-      if (mounted) {
+      // Never over another dialog (a question waiting for the remote): the
+      // chat would take the focus as the user presses OK.
+      if (mounted && (ModalRoute.of(context)?.isCurrent ?? false)) {
         TVChatDialog.show(
             context,
             Device(

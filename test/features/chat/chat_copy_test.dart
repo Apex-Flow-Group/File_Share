@@ -49,7 +49,7 @@ void main() {
 
   test('every door asks through one shared question, so two never stack', () {
     final core = File('lib/core/apex_core.dart').readAsStringSync();
-    expect(RegExp(r'question: _question').allMatches(core), hasLength(3),
-        reason: 'files, chat and the shared folder');
+    expect(RegExp(r'question: _question').allMatches(core), hasLength(4),
+        reason: 'files, chat, the shared folder and Nearby');
   });
 }

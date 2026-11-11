@@ -170,13 +170,14 @@ void main() {
     expect(server.delivered, isEmpty);
   });
 
-  test('no answer in time is not a refusal: the next message asks again', () async {
+  test('no answer in time is not a refusal, and the same address is not asked again at once', () async {
     server = await _Server.start(decide: (_) => null, decisionTimeout: const Duration(milliseconds: 100));
     final r = await server.send('hello');
     expect(r.json['accepted'], isFalse);
     expect(r.json['reason'], ApexProtocol.noAnswer);
-    await server.send('hello');
-    expect(server.asked, hasLength(2));
+    final again = await server.send('hello');
+    expect(again.json['reason'], ApexProtocol.noAnswer, reason: 'told to try later, not refused');
+    expect(server.asked, hasLength(1));
     expect(server.delivered, isEmpty);
   });
 

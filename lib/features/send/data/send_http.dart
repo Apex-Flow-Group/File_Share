@@ -82,7 +82,10 @@ class SendHttp {
       req.contentLength = body.length;
       req.add(body);
       final res = await req.close().timeout(TransferRules.decisionTimeout + const Duration(seconds: 10));
-      final reply = await res.transform(utf8.decoder).join();
+      final reply = await _readReply(res);
+      if (reply == null) {
+        return failed;
+      }
       switch (res.statusCode) {
         case HttpStatus.notFound || HttpStatus.upgradeRequired:
           return (outcome: ChatOutcome.updateRequired, token: null);
@@ -110,6 +113,27 @@ class SendHttp {
       return failed;
     } finally {
       client.close(force: true);
+    }
+  }
+
+  /// A chat reply is a few bytes. A longer or endless one (a device posing as
+  /// the receiver) fails the message instead of filling memory or leaving it
+  /// "sending" for ever.
+  static Future<String?> _readReply(HttpClientResponse res) async {
+    const limit = 16 * 1024;
+    final bytes = <int>[];
+    try {
+      await for (final chunk in res.timeout(const Duration(seconds: 10))) {
+        bytes.addAll(chunk);
+        if (bytes.length > limit) {
+          return null;
+        }
+      }
+      return utf8.decode(bytes);
+    } on TimeoutException {
+      return null;
+    } on FormatException {
+      return null;
     }
   }
 

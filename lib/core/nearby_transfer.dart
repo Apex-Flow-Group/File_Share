@@ -14,6 +14,7 @@ import '../services/transfer_progress_service.dart';
 import '../utils/apex_logger.dart';
 import '../utils/path_utils.dart';
 import 'core_models.dart';
+import 'one_question.dart';
 import 'protocol/apex_protocol.dart';
 import 'protocol/nearby_messages.dart';
 import 'protocol/transfer_rules.dart';
@@ -50,6 +51,7 @@ class NearbyTransfer {
   late final NearbyDoor door = NearbyDoor(
     onConnectionRequest: onConnectionRequest,
     send: _sendJson,
+    question: question,
     onAdmitted: (offer) => TransferProgressService().startReceive(
         senderDeviceName: offer.senderName, totalFiles: offer.files.length),
   );
@@ -60,7 +62,11 @@ class NearbyTransfer {
     required this.onConnectionRequest,
     required this.place,
     required this.discoveredDevices,
+    this.question,
   });
+
+  /// Shared with the other doors, so two questions never stack.
+  final OneQuestion? question;
 
   Future<void> _sendJson(String endpointId, Map<String, Object?> msg) =>
       Nearby().sendBytesPayload(endpointId, Uint8List.fromList(utf8.encode(jsonEncode(msg))));

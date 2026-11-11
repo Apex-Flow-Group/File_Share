@@ -89,11 +89,20 @@ class ClipboardMonitorService {
   /// Text the app itself just copied: it does not come back as something
   /// to send, or a copied chat message would be offered for sending again.
   String? _ownText;
+  Timer? _ownTextExpiry;
 
   Future<void> copyText(String text) async {
-    _ownText = text;
+    _ownText = _lines(text);
+    // If the system never reports this copy (watching off), a later copy of
+    // the same text by hand must still count.
+    _ownTextExpiry?.cancel();
+    _ownTextExpiry = Timer(const Duration(seconds: 3), () => _ownText = null);
     await Clipboard.setData(ClipboardData(text: text));
   }
+
+  /// Windows may hand the text back with CR LF line ends.
+  static String _lines(String s) =>
+      s.replaceAll(String.fromCharCodes(const [13, 10]), String.fromCharCode(10));
 
   Future<void> setEnabled(bool on) async {
     if (!_isDesktop || on == _enabled) {
@@ -119,7 +128,7 @@ class ClipboardMonitorService {
     final type = args['type'] as String?;
     if (type == 'text') {
       final text = args['text'] as String?;
-      if (text != null && text == _ownText) {
+      if (text != null && _lines(text) == _ownText) {
         _ownText = null;
         return;
       }

@@ -49,6 +49,9 @@ class TVChatDialog extends StatelessWidget {
                   maxLines: 1,
                   overflow: TextOverflow.ellipsis,
                   style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 16)),
+              Text(device.ip,
+                  textDirection: TextDirection.ltr,
+                  style: TextStyle(fontSize: 13, color: Colors.grey[600])),
               const SizedBox(height: 12),
               Flexible(
                 child: DeviceChatView(

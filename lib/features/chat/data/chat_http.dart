@@ -86,6 +86,10 @@ class ChatHttp {
       await _reply(req, HttpStatus.ok, {'accepted': false});
       return;
     }
+    if (_access.isQuiet(address)) {
+      await _reply(req, HttpStatus.ok, {'accepted': false, 'reason': ApexProtocol.noAnswer});
+      return;
+    }
     if (!_question.take()) {
       await _reply(req, HttpStatus.tooManyRequests, {'error': 'busy'});
       return;
@@ -100,6 +104,7 @@ class ChatHttp {
       _question.release();
     }
     if (accepted == null) {
+      _access.unanswered(address);
       await _reply(req, HttpStatus.ok, {'accepted': false, 'reason': ApexProtocol.noAnswer});
       return;
     }

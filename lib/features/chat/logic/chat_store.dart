@@ -35,11 +35,18 @@ class ChatThread {
 /// Every chat of this run, in memory only: nothing is written to disk, since
 /// a message may be a password, and closing the app empties it (owner decision).
 class ChatStore extends ChangeNotifier {
-  ChatStore({required this.send});
+  ChatStore({required this.send, DateTime Function()? clock}) : _clock = clock ?? DateTime.now;
+
+  final DateTime Function() _clock;
+
+  /// A device sending without pause announces itself at most this often, so
+  /// it cannot keep reopening the TV's chat or stacking notices.
+  static const announceEvery = Duration(seconds: 30);
+  final _announced = <String, DateTime>{};
 
   /// Sends one message to [target]; the store keeps the token it returns.
-  final Future<({ChatOutcome outcome, String? token})> Function(
-      String text, Device target, String? token) send;
+  final Future<({ChatOutcome outcome, String? token})> Function(String text, Device target, String? token)
+      send;
 
   /// Oldest messages go first past this, so a device the user accepted
   /// cannot fill the memory.
@@ -48,7 +55,8 @@ class ChatStore extends ChangeNotifier {
   final _threads = <String, ChatThread>{};
   final _incoming = StreamController<ChatThread>.broadcast();
 
-  /// A thread that just received a message the user is not looking at.
+  /// A thread that just received a message the user is not looking at, at
+  /// most once per [announceEvery] for each device.
   Stream<ChatThread> get incoming => _incoming.stream;
   final _tokens = <String, String>{};
   var _nextId = 0;
@@ -80,7 +88,11 @@ class ChatStore extends ChangeNotifier {
     _add(t, ChatMessage._(_nextId++, false, text, ChatStatus.sent));
     if (_open != address) {
       t.unread++;
-      _incoming.add(t);
+      final last = _announced[address];
+      if (last == null || _clock().difference(last) >= announceEvery) {
+        _announced[address] = _clock();
+        _incoming.add(t);
+      }
     }
     notifyListeners();
   }

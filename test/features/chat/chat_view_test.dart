@@ -109,4 +109,17 @@ void main() {
     await show(tester, canWrite: true);
     expect(store.unread(_pc.ip), 0);
   });
+
+  testWidgets('on the TV a message cannot be selected, since it cannot be copied', (tester) async {
+    final store = ChatStore(send: (t, d, k) async => (outcome: ChatOutcome.sent, token: null));
+    const pc = Device(id: 'p', name: 'PC', type: 'desktop', ip: '10.0.0.7', port: 1);
+    store.receive(pc.ip, 'PC', 'hello');
+    await tester.pumpWidget(MaterialApp(
+      localizationsDelegates: AppLocalizations.localizationsDelegates,
+      supportedLocales: AppLocalizations.supportedLocales,
+      home: Scaffold(body: DeviceChatView(store: store, device: pc, canWrite: false)),
+    ));
+    expect(find.byType(SelectableText), findsNothing);
+    expect(find.text('hello'), findsOneWidget);
+  });
 }
