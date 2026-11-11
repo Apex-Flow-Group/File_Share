@@ -19,6 +19,7 @@ import '../services/transfer_progress_service.dart';
 import '../utils/apex_logger.dart';
 import '../utils/path_utils.dart';
 import 'core_models.dart';
+import 'discovery_merge.dart';
 import 'files/move_into_folder.dart';
 import 'nearby_transfer.dart';
 import 'one_question.dart';
@@ -178,37 +179,7 @@ class ApexCore {
         _devicesController.add(devices);
         return;
       }
-      // deduplication بالاسم — ادمج Nearby + WiFi في سجل واحد
-      final existingEntry = _discoveredDevices.entries
-          .where((e) => e.value.name.toLowerCase() == device.name.toLowerCase())
-          .firstOrNull;
-
-      if (existingEntry != null) {
-        final existing = existingEntry.value;
-        if (device.isNearby && !existing.isNearby) {
-          // جاء Nearby لجهاز WiFi موجود → ادمج: احتفظ بـ id الحالي وأضف endpointId
-          _discoveredDevices[existingEntry.key] = existing.copyWith(
-            endpointId: device.endpointId,
-            lastSeen: DateTime.now(),
-          );
-        } else if (!device.isNearby && existing.isNearby) {
-          // جاء WiFi لجهاز Nearby موجود → أضف IP/port للموجود
-          _discoveredDevices[existingEntry.key] = existing.copyWith(
-            ip: device.ip,
-            port: device.port,
-            shareEnabled: device.shareEnabled,
-            lastSeen: DateTime.now(),
-          );
-        } else {
-          // نفس النوع → حدّث lastSeen + shareEnabled
-          _discoveredDevices[existingEntry.key] = existing.copyWith(
-            shareEnabled: device.shareEnabled,
-            lastSeen: DateTime.now(),
-          );
-        }
-      } else {
-        _discoveredDevices[device.id] = device;
-      }
+      mergeFound(_discoveredDevices, device);
       _devicesController.add(devices);
     });
     _discoveryService!.onDeviceLost.listen((id) {
