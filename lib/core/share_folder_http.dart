@@ -4,6 +4,8 @@ import 'dart:async';
 import 'dart:convert';
 import 'dart:io';
 
+import '../features/chat/logic/block_list.dart';
+import '../features/chat/logic/chat_key.dart';
 import '../features/identity/caller.dart';
 import '../features/identity/pin_store.dart';
 import '../features/share/logic/share_access.dart';
@@ -24,7 +26,7 @@ import 'text/clean_label.dart';
 /// Every route needs a client certificate and the protocol version;
 /// /share/access needs the certificate discovery heard from the id it gives,
 /// and every other route a token the user's agreement issued to that address
-/// and certificate.
+/// and certificate. After that check, a blocked device opens none of them.
 ///
 /// Endpoints:
 ///   POST /share/access   → يسأل المستخدم ويُرجع { accepted, token }
@@ -56,6 +58,10 @@ class ShareFolderHttp {
   final ShareAccess _access;
   final OneQuestion _question;
 
+  /// The chat's blocks: a blocked device is not asked about and opens
+  /// nothing, and a block stops what it is downloading or uploading.
+  final BlockList _blocks;
+
   /// Error code when the folder is off, so the asker is not told to update.
   static const shareOff = 'share_off';
 
@@ -71,12 +77,16 @@ class ShareFolderHttp {
     ShareFolderService? service,
     ShareAccess? access,
     OneQuestion? question,
+    BlockList? blocks,
     this.onAccessRequest,
     this.decisionTimeout = TransferRules.decisionTimeout,
     this.maxUploadBytes = 2 * 1024 * 1024 * 1024,
   })  : _svc = service ?? ShareFolderService.instance,
         _access = access ?? ShareAccess(),
-        _question = question ?? OneQuestion();
+        _question = question ?? OneQuestion(),
+        _blocks = blocks ?? BlockList(pins) {
+    _blocks.onBlock(() => _access.revokeWhere(_blocks.isBlocked));
+  }
 
   // ─── Router ────────────────────────────────────────────────────────────────
 
@@ -118,14 +128,14 @@ class ShareFolderHttp {
         return true;
       }
       final grant = _access.check(req.headers.value(ApexProtocol.tokenHeader), address, fingerprint);
-      if (grant == null) {
+      if (grant == null || _blocks.isBlocked(grant.peer)) {
         await _json(req, HttpStatus.forbidden, {'error': 'not_allowed'});
         return true;
       }
       if (req.method == 'GET' && path == listPath) {
         await _handleList(req);
       } else if (req.method == 'GET' && path == filePath) {
-        await _handleDownload(req);
+        await _handleDownload(req, grant);
       } else if (req.method == 'POST' && path == uploadPath) {
         await _handleUpload(req, grant);
       } else if (req.method == 'GET' && path == '/share/info') {
@@ -152,6 +162,11 @@ class ShareFolderHttp {
       await _json(req, HttpStatus.forbidden, {'error': ApexProtocol.wrongIdentity});
       return;
     }
+    // Unasked, and told what a refusal tells it.
+    if (_blocks.isBlocked(chatPeer(fingerprint, id, address))) {
+      await _json(req, HttpStatus.ok, {'accepted': false, 'reason': 'refused'});
+      return;
+    }
     final rawName = body?['name'];
     final name = cleanLabel(rawName is String ? rawName : null);
     final shown = name.isEmpty ? address : name;
@@ -166,7 +181,7 @@ class ShareFolderHttp {
     await _json(req, HttpStatus.ok, {
       'accepted': true,
       'uploads': uploads,
-      'token': _access.admit(address, shown, fingerprint, uploads: uploads),
+      'token': _access.admit(address, shown, fingerprint, id: id, uploads: uploads),
     });
   }
 
@@ -228,7 +243,7 @@ class ShareFolderHttp {
 
   // ─── GET /share/file?name= ─────────────────────────────────────────────────
 
-  Future<void> _handleDownload(HttpRequest req) async {
+  Future<void> _handleDownload(HttpRequest req, ShareGrant grant) async {
     final rawName = req.uri.queryParameters['name'] ?? '';
     if (rawName.isEmpty) {
       await _badRequest(req, 'missing name');
@@ -255,7 +270,15 @@ class ShareFolderHttp {
       ..headers.set('Content-Length', length.toString())
       ..headers.set('Content-Disposition', 'attachment; filename="$safeDisp"');
 
-    await req.response.addStream(file.openRead());
+    await req.response.addStream(file.openRead().takeWhile((_) => !grant.revoked));
+    if (grant.revoked) {
+      // Short of its length, the response ends the connection: the device
+      // cannot take what it got for the whole file.
+      try {
+        await req.response.close();
+      } catch (_) {}
+      return;
+    }
     await req.response.close();
 
     ApexLogger.instance
@@ -288,9 +311,10 @@ class ShareFolderHttp {
     }
 
     try {
+      // A block mid-upload throws here, and the half-written file is deleted.
       final finalPath = await _svc.saveUpload(
         rawName: rawName,
-        data: req,
+        data: req.map((chunk) => grant.revoked ? throw const _Revoked() : chunk),
         contentLength: contentLength,
       );
       final savedName = finalPath.split(Platform.pathSeparator).last;
@@ -313,6 +337,8 @@ class ShareFolderHttp {
           '⬆ Upload: $savedName from $fromDevice', LogLevel.success);
     } on UploadSizeMismatch {
       await _json(req, HttpStatus.badRequest, {'error': 'size'});
+    } on _Revoked {
+      await _json(req, HttpStatus.forbidden, {'error': 'not_allowed'});
     } catch (e) {
       ApexLogger.instance
           .log('SHARE_HTTP', '❌ Upload error: $e', LogLevel.error);
@@ -368,3 +394,7 @@ class ShareFolderHttp {
 }
 
 enum _Answer { accepted, refused, none }
+
+class _Revoked implements Exception {
+  const _Revoked();
+}

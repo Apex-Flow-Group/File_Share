@@ -5,8 +5,8 @@ import 'chat_key.dart';
 typedef ChatBlock = ({ChatKey key, String id});
 
 /// Every block of this run, in memory only, and the one rule that decides
-/// whom a block turns away: the chat, the chat door and the file door all
-/// ask here.
+/// whom a block turns away: the chat, the chat door, the file door and the
+/// shared folder all ask here.
 ///
 /// The key always blocks. The id alone blocks only a key not pinned for that
 /// id: a reinstalled device stays blocked (owner decision), but a device
@@ -18,10 +18,20 @@ class BlockList {
 
   final PinStore? _pins;
   final _blocks = <ChatBlock>{};
+  final _onBlock = <void Function()>[];
 
   bool isBlocked(ChatPeer peer) => _blocks.any((b) => _turnsAway(b, peer));
 
-  void block(ChatPeer peer) => _blocks.add((key: peer.key, id: peer.id));
+  /// [revoke] runs after every block: each door drops the tokens it gave a
+  /// device the block now turns away, so a transfer under way stops too.
+  void onBlock(void Function() revoke) => _onBlock.add(revoke);
+
+  void block(ChatPeer peer) {
+    _blocks.add((key: peer.key, id: peer.id));
+    for (final revoke in _onBlock) {
+      revoke();
+    }
+  }
 
   /// Lifts only what turns [peer] away, so unblocking a colleague leaves the
   /// block on a device that took its id.

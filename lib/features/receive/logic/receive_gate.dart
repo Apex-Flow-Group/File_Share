@@ -2,6 +2,7 @@ import 'dart:convert';
 import 'dart:math';
 
 import '../../../core/protocol/transfer_rules.dart';
+import '../../chat/logic/chat_key.dart';
 import 'offer.dart';
 
 /// Issues one single-use token per accepted file, bound to the sender's real
@@ -14,6 +15,10 @@ class ReceiveGate {
   final Random _random;
   final DateTime Function() _clock;
   final _tickets = <String, _Ticket>{};
+
+  /// Every batch not yet expired, including one whose last file is moving
+  /// and so has no token left.
+  final _batches = <_Batch>{};
   var _nextBatch = 0;
 
   /// Call only after the user accepted [offer]. Tokens follow the file order.
@@ -21,6 +26,7 @@ class ReceiveGate {
     _dropExpired();
     final batch = _Batch(offer.senderAddress, offer.senderFingerprint, _clock(), _nextBatch++,
         offer.senderName, offer.senderId);
+    _batches.add(batch);
     return [
       for (final file in offer.files) _issue(_Ticket(batch, file)),
     ];
@@ -51,7 +57,19 @@ class ReceiveGate {
     return Upload._(this, ticket.batch, ticket.file);
   }
 
-  void _revoke(_Batch batch) => _tickets.removeWhere((_, t) => identical(t.batch, batch));
+  /// Ends every batch whose sender [turnedAway] now refuses: none of its
+  /// tokens is accepted again, and a file of it moving now stops.
+  void revokeWhere(bool Function(ChatPeer sender) turnedAway) {
+    for (final b in _batches.where((b) => turnedAway(chatPeer(b.fingerprint, b.senderId, b.address))).toList()) {
+      _revoke(b);
+    }
+  }
+
+  void _revoke(_Batch batch) {
+    batch.revoked = true;
+    _batches.remove(batch);
+    _tickets.removeWhere((_, t) => identical(t.batch, batch));
+  }
 
   String _issue(_Ticket ticket) {
     String token;
@@ -67,7 +85,10 @@ class ReceiveGate {
   bool _isExpired(_Batch b) =>
       b.moving == 0 && _clock().difference(b.lastUse) > TransferRules.tokenIdleLimit;
 
-  void _dropExpired() => _tickets.removeWhere((_, t) => _isExpired(t.batch));
+  void _dropExpired() {
+    _tickets.removeWhere((_, t) => _isExpired(t.batch));
+    _batches.removeWhere(_isExpired);
+  }
 }
 
 /// One accepted file being received.
@@ -95,6 +116,9 @@ class Upload {
   /// The receiving user cancelled: no other file of this batch is accepted.
   void revokeBatch() => _gate._revoke(_batch);
 
+  /// The batch was ended while this file moved: its sender was blocked.
+  bool get revoked => _batch.revoked;
+
   /// Call once the upload ends, however it ends. The idle time counts from here.
   void finish() {
     if (_finished) {
@@ -116,6 +140,7 @@ class _Batch {
   final String senderId;
   DateTime lastUse;
   int moving = 0;
+  bool revoked = false;
 }
 
 class _Ticket {

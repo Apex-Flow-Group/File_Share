@@ -70,8 +70,8 @@ class ApexCore {
   /// Files, chat and the shared folder never ask the user at the same time.
   final _question = OneQuestion();
 
-  /// The one list every block is decided by: the chats, the chat door and
-  /// the file door.
+  /// The one list every block is decided by: the chats, the chat door, the
+  /// file door and the shared folder.
   late final BlockList _blocks = BlockList(_pins);
 
   late final ReceiveHttp _receive = ReceiveHttp(
@@ -106,6 +106,7 @@ class ApexCore {
     onAccessRequest: _connectionRequestController.add,
     expectedFingerprint: _expectedFingerprint,
     pins: _pins,
+    blocks: _blocks,
     question: _question,
   );
 
