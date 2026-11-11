@@ -28,7 +28,9 @@ class HomeController extends ChangeNotifier {
   List<Device> get devices => _devices;
 
   List<Device> _pinnedDevices = [];
-  List<Device> get pinnedDevices => _pinnedDevices;
+  /// Each with the fingerprint pinned at its last acceptance, so one that
+  /// discovery has not heard yet can still be sent to (owner decision).
+  List<Device> get pinnedDevices => [for (final d in _pinnedDevices) ApexCore.instance.withPinnedKey(d)];
 
   final _pinnedService = PinnedDevicesService();
 

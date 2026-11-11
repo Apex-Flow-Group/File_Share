@@ -26,7 +26,7 @@ class _Server {
   final OneQuestion question;
   final asked = <ConnectionRequest>[];
   final delivered = <IncomingChat>[];
-  final blocked = <ChatKey>[];
+  final blocked = <ChatPeer>[];
   int get port => _server.port;
 
   static Future<_Server> start({
@@ -163,23 +163,24 @@ void main() {
     expect([for (final m in server.delivered) m.text], ['one', 'two']);
   });
 
-  test('the token is bound to the address it was given to', () async {
+  test('the token follows the certificate, not the address it was given at', () async {
     server = await _Server.start();
     final token = (await server.send('one')).json['token'] as String;
-    await server.send('two', token: token, from: '127.0.0.2');
-    expect(server.asked, hasLength(2), reason: 'another address is asked about again');
-    expect(server.asked.last.device.ip, '127.0.0.2');
+    final moved = await server.send('two', token: token, from: '127.0.0.2');
+    expect(moved.json['delivered'], isTrue, reason: 'the same device back at a new address');
+    expect(server.asked, hasLength(1));
+    expect(server.delivered.last.address, '127.0.0.2');
   });
 
   test('the block button turns a device away at the door, and unblocking asks again', () async {
     final access = ChatAccess();
     server = await _Server.start(access: access);
     final token = (await server.send('one')).json['token'] as String;
-    access.block(chatKey('test-phone', '127.0.0.1'));
+    access.block(chatPeer(testSender.fingerprint, 'test-phone', '127.0.0.1'));
     final blocked = await server.send('two', token: token);
     expect(blocked.json['accepted'], isFalse);
     expect(server.asked, hasLength(1));
-    access.unblock(chatKey('test-phone', '127.0.0.1'));
+    access.unblock(chatPeer(testSender.fingerprint, 'test-phone', '127.0.0.1'));
     await server.send('three', token: token);
     expect(server.asked, hasLength(2), reason: 'asked again, the old token stays dead');
     expect(server.delivered.map((m) => m.text), ['one', 'three']);
@@ -194,7 +195,7 @@ void main() {
     expect(second.json['accepted'], isFalse);
     expect(server.asked, hasLength(1));
     expect(server.delivered, isEmpty);
-    expect(server.blocked, [chatKey('test-phone', '127.0.0.1')], reason: 'the screen learns it is blocked');
+    expect(server.blocked, [chatPeer(testSender.fingerprint, 'test-phone', '127.0.0.1')], reason: 'the screen learns it is blocked');
   });
 
   test('no answer in time is not a refusal, and the same address is not asked again at once', () async {

@@ -1,6 +1,7 @@
 import 'dart:convert';
 import 'dart:io';
 
+import '../../models/device.dart';
 import '../../platform/owner_only.dart';
 import 'fingerprint.dart';
 
@@ -51,6 +52,13 @@ class PinStore {
   }
 
   String? pinned(String id) => _pins[id];
+
+  /// [device] with the fingerprint pinned for its id, when discovery gave it
+  /// none (a favorite not heard this run). One discovery gave is kept.
+  Device withPin(Device device) {
+    final pin = _pins[device.id];
+    return isFingerprint(device.fingerprint) || pin == null ? device : device.copyWith(fingerprint: pin);
+  }
 
   /// [id] was accepted before with another fingerprint.
   bool keyChanged(String id, String fingerprint) {

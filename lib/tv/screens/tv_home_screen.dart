@@ -119,7 +119,8 @@ class _TVHomeScreenState extends State<TVHomeScreen> {
                 id: thread.id,
                 name: thread.name,
                 type: 'unknown',
-                ip: thread.address));
+                ip: thread.address,
+                fingerprint: thread.key.fingerprint));
       }
     });
     core.fileReceivedStream.listen((e) {
@@ -373,7 +374,8 @@ class _TVHomeScreenState extends State<TVHomeScreen> {
       case 0:
         return TVSendTab(
           devices: _devices,
-          pinnedDevices: _pinnedDevices,
+          // A favorite discovery has not heard is sent to by its pinned key.
+          pinnedDevices: [for (final d in _pinnedDevices) ApexCore.instance.withPinnedKey(d)],
           isRunning: _isRunning,
           isPinned: _isPinned,
           onPin: _pinDevice,

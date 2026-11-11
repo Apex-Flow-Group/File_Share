@@ -277,6 +277,17 @@ mixin HomeDialogs<T extends StatefulWidget> on State<T> {
                     ]),
               ),
             ]),
+            // Owner decision: whoever accepts sees it; accepting is enough.
+            if (request.keyChanged) ...[
+              const SizedBox(height: 10),
+              Row(children: [
+                const Icon(Icons.warning_amber_rounded, size: 18, color: Colors.orange),
+                const SizedBox(width: 6),
+                Expanded(
+                    child: Text(l10n.requestNewKey,
+                        style: const TextStyle(fontSize: 13, fontWeight: FontWeight.w600))),
+              ]),
+            ],
             // Only a files request has files to show.
             if (request.kind == RequestKind.files) const SizedBox(height: 10),
             if (request.kind != RequestKind.files)

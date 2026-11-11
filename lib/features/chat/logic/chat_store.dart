@@ -4,6 +4,7 @@ import 'package:flutter/foundation.dart';
 
 import '../../../core/core_models.dart';
 import '../../../models/device.dart';
+import '../../identity/fingerprint.dart';
 import '../../send/data/send_http.dart';
 import 'chat_key.dart';
 
@@ -49,13 +50,15 @@ class ChatMessage {
 }
 
 class ChatThread {
-  ChatThread(this.key, this.name);
+  ChatThread(this.key, this.id, this.address, this.name);
 
-  /// The device's id at its real address: messages are bound to both, not
-  /// to the name, and not to an address another device may get next.
+  /// The device's certificate: messages are bound to it, not to the name,
+  /// the id or the address, which any device can announce.
   final ChatKey key;
-  String get id => key.id;
-  String get address => key.address;
+
+  /// The id and the real address it last came with, to reach it again.
+  String id;
+  String address;
   String name;
   final messages = <ChatMessage>[];
   int unread = 0;
@@ -78,8 +81,8 @@ class ChatStore extends ChangeNotifier {
       List<ChatFile> files, Device target, void Function(int delivered) onDelivered)? sendFilesNow;
 
   /// Tell the door, which refuses a blocked device's messages.
-  final void Function(ChatKey key)? onBlock;
-  final void Function(ChatKey key)? onUnblock;
+  final void Function(ChatPeer peer)? onBlock;
+  final void Function(ChatPeer peer)? onUnblock;
 
   final DateTime Function() _clock;
 
@@ -113,34 +116,39 @@ class ChatStore extends ChangeNotifier {
   int unread(ChatKey key) => _threads[key]?.unread ?? 0;
 
   /// Blocked here, by refusing the question or with the block button; in
-  /// memory, like the chats, so closing the app lifts every block.
-  final _blocked = <ChatKey>{};
+  /// memory, like the chats, so closing the app lifts every block. Each holds
+  /// the device's key and its id: a new key alone does not lift it.
+  final _blocked = <ChatBlock>{};
 
-  bool isBlocked(ChatKey key) => _blocked.contains(key);
+  bool isBlocked(ChatPeer peer) => _blocked.any((b) => blocks(b, peer));
 
   /// Owner decision: any device can be blocked, before it ever writes too.
-  bool canBlock(ChatKey key) => !isBlocked(key);
+  bool canBlock(ChatPeer peer) => !isBlocked(peer);
 
-  void block(ChatKey key) {
-    if (!_blocked.add(key)) {
+  void block(ChatPeer peer) {
+    if (isBlocked(peer)) {
       return;
     }
-    _threads[key]?.unread = 0;
-    onBlock?.call(key);
+    _blocked.add((key: peer.key, id: peer.id));
+    _threads[peer.key]?.unread = 0;
+    onBlock?.call(peer);
     notifyListeners();
   }
 
-  void unblock(ChatKey key) {
-    if (!_blocked.remove(key)) {
+  /// Only the user unblocks: every block that matches [peer], by key or id.
+  void unblock(ChatPeer peer) {
+    if (!isBlocked(peer)) {
       return;
     }
-    onUnblock?.call(key);
+    _blocked.removeWhere((b) => blocks(b, peer));
+    onUnblock?.call(peer);
     notifyListeners();
   }
 
   /// The door blocked it, after the user refused its question.
-  void blocked(ChatKey key) {
-    if (_blocked.add(key)) {
+  void blocked(ChatPeer peer) {
+    if (!isBlocked(peer)) {
+      _blocked.add((key: peer.key, id: peer.id));
       notifyListeners();
     }
   }
@@ -160,17 +168,18 @@ class ChatStore extends ChangeNotifier {
     }
   }
 
-  void receive(ChatKey from, String name, String text) {
+  void receive(ChatPeer from, String name, String text) {
     if (isBlocked(from)) {
       return;
     }
+    final key = from.key;
     final t = _thread(from, name)..name = name;
     _add(t, ChatMessage._(_nextId++, false, text, ChatStatus.sent));
-    if (_open != from) {
+    if (_open != key) {
       t.unread++;
-      final last = _announced[from];
+      final last = _announced[key];
       if (last == null || _clock().difference(last) >= announceEvery) {
-        _announced[from] = _clock();
+        _announced[key] = _clock();
         _incoming.add(t);
       }
     }
@@ -183,10 +192,11 @@ class ChatStore extends ChangeNotifier {
   void receivedFile(FileReceivedEvent event) {
     final address = event.fromAddress;
     final id = event.fromId;
-    if (address == null || id == null) {
+    final fingerprint = event.fromFingerprint;
+    if (address == null || id == null || !isFingerprint(fingerprint)) {
       return;
     }
-    final from = chatKey(id, address);
+    final from = chatPeer(fingerprint!, id, address);
     if (isBlocked(from)) {
       return;
     }
@@ -200,7 +210,7 @@ class ChatStore extends ChangeNotifier {
       line.files.add(file);
     } else {
       _add(t, ChatMessage._(_nextId++, false, '', ChatStatus.sent, [file])..batchId = batch);
-      if (_open != from) {
+      if (_open != from.key) {
         t.unread++;
       }
     }
@@ -214,11 +224,11 @@ class ChatStore extends ChangeNotifier {
     if (now == null) {
       return SendOutcome.failed;
     }
-    if (!target.isMdns || isBlocked(target.chatKey)) {
+    if (!target.isMdns || isBlocked(target.chatPeer)) {
       return now(files, target, (_) {});
     }
     final m = ChatMessage._(_nextId++, true, '', ChatStatus.sending, List.of(files));
-    _add(_thread(target.chatKey, target.name), m);
+    _add(_thread(target.chatPeer, target.name), m);
     notifyListeners();
     await _deliverFiles(target, m);
     return m.filesFailure ?? SendOutcome.sent;
@@ -263,10 +273,10 @@ class ChatStore extends ChangeNotifier {
   }
 
   Future<void> write(Device target, String text) async {
-    if (isBlocked(target.chatKey)) {
+    if (isBlocked(target.chatPeer)) {
       return;
     }
-    final t = _thread(target.chatKey, target.name);
+    final t = _thread(target.chatPeer, target.name);
     final m = ChatMessage._(_nextId++, true, text, ChatStatus.sending);
     _add(t, m);
     notifyListeners();
@@ -311,8 +321,11 @@ class ChatStore extends ChangeNotifier {
     super.dispose();
   }
 
-  ChatThread _thread(ChatKey key, String name) =>
-      _threads.putIfAbsent(key, () => ChatThread(key, name));
+  /// [peer]'s chat, which now reaches it at the id and address it came with.
+  ChatThread _thread(ChatPeer peer, String name) => _threads.putIfAbsent(
+      peer.key, () => ChatThread(peer.key, peer.id, peer.address, name))
+    ..id = peer.id
+    ..address = peer.address;
 
   void _add(ChatThread t, ChatMessage m) {
     t.messages.add(m);

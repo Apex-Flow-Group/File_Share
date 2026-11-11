@@ -295,6 +295,7 @@
   "chatOpen": "Open chat",
   "chatRequestTitle": "Chat request",
   "chatRequestQuestion": "Accept chat?",
+  "requestNewKey": "This device has a new key",
   "chatHint": "Write a message",
   "chatEmpty": "No messages yet",
   "chatCopy": "Copy",

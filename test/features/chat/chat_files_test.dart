@@ -23,14 +23,19 @@ import '../identity/tls_peer.dart';
 const _pc = Device(id: 'p', name: 'Office PC', type: 'desktop', ip: '10.0.0.7', port: 4000);
 const _nearbyPhone = Device(id: 'n', name: 'Phone', type: 'phone', endpointId: 'ep1');
 
+/// The certificates of the PC and of another device.
+const _fpP = 'cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc';
+const _fpQ = 'dddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddd';
+
 FileReceivedEvent _got(String name, int index, int total,
-        {String? from = '10.0.0.7', String id = 'p', String sender = 'PC', int batch = 1}) =>
+        {String? from = '10.0.0.7', String id = 'p', String fp = _fpP, String sender = 'PC', int batch = 1}) =>
     FileReceivedEvent(
       fileName: name,
       fileSize: 10,
       fromDevice: sender,
       fromAddress: from,
       fromId: id,
+      fromFingerprint: from == null ? null : fp,
       batchId: from == null ? null : batch,
       filePath: '/save/$name',
       batchIndex: index,
@@ -44,12 +49,12 @@ void main() {
     late ChatStore store;
     setUp(() => store = ChatStore(send: (t, d, k) async => (outcome: ChatOutcome.sent, token: null)));
 
-    test('a batch is one line in the chat of the address it came from', () {
+    test('a batch is one line in the chat of the device it came from', () {
       store
         ..receivedFile(_got('a.pdf', 1, 3))
         ..receivedFile(_got('b.pdf', 2, 3))
         ..receivedFile(_got('c.pdf', 3, 3));
-      final line = store.thread(chatKey('p', '10.0.0.7'))!.messages.single;
+      final line = store.thread(const ChatKey(_fpP))!.messages.single;
       expect(line.isFiles, isTrue);
       expect(line.mine, isFalse);
       expect(line.files.map((f) => f.name), ['a.pdf', 'b.pdf', 'c.pdf']);
@@ -61,38 +66,38 @@ void main() {
         ..receivedFile(_got('a.pdf', 1, 2))
         ..receivedFile(_got('b.pdf', 2, 2))
         ..receivedFile(_got('c.pdf', 1, 1, batch: 2));
-      expect(store.thread(chatKey('p', '10.0.0.7'))!.messages, hasLength(2));
-      expect(store.unread(chatKey('p', '10.0.0.7')), 2);
+      expect(store.thread(const ChatKey(_fpP))!.messages, hasLength(2));
+      expect(store.unread(const ChatKey(_fpP)), 2);
     });
 
     test('two batches received at once keep their own lines', () {
       // The shared progress counts both together: index and total lie here.
       store
         ..receivedFile(_got('a1.pdf', 1, 3, batch: 7))
-        ..receivedFile(_got('b1.pdf', 2, 3, from: '10.0.0.9', batch: 8))
+        ..receivedFile(_got('b1.pdf', 2, 3, from: '10.0.0.9', fp: _fpQ, batch: 8))
         ..receivedFile(_got('a2.pdf', 1, 1, batch: 7));
-      expect(store.thread(chatKey('p', '10.0.0.7'))!.messages.single.files.map((f) => f.name), ['a1.pdf', 'a2.pdf']);
-      expect(store.thread(chatKey('p', '10.0.0.9'))!.messages.single.files.map((f) => f.name), ['b1.pdf']);
+      expect(store.thread(const ChatKey(_fpP))!.messages.single.files.map((f) => f.name), ['a1.pdf', 'a2.pdf']);
+      expect(store.thread(const ChatKey(_fpQ))!.messages.single.files.map((f) => f.name), ['b1.pdf']);
     });
 
-    test('the line follows the address, not the name the device gave', () {
+    test('the line follows the certificate, not the name the device gave', () {
       store
         ..receivedFile(_got('a.pdf', 1, 1, from: '10.0.0.7', sender: 'Office PC'))
-        ..receivedFile(_got('b.pdf', 1, 1, from: '10.0.0.9', sender: 'Office PC', batch: 2));
-      expect(store.thread(chatKey('p', '10.0.0.7'))!.messages.single.files.single.name, 'a.pdf');
-      expect(store.thread(chatKey('p', '10.0.0.9'))!.messages.single.files.single.name, 'b.pdf');
+        ..receivedFile(_got('b.pdf', 1, 1, from: '10.0.0.9', fp: _fpQ, sender: 'Office PC', batch: 2));
+      expect(store.thread(const ChatKey(_fpP))!.messages.single.files.single.name, 'a.pdf');
+      expect(store.thread(const ChatKey(_fpQ))!.messages.single.files.single.name, 'b.pdf');
     });
 
     test('a file over Nearby has no address and no chat', () {
       store.receivedFile(_got('a.pdf', 1, 1, from: null));
-      expect(store.thread(chatKey('p', '10.0.0.7')), isNull);
+      expect(store.thread(const ChatKey(_fpP)), isNull);
     });
 
     test('a blocked device gets no line', () {
       store
-        ..block(chatKey('p', '10.0.0.7'))
+        ..block(chatPeer(_fpP, 'p', '10.0.0.7'))
         ..receivedFile(_got('a.pdf', 1, 1));
-      expect(store.thread(chatKey('p', '10.0.0.7'))?.messages ?? const [], isEmpty);
+      expect(store.thread(const ChatKey(_fpP))?.messages ?? const [], isEmpty);
     });
 
     test('files are not announced: the received sheet already says so', () async {
@@ -105,7 +110,7 @@ void main() {
 
     test('a device that only sent files can be blocked, like any other', () {
       store.receivedFile(_got('a.pdf', 1, 1));
-      expect(store.canBlock(chatKey('p', '10.0.0.7')), isTrue);
+      expect(store.canBlock(chatPeer(_fpP, 'p', '10.0.0.7')), isTrue);
     });
   });
 
@@ -206,7 +211,7 @@ void main() {
 
     test('Nearby and blocked devices are sent to without a line', () async {
       await store.sendFiles(_nearbyPhone, files);
-      store.block(_pc.chatKey);
+      store.block(_pc.chatPeer);
       await store.sendFiles(_pc, files);
       expect(sent, hasLength(2));
       expect(store.thread(_pc.chatKey)?.messages ?? const [], isEmpty);

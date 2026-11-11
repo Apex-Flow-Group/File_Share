@@ -17,25 +17,26 @@ import '../identity/tls_peer.dart';
 
 /// Any certificate's fingerprint: these tests are about tokens, not identity.
 const _fp = 'aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa';
+const _other = 'bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb';
 
 /// No widget test here: one in the file replaces HttpClient with a fake
 /// that answers 400 to everything, and the reply tests would pass for nothing.
 void main() {
   setUpAll(loadPeers);
-  test('a question nobody answered is not raised again by the same address for a while', () {
+  test('a question nobody answered is not raised again by the same device for a while', () {
     var now = DateTime(2026, 11, 12, 9);
     final access = ChatAccess(clock: () => now);
-    access.unanswered(chatKey('x', '10.0.0.9'));
-    expect(access.isQuiet(chatKey('x', '10.0.0.9')), isTrue);
-    expect(access.isQuiet(chatKey('x', '10.0.0.8')), isFalse, reason: 'other addresses are unaffected');
+    access.unanswered(const ChatKey(_fp));
+    expect(access.isQuiet(const ChatKey(_fp)), isTrue);
+    expect(access.isQuiet(const ChatKey(_other)), isFalse, reason: 'other devices are unaffected');
     now = now.add(ChatAccess.quietAfterNoAnswer);
-    expect(access.isQuiet(chatKey('x', '10.0.0.9')), isFalse);
+    expect(access.isQuiet(const ChatKey(_fp)), isFalse);
   });
 
   test('accepting ends the quiet period', () {
-    final access = ChatAccess()..unanswered(chatKey('x', '10.0.0.9'));
-    access.admit(chatKey('x', '10.0.0.9'), 'Phone', _fp);
-    expect(access.isQuiet(chatKey('x', '10.0.0.9')), isFalse);
+    final access = ChatAccess()..unanswered(const ChatKey(_fp));
+    access.admit(chatPeer(_fp, 'x', '10.0.0.9'), 'Phone');
+    expect(access.isQuiet(const ChatKey(_fp)), isFalse);
   });
 
   test('invisible characters do not reach the screen', () {
@@ -53,13 +54,13 @@ void main() {
     final heard = <String>[];
     store.incoming.listen((t) => heard.add(t.address));
     for (var i = 0; i < 20; i++) {
-      store.receive(chatKey('x', '10.0.0.9'), 'TV', '$i');
+      store.receive(chatPeer(_fp, 'x', '10.0.0.9'), 'TV', '$i');
     }
     now = now.add(ChatStore.announceEvery);
-    store.receive(chatKey('x', '10.0.0.9'), 'TV', 'later');
+    store.receive(chatPeer(_fp, 'x', '10.0.0.9'), 'TV', 'later');
     await Future<void>.delayed(Duration.zero);
     expect(heard, ['10.0.0.9', '10.0.0.9']);
-    expect(store.unread(chatKey('x', '10.0.0.9')), 21, reason: 'every message is still kept and counted');
+    expect(store.unread(const ChatKey(_fp)), 21, reason: 'every message is still kept and counted');
   });
 
   test('the Nearby door waits its turn behind a question from another door', () async {

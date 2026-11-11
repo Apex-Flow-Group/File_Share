@@ -798,6 +798,9 @@ class AppLocalizationsEn extends AppLocalizations {
   String get chatRequestQuestion => 'Accept chat?';
 
   @override
+  String get requestNewKey => 'This device has a new key';
+
+  @override
   String get chatHint => 'Write a message';
 
   @override

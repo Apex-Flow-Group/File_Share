@@ -77,6 +77,18 @@ class TVAcceptDialog extends StatelessWidget {
                     child: Text(request.device.ip,
                         style: TextStyle(fontSize: 13, color: Colors.grey[600])),
                   ),
+                // Owner decision: whoever accepts sees it; accepting is enough.
+                if (request.keyChanged) ...[
+                  const SizedBox(height: 8),
+                  Row(mainAxisSize: MainAxisSize.min, children: [
+                    const Icon(Icons.warning_amber_rounded, size: 20, color: Colors.orange),
+                    const SizedBox(width: 6),
+                    Flexible(
+                        child: Text(l10n.requestNewKey,
+                            textAlign: TextAlign.center,
+                            style: const TextStyle(fontSize: 14, fontWeight: FontWeight.w600))),
+                  ]),
+                ],
                 const SizedBox(height: 12),
                 Text(question,
                     textAlign: TextAlign.center,

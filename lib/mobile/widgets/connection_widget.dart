@@ -248,13 +248,13 @@ class _ConnectionWidgetState extends State<ConnectionWidget>
         ),
       ListenableBuilder(
         listenable: store,
-        builder: (context, _) => !store.canBlock(widget.device.chatKey)
+        builder: (context, _) => !store.canBlock(widget.device.chatPeer)
             ? const SizedBox.shrink()
             : IconButton(
                 tooltip: l10n.chatBlock,
                 onPressed: () async {
                   if (await confirmBlock(context, widget.device.name)) {
-                    store.block(widget.device.chatKey);
+                    store.block(widget.device.chatPeer);
                   }
                 },
                 icon: const Icon(Icons.block_rounded, color: Colors.red),

@@ -76,7 +76,7 @@ class TVChatDialog extends StatelessWidget {
       ),
     );
     if (yes == true) {
-      ApexCore.instance.chat.block(device.chatKey);
+      ApexCore.instance.chat.block(device.chatPeer);
     }
   }
 
@@ -121,7 +121,7 @@ class TVChatDialog extends StatelessWidget {
                       onTap: () => Navigator.pop(context),
                     ),
                   ),
-                  if (store.canBlock(device.chatKey)) ...[
+                  if (store.canBlock(device.chatPeer)) ...[
                     const SizedBox(width: 12),
                     Expanded(
                       child: TVDialogButton(
@@ -131,14 +131,14 @@ class TVChatDialog extends StatelessWidget {
                         onTap: () => _block(context),
                       ),
                     ),
-                  ] else if (store.isBlocked(device.chatKey)) ...[
+                  ] else if (store.isBlocked(device.chatPeer)) ...[
                     const SizedBox(width: 12),
                     Expanded(
                       child: TVDialogButton(
                         label: l10n.chatUnblock,
                         color: Colors.grey,
                         autofocus: false,
-                        onTap: () => store.unblock(device.chatKey),
+                        onTap: () => store.unblock(device.chatPeer),
                       ),
                     ),
                   ],

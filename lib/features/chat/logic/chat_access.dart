@@ -4,19 +4,22 @@ import 'dart:math';
 import 'chat_key.dart';
 
 class ChatGrant {
-  ChatGrant(this.key, this.name, this.fingerprint);
-  final ChatKey key;
+  ChatGrant(this.key, this.id, this.name);
 
   /// The certificate the device held when the user agreed.
-  final String fingerprint;
+  final ChatKey key;
+
+  /// The id it gave then: blocking that id ends this grant too.
+  final String id;
 
   /// The name the device gave when the user agreed, already cleaned.
   final String name;
 }
 
-/// Who may chat: a device the user agreed to gets a token bound to its real
-/// address, to the id it gave and to its certificate, kept in memory only, so
-/// closing the app ends every agreement.
+/// Who may chat: a device the user agreed to gets a token bound to its
+/// certificate, kept in memory only, so closing the app ends every agreement.
+/// The address is not part of it: the same device back at a new address
+/// still holds its certificate.
 class ChatAccess {
   ChatAccess({Random? random, DateTime Function()? clock})
       : _random = random ?? Random.secure(),
@@ -30,7 +33,7 @@ class ChatAccess {
   final Random _random;
   final DateTime Function() _clock;
   final _grants = <String, ChatGrant>{};
-  final _blocked = <ChatKey>{};
+  final _blocked = <ChatBlock>{};
   final _unanswered = <ChatKey, DateTime>{};
 
   void unanswered(ChatKey key) => _unanswered[key] = _clock();
@@ -47,38 +50,40 @@ class ChatAccess {
     return true;
   }
 
-  String admit(ChatKey key, String name, String fingerprint) {
-    _blocked.remove(key);
-    _unanswered.remove(key);
+  String admit(ChatPeer peer, String name) {
+    _blocked.removeWhere((b) => blocks(b, peer));
+    _unanswered.remove(peer.key);
     String token;
     do {
       token = base64Url.encode(List.generate(24, (_) => _random.nextInt(256)));
     } while (_grants.containsKey(token));
-    _grants[token] = ChatGrant(key, name, fingerprint);
+    _grants[token] = ChatGrant(peer.key, peer.id, name);
     return token;
   }
 
-  /// Null for a missing or unknown token, or one sent from another address,
-  /// with another id or with another certificate than it was issued for.
-  ChatGrant? check(String? token, ChatKey key, String fingerprint) {
+  /// Null for a missing or unknown token, or one sent with another
+  /// certificate than it was issued for.
+  ChatGrant? check(String? token, ChatKey key) {
     final grant = _grants[token];
-    return grant == null || grant.key != key || grant.fingerprint != fingerprint ? null : grant;
+    return grant == null || grant.key != key ? null : grant;
   }
 
   /// Owner decision: refusing the question, or the block button, blocks the
   /// device until the user unblocks it or the app closes. Its token stops
   /// working and it is not asked about, so a stranger cannot keep asking.
-  void block(ChatKey key) {
-    _grants.removeWhere((_, g) => g.key == key);
-    _blocked.add(key);
+  /// Both its key and its id are blocked: a new key alone does not lift it.
+  void block(ChatPeer peer) {
+    _grants.removeWhere((_, g) => g.key == peer.key || g.id == peer.id);
+    _blocked.add((key: peer.key, id: peer.id));
   }
 
   /// Back to a device never seen: its next message asks the user again,
-  /// since whoever holds that address now may not be the device it was.
-  void unblock(ChatKey key) {
-    _blocked.remove(key);
-    _unanswered.remove(key);
+  /// since whoever holds that id now may not be the device it was. Lifts
+  /// every block that matches it, by key or by id.
+  void unblock(ChatPeer peer) {
+    _blocked.removeWhere((b) => blocks(b, peer));
+    _unanswered.remove(peer.key);
   }
 
-  bool isBlocked(ChatKey key) => _blocked.contains(key);
+  bool isBlocked(ChatPeer peer) => _blocked.any((b) => blocks(b, peer));
 }

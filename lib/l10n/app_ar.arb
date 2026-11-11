@@ -264,6 +264,7 @@
   "chatOpen": "فتح المحادثة",
   "chatRequestTitle": "طلب محادثة",
   "chatRequestQuestion": "قبول محادثة؟",
+  "requestNewKey": "هذا الجهاز بمفتاح جديد",
   "chatHint": "اكتب رسالة",
   "chatEmpty": "لا رسائل بعد",
   "chatCopy": "نسخ",

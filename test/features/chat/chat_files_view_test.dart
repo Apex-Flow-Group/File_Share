@@ -7,7 +7,7 @@ import 'package:apex_file_share/models/device.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 
-const _pc = Device(id: 'p', name: 'Office PC', type: 'desktop', ip: '10.0.0.7', port: 4000);
+final _pc = Device(id: 'p', name: 'Office PC', type: 'desktop', ip: '10.0.0.7', port: 4000, fingerprint: 'e' * 64);
 
 FileReceivedEvent _got(String name, int index, int total) => FileReceivedEvent(
       fileName: name,
@@ -15,6 +15,7 @@ FileReceivedEvent _got(String name, int index, int total) => FileReceivedEvent(
       fromDevice: 'PC',
       fromAddress: _pc.ip,
       fromId: _pc.id,
+      fromFingerprint: _pc.fingerprint,
       batchId: 1,
       filePath: '/save/$name',
       batchIndex: index,

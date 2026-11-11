@@ -58,7 +58,7 @@ void main() {
   });
 
   testWidgets('folded, it counts new messages and never shows their text', (tester) async {
-    ApexCore.instance.chat.receive(_pc.chatKey, 'Office PC', 'wifi password 8812');
+    ApexCore.instance.chat.receive(_pc.chatPeer, 'Office PC', 'wifi password 8812');
     final l10n = await show(tester, [_pc]);
     expect(find.text(l10n.chatUnread(1)), findsOneWidget);
     expect(find.textContaining('8812'), findsNothing);
@@ -104,7 +104,7 @@ void main() {
 
   testWidgets('a blocked device: no paste and no send-files on its row', (tester) async {
     const blocked = Device(id: 'b', name: 'Stranger', type: 'phone', ip: '192.168.8.66', port: 4000);
-    ApexCore.instance.chat.blocked(blocked.chatKey);
+    ApexCore.instance.chat.blocked(blocked.chatPeer);
     final l10n = await show(tester, [blocked]);
     expect(find.bySemanticsLabel(l10n.chatPaste), findsNothing);
     expect(find.bySemanticsLabel(l10n.chatAttach), findsNothing);
