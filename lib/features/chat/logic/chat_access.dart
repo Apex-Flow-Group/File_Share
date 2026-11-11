@@ -24,7 +24,7 @@ class ChatAccess {
   final Random _random;
   final DateTime Function() _clock;
   final _grants = <String, ChatGrant>{};
-  final _declined = <String>{};
+  final _blocked = <String>{};
   final _unanswered = <String, DateTime>{};
 
   void unanswered(String address) => _unanswered[address] = _clock();
@@ -42,7 +42,7 @@ class ChatAccess {
   }
 
   String admit(String address, String name) {
-    _declined.remove(address);
+    _blocked.remove(address);
     _unanswered.remove(address);
     String token;
     do {
@@ -58,9 +58,20 @@ class ChatAccess {
     return grant == null || grant.address != address ? null : grant;
   }
 
-  /// Owner decision: a refused device is not asked about again until the app
-  /// closes, so a stranger cannot keep raising the question.
-  void decline(String address) => _declined.add(address);
+  /// Owner decision: refusing the question, or the block button, blocks the
+  /// device until the user unblocks it or the app closes. Its token stops
+  /// working and it is not asked about, so a stranger cannot keep asking.
+  void block(String address) {
+    _grants.removeWhere((_, g) => g.address == address);
+    _blocked.add(address);
+  }
 
-  bool isDeclined(String address) => _declined.contains(address);
+  /// Back to a device never seen: its next message asks the user again,
+  /// since whoever holds that address now may not be the device it was.
+  void unblock(String address) {
+    _blocked.remove(address);
+    _unanswered.remove(address);
+  }
+
+  bool isBlocked(String address) => _blocked.contains(address);
 }

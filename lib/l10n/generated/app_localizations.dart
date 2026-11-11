@@ -1579,6 +1579,36 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'The message is longer than {max} characters'**
   String chatTooLong(int max);
+
+  /// No description provided for @chatBlock.
+  ///
+  /// In en, this message translates to:
+  /// **'Block'**
+  String get chatBlock;
+
+  /// No description provided for @chatBlockQuestion.
+  ///
+  /// In en, this message translates to:
+  /// **'Block {name}?'**
+  String chatBlockQuestion(String name);
+
+  /// No description provided for @chatBlockDetail.
+  ///
+  /// In en, this message translates to:
+  /// **'Its messages won\'t arrive until you unblock it. The block ends by itself when you reopen the app.'**
+  String get chatBlockDetail;
+
+  /// No description provided for @chatBlocked.
+  ///
+  /// In en, this message translates to:
+  /// **'This device is blocked; its messages don\'t arrive.'**
+  String get chatBlocked;
+
+  /// No description provided for @chatUnblock.
+  ///
+  /// In en, this message translates to:
+  /// **'Unblock'**
+  String get chatUnblock;
 }
 
 class _AppLocalizationsDelegate

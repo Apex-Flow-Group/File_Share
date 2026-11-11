@@ -21,6 +21,7 @@ class ChatHttp {
   ChatHttp({
     required this.onRequest,
     required this.onMessage,
+    this.onBlocked,
     ChatAccess? access,
     OneQuestion? question,
     this.decisionTimeout = TransferRules.decisionTimeout,
@@ -30,10 +31,17 @@ class ChatHttp {
 
   final void Function(ConnectionRequest) onRequest;
   final void Function(IncomingChat) onMessage;
+
+  /// The user refused the question: the device is now blocked.
+  final void Function(String address)? onBlocked;
   final Duration decisionTimeout;
   final Duration bodyIdleLimit;
   final ChatAccess _access;
   final OneQuestion _question;
+
+  void block(String address) => _access.block(address);
+
+  void unblock(String address) => _access.unblock(address);
 
   /// False when [req] is not for this door.
   Future<bool> handle(HttpRequest req) async {
@@ -82,7 +90,7 @@ class ChatHttp {
       await _reply(req, HttpStatus.ok, {'delivered': true});
       return;
     }
-    if (_access.isDeclined(address)) {
+    if (_access.isBlocked(address)) {
       await _reply(req, HttpStatus.ok, {'accepted': false});
       return;
     }
@@ -109,7 +117,8 @@ class ChatHttp {
       return;
     }
     if (!accepted) {
-      _access.decline(address);
+      _access.block(address);
+      onBlocked?.call(address);
       await _reply(req, HttpStatus.ok, {'accepted': false});
       return;
     }

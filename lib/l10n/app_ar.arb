@@ -275,5 +275,13 @@
   "chatTooLong": "{max, plural, few{الرسالة أطول من {max} أحرف} many{الرسالة أطول من {max} حرفاً} other{الرسالة أطول من {max} حرف}}",
   "@chatTooLong": {
     "placeholders": { "max": { "type": "int" } }
-  }
+  },
+  "chatBlock": "حظر",
+  "chatBlockQuestion": "حظر {name}؟",
+  "@chatBlockQuestion": {
+    "placeholders": { "name": { "type": "String" } }
+  },
+  "chatBlockDetail": "لن تصل رسائله حتى تلغي الحظر. ويُلغى الحظر وحده حين تعيد فتح التطبيق.",
+  "chatBlocked": "هذا الجهاز محظور، فلا تصل رسائله.",
+  "chatUnblock": "إلغاء الحظر"
 }

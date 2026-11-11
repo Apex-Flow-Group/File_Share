@@ -92,7 +92,17 @@ class _DeviceChatViewState extends State<DeviceChatView> {
                       ),
                     ),
             ),
-            if (widget.canWrite) ...[
+            if (widget.store.isBlocked(_address)) ...[
+              const SizedBox(height: 8),
+              Text(l10n.chatBlocked,
+                  textAlign: TextAlign.center, style: TextStyle(color: Theme.of(context).hintColor)),
+              // The TV has its own buttons, reached by the remote.
+              if (widget.canWrite)
+                TextButton(
+                  onPressed: () => widget.store.unblock(_address),
+                  child: Text(l10n.chatUnblock),
+                ),
+            ] else if (widget.canWrite) ...[
               const SizedBox(height: 8),
               FramedCapsuleInput(
                 hint: l10n.chatHint,

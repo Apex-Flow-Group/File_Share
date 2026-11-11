@@ -10,6 +10,7 @@ import 'package:apex_file_share/core/one_question.dart';
 import 'package:apex_file_share/core/protocol/apex_protocol.dart';
 import 'package:apex_file_share/core/protocol/transfer_rules.dart';
 import 'package:apex_file_share/features/chat/data/chat_http.dart';
+import 'package:apex_file_share/features/chat/logic/chat_access.dart';
 import 'package:flutter_test/flutter_test.dart';
 
 /// The real chat door behind a real server on 127.0.0.1. Every first message
@@ -21,11 +22,13 @@ class _Server {
   final OneQuestion question;
   final asked = <ConnectionRequest>[];
   final delivered = <IncomingChat>[];
+  final blocked = <String>[];
   int get port => _server.port;
 
   static Future<_Server> start({
     bool? Function(ConnectionRequest)? decide,
     Duration decisionTimeout = TransferRules.decisionTimeout,
+    ChatAccess? access,
   }) async {
     final server = await HttpServer.bind(InternetAddress.loopbackIPv4, 0);
     final s = _Server._(server, OneQuestion());
@@ -38,6 +41,8 @@ class _Server {
         }
       },
       onMessage: s.delivered.add,
+      onBlocked: s.blocked.add,
+      access: access,
       question: s.question,
       decisionTimeout: decisionTimeout,
     );
@@ -159,6 +164,20 @@ void main() {
     expect(server.asked.last.device.ip, '127.0.0.2');
   });
 
+  test('the block button turns a device away at the door, and unblocking asks again', () async {
+    final access = ChatAccess();
+    server = await _Server.start(access: access);
+    final token = (await server.send('one')).json['token'] as String;
+    access.block('127.0.0.1');
+    final blocked = await server.send('two', token: token);
+    expect(blocked.json['accepted'], isFalse);
+    expect(server.asked, hasLength(1));
+    access.unblock('127.0.0.1');
+    await server.send('three', token: token);
+    expect(server.asked, hasLength(2), reason: 'asked again, the old token stays dead');
+    expect(server.delivered.map((m) => m.text), ['one', 'three']);
+  });
+
   test('a refused device writes nothing and is not asked about again', () async {
     server = await _Server.start(decide: (_) => false);
     final first = await server.send('spam');
@@ -168,6 +187,7 @@ void main() {
     expect(second.json['accepted'], isFalse);
     expect(server.asked, hasLength(1));
     expect(server.delivered, isEmpty);
+    expect(server.blocked, ['127.0.0.1'], reason: 'the screen learns it is blocked');
   });
 
   test('no answer in time is not a refusal, and the same address is not asked again at once', () async {

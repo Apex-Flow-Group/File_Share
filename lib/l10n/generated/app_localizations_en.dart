@@ -818,4 +818,23 @@ class AppLocalizationsEn extends AppLocalizations {
   String chatTooLong(int max) {
     return 'The message is longer than $max characters';
   }
+
+  @override
+  String get chatBlock => 'Block';
+
+  @override
+  String chatBlockQuestion(String name) {
+    return 'Block $name?';
+  }
+
+  @override
+  String get chatBlockDetail =>
+      'Its messages won\'t arrive until you unblock it. The block ends by itself when you reopen the app.';
+
+  @override
+  String get chatBlocked =>
+      'This device is blocked; its messages don\'t arrive.';
+
+  @override
+  String get chatUnblock => 'Unblock';
 }

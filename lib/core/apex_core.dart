@@ -77,11 +77,13 @@ class ApexCore {
   late final ChatHttp _chat = ChatHttp(
     onRequest: _connectionRequestController.add,
     onMessage: (m) => chat.receive(m.address, m.name, m.text),
+    onBlocked: (address) => chat.blocked(address),
     question: _question,
   );
 
   /// The chats of this run, in memory only.
-  late final ChatStore chat = ChatStore(send: _sendChat);
+  late final ChatStore chat =
+      ChatStore(send: _sendChat, onBlock: _chat.block, onUnblock: _chat.unblock);
   SettingsService? _settings;
 
   late final NearbyTransfer _nearby = NearbyTransfer(

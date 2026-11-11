@@ -35,7 +35,12 @@ class ChatThread {
 /// Every chat of this run, in memory only: nothing is written to disk, since
 /// a message may be a password, and closing the app empties it (owner decision).
 class ChatStore extends ChangeNotifier {
-  ChatStore({required this.send, DateTime Function()? clock}) : _clock = clock ?? DateTime.now;
+  ChatStore({required this.send, this.onBlock, this.onUnblock, DateTime Function()? clock})
+      : _clock = clock ?? DateTime.now;
+
+  /// Tell the door, which refuses a blocked device's messages.
+  final void Function(String address)? onBlock;
+  final void Function(String address)? onUnblock;
 
   final DateTime Function() _clock;
 
@@ -68,6 +73,40 @@ class ChatStore extends ChangeNotifier {
 
   int unread(String address) => _threads[address]?.unread ?? 0;
 
+  /// Blocked here, by refusing the question or with the block button; in
+  /// memory, like the chats, so closing the app lifts every block.
+  final _blocked = <String>{};
+
+  bool isBlocked(String address) => _blocked.contains(address);
+
+  /// A device whose messages this one accepted can be blocked.
+  bool canBlock(String address) =>
+      !isBlocked(address) && (_threads[address]?.messages.any((m) => !m.mine) ?? false);
+
+  void block(String address) {
+    if (!_blocked.add(address)) {
+      return;
+    }
+    _threads[address]?.unread = 0;
+    onBlock?.call(address);
+    notifyListeners();
+  }
+
+  void unblock(String address) {
+    if (!_blocked.remove(address)) {
+      return;
+    }
+    onUnblock?.call(address);
+    notifyListeners();
+  }
+
+  /// The door blocked it, after the user refused its question.
+  void blocked(String address) {
+    if (_blocked.add(address)) {
+      notifyListeners();
+    }
+  }
+
   void opened(String address) {
     _open = address;
     final t = _threads[address];
@@ -84,6 +123,9 @@ class ChatStore extends ChangeNotifier {
   }
 
   void receive(String address, String name, String text) {
+    if (isBlocked(address)) {
+      return;
+    }
     final t = _thread(address, name)..name = name;
     _add(t, ChatMessage._(_nextId++, false, text, ChatStatus.sent));
     if (_open != address) {
@@ -98,6 +140,9 @@ class ChatStore extends ChangeNotifier {
   }
 
   Future<void> write(Device target, String text) async {
+    if (isBlocked(target.ip)) {
+      return;
+    }
     final t = _thread(target.ip, target.name);
     final m = ChatMessage._(_nextId++, true, text, ChatStatus.sending);
     _add(t, m);

@@ -840,4 +840,22 @@ class AppLocalizationsAr extends AppLocalizations {
     );
     return '$_temp0';
   }
+
+  @override
+  String get chatBlock => 'حظر';
+
+  @override
+  String chatBlockQuestion(String name) {
+    return 'حظر $name؟';
+  }
+
+  @override
+  String get chatBlockDetail =>
+      'لن تصل رسائله حتى تلغي الحظر. ويُلغى الحظر وحده حين تعيد فتح التطبيق.';
+
+  @override
+  String get chatBlocked => 'هذا الجهاز محظور، فلا تصل رسائله.';
+
+  @override
+  String get chatUnblock => 'إلغاء الحظر';
 }
