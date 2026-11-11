@@ -31,6 +31,7 @@ import 'discovery_merge.dart';
 import 'files/move_into_folder.dart';
 import 'nearby_transfer.dart';
 import 'one_question.dart';
+import 'server_port.dart';
 import 'share_folder_http.dart';
 
 export 'core_models.dart';
@@ -330,8 +331,10 @@ class ApexCore {
 
   Future<void> _startHttpServer() async {
     // TLS both ways: every client must show its certificate too.
-    _httpServer = await HttpServer.bindSecure(InternetAddress.anyIPv4, 0, _serverContext!,
-        requestClientCertificate: true);
+    _httpServer = await bindLastPort(
+        await SharedPreferences.getInstance(),
+        (port) => HttpServer.bindSecure(InternetAddress.anyIPv4, port, _serverContext!,
+            requestClientCertificate: true));
     _httpPort = _httpServer!.port;
     _localDevice = _localDevice!.copyWith(port: _httpPort);
     // A failed handshake (a stranger's certificate) ends that connection only.
