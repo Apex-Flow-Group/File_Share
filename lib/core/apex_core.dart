@@ -6,6 +6,8 @@ import 'package:path_provider/path_provider.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
 import '../features/chat/data/chat_http.dart';
+import '../features/chat/logic/block_list.dart';
+import '../features/chat/logic/chat_access.dart';
 import '../features/chat/logic/chat_key.dart';
 import '../features/chat/logic/chat_store.dart';
 import '../features/identity/device_identity.dart';
@@ -67,6 +69,10 @@ class ApexCore {
   /// Files, chat and the shared folder never ask the user at the same time.
   final _question = OneQuestion();
 
+  /// The one list every block is decided by: the chats, the chat door and
+  /// the file door.
+  late final BlockList _blocks = BlockList(_pins);
+
   late final ReceiveHttp _receive = ReceiveHttp(
     gate: ReceiveGate(),
     store: ReceiveStore(
@@ -106,6 +112,7 @@ class ApexCore {
     onBlocked: (peer) => chat.blocked(peer),
     expectedFingerprint: _expectedFingerprint,
     pins: _pins,
+    access: ChatAccess(blocks: _blocks),
     question: _question,
   );
 
@@ -119,6 +126,7 @@ class ApexCore {
         onDelivered: onDelivered),
     onBlock: _chat.block,
     onUnblock: _chat.unblock,
+    blocks: _blocks,
   );
   SettingsService? _settings;
 

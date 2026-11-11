@@ -10,6 +10,7 @@ import '../../../core/text/clean_label.dart';
 import '../../../models/device.dart';
 import '../../identity/caller.dart';
 import '../../identity/pin_store.dart';
+import '../logic/block_list.dart';
 import '../logic/chat_access.dart';
 import '../logic/chat_key.dart';
 import '../logic/chat_text.dart';
@@ -32,7 +33,7 @@ class ChatHttp {
     OneQuestion? question,
     this.decisionTimeout = TransferRules.decisionTimeout,
     this.bodyIdleLimit = TransferRules.bodyIdleLimit,
-  })  : _access = access ?? ChatAccess(),
+  })  : _access = access ?? ChatAccess(blocks: BlockList(pins)),
         _question = question ?? OneQuestion();
 
   final void Function(ConnectionRequest) onRequest;
@@ -102,14 +103,15 @@ class ChatHttp {
     final peer = chatPeer(fingerprint, id, address);
     final key = peer.key;
 
+    // Before the token: a block decides even for a device that holds one.
+    if (_access.isBlocked(peer)) {
+      await _reply(req, HttpStatus.ok, {'accepted': false});
+      return;
+    }
     final grant = _access.check(req.headers.value(ApexProtocol.tokenHeader), key);
     if (grant != null) {
       onMessage((id: id, address: address, fingerprint: fingerprint, name: grant.name, text: text));
       await _reply(req, HttpStatus.ok, {'delivered': true});
-      return;
-    }
-    if (_access.isBlocked(peer)) {
-      await _reply(req, HttpStatus.ok, {'accepted': false});
       return;
     }
     if (_access.isQuiet(key)) {

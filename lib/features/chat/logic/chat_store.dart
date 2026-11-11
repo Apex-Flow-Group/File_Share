@@ -6,6 +6,7 @@ import '../../../core/core_models.dart';
 import '../../../models/device.dart';
 import '../../identity/fingerprint.dart';
 import '../../send/data/send_http.dart';
+import 'block_list.dart';
 import 'chat_key.dart';
 
 enum ChatStatus { sending, sent, failed }
@@ -72,8 +73,10 @@ class ChatStore extends ChangeNotifier {
     this.sendFilesNow,
     this.onBlock,
     this.onUnblock,
+    BlockList? blocks,
     DateTime Function()? clock,
-  }) : _clock = clock ?? DateTime.now;
+  })  : _clock = clock ?? DateTime.now,
+        _blocked = blocks ?? BlockList();
 
   /// Sends files to [target] without adding a line; [sendFiles] adds it.
   /// [onDelivered] counts the files that arrived.
@@ -116,11 +119,11 @@ class ChatStore extends ChangeNotifier {
   int unread(ChatKey key) => _threads[key]?.unread ?? 0;
 
   /// Blocked here, by refusing the question or with the block button; in
-  /// memory, like the chats, so closing the app lifts every block. Each holds
-  /// the device's key and its id: a new key alone does not lift it.
-  final _blocked = <ChatBlock>{};
+  /// memory, like the chats, so closing the app lifts every block. The app
+  /// shares it with the doors, so what the card shows is what they decide.
+  final BlockList _blocked;
 
-  bool isBlocked(ChatPeer peer) => _blocked.any((b) => blocks(b, peer));
+  bool isBlocked(ChatPeer peer) => _blocked.isBlocked(peer);
 
   /// Owner decision: any device can be blocked, before it ever writes too.
   bool canBlock(ChatPeer peer) => !isBlocked(peer);
@@ -129,28 +132,27 @@ class ChatStore extends ChangeNotifier {
     if (isBlocked(peer)) {
       return;
     }
-    _blocked.add((key: peer.key, id: peer.id));
+    _blocked.block(peer);
     _threads[peer.key]?.unread = 0;
     onBlock?.call(peer);
     notifyListeners();
   }
 
-  /// Only the user unblocks: every block that matches [peer], by key or id.
+  /// Only the user unblocks, and only what turns [peer] away.
   void unblock(ChatPeer peer) {
     if (!isBlocked(peer)) {
       return;
     }
-    _blocked.removeWhere((b) => blocks(b, peer));
+    _blocked.unblock(peer);
     onUnblock?.call(peer);
     notifyListeners();
   }
 
-  /// The door blocked it, after the user refused its question.
+  /// The door blocked it, after the user refused its question; with a
+  /// shared list it is already in, and its card still has to show it.
   void blocked(ChatPeer peer) {
-    if (!isBlocked(peer)) {
-      _blocked.add((key: peer.key, id: peer.id));
-      notifyListeners();
-    }
+    _blocked.block(peer);
+    notifyListeners();
   }
 
   void opened(ChatKey key) {
