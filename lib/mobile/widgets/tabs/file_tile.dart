@@ -2,8 +2,10 @@ import 'dart:io';
 
 import 'package:flutter/material.dart';
 
+import '../../../features/receive/data/sender_log.dart';
 import '../../../l10n/generated/app_localizations.dart';
 import '../../../shared/file_ui_utils.dart';
+import '../../../shared/sender_line_text.dart';
 
 /// A single file item tile for the files list.
 class FileTile extends StatelessWidget {
@@ -16,6 +18,9 @@ class FileTile extends StatelessWidget {
   final VoidCallback onOpenFile;
   final VoidCallback onOpenLocation;
 
+  /// Who sent the file, when it was received over the network.
+  final SenderLine? sender;
+
   const FileTile({
     required this.file,
     required this.name,
@@ -25,6 +30,7 @@ class FileTile extends StatelessWidget {
     required this.onLongPress,
     required this.onOpenFile,
     required this.onOpenLocation,
+    this.sender,
     super.key,
   });
 
@@ -132,6 +138,15 @@ class FileTile extends StatelessWidget {
                       ),
                     ),
                   ]),
+                  if (sender != null)
+                    Text(
+                      senderLineText(l10n, sender!),
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis,
+                      style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                            color: Theme.of(context).colorScheme.onSurfaceVariant,
+                          ),
+                    ),
                 ],
               ),
             ),

@@ -63,7 +63,7 @@ class HomeController extends ChangeNotifier {
 
   final filesRefreshNotifier = ValueNotifier<int>(0);
 
-  final _fileOpsService = FileOperationsService();
+  final _fileOpsService = FileOperationsService(senders: ApexCore.instance.senders);
 
   static const _shareChannel = MethodChannel('com.apex.core/share');
 

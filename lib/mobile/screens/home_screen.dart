@@ -378,6 +378,7 @@ class _HomeScreenState extends State<HomeScreen>
           onLongPress: _ctrl.enterSelectionMode,
           getReceivedFiles: _ctrl.getReceivedFiles,
           refreshNotifier: _ctrl.filesRefreshNotifier,
+          senders: ApexCore.instance.senders,
         );
       default:
         return const SizedBox.shrink();

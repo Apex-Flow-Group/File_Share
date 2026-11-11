@@ -2,6 +2,7 @@
 
 import 'package:flutter/material.dart';
 
+import '../../../features/receive/data/sender_log.dart';
 import '../../../l10n/generated/app_localizations.dart';
 import '../../../shared/apex_bottom_sheet.dart';
 import '../../../shared/apex_snackbar.dart';
@@ -28,6 +29,9 @@ class FilesTab extends StatefulWidget {
   final Future<List<FileSystemEntity>> Function() getReceivedFiles;
   final ValueNotifier<int>? refreshNotifier;
 
+  /// Who sent each file; its line shows under the file.
+  final SenderLog? senders;
+
   const FilesTab({
     required this.isSelectionMode,
     required this.selectedFiles,
@@ -45,6 +49,7 @@ class FilesTab extends StatefulWidget {
     required this.onLongPress,
     required this.getReceivedFiles,
     this.refreshNotifier,
+    this.senders,
     super.key,
   });
 
@@ -85,6 +90,8 @@ class _FilesTabState extends State<FilesTab>
     setState(() => _isLoading = true);
     try {
       final f = await widget.getReceivedFiles();
+      // Files deleted outside the app since: their lines go too.
+      widget.senders?.prune();
       if (mounted) {
         setState(() {
           _files = f;
@@ -473,6 +480,7 @@ class _FilesTabState extends State<FilesTab>
             onLongPress: () => widget.onLongPress(file.path),
             onOpenFile: () => widget.onOpenFile(file),
             onOpenLocation: () => widget.onOpenFileLocation(file),
+            sender: widget.senders?.of(file.path),
           ),
         );
       },

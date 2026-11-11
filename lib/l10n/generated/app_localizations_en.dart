@@ -911,4 +911,19 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get sendFilesNow => 'Send files';
+
+  @override
+  String senderLine(String name, String when) {
+    return 'From: $name · $when';
+  }
+
+  @override
+  String whenToday(String time) {
+    return 'Today $time';
+  }
+
+  @override
+  String whenYesterday(String time) {
+    return 'Yesterday $time';
+  }
 }

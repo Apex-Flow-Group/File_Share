@@ -312,5 +312,17 @@
   "@chatRemoveFile": {
     "placeholders": { "name": { "type": "String" } }
   },
-  "sendFilesNow": "إرسال ملفات"
+  "sendFilesNow": "إرسال ملفات",
+  "senderLine": "من: {name} · {when}",
+  "@senderLine": {
+    "placeholders": { "name": { "type": "String" }, "when": { "type": "String" } }
+  },
+  "whenToday": "اليوم {time}",
+  "@whenToday": {
+    "placeholders": { "time": { "type": "String" } }
+  },
+  "whenYesterday": "أمس {time}",
+  "@whenYesterday": {
+    "placeholders": { "time": { "type": "String" } }
+  }
 }

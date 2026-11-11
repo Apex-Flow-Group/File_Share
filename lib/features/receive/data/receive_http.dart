@@ -20,6 +20,7 @@ import '../../identity/pin_store.dart';
 import '../logic/offer.dart';
 import '../logic/receive_gate.dart';
 import 'receive_store.dart';
+import 'sender_log.dart';
 
 /// The receiving door: /ping, /offer, /upload. Every request must come with a
 /// client certificate and the current protocol version; an offer's
@@ -35,6 +36,7 @@ class ReceiveHttp {
     required this.expectedFingerprint,
     required this.pins,
     this.freeBytes,
+    this.senders,
     BlockList? blocks,
     OneQuestion? question,
     this.decisionTimeout = TransferRules.decisionTimeout,
@@ -59,6 +61,9 @@ class ReceiveHttp {
 
   /// Free space where files are saved; null when it cannot be read.
   final Future<int?> Function()? freeBytes;
+
+  /// Who sent each file, written once the file is in its final place.
+  final SenderLog? senders;
   final Duration decisionTimeout;
   final Duration bodyIdleLimit;
 
@@ -281,6 +286,7 @@ class ReceiveHttp {
         throw const _Cancelled();
       }
       final path = await store.place(temp, file.name);
+      senders?.record(path, name: upload.senderName, fingerprint: upload.senderFingerprint);
       // Before the answer: once the sender reads it, its next request may
       // arrive, and the idle time must already count from here.
       upload.finish();
