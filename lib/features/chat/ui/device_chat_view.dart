@@ -26,6 +26,7 @@ class DeviceChatView extends StatefulWidget {
     this.canWrite = true,
     this.onAttach,
     this.autofocus = false,
+    this.initialText,
     super.key,
   });
 
@@ -37,6 +38,9 @@ class DeviceChatView extends StatefulWidget {
 
   /// Opened from the card's writing line: the keyboard comes up at once.
   final bool autofocus;
+
+  /// What the card's paste put in the writing line, not sent yet.
+  final String? initialText;
 
   /// False on the TV: it only receives and shows.
   final bool canWrite;
@@ -173,7 +177,10 @@ class _DeviceChatViewState extends State<DeviceChatView> {
                 onSend: _send,
                 onAttach: widget.onAttach,
                 attachLabel: l10n.chatAttach,
-                autofocus: widget.autofocus,
+                autofocus: widget.autofocus || widget.initialText != null,
+                initialText: widget.initialText,
+                pasteLabel: l10n.chatPaste,
+                onPasteEmpty: () => ApexSnackBar.info(context, l10n.chatClipboardEmpty),
               ),
             ],
           ],

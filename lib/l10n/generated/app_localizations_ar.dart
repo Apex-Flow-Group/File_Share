@@ -906,4 +906,10 @@ class AppLocalizationsAr extends AppLocalizations {
     );
     return '$_temp0';
   }
+
+  @override
+  String get chatPaste => 'لصق';
+
+  @override
+  String get chatClipboardEmpty => 'لا يوجد نص منسوخ';
 }

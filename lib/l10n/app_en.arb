@@ -331,5 +331,7 @@
   "chatUnread": "{count, plural, one{1 new message} other{{count} new messages}}",
   "@chatUnread": {
     "placeholders": { "count": { "type": "int" } }
-  }
+  },
+  "chatPaste": "Paste",
+  "chatClipboardEmpty": "Nothing is copied"
 }

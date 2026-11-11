@@ -300,5 +300,7 @@
   "chatUnread": "{count, plural, one{رسالة جديدة} two{رسالتان جديدتان} few{{count} رسائل جديدة} many{{count} رسالة جديدة} other{{count} رسالة جديدة}}",
   "@chatUnread": {
     "placeholders": { "count": { "type": "int" } }
-  }
+  },
+  "chatPaste": "لصق",
+  "chatClipboardEmpty": "لا يوجد نص منسوخ"
 }

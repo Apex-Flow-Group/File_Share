@@ -1657,6 +1657,18 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'{count, plural, one{1 new message} other{{count} new messages}}'**
   String chatUnread(int count);
+
+  /// No description provided for @chatPaste.
+  ///
+  /// In en, this message translates to:
+  /// **'Paste'**
+  String get chatPaste;
+
+  /// No description provided for @chatClipboardEmpty.
+  ///
+  /// In en, this message translates to:
+  /// **'Nothing is copied'**
+  String get chatClipboardEmpty;
 }
 
 class _AppLocalizationsDelegate

@@ -1,9 +1,10 @@
 import 'dart:io';
 
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 
 import '../../core/apex_core.dart';
-import '../../features/chat/ui/show_device_chat.dart';
+import '../../features/chat/ui/chat_attach.dart';
 import '../../features/clipboard/ui/clipboard_label.dart';
 import '../../features/send/data/send_http.dart';
 import '../../features/send/ui/send_outcome_message.dart';
@@ -12,13 +13,20 @@ import '../../models/device.dart';
 import '../../services/clipboard_monitor_service.dart';
 import '../../services/desktop_notification_service.dart';
 import '../../services/transfer_progress_service.dart';
+import '../../shared/apex_snackbar.dart';
 import '../../shared/device_look.dart';
-import '../../shared/framed_capsule_input.dart';
 import '../screens/share_browser_screen.dart';
+import 'chat_card_parts.dart';
 import 'connection_send_actions.dart';
 import 'transfer_progress_indicator.dart';
 
 enum _Status { idle, sending }
+
+/// One opened chat card at a time: opening another folds it (owner decision).
+final _openChat = ValueNotifier<String?>(null);
+
+@visibleForTesting
+void foldChatCards() => _openChat.value = null;
 
 class ConnectionWidget extends StatefulWidget {
   final Device device;
@@ -125,51 +133,136 @@ class _ConnectionWidgetState extends State<ConnectionWidget>
         opacity: usable ? 1.0 : 0.45,
         child: Padding(
           padding: const EdgeInsets.all(16),
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              _buildHeader(isDark),
-              const SizedBox(height: 14),
-              if (usable &&
-                  widget.pendingSharedFiles != null &&
-                  widget.pendingSharedFiles!.isNotEmpty &&
-                  _status == _Status.idle &&
-                  !widget.isGloballyBusy)
-                _buildSharedFilesBanner(l10n),
-              if (usable &&
-                  widget.pendingFilePath != null &&
-                  _status == _Status.idle &&
-                  !widget.isGloballyBusy)
-                _buildPendingFileBanner(l10n),
-              if (usable &&
-                  widget.pendingClipboardItem != null &&
-                  _status == _Status.idle &&
-                  !widget.isGloballyBusy)
-                _ClipboardBanner(
-                  item: widget.pendingClipboardItem!,
-                  onSend: _sendClipboardItem,
-                  onDismiss: widget.onClipboardItemSent,
+          // A network device is a chat (owner decision); the rest keep the card.
+          child: usable && widget.device.isMdns
+              ? _buildChatCard(l10n, isDark)
+              : Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    _buildHeader(isDark),
+                    const SizedBox(height: 14),
+                    ..._banners(l10n, usable),
+                    // Offline first, as on the TV: it is what the device is now.
+                    if (!widget.isActive)
+                      _buildOfflineBar(l10n)
+                    else if (widget.device.versionMismatch)
+                      _buildVersionBar(l10n)
+                    else
+                      _status == _Status.sending
+                          ? _buildSendingState()
+                          : _buildActions(l10n, isDark),
+                  ],
                 ),
-              // Offline first, as on the TV: it is what the device is now.
-              if (!widget.isActive)
-                _buildOfflineBar(l10n)
-              else if (widget.device.versionMismatch)
-                _buildVersionBar(l10n)
-              else
-                _status == _Status.sending
-                    ? _buildSendingState()
-                    : _buildActions(l10n, isDark),
-              // Chat goes over the local network only, not over Nearby.
-              if (usable && widget.device.isMdns) ...[
-                const SizedBox(height: 10),
-                _ChatButton(device: widget.device),
-              ],
-            ],
-          ),
         ),
       ),
     );
   }
+
+  List<Widget> _banners(AppLocalizations l10n, bool usable) {
+    final idle = usable && _status == _Status.idle && !widget.isGloballyBusy;
+    return [
+      if (idle &&
+          widget.pendingSharedFiles != null &&
+          widget.pendingSharedFiles!.isNotEmpty)
+        _buildSharedFilesBanner(l10n),
+      if (idle && widget.pendingFilePath != null) _buildPendingFileBanner(l10n),
+      if (idle && widget.pendingClipboardItem != null)
+        _ClipboardBanner(
+          item: widget.pendingClipboardItem!,
+          onSend: _sendClipboardItem,
+          onDismiss: widget.onClipboardItemSent,
+        ),
+    ];
+  }
+
+  // ─── Chat card ────────────────────────────────────────────────────────────
+
+  /// What the card's paste took from the clipboard, for the writing line.
+  String? _paste;
+
+  /// A new paste rebuilds the writing line with its text.
+  int _pasteSeq = 0;
+
+  bool get _expanded => _openChat.value == widget.device.ip;
+
+  void _open({String? paste}) {
+    setState(() {
+      _paste = paste;
+      _pasteSeq++;
+    });
+    _openChat.value = widget.device.ip;
+  }
+
+  void _toggle() => _expanded ? _openChat.value = null : _open();
+
+  /// Reads the clipboard only now, on the user's press (owner decision).
+  Future<void> _pasteFromRow() async {
+    final text = (await Clipboard.getData(Clipboard.kTextPlain))?.text;
+    if (!mounted) {
+      return;
+    }
+    if (text == null || text.isEmpty) {
+      ApexSnackBar.info(
+          context, AppLocalizations.of(context).chatClipboardEmpty);
+      return;
+    }
+    _open(paste: text);
+  }
+
+  Future<void> _attachFromRow() async {
+    if (await attachFiles(context, widget.device) && mounted) {
+      _open();
+    }
+  }
+
+  Widget _buildChatCard(AppLocalizations l10n, bool isDark) =>
+      ValueListenableBuilder<String?>(
+        valueListenable: _openChat,
+        builder: (context, open, _) {
+          final banners = _banners(l10n, true);
+          if (open != widget.device.ip) {
+            return Column(
+              crossAxisAlignment: CrossAxisAlignment.stretch,
+              children: [
+                ChatProfileRow(
+                  device: widget.device,
+                  onOpen: _toggle,
+                  onPaste: _pasteFromRow,
+                  onAttach: _attachFromRow,
+                ),
+                if (banners.isNotEmpty) const SizedBox(height: 12),
+                ...banners,
+                if (_status == _Status.sending) ...[
+                  const SizedBox(height: 12),
+                  _buildSendingState()
+                ],
+              ],
+            );
+          }
+          return Column(
+            crossAxisAlignment: CrossAxisAlignment.stretch,
+            children: [
+              // Touching the head folds the card again.
+              GestureDetector(
+                  behavior: HitTestBehavior.opaque,
+                  onTap: _toggle,
+                  child: _buildHeader(isDark)),
+              const SizedBox(height: 14),
+              ...banners,
+              _status == _Status.sending
+                  ? _buildSendingState()
+                  : _buildActions(l10n, isDark),
+              const SizedBox(height: 10),
+              ChatCardPanel(
+                key: ValueKey(_pasteSeq),
+                device: widget.device,
+                onAttach: () => attachFiles(context, widget.device),
+                initialText: _paste,
+              ),
+            ],
+          );
+        },
+      );
 
   Widget _buildHeader(bool isDark) {
     final color = _deviceColor;
@@ -680,41 +773,6 @@ class _ActionButton extends StatelessWidget {
   }
 }
 
-// ─── Chat Button ──────────────────────────────────────────────────────────────
-
-class _ChatButton extends StatelessWidget {
-  const _ChatButton({required this.device});
-
-  final Device device;
-
-  /// The chat's own writing line, as an entry: touching it opens the chat
-  /// with the keyboard up, and the clip sends files, then shows their line.
-  @override
-  Widget build(BuildContext context) {
-    final l10n = AppLocalizations.of(context);
-    final store = ApexCore.instance.chat;
-    return ListenableBuilder(
-      listenable: store,
-      builder: (context, _) {
-        final unread = store.unread(device.ip);
-        return FramedCapsuleInput(
-          hint: unread > 0 ? l10n.chatUnread(unread) : l10n.chatHint,
-          hintAlert: unread > 0,
-          sendLabel: l10n.chatOpen,
-          onSend: (_) => false,
-          onOpen: () => showDeviceChat(context, device, focus: true),
-          onAttach: () async {
-            if (await attachFiles(context, device) && context.mounted) {
-              await showDeviceChat(context, device);
-            }
-          },
-          attachLabel: l10n.chatAttach,
-        );
-      },
-    );
-  }
-}
-
 // ─── Transport Badge ──────────────────────────────────────────────────────────
 
 class _TransportBadge extends StatelessWidget {
@@ -934,7 +992,8 @@ class _ClipboardBannerState extends State<_ClipboardBanner> {
                       const SizedBox(width: 4),
                       Expanded(
                         child: Text(
-                          clipboardLabel(AppLocalizations.of(context), widget.item,
+                          clipboardLabel(
+                              AppLocalizations.of(context), widget.item,
                               typeShown: true),
                           maxLines: widget.item.type == ClipboardItemType.text
                               ? 2

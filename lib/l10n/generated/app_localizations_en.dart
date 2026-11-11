@@ -880,4 +880,10 @@ class AppLocalizationsEn extends AppLocalizations {
     );
     return '$_temp0';
   }
+
+  @override
+  String get chatPaste => 'Paste';
+
+  @override
+  String get chatClipboardEmpty => 'Nothing is copied';
 }

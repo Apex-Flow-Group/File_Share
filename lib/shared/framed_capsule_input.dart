@@ -66,9 +66,10 @@ class FramedCapsuleInput extends StatefulWidget {
     required this.onSend,
     this.onAttach,
     this.attachLabel,
-    this.onOpen,
-    this.hintAlert = false,
     this.autofocus = false,
+    this.initialText,
+    this.pasteLabel,
+    this.onPasteEmpty,
     super.key,
   });
 
@@ -84,13 +85,16 @@ class FramedCapsuleInput extends StatefulWidget {
   final VoidCallback? onAttach;
   final String? attachLabel;
 
-  /// Set on a device card: the line only leads to the chat. Touching it
-  /// opens the chat, where the writing happens and the replies are.
-  final VoidCallback? onOpen;
-
-  /// The hint tells something new (unread messages), not what to type.
-  final bool hintAlert;
   final bool autofocus;
+
+  /// Text already in the line when it opens (a paste from the card).
+  final String? initialText;
+
+  /// Shows a paste circle after the clip. The clipboard is read only when
+  /// the user presses it (owner decision), and the text goes in the line,
+  /// never straight out.
+  final String? pasteLabel;
+  final VoidCallback? onPasteEmpty;
 
   @override
   State<FramedCapsuleInput> createState() => _FramedCapsuleInputState();
@@ -114,6 +118,11 @@ class _FramedCapsuleInputState extends State<FramedCapsuleInput> {
   @override
   void initState() {
     super.initState();
+    final initial = widget.initialText;
+    if (initial != null) {
+      _controller.text = initial;
+      _controller.selection = TextSelection.collapsed(offset: initial.length);
+    }
     _controller.addListener(() => setState(() {}));
   }
 
@@ -122,6 +131,22 @@ class _FramedCapsuleInputState extends State<FramedCapsuleInput> {
     _controller.dispose();
     _focus.dispose();
     super.dispose();
+  }
+
+  Future<void> _paste() async {
+    final text = (await Clipboard.getData(Clipboard.kTextPlain))?.text;
+    if (text == null || text.isEmpty) {
+      widget.onPasteEmpty?.call();
+      return;
+    }
+    final v = _controller.value;
+    final start = v.selection.isValid ? v.selection.start : v.text.length;
+    final end = v.selection.isValid ? v.selection.end : v.text.length;
+    _controller.value = TextEditingValue(
+      text: v.text.replaceRange(start, end, text),
+      selection: TextSelection.collapsed(offset: start + text.length),
+    );
+    _focus.requestFocus();
   }
 
   void _send() {
@@ -137,32 +162,6 @@ class _FramedCapsuleInputState extends State<FramedCapsuleInput> {
   @override
   Widget build(BuildContext context) {
     final c = FramedCapsuleColors.of(context);
-    if (widget.onOpen != null) {
-      // One button, the whole capsule: the send circle stays dim as in an
-      // empty chat, so nothing looks sent.
-      return Semantics(
-        button: true,
-        label: widget.sendLabel,
-        excludeSemantics: widget.onAttach == null,
-        child: GestureDetector(
-          behavior: HitTestBehavior.opaque,
-          onTap: widget.onOpen,
-          child: _capsule(
-            c,
-            Padding(
-              padding: const EdgeInsets.symmetric(vertical: 18),
-              child: Text(widget.hint,
-                  maxLines: 1,
-                  overflow: TextOverflow.ellipsis,
-                  style: TextStyle(
-                      color: widget.hintAlert ? Theme.of(context).colorScheme.secondary : c.hint,
-                      fontSize: 16,
-                      fontWeight: widget.hintAlert ? FontWeight.w600 : null)),
-            ),
-          ),
-        ),
-      );
-    }
     Widget field = TextField(
       controller: _controller,
       focusNode: _focus,
@@ -214,11 +213,22 @@ class _FramedCapsuleInputState extends State<FramedCapsuleInput> {
               ),
               const SizedBox(width: 4),
             ],
+            if (widget.pasteLabel != null) ...[
+              _circleButton(
+                label: widget.pasteLabel!,
+                enabled: true,
+                onTap: _paste,
+                background: c.circle,
+                icon: Icons.content_paste_rounded,
+                iconColor: c.onCircle,
+              ),
+              const SizedBox(width: 4),
+            ],
             Expanded(child: field),
             const SizedBox(width: 4),
             _circleButton(
               label: widget.sendLabel,
-              enabled: widget.onOpen == null && _canSend,
+              enabled: _canSend,
               onTap: _send,
               background: c.filled,
               icon: Icons.arrow_upward_rounded,
