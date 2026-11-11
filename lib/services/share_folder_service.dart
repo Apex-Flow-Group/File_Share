@@ -7,6 +7,7 @@ import 'package:flutter/foundation.dart';
 import '../core/files/safe_file_name.dart';
 import '../utils/apex_logger.dart';
 import '../utils/file_utils.dart';
+import '../utils/path_name.dart';
 import '../utils/path_utils.dart';
 
 /// معلومات ملف داخل مجلد Share
@@ -65,7 +66,7 @@ class ShareFolderService {
       if (entity is! File) continue;
       try {
         final stat = await entity.stat();
-        final name = entity.path.split(Platform.pathSeparator).last;
+        final name = fileNameOf(entity.path);
         result.add(ShareFileInfo(
           name: name,
           size: stat.size,

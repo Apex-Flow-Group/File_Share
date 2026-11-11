@@ -5,6 +5,7 @@ import 'package:archive/archive_io.dart';
 import 'package:path_provider/path_provider.dart';
 
 import '../platform/private_temp.dart';
+import '../utils/path_name.dart';
 
 /// خدمة ضغط المجلدات إلى ملفات ZIP قبل الإرسال
 class FolderZipService {
@@ -110,5 +111,5 @@ class FolderZipService {
   }
 
   static String _lastSegment(String path) =>
-      path.split(RegExp(r'[/\\]')).lastWhere((s) => s.isNotEmpty, orElse: () => 'folder');
+      fileNameOf(path).isEmpty ? 'folder' : fileNameOf(path);
 }

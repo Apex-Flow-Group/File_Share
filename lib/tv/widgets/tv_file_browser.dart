@@ -4,6 +4,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 
 import '../../l10n/generated/app_localizations.dart';
+import '../../utils/path_name.dart';
 
 const _storageRoot = '/storage/emulated/0';
 
@@ -74,7 +75,7 @@ class _TVFileBrowserState extends State<_TVFileBrowser> {
   }
 
   // Paths come with a backslash on Windows, where the tests also run.
-  static String _nameOf(String path) => path.split(RegExp(r'[/\\]')).last;
+  static String _nameOf(String path) => fileNameOf(path);
 
   Future<void> _loadDir(String path) async {
     setState(() {

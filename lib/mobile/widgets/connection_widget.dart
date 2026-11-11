@@ -17,6 +17,7 @@ import '../../services/desktop_notification_service.dart';
 import '../../services/transfer_progress_service.dart';
 import '../../shared/apex_snackbar.dart';
 import '../../shared/device_look.dart';
+import '../../utils/path_name.dart';
 import '../../utils/platform_detector.dart';
 import '../screens/share_browser_screen.dart';
 import 'chat_card_parts.dart';
@@ -536,7 +537,7 @@ class _ConnectionWidgetState extends State<ConnectionWidget>
 
   Widget _buildPendingFileBanner(AppLocalizations l10n) {
     final isAr = l10n.localeName == 'ar';
-    final fileName = widget.pendingFilePath!.split('/').last;
+    final fileName = fileNameOf(widget.pendingFilePath!);
     return GestureDetector(
       onTap: _sendPendingFile,
       child: Container(
@@ -571,7 +572,7 @@ class _ConnectionWidgetState extends State<ConnectionWidget>
     final files = widget.pendingSharedFiles!;
     final count = files.length;
     final label = count == 1
-        ? files.first.split('/').last
+        ? fileNameOf(files.first)
         : (isAr ? '$count ملفات مشاركة' : '$count shared files');
 
     return GestureDetector(
@@ -647,7 +648,7 @@ class _ConnectionWidgetState extends State<ConnectionWidget>
         }
       }
       final label = paths.length == 1
-          ? paths.first.split('/').last
+          ? fileNameOf(paths.first)
           : '${paths.length} files';
       if (ok) {
         await DesktopNotificationService.instance.showFileSent(label);

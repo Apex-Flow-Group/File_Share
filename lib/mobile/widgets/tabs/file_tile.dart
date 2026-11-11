@@ -6,6 +6,7 @@ import '../../../features/receive/data/sender_log.dart';
 import '../../../l10n/generated/app_localizations.dart';
 import '../../../shared/file_ui_utils.dart';
 import '../../../shared/sender_line_text.dart';
+import '../../../utils/path_name.dart';
 
 /// A single file item tile for the files list.
 class FileTile extends StatelessWidget {
@@ -130,7 +131,7 @@ class FileTile extends StatelessWidget {
                     ),
                     const SizedBox(width: 6),
                     Text(
-                      file.parent.path.split('/').last,
+                      fileNameOf(file.parent.path),
                       style: TextStyle(
                         fontSize: 11,
                         color: iconColor.withValues(alpha: 0.8),

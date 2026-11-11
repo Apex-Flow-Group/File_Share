@@ -5,6 +5,7 @@ import 'package:flutter/material.dart';
 import '../../../l10n/generated/app_localizations.dart';
 import '../../../services/clipboard_monitor_service.dart';
 import '../../../shared/framed_capsule_input.dart';
+import '../../../utils/path_name.dart';
 import '../../clipboard/ui/clipboard_label.dart';
 
 /// A file in the message box, sent with the next send.
@@ -16,7 +17,7 @@ class ComposerFile {
   /// A copied picture or file: once sent, the copy is no longer offered.
   final bool fromClipboard;
 
-  String get name => path.replaceAll(r'\', '/').split('/').last;
+  String get name => fileNameOf(path);
 
   bool get isImage {
     final dot = name.lastIndexOf('.');

@@ -13,6 +13,7 @@ import '../models/device.dart';
 import '../services/desktop_notification_service.dart';
 import '../services/share_folder_service.dart';
 import '../utils/apex_logger.dart';
+import '../utils/path_name.dart';
 import '../utils/platform_detector.dart';
 import 'core_models.dart';
 import 'one_question.dart';
@@ -317,7 +318,7 @@ class ShareFolderHttp {
         data: req.map((chunk) => grant.revoked ? throw const _Revoked() : chunk),
         contentLength: contentLength,
       );
-      final savedName = finalPath.split(Platform.pathSeparator).last;
+      final savedName = fileNameOf(finalPath);
 
       req.response
         ..statusCode = HttpStatus.ok
@@ -351,7 +352,7 @@ class ShareFolderHttp {
   Future<void> _handleInfo(HttpRequest req) async {
     final files = await _svc.listFiles();
     final folderPath = await _svc.getFolderPath();
-    final folderName = folderPath.split(Platform.pathSeparator).last;
+    final folderName = fileNameOf(folderPath);
 
     req.response
       ..statusCode = HttpStatus.ok

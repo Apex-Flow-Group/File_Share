@@ -12,6 +12,7 @@ import '../../../models/device.dart';
 import '../../../services/desktop_notification_service.dart';
 import '../../../services/transfer_progress_service.dart';
 import '../../../shared/device_look.dart';
+import '../../../utils/path_name.dart';
 import '../tv_apps_dialog.dart';
 import '../tv_chat_dialog.dart';
 import '../tv_file_browser.dart';
@@ -181,7 +182,7 @@ class _TVDeviceCardState extends State<TVDeviceCard> {
           failed: l10n.fileSendFailed);
     }
     final label = paths.length == 1
-        ? paths.first.split('/').last
+        ? fileNameOf(paths.first)
         : '${paths.length} files';
     if (ok) {
       await DesktopNotificationService.instance.showFileSent(label);
