@@ -695,6 +695,7 @@ class _ChatButton extends StatelessWidget {
         final unread = store.unread(device.ip);
         return FramedCapsuleInput(
           hint: unread > 0 ? l10n.chatUnread(unread) : l10n.chatHint,
+          hintAlert: unread > 0,
           sendLabel: l10n.chatOpen,
           onSend: (_) => false,
           onOpen: () => showDeviceChat(context, device, focus: true),

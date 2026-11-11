@@ -8,7 +8,7 @@ void main() {
         home: Directionality(textDirection: dir, child: Scaffold(body: Center(child: line))),
       ));
 
-  testWidgets('on a card the line leads to the chat: no typing there, and send opens it too',
+  testWidgets('on a card the whole line is one button to the chat: no typing there',
       (tester) async {
     var opened = 0;
     await show(
@@ -21,8 +21,10 @@ void main() {
         ));
     expect(find.byType(TextField), findsNothing);
     await tester.tap(find.text('اكتب رسالة'));
-    await tester.tap(find.bySemanticsLabel('محادثة'));
+    // The dim send circle sends nothing; a touch on it still opens the chat.
+    await tester.tap(find.byIcon(Icons.arrow_upward_rounded));
     expect(opened, 2);
+    expect(find.bySemanticsLabel('محادثة'), findsOneWidget);
   });
 
   testWidgets('the attach circle sits at the start, send at the end', (tester) async {

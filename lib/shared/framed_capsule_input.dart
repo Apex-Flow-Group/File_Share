@@ -67,6 +67,7 @@ class FramedCapsuleInput extends StatefulWidget {
     this.onAttach,
     this.attachLabel,
     this.onOpen,
+    this.hintAlert = false,
     this.autofocus = false,
     super.key,
   });
@@ -86,6 +87,9 @@ class FramedCapsuleInput extends StatefulWidget {
   /// Set on a device card: the line only leads to the chat. Touching it
   /// opens the chat, where the writing happens and the replies are.
   final VoidCallback? onOpen;
+
+  /// The hint tells something new (unread messages), not what to type.
+  final bool hintAlert;
   final bool autofocus;
 
   @override
@@ -134,19 +138,26 @@ class _FramedCapsuleInputState extends State<FramedCapsuleInput> {
   Widget build(BuildContext context) {
     final c = FramedCapsuleColors.of(context);
     if (widget.onOpen != null) {
-      return _capsule(
-        c,
-        Semantics(
-          button: true,
-          child: GestureDetector(
-            behavior: HitTestBehavior.opaque,
-            onTap: widget.onOpen,
-            child: Padding(
+      // One button, the whole capsule: the send circle stays dim as in an
+      // empty chat, so nothing looks sent.
+      return Semantics(
+        button: true,
+        label: widget.sendLabel,
+        excludeSemantics: widget.onAttach == null,
+        child: GestureDetector(
+          behavior: HitTestBehavior.opaque,
+          onTap: widget.onOpen,
+          child: _capsule(
+            c,
+            Padding(
               padding: const EdgeInsets.symmetric(vertical: 18),
               child: Text(widget.hint,
                   maxLines: 1,
                   overflow: TextOverflow.ellipsis,
-                  style: TextStyle(color: c.hint, fontSize: 16)),
+                  style: TextStyle(
+                      color: widget.hintAlert ? Theme.of(context).colorScheme.secondary : c.hint,
+                      fontSize: 16,
+                      fontWeight: widget.hintAlert ? FontWeight.w600 : null)),
             ),
           ),
         ),
@@ -205,11 +216,10 @@ class _FramedCapsuleInputState extends State<FramedCapsuleInput> {
             ],
             Expanded(child: field),
             const SizedBox(width: 4),
-            // On a card it leads to the chat too, instead of sitting dim.
             _circleButton(
               label: widget.sendLabel,
-              enabled: widget.onOpen != null || _canSend,
-              onTap: widget.onOpen ?? _send,
+              enabled: widget.onOpen == null && _canSend,
+              onTap: _send,
               background: c.filled,
               icon: Icons.arrow_upward_rounded,
               iconColor: c.onFilled,
