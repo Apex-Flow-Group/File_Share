@@ -11,6 +11,7 @@ import '../services/share_folder_service.dart';
 import '../utils/apex_logger.dart';
 import '../utils/platform_detector.dart';
 import 'core_models.dart';
+import 'one_question.dart';
 import 'protocol/apex_protocol.dart';
 import 'protocol/transfer_rules.dart';
 import 'text/clean_label.dart';
@@ -45,7 +46,7 @@ class ShareFolderHttp {
   final Duration decisionTimeout;
   final int maxUploadBytes;
   final ShareAccess _access;
-  bool _asking = false;
+  final OneQuestion _question;
 
   /// Error code when the folder is off, so the asker is not told to update.
   static const shareOff = 'share_off';
@@ -59,11 +60,13 @@ class ShareFolderHttp {
     required this.getLocalName,
     ShareFolderService? service,
     ShareAccess? access,
+    OneQuestion? question,
     this.onAccessRequest,
     this.decisionTimeout = TransferRules.decisionTimeout,
     this.maxUploadBytes = 2 * 1024 * 1024 * 1024,
   })  : _svc = service ?? ShareFolderService.instance,
-        _access = access ?? ShareAccess();
+        _access = access ?? ShareAccess(),
+        _question = question ?? OneQuestion();
 
   // ─── Router ────────────────────────────────────────────────────────────────
 
@@ -145,8 +148,7 @@ class ShareFolderHttp {
   /// is told to try again, not that the owner said no.
   Future<_Answer> _ask(String name, String address, bool uploads) async {
     final ask = onAccessRequest;
-    if (ask == null || _asking) return _Answer.none;
-    _asking = true;
+    if (ask == null || !_question.take()) return _Answer.none;
     final answer = Completer<_Answer>();
     final request = ConnectionRequest(
       device: Device(id: 'http:$address', name: name, type: 'unknown', ip: address),
@@ -162,7 +164,7 @@ class ShareFolderHttp {
       ask(request);
       return await answer.future.timeout(decisionTimeout, onTimeout: () => _Answer.none);
     } finally {
-      _asking = false;
+      _question.release();
       request.close();
     }
   }

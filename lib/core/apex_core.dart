@@ -4,6 +4,8 @@ import 'dart:io';
 import 'package:flutter/foundation.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
+import '../features/chat/data/chat_http.dart';
+import '../features/chat/logic/chat_store.dart';
 import '../features/receive/data/receive_http.dart';
 import '../features/receive/data/receive_store.dart';
 import '../features/receive/logic/receive_gate.dart';
@@ -19,6 +21,7 @@ import '../utils/path_utils.dart';
 import 'core_models.dart';
 import 'files/move_into_folder.dart';
 import 'nearby_transfer.dart';
+import 'one_question.dart';
 import 'share_folder_http.dart';
 
 export 'core_models.dart';
@@ -45,6 +48,9 @@ class ApexCore {
   final _connectionRequestController =
       StreamController<ConnectionRequest>.broadcast();
 
+  /// Files, chat and the shared folder never ask the user at the same time.
+  final _question = OneQuestion();
+
   late final ReceiveHttp _receive = ReceiveHttp(
     gate: ReceiveGate(),
     store: ReceiveStore(
@@ -55,6 +61,7 @@ class ApexCore {
     onConnectionRequest: _connectionRequestController.add,
     onFileReceived: _fileReceivedController.add,
     freeBytes: () async => freeBytesAt(await PathUtils.getDownloadPath()),
+    question: _question,
   );
 
   late final SendHttp _send = SendHttp(getLocalName: () => _localDevice?.name);
@@ -64,7 +71,17 @@ class ApexCore {
     allowUploads: () => _settings?.allowShareUploads ?? false,
     getLocalName: () => _localDevice?.name,
     onAccessRequest: _connectionRequestController.add,
+    question: _question,
   );
+
+  late final ChatHttp _chat = ChatHttp(
+    onRequest: _connectionRequestController.add,
+    onMessage: (m) => chat.receive(m.address, m.name, m.text),
+    question: _question,
+  );
+
+  /// The chats of this run, in memory only.
+  late final ChatStore chat = ChatStore(send: _sendChat);
   SettingsService? _settings;
 
   late final NearbyTransfer _nearby = NearbyTransfer(
@@ -267,6 +284,8 @@ class ApexCore {
     try {
       if (await _receive.handle(req)) {
         // تم التعامل مع طلب استقبال
+      } else if (await _chat.handle(req)) {
+        // رسالة محادثة
       } else if (await _share.handle(req)) {
         // تم التعامل مع طلب Share
       } else {
@@ -282,6 +301,18 @@ class ApexCore {
   }
 
   // ─── Send ──────────────────────────────────────────────────────────────────
+
+  Future<({ChatOutcome outcome, String? token})> _sendChat(
+      String text, Device target, String? token) async {
+    if (target.versionMismatch) {
+      return (outcome: ChatOutcome.updateRequired, token: null);
+    }
+    // Chat goes over the local network only, not over Nearby.
+    if (!target.isMdns) {
+      return (outcome: ChatOutcome.failed, token: null);
+    }
+    return _send.sendChat(text, target, token);
+  }
 
   Future<SendOutcome> sendFile(String filePath, Device target) =>
       sendFileWithName(filePath, _extractFileName(filePath), target);

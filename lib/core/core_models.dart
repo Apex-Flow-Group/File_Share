@@ -31,6 +31,9 @@ enum RequestKind {
 
   /// Let a device open the shared folder.
   shareFolder,
+
+  /// Let a device send chat messages until the app closes.
+  chat,
 }
 
 class ConnectionRequest {

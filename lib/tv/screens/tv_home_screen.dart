@@ -14,6 +14,7 @@ import '../widgets/tabs/tv_files_tab.dart';
 import '../widgets/tabs/tv_receive_tab.dart';
 import '../widgets/tabs/tv_send_tab.dart';
 import '../widgets/tv_accept_dialog.dart';
+import '../widgets/tv_chat_dialog.dart';
 import '../widgets/tv_details_panel.dart';
 
 class TVHomeScreen extends StatefulWidget {
@@ -106,6 +107,17 @@ class _TVHomeScreenState extends State<TVHomeScreen> {
         TVAcceptDialog.ask(context, r);
       } else {
         r.onResponse(false);
+      }
+    });
+    core.chat.incoming.listen((thread) {
+      if (mounted) {
+        TVChatDialog.show(
+            context,
+            Device(
+                id: 'http:${thread.address}',
+                name: thread.name,
+                type: 'unknown',
+                ip: thread.address));
       }
     });
     core.fileReceivedStream.listen((e) {

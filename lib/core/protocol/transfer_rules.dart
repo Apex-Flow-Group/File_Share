@@ -22,4 +22,10 @@ class TransferRules {
 
   /// Tokens of an accepted batch expire when no file starts for this long.
   static const tokenIdleLimit = Duration(minutes: 5);
+
+  /// Longest chat message, in characters: a long note or a key, not a file.
+  static const chatTextLimit = 20000;
+
+  /// Largest chat body: [chatTextLimit] characters of 4 bytes, plus the name.
+  static const chatBodyLimit = chatTextLimit * 4 + 4096;
 }

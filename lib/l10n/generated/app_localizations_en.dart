@@ -781,4 +781,41 @@ class AppLocalizationsEn extends AppLocalizations {
     );
     return '$_temp0';
   }
+
+  @override
+  String get chatOpen => 'Chat';
+
+  @override
+  String get chatRequestTitle => 'Chat request';
+
+  @override
+  String get chatRequestQuestion => 'Accept chat?';
+
+  @override
+  String get chatHint => 'Write a message';
+
+  @override
+  String get chatEmpty => 'No messages yet';
+
+  @override
+  String get chatCopy => 'Copy';
+
+  @override
+  String get chatCopied => 'Text copied';
+
+  @override
+  String get chatDeclined => 'The other device declined the chat';
+
+  @override
+  String get chatFailed => 'The message did not arrive';
+
+  @override
+  String chatNewMessage(String name) {
+    return 'Message from $name';
+  }
+
+  @override
+  String chatTooLong(int max) {
+    return 'The message is longer than $max characters';
+  }
 }

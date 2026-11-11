@@ -13,6 +13,7 @@ import '../../../services/desktop_notification_service.dart';
 import '../../../services/transfer_progress_service.dart';
 import '../../../shared/device_look.dart';
 import '../tv_apps_dialog.dart';
+import '../tv_chat_dialog.dart';
 import '../tv_file_browser.dart';
 import '../tv_focusable_widgets.dart';
 
@@ -149,6 +150,12 @@ class _TVDeviceCardState extends State<TVDeviceCard> {
           _sendFolder();
         },
         isPinned: widget.isPinned,
+        onOpenChat: canSend && widget.device.isMdns
+            ? () {
+                Navigator.pop(dialogContext);
+                TVChatDialog.show(context, widget.device);
+              }
+            : null,
         onTogglePin: togglePin == null
             ? null
             : () {
@@ -270,6 +277,9 @@ class _TVSendOptionsDialog extends StatelessWidget {
   final bool isPinned;
   final VoidCallback? onTogglePin;
 
+  /// Null when the device cannot chat (offline, another version, Nearby only).
+  final VoidCallback? onOpenChat;
+
   const _TVSendOptionsDialog({
     required this.title,
     required this.isDark,
@@ -281,6 +291,7 @@ class _TVSendOptionsDialog extends StatelessWidget {
     required this.onSendFolder,
     required this.isPinned,
     required this.onTogglePin,
+    required this.onOpenChat,
   });
 
   @override
@@ -320,6 +331,16 @@ class _TVSendOptionsDialog extends StatelessWidget {
                 color: const Color(0xFF5856D6),
                 autofocus: false,
                 onTap: onSendFolder,
+              ),
+            ],
+            if (onOpenChat != null) ...[
+              const SizedBox(height: 8),
+              TVDialogOption(
+                icon: Icons.chat_bubble_rounded,
+                label: l10n.chatOpen,
+                color: const Color(0xFF00897B),
+                autofocus: false,
+                onTap: onOpenChat!,
               ),
             ],
             if (onTogglePin != null) ...[

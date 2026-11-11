@@ -1,8 +1,10 @@
+import 'dart:async';
 import 'dart:io';
 
 import 'package:flutter/material.dart';
 
 import '../../core/apex_core.dart';
+import '../../features/chat/logic/chat_store.dart';
 import '../../l10n/generated/app_localizations.dart';
 import '../../screens/about_screen.dart';
 import '../../services/settings_service.dart';
@@ -44,7 +46,15 @@ class _HomeScreenState extends State<HomeScreen>
     _ctrl.onUpdateReady = showUpdateReadySheet;
     _ctrl.addListener(_onStateChanged);
     _ctrl.init();
+    // The card's badge counts it too; this says who wrote, wherever the user is.
+    _chatSub = ApexCore.instance.chat.incoming.listen((thread) {
+      if (mounted) {
+        ApexSnackBar.info(context, AppLocalizations.of(context).chatNewMessage(thread.name));
+      }
+    });
   }
+
+  StreamSubscription<ChatThread>? _chatSub;
 
   @override
   void onOpenFilesFromSheet([String? filePath]) {
@@ -63,6 +73,7 @@ class _HomeScreenState extends State<HomeScreen>
 
   @override
   void dispose() {
+    _chatSub?.cancel();
     _ctrl.removeListener(_onStateChanged);
     _ctrl.dispose();
     WidgetsBinding.instance.removeObserver(this);

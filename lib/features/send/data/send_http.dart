@@ -12,6 +12,8 @@ import '../../../utils/apex_logger.dart';
 
 enum SendOutcome { sent, declined, noAnswer, updateRequired, busy, tooManyFiles, noSpace, failed, cancelled }
 
+enum ChatOutcome { sent, declined, noAnswer, updateRequired, busy, tooLong, failed }
+
 typedef OutgoingFile = ({String path, String name, int size});
 
 /// Sends a batch: one offer with every name and size, then one upload per file
@@ -55,6 +57,59 @@ class SendHttp {
       return progress.isCancelled ? SendOutcome.cancelled : SendOutcome.sent;
     } finally {
       progress.clearProgress();
+    }
+  }
+
+  /// One chat message. [token] is the one the receiver gave when its user
+  /// accepted; without it the receiver asks its user first, and a token comes
+  /// back on acceptance.
+  Future<({ChatOutcome outcome, String? token})> sendChat(
+      String text, Device target, String? token) async {
+    if (text.runes.length > TransferRules.chatTextLimit) {
+      return (outcome: ChatOutcome.tooLong, token: null);
+    }
+    const failed = (outcome: ChatOutcome.failed, token: null);
+    final client = HttpClient()..connectionTimeout = const Duration(seconds: 5);
+    try {
+      final req = await client.postUrl(Uri.http('${target.ip}:${target.port}', ApexProtocol.chatPath));
+      req.headers
+        ..set(ApexProtocol.versionHeader, '${ApexProtocol.version}')
+        ..contentType = ContentType.json;
+      if (token != null) {
+        req.headers.set(ApexProtocol.tokenHeader, token);
+      }
+      final body = utf8.encode(jsonEncode({'name': getLocalName() ?? '', 'text': text}));
+      req.contentLength = body.length;
+      req.add(body);
+      final res = await req.close().timeout(TransferRules.decisionTimeout + const Duration(seconds: 10));
+      final reply = await res.transform(utf8.decoder).join();
+      switch (res.statusCode) {
+        case HttpStatus.notFound || HttpStatus.upgradeRequired:
+          return (outcome: ChatOutcome.updateRequired, token: null);
+        case HttpStatus.tooManyRequests:
+          return (outcome: ChatOutcome.busy, token: null);
+        case HttpStatus.requestEntityTooLarge:
+          return (outcome: ChatOutcome.tooLong, token: null);
+        case HttpStatus.ok:
+          break;
+        default:
+          return failed;
+      }
+      final json = jsonDecode(reply);
+      if (json is! Map) {
+        return failed;
+      }
+      if (json['delivered'] == true) {
+        final issued = json['token'];
+        return (outcome: ChatOutcome.sent, token: issued is String ? issued : token);
+      }
+      final unanswered = json['reason'] == ApexProtocol.noAnswer;
+      return (outcome: unanswered ? ChatOutcome.noAnswer : ChatOutcome.declined, token: null);
+    } catch (e) {
+      ApexLogger.instance.log('SEND', 'Chat failed: $e', LogLevel.error);
+      return failed;
+    } finally {
+      client.close(force: true);
     }
   }
 

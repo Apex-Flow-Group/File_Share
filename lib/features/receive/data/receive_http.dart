@@ -5,6 +5,7 @@ import 'dart:math';
 
 import '../../../core/core_models.dart';
 import '../../../core/files/safe_file_name.dart';
+import '../../../core/one_question.dart';
 import '../../../core/protocol/apex_protocol.dart';
 import '../../../core/protocol/transfer_rules.dart';
 import '../../../core/text/clean_label.dart';
@@ -26,9 +27,10 @@ class ReceiveHttp {
     required this.onConnectionRequest,
     required this.onFileReceived,
     this.freeBytes,
+    OneQuestion? question,
     this.decisionTimeout = TransferRules.decisionTimeout,
     this.bodyIdleLimit = TransferRules.bodyIdleLimit,
-  });
+  }) : _question = question ?? OneQuestion();
 
   final ReceiveGate gate;
   final ReceiveStore store;
@@ -42,9 +44,7 @@ class ReceiveHttp {
 
   final _random = Random();
 
-  /// One offer waits for the user at a time. Others are refused, so dialogs
-  /// never pile up and a new one cannot appear under the finger mid-tap.
-  bool _asking = false;
+  final OneQuestion _question;
 
   TransferProgressService get _progress => TransferProgressService();
 
@@ -97,16 +97,15 @@ class ReceiveHttp {
       await _reply(req, HttpStatus.unprocessableEntity, {'error': problem.name});
       return;
     }
-    if (_asking) {
+    if (!_question.take()) {
       await _reply(req, HttpStatus.tooManyRequests, {'error': 'busy'});
       return;
     }
-    _asking = true;
     final bool? accepted;
     try {
       accepted = await _ask(offer);
     } finally {
-      _asking = false;
+      _question.release();
     }
     if (accepted != true) {
       await _reply(req, HttpStatus.ok,

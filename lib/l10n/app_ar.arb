@@ -258,5 +258,22 @@
   "sendNoSpace": "لا توجد مساحة كافية على الجهاز الآخر",
   "clipboardTextLength": "{count, plural, one{نص (حرف واحد)} two{نص (حرفان)} few{نص ({count} أحرف)} many{نص ({count} حرفاً)} other{نص ({count} حرف)}}",
   "clipboardCharCount": "{count, plural, one{حرف واحد} two{حرفان} few{{count} أحرف} many{{count} حرفاً} other{{count} حرف}}",
-  "clipboardFileCount": "{count, plural, one{ملف واحد} two{ملفان} few{{count} ملفات} many{{count} ملفاً} other{{count} ملف}}"
+  "clipboardFileCount": "{count, plural, one{ملف واحد} two{ملفان} few{{count} ملفات} many{{count} ملفاً} other{{count} ملف}}",
+  "chatOpen": "محادثة",
+  "chatRequestTitle": "طلب محادثة",
+  "chatRequestQuestion": "قبول محادثة؟",
+  "chatHint": "اكتب رسالة",
+  "chatEmpty": "لا رسائل بعد",
+  "chatCopy": "نسخ",
+  "chatCopied": "نُسخ النص",
+  "chatDeclined": "رفض الجهاز الآخر المحادثة",
+  "chatFailed": "لم تصل الرسالة",
+  "chatNewMessage": "رسالة من {name}",
+  "@chatNewMessage": {
+    "placeholders": { "name": { "type": "String" } }
+  },
+  "chatTooLong": "{max, plural, few{الرسالة أطول من {max} أحرف} many{الرسالة أطول من {max} حرفاً} other{الرسالة أطول من {max} حرف}}",
+  "@chatTooLong": {
+    "placeholders": { "max": { "type": "int" } }
+  }
 }

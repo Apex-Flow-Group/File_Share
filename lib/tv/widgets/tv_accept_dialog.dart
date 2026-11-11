@@ -46,6 +46,7 @@ class TVAcceptDialog extends StatelessWidget {
           l10n.incomingFilesTitle,
           l10n.receiveFilesQuestion(request.fileCount)
         ),
+      RequestKind.chat => (Icons.chat_bubble_rounded, l10n.chatRequestTitle, l10n.chatRequestQuestion),
     };
     final singleName =
         request.kind == RequestKind.files && request.fileCount == 1 ? request.fileName : '';

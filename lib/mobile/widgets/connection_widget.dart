@@ -3,6 +3,7 @@ import 'dart:io';
 import 'package:flutter/material.dart';
 
 import '../../core/apex_core.dart';
+import '../../features/chat/ui/show_device_chat.dart';
 import '../../features/clipboard/ui/clipboard_label.dart';
 import '../../features/send/data/send_http.dart';
 import '../../features/send/ui/send_outcome_message.dart';
@@ -157,6 +158,11 @@ class _ConnectionWidgetState extends State<ConnectionWidget>
                 _status == _Status.sending
                     ? _buildSendingState()
                     : _buildActions(l10n, isDark),
+              // Chat goes over the local network only, not over Nearby.
+              if (usable && widget.device.isMdns) ...[
+                const SizedBox(height: 10),
+                _ChatButton(device: widget.device, isDark: isDark),
+              ],
             ],
           ),
         ),
@@ -665,6 +671,55 @@ class _ActionButton extends StatelessWidget {
           ],
         ),
       ),
+    );
+  }
+}
+
+// ─── Chat Button ──────────────────────────────────────────────────────────────
+
+class _ChatButton extends StatelessWidget {
+  const _ChatButton({required this.device, required this.isDark});
+
+  final Device device;
+  final bool isDark;
+
+  @override
+  Widget build(BuildContext context) {
+    final l10n = AppLocalizations.of(context);
+    final color = Theme.of(context).colorScheme.secondary;
+    final store = ApexCore.instance.chat;
+    return ListenableBuilder(
+      listenable: store,
+      builder: (context, _) {
+        final unread = store.unread(device.ip);
+        return Material(
+          color: color.withValues(alpha: isDark ? 0.18 : 0.1),
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(14),
+            side: BorderSide(color: color.withValues(alpha: isDark ? 0.3 : 0.2)),
+          ),
+          child: InkWell(
+            borderRadius: BorderRadius.circular(14),
+            onTap: () => showDeviceChat(context, device),
+            child: Padding(
+              padding: const EdgeInsets.symmetric(vertical: 12, horizontal: 14),
+              child: Row(
+                mainAxisAlignment: MainAxisAlignment.center,
+                children: [
+                  Icon(Icons.chat_bubble_rounded, color: color, size: 20),
+                  const SizedBox(width: 8),
+                  Text(l10n.chatOpen,
+                      style: TextStyle(fontSize: 13, fontWeight: FontWeight.w600, color: color)),
+                  if (unread > 0) ...[
+                    const SizedBox(width: 8),
+                    Badge(label: Text('$unread'), backgroundColor: color),
+                  ],
+                ],
+              ),
+            ),
+          ),
+        );
+      },
     );
   }
 }

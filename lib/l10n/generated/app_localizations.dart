@@ -1513,6 +1513,72 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'{count, plural, =1{1 file} other{{count} files}}'**
   String clipboardFileCount(int count);
+
+  /// No description provided for @chatOpen.
+  ///
+  /// In en, this message translates to:
+  /// **'Chat'**
+  String get chatOpen;
+
+  /// No description provided for @chatRequestTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Chat request'**
+  String get chatRequestTitle;
+
+  /// No description provided for @chatRequestQuestion.
+  ///
+  /// In en, this message translates to:
+  /// **'Accept chat?'**
+  String get chatRequestQuestion;
+
+  /// No description provided for @chatHint.
+  ///
+  /// In en, this message translates to:
+  /// **'Write a message'**
+  String get chatHint;
+
+  /// No description provided for @chatEmpty.
+  ///
+  /// In en, this message translates to:
+  /// **'No messages yet'**
+  String get chatEmpty;
+
+  /// No description provided for @chatCopy.
+  ///
+  /// In en, this message translates to:
+  /// **'Copy'**
+  String get chatCopy;
+
+  /// No description provided for @chatCopied.
+  ///
+  /// In en, this message translates to:
+  /// **'Text copied'**
+  String get chatCopied;
+
+  /// No description provided for @chatDeclined.
+  ///
+  /// In en, this message translates to:
+  /// **'The other device declined the chat'**
+  String get chatDeclined;
+
+  /// No description provided for @chatFailed.
+  ///
+  /// In en, this message translates to:
+  /// **'The message did not arrive'**
+  String get chatFailed;
+
+  /// No description provided for @chatNewMessage.
+  ///
+  /// In en, this message translates to:
+  /// **'Message from {name}'**
+  String chatNewMessage(String name);
+
+  /// No description provided for @chatTooLong.
+  ///
+  /// In en, this message translates to:
+  /// **'The message is longer than {max} characters'**
+  String chatTooLong(int max);
 }
 
 class _AppLocalizationsDelegate

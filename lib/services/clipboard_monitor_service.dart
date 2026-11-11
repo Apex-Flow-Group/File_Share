@@ -86,6 +86,15 @@ class ClipboardMonitorService {
 
   bool _enabled = false;
 
+  /// Text the app itself just copied: it does not come back as something
+  /// to send, or a copied chat message would be offered for sending again.
+  String? _ownText;
+
+  Future<void> copyText(String text) async {
+    _ownText = text;
+    await Clipboard.setData(ClipboardData(text: text));
+  }
+
   Future<void> setEnabled(bool on) async {
     if (!_isDesktop || on == _enabled) {
       return;
@@ -110,6 +119,10 @@ class ClipboardMonitorService {
     final type = args['type'] as String?;
     if (type == 'text') {
       final text = args['text'] as String?;
+      if (text != null && text == _ownText) {
+        _ownText = null;
+        return;
+      }
       if (text != null && text.trim().isNotEmpty) {
         _controller.add(ClipboardItem(paths: const [], type: ClipboardItemType.text, text: text));
       }

@@ -289,5 +289,22 @@
         "type": "int"
       }
     }
+  },
+  "chatOpen": "Chat",
+  "chatRequestTitle": "Chat request",
+  "chatRequestQuestion": "Accept chat?",
+  "chatHint": "Write a message",
+  "chatEmpty": "No messages yet",
+  "chatCopy": "Copy",
+  "chatCopied": "Text copied",
+  "chatDeclined": "The other device declined the chat",
+  "chatFailed": "The message did not arrive",
+  "chatNewMessage": "Message from {name}",
+  "@chatNewMessage": {
+    "placeholders": { "name": { "type": "String" } }
+  },
+  "chatTooLong": "The message is longer than {max} characters",
+  "@chatTooLong": {
+    "placeholders": { "max": { "type": "int" } }
   }
 }

@@ -796,4 +796,48 @@ class AppLocalizationsAr extends AppLocalizations {
     );
     return '$_temp0';
   }
+
+  @override
+  String get chatOpen => 'محادثة';
+
+  @override
+  String get chatRequestTitle => 'طلب محادثة';
+
+  @override
+  String get chatRequestQuestion => 'قبول محادثة؟';
+
+  @override
+  String get chatHint => 'اكتب رسالة';
+
+  @override
+  String get chatEmpty => 'لا رسائل بعد';
+
+  @override
+  String get chatCopy => 'نسخ';
+
+  @override
+  String get chatCopied => 'نُسخ النص';
+
+  @override
+  String get chatDeclined => 'رفض الجهاز الآخر المحادثة';
+
+  @override
+  String get chatFailed => 'لم تصل الرسالة';
+
+  @override
+  String chatNewMessage(String name) {
+    return 'رسالة من $name';
+  }
+
+  @override
+  String chatTooLong(int max) {
+    String _temp0 = intl.Intl.pluralLogic(
+      max,
+      locale: localeName,
+      other: 'الرسالة أطول من $max حرف',
+      many: 'الرسالة أطول من $max حرفاً',
+      few: 'الرسالة أطول من $max أحرف',
+    );
+    return '$_temp0';
+  }
 }

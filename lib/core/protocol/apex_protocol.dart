@@ -3,7 +3,7 @@
 class ApexProtocol {
   ApexProtocol._();
 
-  static const version = 3;
+  static const version = 4;
 
   static const versionHeader = 'x-apex-version';
   static const tokenHeader = 'x-apex-token';
@@ -11,6 +11,7 @@ class ApexProtocol {
   static const pingPath = '/ping';
   static const offerPath = '/offer';
   static const uploadPath = '/upload';
+  static const chatPath = '/chat';
 
   /// Error code of a version refusal; the sender shows "update the app".
   static const updateRequired = 'update_required';
@@ -18,6 +19,9 @@ class ApexProtocol {
   /// Why an offer was not accepted when the user never answered (a refusal
   /// carries no reason). The sender must not report it as a refusal.
   static const noAnswer = 'no_answer';
+
+  /// A chat message over TransferRules.chatTextLimit.
+  static const tooLong = 'too_long';
 
   static bool accepts(String? sentVersion) => sentVersion == '$version';
 }
