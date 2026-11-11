@@ -1595,13 +1595,13 @@ abstract class AppLocalizations {
   /// No description provided for @chatBlockDetail.
   ///
   /// In en, this message translates to:
-  /// **'Its messages won\'t arrive until you unblock it. The block ends by itself when you reopen the app.'**
+  /// **'Its messages are refused while it is blocked, and you can\'t write to it. The block ends when the app closes.'**
   String get chatBlockDetail;
 
   /// No description provided for @chatBlocked.
   ///
   /// In en, this message translates to:
-  /// **'This device is blocked; its messages don\'t arrive.'**
+  /// **'This device is blocked: no messages to or from it.'**
   String get chatBlocked;
 
   /// No description provided for @chatUnblock.

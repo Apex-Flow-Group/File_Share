@@ -312,7 +312,7 @@
   "@chatBlockQuestion": {
     "placeholders": { "name": { "type": "String" } }
   },
-  "chatBlockDetail": "Its messages won't arrive until you unblock it. The block ends by itself when you reopen the app.",
-  "chatBlocked": "This device is blocked; its messages don't arrive.",
+  "chatBlockDetail": "Its messages are refused while it is blocked, and you can't write to it. The block ends when the app closes.",
+  "chatBlocked": "This device is blocked: no messages to or from it.",
   "chatUnblock": "Unblock"
 }

@@ -851,10 +851,10 @@ class AppLocalizationsAr extends AppLocalizations {
 
   @override
   String get chatBlockDetail =>
-      'لن تصل رسائله حتى تلغي الحظر. ويُلغى الحظر وحده حين تعيد فتح التطبيق.';
+      'تُرفض رسائله ما دام محظوراً، ولا تُرسل إليه. وينتهي الحظر بإغلاق التطبيق.';
 
   @override
-  String get chatBlocked => 'هذا الجهاز محظور، فلا تصل رسائله.';
+  String get chatBlocked => 'هذا الجهاز محظور: لا رسائل منه ولا إليه.';
 
   @override
   String get chatUnblock => 'إلغاء الحظر';

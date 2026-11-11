@@ -829,11 +829,11 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get chatBlockDetail =>
-      'Its messages won\'t arrive until you unblock it. The block ends by itself when you reopen the app.';
+      'Its messages are refused while it is blocked, and you can\'t write to it. The block ends when the app closes.';
 
   @override
   String get chatBlocked =>
-      'This device is blocked; its messages don\'t arrive.';
+      'This device is blocked: no messages to or from it.';
 
   @override
   String get chatUnblock => 'Unblock';
