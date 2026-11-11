@@ -119,7 +119,7 @@ class ReceiveHttp {
     }
     // Unasked, and the answer a blocked device gets in the chat.
     if (_blocks.isBlocked(chatPeer(fingerprint, offer.senderId, offer.senderAddress))) {
-      await _reply(req, HttpStatus.ok, {'accepted': false});
+      await _refuse(req);
       return;
     }
     final problem = checkOffer(offer, freeBytes: await freeBytes?.call());
@@ -251,7 +251,7 @@ class ReceiveHttp {
           // Answer inside the loop: leaving it closes the connection first,
           // and the sender would never read the answer.
           await _discard(sink, temp);
-          await _cancel(req, upload);
+          await (upload.blocked ? _turnAway(req) : _cancel(req, upload));
           return;
         }
         written += chunk.length;
@@ -274,6 +274,9 @@ class ReceiveHttp {
       if (written != file.size) {
         throw const _WrongSize();
       }
+      if (upload.blocked) {
+        throw const _Blocked();
+      }
       if (upload.revoked) {
         throw const _Cancelled();
       }
@@ -287,6 +290,8 @@ class ReceiveHttp {
       await _discard(sink, temp);
       if (e is TimeoutException) {
         // The connection is already closed, as for the offer above.
+      } else if (e is _Blocked) {
+        await _turnAway(req);
       } else if (e is _Cancelled) {
         await _cancel(req, upload);
       } else if (e is _WrongSize) {
@@ -305,6 +310,15 @@ class ReceiveHttp {
     _progress.clearProgress();
     await _reply(req, _cancelledStatus, {'error': 'cancelled'});
   }
+
+  /// Its sender was blocked while the file moved: the batch is already
+  /// ended, and the sender reads the refusal its next offer would get.
+  Future<void> _turnAway(HttpRequest req) async {
+    _progress.clearProgress();
+    await _refuse(req);
+  }
+
+  Future<void> _refuse(HttpRequest req) => _reply(req, HttpStatus.ok, ApexProtocol.refusal);
 
   Future<void> _discard(IOSink? sink, File temp) async {
     try {
@@ -384,6 +398,10 @@ class ReceiveHttp {
 
 class _Cancelled implements Exception {
   const _Cancelled();
+}
+
+class _Blocked implements Exception {
+  const _Blocked();
 }
 
 class _WrongSize implements Exception {

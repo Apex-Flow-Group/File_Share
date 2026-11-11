@@ -61,6 +61,7 @@ class ReceiveGate {
   /// tokens is accepted again, and a file of it moving now stops.
   void revokeWhere(bool Function(ChatPeer sender) turnedAway) {
     for (final b in _batches.where((b) => turnedAway(chatPeer(b.fingerprint, b.senderId, b.address))).toList()) {
+      b.blocked = true;
       _revoke(b);
     }
   }
@@ -116,8 +117,13 @@ class Upload {
   /// The receiving user cancelled: no other file of this batch is accepted.
   void revokeBatch() => _gate._revoke(_batch);
 
-  /// The batch was ended while this file moved: its sender was blocked.
+  /// The batch was ended while this file moved: the receiving user
+  /// cancelled it, or [blocked] its sender.
   bool get revoked => _batch.revoked;
+
+  /// The batch was ended because its sender was blocked: it is answered as
+  /// a refusal, as the blocked device is everywhere else.
+  bool get blocked => _batch.blocked;
 
   /// Call once the upload ends, however it ends. The idle time counts from here.
   void finish() {
@@ -141,6 +147,7 @@ class _Batch {
   DateTime lastUse;
   int moving = 0;
   bool revoked = false;
+  bool blocked = false;
 }
 
 class _Ticket {

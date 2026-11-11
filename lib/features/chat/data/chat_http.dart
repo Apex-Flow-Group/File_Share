@@ -105,7 +105,7 @@ class ChatHttp {
 
     // Before the token: a block decides even for a device that holds one.
     if (_access.isBlocked(peer)) {
-      await _reply(req, HttpStatus.ok, {'accepted': false});
+      await _reply(req, HttpStatus.ok, ApexProtocol.refusal);
       return;
     }
     final grant = _access.check(req.headers.value(ApexProtocol.tokenHeader), key);
@@ -139,7 +139,7 @@ class ChatHttp {
     if (!accepted) {
       _access.block(peer);
       onBlocked?.call(peer);
-      await _reply(req, HttpStatus.ok, {'accepted': false});
+      await _reply(req, HttpStatus.ok, ApexProtocol.refusal);
       return;
     }
     await pins.pin(id, fingerprint);
