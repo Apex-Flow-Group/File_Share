@@ -801,6 +801,9 @@ class AppLocalizationsEn extends AppLocalizations {
   String get requestNewKey => 'This device has a new key';
 
   @override
+  String get sendNewKey => 'Sending blocked: the other device has a new key';
+
+  @override
   String get chatHint => 'Write a message';
 
   @override

@@ -26,8 +26,7 @@ final class ChatKey {
 }
 
 /// The device at the other end as it announced itself this time. Its key
-/// picks the chat; a block holds its key and its id (owner decision), so a
-/// blocked device that comes back with a new key is still blocked.
+/// picks the chat; whom a block turns away is decided in BlockList.
 typedef ChatPeer = ({ChatKey key, String id, String address});
 
 ChatPeer chatPeer(String fingerprint, String id, String address) =>
@@ -38,8 +37,3 @@ extension DeviceChatKey on Device {
 
   ChatPeer get chatPeer => (key: chatKey, id: id, address: ip);
 }
-
-/// What a block holds. One entry matches a device by either half.
-typedef ChatBlock = ({ChatKey key, String id});
-
-bool blocks(ChatBlock b, ChatPeer p) => b.key == p.key || b.id == p.id;

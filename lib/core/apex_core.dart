@@ -6,6 +6,8 @@ import 'package:path_provider/path_provider.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
 import '../features/chat/data/chat_http.dart';
+import '../features/chat/logic/block_list.dart';
+import '../features/chat/logic/chat_access.dart';
 import '../features/chat/logic/chat_key.dart';
 import '../features/chat/logic/chat_store.dart';
 import '../features/identity/device_identity.dart';
@@ -29,6 +31,7 @@ import 'discovery_merge.dart';
 import 'files/move_into_folder.dart';
 import 'nearby_transfer.dart';
 import 'one_question.dart';
+import 'server_port.dart';
 import 'share_folder_http.dart';
 
 export 'core_models.dart';
@@ -67,6 +70,10 @@ class ApexCore {
   /// Files, chat and the shared folder never ask the user at the same time.
   final _question = OneQuestion();
 
+  /// The one list every block is decided by: the chats, the chat door and
+  /// the file door.
+  late final BlockList _blocks = BlockList(_pins);
+
   late final ReceiveHttp _receive = ReceiveHttp(
     gate: ReceiveGate(),
     store: ReceiveStore(
@@ -82,13 +89,15 @@ class ApexCore {
     freeBytes: () async => freeBytesAt(await PathUtils.getDownloadPath()),
     expectedFingerprint: _expectedFingerprint,
     pins: _pins,
+    blocks: _blocks,
     question: _question,
   );
 
   late final SendHttp _send = SendHttp(
       getLocalName: () => _localDevice?.name,
       getLocalId: () => _localDevice?.id,
-      getContext: () => _clientContext);
+      getContext: () => _clientContext,
+      pins: _pins);
 
   late final ShareFolderHttp _share = ShareFolderHttp(
     isEnabled: () => _settings?.sharedFolderEnabled ?? false,
@@ -106,6 +115,7 @@ class ApexCore {
     onBlocked: (peer) => chat.blocked(peer),
     expectedFingerprint: _expectedFingerprint,
     pins: _pins,
+    access: ChatAccess(blocks: _blocks),
     question: _question,
   );
 
@@ -119,6 +129,7 @@ class ApexCore {
         onDelivered: onDelivered),
     onBlock: _chat.block,
     onUnblock: _chat.unblock,
+    blocks: _blocks,
   );
   SettingsService? _settings;
 
@@ -320,8 +331,10 @@ class ApexCore {
 
   Future<void> _startHttpServer() async {
     // TLS both ways: every client must show its certificate too.
-    _httpServer = await HttpServer.bindSecure(InternetAddress.anyIPv4, 0, _serverContext!,
-        requestClientCertificate: true);
+    _httpServer = await bindLastPort(
+        await SharedPreferences.getInstance(),
+        (port) => HttpServer.bindSecure(InternetAddress.anyIPv4, port, _serverContext!,
+            requestClientCertificate: true));
     _httpPort = _httpServer!.port;
     _localDevice = _localDevice!.copyWith(port: _httpPort);
     // A failed handshake (a stranger's certificate) ends that connection only.

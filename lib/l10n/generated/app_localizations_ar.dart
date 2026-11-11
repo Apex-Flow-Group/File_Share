@@ -816,6 +816,9 @@ class AppLocalizationsAr extends AppLocalizations {
   String get requestNewKey => 'هذا الجهاز بمفتاح جديد';
 
   @override
+  String get sendNewKey => 'مُنع الإرسال: الجهاز الآخر بمفتاح جديد';
+
+  @override
   String get chatHint => 'اكتب رسالة';
 
   @override

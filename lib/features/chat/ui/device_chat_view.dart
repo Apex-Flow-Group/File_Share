@@ -315,7 +315,7 @@ class _DeviceChatViewState extends State<DeviceChatView> {
 /// app closes, and another version or a too-long text fails the same way again.
 bool _retryHelps(ChatOutcome failure) => switch (failure) {
       ChatOutcome.failed || ChatOutcome.noAnswer || ChatOutcome.busy => true,
-      ChatOutcome.declined || ChatOutcome.updateRequired || ChatOutcome.tooLong => false,
+      ChatOutcome.declined || ChatOutcome.updateRequired || ChatOutcome.tooLong || ChatOutcome.keyChanged => false,
       ChatOutcome.sent => false,
     };
 

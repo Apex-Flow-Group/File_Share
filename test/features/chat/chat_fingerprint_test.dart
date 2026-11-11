@@ -135,13 +135,18 @@ void main() {
       expect(door.asked, hasLength(1));
     });
 
-    test('the block button ends the token of every device with that key or id', () async {
+    test('the block button ends the token of the device with that key, not of the pinned device whose id it took', () async {
       door.hear(laptop, 'laptop-1');
       final token = (await door.post(laptop, me, 'laptop-1', 'one')).json['token'] as String;
+      // Another key with the laptop's id: the laptop's key is pinned for it.
       door.store.block(chatPeer(guest.fingerprint, 'laptop-1', '127.0.0.1'));
-      final r = await door.post(laptop, me, 'laptop-1', 'two', token: token);
+      final kept = await door.post(laptop, me, 'laptop-1', 'two', token: token);
+      expect(kept.json['delivered'], isTrue);
+      // The laptop's own key, under any id.
+      door.store.block(chatPeer(laptop.fingerprint, 'laptop-9', '127.0.0.1'));
+      final r = await door.post(laptop, me, 'laptop-1', 'three', token: token);
       expect(r.json['delivered'], isNot(true));
-      expect(texts(laptop), ['one']);
+      expect(texts(laptop), ['one', 'two']);
     });
 
     test('only the user unblocks, and that clears the key and the id together', () async {
