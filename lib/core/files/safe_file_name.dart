@@ -11,6 +11,10 @@ String safeFileName(String? raw, {DateTime Function() now = DateTime.now}) {
     if (isInvisibleMark(rune)) {
       continue;
     }
+    if (_oddSpaces.contains(rune)) {
+      out.write(' ');
+      continue;
+    }
     out.write(isControl(rune) || _forbidden.contains(rune) ? '_' : String.fromCharCode(rune));
   }
   var name = _trimEnds(out.toString());
@@ -22,6 +26,14 @@ String safeFileName(String? raw, {DateTime Function() now = DateTime.now}) {
   }
   return _fitBytes(name);
 }
+
+/// Spaces that look like " " but are another character: "WhatsApp<NBSP>Business.apk"
+/// would sit next to "WhatsApp Business.apk" as a second file that cannot be
+/// told apart or found by typing its name.
+const _oddSpaces = <int>{
+  0x00A0, 0x1680, 0x2000, 0x2001, 0x2002, 0x2003, 0x2004, 0x2005, 0x2006,
+  0x2007, 0x2008, 0x2009, 0x200A, 0x202F, 0x205F, 0x3000,
+};
 
 /// Windows forbids these; "/" and "\" would also make a path.
 final _forbidden = '<>:"/\\|?*'.runes.toSet();

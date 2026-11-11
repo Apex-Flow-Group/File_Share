@@ -15,6 +15,11 @@ private val invisibleMarks = setOf(
     0x2066, 0x2067, 0x2068, 0x2069, 0xFEFF,
 )
 
+private val oddSpaces = setOf(
+    0x00A0, 0x1680, 0x2000, 0x2001, 0x2002, 0x2003, 0x2004, 0x2005, 0x2006,
+    0x2007, 0x2008, 0x2009, 0x200A, 0x202F, 0x205F, 0x3000,
+)
+
 private const val FORBIDDEN = "<>:\"/\\|?*"
 
 private val reserved = Regex("^(con|prn|aux|nul|com[0-9]|lpt[0-9])(\\.|$)", RegexOption.IGNORE_CASE)
@@ -33,6 +38,10 @@ fun safeFileName(raw: String?, now: Date = Date()): String {
         val cp = text.codePointAt(i)
         i += Character.charCount(cp)
         if (cp in invisibleMarks) continue
+        if (cp in oddSpaces) {
+            out.append(' ')
+            continue
+        }
         val forbidden = cp < 0x20 || cp == 0x7F || (cp < 0x80 && FORBIDDEN.indexOf(cp.toChar()) >= 0)
         if (forbidden) out.append('_') else out.appendCodePoint(cp)
     }
