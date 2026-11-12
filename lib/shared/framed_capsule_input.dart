@@ -128,10 +128,6 @@ class _FramedCapsuleInputState extends State<FramedCapsuleInput> {
   late final TextEditingController _controller = widget.controller ?? TextEditingController();
   final _focus = FocusNode();
 
-  /// The field moves between the one-line and the full box: the key carries
-  /// its state along, or the text typed at that moment would be lost.
-  final _fieldKey = GlobalKey();
-
   static bool get _desktop => PlatformDetector.instance.isDesktop;
 
   bool get _canSend => widget.hasAttachments || _controller.text.trim().isNotEmpty;
@@ -139,7 +135,6 @@ class _FramedCapsuleInputState extends State<FramedCapsuleInput> {
   @override
   void initState() {
     super.initState();
-    _focus.addListener(() => setState(() {}));
     final initial = widget.initialText;
     if (initial != null) {
       _controller.text = initial;
@@ -198,6 +193,7 @@ class _FramedCapsuleInputState extends State<FramedCapsuleInput> {
       cursorColor: c.text,
       decoration: InputDecoration(
         hintText: widget.hint,
+        hintMaxLines: 1,
         hintStyle: TextStyle(color: c.hint, fontSize: 16),
         border: InputBorder.none,
         isCollapsed: true,
@@ -210,7 +206,6 @@ class _FramedCapsuleInputState extends State<FramedCapsuleInput> {
         child: field,
       );
     }
-    field = KeyedSubtree(key: _fieldKey, child: field);
     final top = widget.top;
     final buttons = [
       if (widget.onAttach != null)
@@ -249,23 +244,8 @@ class _FramedCapsuleInputState extends State<FramedCapsuleInput> {
       icon: Icons.arrow_upward_rounded,
       iconColor: c.onFilled,
     );
-    // One line until it is touched or holds something (owner's picture);
-    // then the text takes the whole width above the buttons.
-    if (top == null && !_focus.hasFocus && _controller.text.isEmpty) {
-      return Container(
-        decoration: BoxDecoration(
-          color: c.capsule,
-          borderRadius: BorderRadius.circular(32),
-          border: Border.all(color: c.border),
-        ),
-        padding: const EdgeInsets.all(8),
-        child: Row(children: [
-          ...buttons,
-          Expanded(child: Padding(padding: const EdgeInsets.symmetric(horizontal: 8), child: field)),
-          send,
-        ]),
-      );
-    }
+    // The text above the buttons from the start (owner decision): beside
+    // three circles on a phone the hint was left two lines.
     return Container(
       decoration: BoxDecoration(
         color: c.capsule,
