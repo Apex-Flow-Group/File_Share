@@ -4,6 +4,7 @@ import 'dart:io';
 import 'package:flutter/material.dart';
 
 import '../../core/apex_core.dart';
+import '../../features/chat/logic/chat_key.dart';
 import '../../features/chat/logic/chat_store.dart';
 import '../../l10n/generated/app_localizations.dart';
 import '../../screens/about_screen.dart';
@@ -14,6 +15,7 @@ import '../../shared/apex_snackbar.dart';
 import '../../shared/file_open_message.dart';
 import '../../shared/folder_open_message.dart';
 import '../controllers/home_controller.dart';
+import '../widgets/connection_widget.dart';
 import '../widgets/home_nav_bar.dart';
 import '../widgets/home_sidebar.dart';
 import '../widgets/tabs/files_tab.dart';
@@ -56,6 +58,12 @@ class _HomeScreenState extends State<HomeScreen>
   }
 
   StreamSubscription<ChatThread>? _chatSub;
+
+  @override
+  void onOpenChatFromSheet(ChatKey key) {
+    _ctrl.setCurrentIndex(0);
+    openChatCard(key);
+  }
 
   @override
   void onOpenFilesFromSheet([String? filePath]) {

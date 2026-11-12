@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 
-import '../../core/core_models.dart';
+import '../../core/apex_core.dart';
+import '../../features/chat/logic/chat_key.dart';
 import '../../l10n/generated/app_localizations.dart';
 import '../../services/transfer_progress_service.dart';
 import '../../services/update_service.dart';
@@ -41,6 +42,30 @@ mixin HomeDialogs<T extends StatefulWidget> on State<T> {
 
   /// The sheet's open button: the file's folder, or the files tab for a batch.
   void onOpenFilesFromSheet([String? filePath]);
+
+  /// The sheet's open button when the files went to a chat (owner decision):
+  /// that chat, whose line opens the file and its folder.
+  void onOpenChatFromSheet(ChatKey key);
+
+  /// The sheet's main button: the sender's chat, or [fallback] where the
+  /// files have none (Nearby).
+  Widget _openButton(FileReceivedEvent event, AppLocalizations l10n,
+      {required IconData icon, required String label, required VoidCallback fallback}) {
+    final chat = ApexCore.instance.chat.chatOf(event);
+    return FilledButton.icon(
+      onPressed: () {
+        Navigator.pop(context);
+        chat == null ? fallback() : onOpenChatFromSheet(chat);
+      },
+      icon: Icon(chat == null ? icon : Icons.chat_bubble_rounded, size: 18),
+      label: Text(chat == null ? label : l10n.chatOpen, maxLines: 1, overflow: TextOverflow.ellipsis),
+      style: FilledButton.styleFrom(
+        backgroundColor: Colors.green,
+        padding: const EdgeInsets.symmetric(vertical: 14),
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(14)),
+      ),
+    );
+  }
 
   void _showFileReceivedSheetInternal(FileReceivedEvent event) {
     final l10n = AppLocalizations.of(context);
@@ -92,21 +117,10 @@ mixin HomeDialogs<T extends StatefulWidget> on State<T> {
       ])),
       actions: [
         Expanded(
-            child: FilledButton.icon(
-          onPressed: () {
-            Navigator.pop(context);
-            onOpenFilesFromSheet(event.filePath);
-          },
-          icon: const Icon(Icons.folder_open_rounded, size: 18),
-          label: Text(l10n.openFolder,
-              maxLines: 1, overflow: TextOverflow.ellipsis),
-          style: FilledButton.styleFrom(
-            backgroundColor: Colors.green,
-            padding: const EdgeInsets.symmetric(vertical: 14),
-            shape:
-                RoundedRectangleBorder(borderRadius: BorderRadius.circular(14)),
-          ),
-        )),
+            child: _openButton(event, l10n,
+                icon: Icons.folder_open_rounded,
+                label: l10n.openFolder,
+                fallback: () => onOpenFilesFromSheet(event.filePath))),
         const SizedBox(width: 8),
         Expanded(
             child: OutlinedButton(
@@ -162,19 +176,10 @@ mixin HomeDialogs<T extends StatefulWidget> on State<T> {
       ])),
       actions: [
         Expanded(
-            child: FilledButton.icon(
-          onPressed: () {
-            Navigator.pop(context);
-            onOpenFilesFromSheet();
-          },
-          icon: const Icon(Icons.folder_rounded, size: 18),
-          label: Text(l10n.openFiles, maxLines: 1, overflow: TextOverflow.ellipsis),
-          style: FilledButton.styleFrom(
-            backgroundColor: Colors.green,
-            padding: const EdgeInsets.symmetric(vertical: 14),
-            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(14)),
-          ),
-        )),
+            child: _openButton(lastEvent, l10n,
+                icon: Icons.folder_rounded,
+                label: l10n.openFiles,
+                fallback: onOpenFilesFromSheet)),
         const SizedBox(width: 8),
         Expanded(
             child: OutlinedButton(

@@ -116,6 +116,17 @@ class ChatStore extends ChangeNotifier {
 
   ChatThread? thread(ChatKey key) => _threads[key];
 
+  /// The chat [event]'s file was put in by [receivedFile], if any: none over
+  /// Nearby, without a certificate, or from a blocked device.
+  ChatKey? chatOf(FileReceivedEvent event) {
+    final fingerprint = event.fromFingerprint;
+    if (event.fromAddress == null || event.fromId == null || !isFingerprint(fingerprint)) {
+      return null;
+    }
+    final key = ChatKey(fingerprint!);
+    return _threads.containsKey(key) ? key : null;
+  }
+
   int unread(ChatKey key) => _threads[key]?.unread ?? 0;
 
   /// Blocked here, by refusing the question or with the block button; in

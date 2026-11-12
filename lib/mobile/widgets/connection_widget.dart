@@ -33,6 +33,9 @@ final _openChat = ValueNotifier<ChatKey?>(null);
 @visibleForTesting
 void foldChatCards() => _openChat.value = null;
 
+/// Opens the card of the device with [key], folding any other.
+void openChatCard(ChatKey key) => _openChat.value = key;
+
 class ConnectionWidget extends StatefulWidget {
   final Device device;
   final bool isActive;

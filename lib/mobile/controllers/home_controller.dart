@@ -96,8 +96,9 @@ class HomeController extends ChangeNotifier {
       _devices = d;
       notifyListeners();
     });
+    // A received file stays where the user is (owner decision): its sheet
+    // opens the sender's chat.
     ApexCore.instance.fileReceivedStream.listen((e) {
-      _currentIndex = 2;
       filesRefreshNotifier.value++;
       notifyListeners();
 
