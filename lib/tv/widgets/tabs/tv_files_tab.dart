@@ -8,6 +8,7 @@ import '../../../core/apex_core.dart';
 import '../../../features/receive/data/sender_log.dart';
 import '../../../l10n/generated/app_localizations.dart';
 import '../../../services/file_operations_service.dart';
+import '../../../shared/apex_header.dart';
 import '../../../shared/apex_snackbar.dart';
 import '../../../shared/file_open_message.dart';
 import '../../../shared/folder_open_message.dart';
@@ -87,57 +88,12 @@ class _TVFilesTabState extends State<TVFilesTab> {
       bottom: false,
       child: Column(crossAxisAlignment: CrossAxisAlignment.stretch, children: [
         // ─── Header ──────────────────────────────────────────────────
-        Container(
-          padding: const EdgeInsets.fromLTRB(20, 16, 20, 20),
-          decoration: BoxDecoration(
-            gradient: LinearGradient(
-              begin: Alignment.topLeft,
-              end: Alignment.bottomRight,
-              colors: isDark
-                  ? [
-                      color.withValues(alpha: 0.2),
-                      color.withValues(alpha: 0.05)
-                    ]
-                  : [
-                      color.withValues(alpha: 0.12),
-                      color.withValues(alpha: 0.03)
-                    ],
-            ),
-            borderRadius:
-                const BorderRadius.vertical(bottom: Radius.circular(28)),
-          ),
-          child: Row(children: [
-            Container(
-              padding: const EdgeInsets.all(10),
-              decoration: BoxDecoration(
-                color: color.withValues(alpha: 0.15),
-                borderRadius: BorderRadius.circular(14),
-              ),
-              child: const Icon(Icons.folder_rounded, color: color, size: 22),
-            ),
-            const SizedBox(width: 12),
-            Expanded(
-              child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Text(l10n.files,
-                        style: Theme.of(context)
-                            .textTheme
-                            .titleLarge
-                            ?.copyWith(fontWeight: FontWeight.bold)),
-                    Text(
-                      _files == null
-                          ? '...'
-                          : '${_files!.length} ${l10n.files}',
-                      style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                            color:
-                                Theme.of(context).colorScheme.onSurfaceVariant,
-                          ),
-                    ),
-                  ]),
-            ),
-            _TVFocusableRefreshButton(onTap: _load),
-          ]),
+        ApexHeader(
+          icon: Icons.folder_rounded,
+          color: color,
+          title: l10n.files,
+          subtitle: _files == null ? '...' : '${_files!.length} ${l10n.files}',
+          trailing: [_TVFocusableRefreshButton(onTap: _load)],
         ),
         // ─── List ────────────────────────────────────────────────────
         Expanded(

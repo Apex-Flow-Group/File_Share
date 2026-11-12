@@ -9,6 +9,8 @@ import 'package:url_launcher/url_launcher.dart';
 
 import '../l10n/generated/app_localizations.dart';
 import '../services/update_service.dart';
+import '../shared/apex_header.dart';
+import '../shared/apex_icons.dart';
 
 const _kPlayStoreUrl =
     'https://play.google.com/store/apps/dev?id=5409981776310932919';
@@ -16,6 +18,13 @@ const _kPlayStoreUrl =
 class AboutScreen extends StatefulWidget {
   final bool embedded;
   const AboutScreen({this.embedded = false, super.key});
+
+  /// The sheet's head, under its handle: [ApexBottomSheet.header].
+  static Widget header(BuildContext context) => ApexHeader(
+        icon: ApexIcons.about,
+        color: Theme.of(context).colorScheme.primary,
+        title: AppLocalizations.of(context).aboutApp,
+      );
 
   @override
   State<AboutScreen> createState() => _AboutScreenState();

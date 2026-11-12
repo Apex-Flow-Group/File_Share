@@ -1,5 +1,7 @@
 import 'package:flutter/material.dart';
 
+import 'apex_header.dart';
+
 /// Bottom sheet موحد بتصميم Apex — يُستخدم بدلاً من تكرار نفس الهيكل
 class ApexBottomSheet extends StatelessWidget {
   final Widget child;
@@ -66,6 +68,7 @@ class ApexBottomSheet extends StatelessWidget {
               maxHeight: MediaQuery.of(ctx).size.height * 0.7,
             ),
             margin: const EdgeInsets.fromLTRB(12, 0, 12, 12),
+            clipBehavior: Clip.antiAlias,
             decoration: BoxDecoration(
               color: isDark ? Colors.grey[900] : Colors.white,
               borderRadius: BorderRadius.circular(28),
@@ -80,74 +83,12 @@ class ApexBottomSheet extends StatelessWidget {
             child: Column(
               mainAxisSize: MainAxisSize.min,
               children: [
-                // ─── Handle
-                const SizedBox(height: 12),
-                Container(
-                  width: 36,
-                  height: 4,
-                  decoration: BoxDecoration(
-                    color: Colors.grey.withValues(alpha: 0.3),
-                    borderRadius: BorderRadius.circular(2),
-                  ),
-                ),
-                // ─── Header
-                Container(
-                  padding: const EdgeInsets.fromLTRB(20, 16, 20, 16),
-                  decoration: BoxDecoration(
-                    gradient: LinearGradient(
-                      begin: Alignment.topLeft,
-                      end: Alignment.bottomRight,
-                      colors: isDark
-                          ? [
-                              headerColor.withValues(alpha: 0.15),
-                              headerColor.withValues(alpha: 0.03),
-                            ]
-                          : [
-                              headerColor.withValues(alpha: 0.1),
-                              headerColor.withValues(alpha: 0.02),
-                            ],
-                    ),
-                    borderRadius: const BorderRadius.vertical(
-                        bottom: Radius.circular(28)),
-                  ),
-                  child: Row(
-                    children: [
-                      Container(
-                        padding: const EdgeInsets.all(10),
-                        decoration: BoxDecoration(
-                          color: headerColor.withValues(alpha: 0.15),
-                          borderRadius: BorderRadius.circular(14),
-                        ),
-                        child: Icon(headerIcon, color: headerColor, size: 22),
-                      ),
-                      const SizedBox(width: 12),
-                      Expanded(
-                        child: Column(
-                          crossAxisAlignment: CrossAxisAlignment.start,
-                          children: [
-                            Text(
-                              headerTitle,
-                              style: Theme.of(ctx)
-                                  .textTheme
-                                  .titleLarge
-                                  ?.copyWith(fontWeight: FontWeight.bold),
-                            ),
-                            if (headerSubtitle != null) ...[
-                              const SizedBox(height: 2),
-                              Text(
-                                headerSubtitle,
-                                style: TextStyle(
-                                  fontSize: 12,
-                                  color: Theme.of(ctx)
-                                      .colorScheme
-                                      .onSurfaceVariant,
-                                ),
-                              ),
-                            ],
-                          ],
-                        ),
-                      ),
-                    ],
+                ApexSheetTop(
+                  header: ApexHeader(
+                    icon: headerIcon,
+                    color: headerColor,
+                    title: headerTitle,
+                    subtitle: headerSubtitle,
                   ),
                 ),
                 // ─── Content (scrollable)
@@ -215,15 +156,7 @@ class ApexBottomSheet extends StatelessWidget {
           child: Column(
             mainAxisSize: MainAxisSize.min,
             children: [
-              const SizedBox(height: 12),
-              Container(
-                width: 36,
-                height: 4,
-                decoration: BoxDecoration(
-                  color: Colors.grey.withValues(alpha: 0.3),
-                  borderRadius: BorderRadius.circular(2),
-                ),
-              ),
+              const ApexSheetTop(),
               Padding(
                 padding: const EdgeInsets.fromLTRB(20, 14, 20, 4),
                 child: Text(title,
@@ -281,15 +214,6 @@ class ApexBottomSheet extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final isDark = Theme.of(context).brightness == Brightness.dark;
-    final handle = Container(
-      width: 36,
-      height: 4,
-      decoration: BoxDecoration(
-        color: Colors.grey.withValues(alpha: 0.3),
-        borderRadius: BorderRadius.circular(2),
-      ),
-    );
-
     final sheet = Container(
       margin: const EdgeInsets.fromLTRB(12, 0, 12, 12),
       clipBehavior: Clip.antiAlias,
@@ -307,23 +231,7 @@ class ApexBottomSheet extends StatelessWidget {
       child: Column(
         mainAxisSize: scrollable ? MainAxisSize.max : MainAxisSize.min,
         children: [
-          if (header == null) ...[
-            const SizedBox(height: 12),
-            handle,
-            const SizedBox(height: 8),
-          ] else
-            SizedBox(
-              width: double.infinity,
-              child: Stack(
-                alignment: Alignment.topCenter,
-                fit: StackFit.passthrough,
-                children: [
-                  header!,
-                  // Positioned: passthrough would stretch it across the sheet.
-                  Positioned(top: 12, child: handle),
-                ],
-              ),
-            ),
+          ApexSheetTop(header: header),
           scrollable
               ? Expanded(
                   child: SingleChildScrollView(

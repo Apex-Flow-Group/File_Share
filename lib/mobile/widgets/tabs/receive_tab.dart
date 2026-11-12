@@ -9,6 +9,7 @@ import '../../../l10n/generated/app_localizations.dart';
 import '../../../models/device.dart';
 import '../../../models/transfer_progress.dart';
 import '../../../services/transfer_progress_service.dart';
+import '../../../shared/apex_header.dart';
 import '../../../shared/apex_snackbar.dart';
 import '../../screens/settings_sheets.dart';
 
@@ -63,7 +64,9 @@ class _ReceiveTabState extends State<ReceiveTab>
 
   @override
   Widget build(BuildContext context) {
+    // ApexHeader takes the status bar's room itself.
     return SafeArea(
+      top: false,
       bottom: false,
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.stretch,
@@ -83,61 +86,27 @@ class _ReceiveTabState extends State<ReceiveTab>
 
   Widget _buildHeader() {
     final l10n = AppLocalizations.of(context);
-    final isDark = Theme.of(context).brightness == Brightness.dark;
     const color = Color(0xFF5856D6);
 
-    return Container(
-      padding: const EdgeInsets.fromLTRB(20, 16, 20, 20),
-      decoration: BoxDecoration(
-        gradient: LinearGradient(
-          begin: Alignment.topLeft,
-          end: Alignment.bottomRight,
-          colors: isDark
-              ? [color.withValues(alpha: 0.2), color.withValues(alpha: 0.05)]
-              : [color.withValues(alpha: 0.12), color.withValues(alpha: 0.03)],
-        ),
-        borderRadius: const BorderRadius.vertical(bottom: Radius.circular(28)),
-      ),
-      child: Row(
-        children: [
-          Container(
-            padding: const EdgeInsets.all(10),
+    return ApexHeader(
+      icon: Icons.smartphone_rounded,
+      color: color,
+      title: l10n.receive,
+      subtitle: _isReceiving ? l10n.receiving : l10n.instruction4,
+      trailing: [
+        AnimatedBuilder(
+          animation: _pulseAnim,
+          builder: (_, __) => Container(
+            padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
             decoration: BoxDecoration(
-              color: color.withValues(alpha: 0.15),
-              borderRadius: BorderRadius.circular(14),
-            ),
-            child: const Icon(Icons.smartphone_rounded, color: color, size: 22),
-          ),
-          const SizedBox(width: 12),
-          Expanded(
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Text(l10n.receive,
-                    style: Theme.of(context).textTheme.titleLarge?.copyWith(
-                          fontWeight: FontWeight.bold,
-                        )),
-                Text(
-                  _isReceiving ? l10n.receiving : l10n.instruction4,
-                  style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                        color: Theme.of(context).colorScheme.onSurfaceVariant,
-                      ),
-                  maxLines: 1,
-                  overflow: TextOverflow.ellipsis,
-                ),
-              ],
-            ),
-          ),
-          AnimatedBuilder(
-            animation: _pulseAnim,
-            builder: (_, __) => Container(
-              padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
-              decoration: BoxDecoration(
-                color: (_isReceiving ? Colors.purple : Colors.green)
-                    .withValues(alpha: 0.1 + _pulseAnim.value * 0.1),
-                borderRadius: BorderRadius.circular(20),
+              color: (_isReceiving ? Colors.purple : Colors.green).withValues(
+                alpha: 0.1 + _pulseAnim.value * 0.1,
               ),
-              child: Row(mainAxisSize: MainAxisSize.min, children: [
+              borderRadius: BorderRadius.circular(20),
+            ),
+            child: Row(
+              mainAxisSize: MainAxisSize.min,
+              children: [
                 Container(
                   width: 6,
                   height: 6,
@@ -155,11 +124,11 @@ class _ReceiveTabState extends State<ReceiveTab>
                     fontWeight: FontWeight.w600,
                   ),
                 ),
-              ]),
+              ],
             ),
           ),
-        ],
-      ),
+        ),
+      ],
     );
   }
 

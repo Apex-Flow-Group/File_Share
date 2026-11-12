@@ -4,6 +4,7 @@ import 'package:flutter/material.dart';
 
 import '../../l10n/generated/app_localizations.dart';
 import '../../services/apex_apps_loader.dart';
+import '../../shared/apex_header.dart';
 import '../../shared/apex_icons.dart';
 import '../../utils/apex_logger.dart';
 
@@ -65,6 +66,7 @@ class _AppsSelectionSheetState extends State<AppsSelectionSheet> {
       child: Container(
         height: screenHeight * 0.85,
         margin: const EdgeInsets.fromLTRB(12, 0, 12, 12),
+        clipBehavior: Clip.antiAlias,
         decoration: BoxDecoration(
           color: isDark ? Colors.grey[900] : Colors.white,
           borderRadius: BorderRadius.circular(28),
@@ -78,78 +80,23 @@ class _AppsSelectionSheetState extends State<AppsSelectionSheet> {
         ),
         child: Column(
           children: [
-            // ─── Handle ─────────────────────────────────────────
-            const SizedBox(height: 12),
-            Container(
-              width: 36,
-              height: 4,
-              decoration: BoxDecoration(
-                color: Colors.grey.withValues(alpha: 0.3),
-                borderRadius: BorderRadius.circular(2),
-              ),
-            ),
-
-            // ─── Header (fixed, gradient style) ─────────────────
-            Container(
-              padding: const EdgeInsets.fromLTRB(20, 16, 12, 16),
-              decoration: BoxDecoration(
-                gradient: LinearGradient(
-                  begin: Alignment.topLeft,
-                  end: Alignment.bottomRight,
-                  colors: isDark
-                      ? [
-                          const Color(0xFF34C759).withValues(alpha: 0.15),
-                          const Color(0xFF34C759).withValues(alpha: 0.03)
-                        ]
-                      : [
-                          const Color(0xFF34C759).withValues(alpha: 0.1),
-                          const Color(0xFF34C759).withValues(alpha: 0.02)
-                        ],
-                ),
-                borderRadius:
-                    const BorderRadius.vertical(bottom: Radius.circular(28)),
-              ),
-              child: Row(
-                children: [
-                  Container(
-                    padding: const EdgeInsets.all(10),
-                    decoration: BoxDecoration(
-                      color: const Color(0xFF34C759).withValues(alpha: 0.15),
-                      borderRadius: BorderRadius.circular(14),
-                    ),
-                    child: const Icon(Icons.android_rounded,
-                        color: Color(0xFF34C759), size: 22),
-                  ),
-                  const SizedBox(width: 12),
-                  Expanded(
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        Text(
-                          l10n.installedApps,
-                          style:
-                              Theme.of(context).textTheme.titleLarge?.copyWith(
-                                    fontWeight: FontWeight.bold,
-                                  ),
-                        ),
-                        if (_selectedPackages.isNotEmpty)
-                          Text(
-                            isAr
-                                ? '${_selectedPackages.length} محدد'
-                                : '${_selectedPackages.length} selected',
-                            style: TextStyle(
-                              fontSize: 12,
-                              color: color,
-                              fontWeight: FontWeight.w600,
-                            ),
-                          ),
-                      ],
-                    ),
-                  ),
+            ApexSheetTop(
+              header: ApexHeader(
+                icon: Icons.android_rounded,
+                color: const Color(0xFF34C759),
+                title: l10n.installedApps,
+                subtitle: _selectedPackages.isNotEmpty
+                    ? isAr
+                          ? '${_selectedPackages.length} محدد'
+                          : '${_selectedPackages.length} selected'
+                    : null,
+                trailing: [
                   IconButton(
                     onPressed: () => Navigator.pop(context),
-                    icon: Icon(Icons.close_rounded,
-                        color: isDark ? Colors.white54 : Colors.black45),
+                    icon: Icon(
+                      Icons.close_rounded,
+                      color: isDark ? Colors.white54 : Colors.black45,
+                    ),
                   ),
                 ],
               ),

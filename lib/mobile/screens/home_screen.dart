@@ -262,6 +262,7 @@ class _HomeScreenState extends State<HomeScreen>
       context,
       scrollable: true,
       isScrollControlled: true,
+      header: const Builder(builder: AboutScreen.header),
       child: const AboutScreen(embedded: true),
     );
   }

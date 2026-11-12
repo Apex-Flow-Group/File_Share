@@ -5,6 +5,7 @@ import 'package:flutter/material.dart';
 import '../../../l10n/generated/app_localizations.dart';
 import '../../../models/device.dart';
 import '../../../services/transfer_progress_service.dart';
+import '../../../shared/apex_header.dart';
 import '../../../shared/apex_icons.dart';
 import '../../../shared/radar_painter.dart';
 import 'tv_send_device_card.dart';
@@ -247,47 +248,14 @@ class _TVSendTabState extends State<TVSendTab> with TickerProviderStateMixin {
   }
 
   Widget _buildHeader(AppLocalizations l10n) {
-    final isDark = Theme.of(context).brightness == Brightness.dark;
     final color = Theme.of(context).colorScheme.primary;
 
-    return Container(
-      padding: const EdgeInsets.fromLTRB(20, 16, 20, 20),
-      decoration: BoxDecoration(
-        gradient: LinearGradient(
-          begin: Alignment.topLeft,
-          end: Alignment.bottomRight,
-          colors: isDark
-              ? [color.withValues(alpha: 0.2), color.withValues(alpha: 0.05)]
-              : [color.withValues(alpha: 0.12), color.withValues(alpha: 0.03)],
-        ),
-        borderRadius: const BorderRadius.vertical(bottom: Radius.circular(28)),
-      ),
-      child: Row(children: [
-        Container(
-          padding: const EdgeInsets.all(10),
-          decoration: BoxDecoration(
-            color: color.withValues(alpha: 0.15),
-            borderRadius: BorderRadius.circular(14),
-          ),
-          child: Icon(ApexIcons.sendPage, color: color, size: 22),
-        ),
-        const SizedBox(width: 12),
-        Expanded(
-          child:
-              Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-            Text(l10n.send,
-                style: Theme.of(context)
-                    .textTheme
-                    .titleLarge
-                    ?.copyWith(fontWeight: FontWeight.bold)),
-            Text(
-              '${widget.devices.length} ${l10n.availableDevices}',
-              style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                    color: Theme.of(context).colorScheme.onSurfaceVariant,
-                  ),
-            ),
-          ]),
-        ),
+    return ApexHeader(
+      icon: ApexIcons.sendPage,
+      color: color,
+      title: l10n.send,
+      subtitle: '${widget.devices.length} ${l10n.availableDevices}',
+      trailing: [
         if (widget.isRunning)
           Container(
             padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
@@ -295,21 +263,30 @@ class _TVSendTabState extends State<TVSendTab> with TickerProviderStateMixin {
               color: Colors.green.withValues(alpha: 0.15),
               borderRadius: BorderRadius.circular(20),
             ),
-            child: Row(mainAxisSize: MainAxisSize.min, children: [
-              Container(
+            child: Row(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                Container(
                   width: 6,
                   height: 6,
                   decoration: const BoxDecoration(
-                      color: Colors.green, shape: BoxShape.circle)),
-              const SizedBox(width: 5),
-              const Text('Live',
+                    color: Colors.green,
+                    shape: BoxShape.circle,
+                  ),
+                ),
+                const SizedBox(width: 5),
+                const Text(
+                  'Live',
                   style: TextStyle(
-                      color: Colors.green,
-                      fontSize: 12,
-                      fontWeight: FontWeight.w600)),
-            ]),
+                    color: Colors.green,
+                    fontSize: 12,
+                    fontWeight: FontWeight.w600,
+                  ),
+                ),
+              ],
+            ),
           ),
-      ]),
+      ],
     );
   }
 }

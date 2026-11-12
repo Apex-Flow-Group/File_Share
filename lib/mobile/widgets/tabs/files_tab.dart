@@ -5,6 +5,7 @@ import 'package:flutter/material.dart';
 import '../../../features/receive/data/sender_log.dart';
 import '../../../l10n/generated/app_localizations.dart';
 import '../../../shared/apex_bottom_sheet.dart';
+import '../../../shared/apex_header.dart';
 import '../../../shared/apex_snackbar.dart';
 import '../../../utils/path_name.dart';
 import '../../../utils/platform_detector.dart';
@@ -124,7 +125,9 @@ class _FilesTabState extends State<FilesTab>
   @override
   Widget build(BuildContext context) {
     super.build(context);
+    // ApexHeader takes the status bar's room itself.
     return SafeArea(
+      top: false,
       bottom: false,
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.stretch,
@@ -166,59 +169,23 @@ class _FilesTabState extends State<FilesTab>
 
   Widget _buildHeader() {
     final l10n = AppLocalizations.of(context);
-    final isDark = Theme.of(context).brightness == Brightness.dark;
     const color = Color(0xFFFF9500);
 
-    return Container(
-      padding: const EdgeInsets.fromLTRB(20, 16, 20, 20),
-      decoration: BoxDecoration(
-        gradient: LinearGradient(
-          begin: Alignment.topLeft,
-          end: Alignment.bottomRight,
-          colors: isDark
-              ? [color.withValues(alpha: 0.2), color.withValues(alpha: 0.05)]
-              : [color.withValues(alpha: 0.12), color.withValues(alpha: 0.03)],
+    return ApexHeader(
+      icon: Icons.folder_rounded,
+      color: color,
+      title: l10n.files,
+      subtitle: _files == null ? '...' : '${_files!.length} ${l10n.files}',
+      trailing: [
+        IconButton(
+          onPressed: _load,
+          icon: const Icon(Icons.refresh_rounded),
+          style: IconButton.styleFrom(
+            backgroundColor: color.withValues(alpha: 0.12),
+            foregroundColor: color,
+          ),
         ),
-        borderRadius: const BorderRadius.vertical(bottom: Radius.circular(28)),
-      ),
-      child: Row(
-        children: [
-          Container(
-            padding: const EdgeInsets.all(10),
-            decoration: BoxDecoration(
-              color: color.withValues(alpha: 0.15),
-              borderRadius: BorderRadius.circular(14),
-            ),
-            child: const Icon(Icons.folder_rounded, color: color, size: 22),
-          ),
-          const SizedBox(width: 12),
-          Expanded(
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Text(l10n.files,
-                    style: Theme.of(context).textTheme.titleLarge?.copyWith(
-                          fontWeight: FontWeight.bold,
-                        )),
-                Text(
-                  _files == null ? '...' : '${_files!.length} ${l10n.files}',
-                  style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                        color: Theme.of(context).colorScheme.onSurfaceVariant,
-                      ),
-                ),
-              ],
-            ),
-          ),
-          IconButton(
-            onPressed: _load,
-            icon: const Icon(Icons.refresh_rounded),
-            style: IconButton.styleFrom(
-              backgroundColor: color.withValues(alpha: 0.12),
-              foregroundColor: color,
-            ),
-          ),
-        ],
-      ),
+      ],
     );
   }
 

@@ -20,6 +20,7 @@ import '../../l10n/generated/app_localizations.dart';
 import '../../models/device.dart';
 import '../../platform/media_store_save.dart';
 import '../../services/share_folder_service.dart';
+import '../../shared/apex_header.dart';
 import '../../shared/apex_icons.dart';
 import '../../shared/apex_snackbar.dart';
 import '../../utils/file_utils.dart';
@@ -312,6 +313,7 @@ class _ShareBrowserScreenState extends State<ShareBrowserScreen> {
       backgroundColor:
           isDark ? const Color(0xFF1C1C1E) : const Color(0xFFF2F2F7),
       body: SafeArea(
+        top: false,
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.stretch,
           children: [
@@ -336,131 +338,67 @@ class _ShareBrowserScreenState extends State<ShareBrowserScreen> {
 
   Widget _buildHeader(
       AppLocalizations l10n, bool isDark, Color color, bool isDesktop) {
-    return Container(
-      padding:
-          EdgeInsets.fromLTRB(isDesktop ? 24 : 16, 16, isDesktop ? 24 : 16, 20),
-      decoration: BoxDecoration(
-        gradient: LinearGradient(
-          begin: Alignment.topLeft,
-          end: Alignment.bottomRight,
-          colors: isDark
-              ? [
-                  color.withValues(alpha: 0.18),
-                  color.withValues(alpha: 0.04),
-                ]
-              : [
-                  color.withValues(alpha: 0.1),
-                  color.withValues(alpha: 0.02),
-                ],
-        ),
-        borderRadius: const BorderRadius.vertical(
-          bottom: Radius.circular(28),
+    return ApexHeader(
+      icon: ApexIcons.sharedFolder,
+      color: color,
+      title: l10n.sharedFolder,
+      subtitle: widget.device.name,
+      detail: '${widget.device.ip}:${widget.device.port}',
+      inset: isDesktop ? 24 : 16,
+      leading: GestureDetector(
+        onTap: () => Navigator.of(context).pop(),
+        child: Container(
+          padding: const EdgeInsets.all(8),
+          decoration: BoxDecoration(
+            color: (isDark ? Colors.white : Colors.black).withValues(alpha: 0.07),
+            borderRadius: BorderRadius.circular(12),
+          ),
+          child: Icon(
+            Icons.arrow_back_ios_new_rounded,
+            size: 18,
+            color: isDark ? Colors.white70 : Colors.black54,
+          ),
         ),
       ),
-      child: Row(
-        children: [
-          // زر رجوع
-          GestureDetector(
-            onTap: () => Navigator.of(context).pop(),
-            child: Container(
-              padding: const EdgeInsets.all(8),
-              decoration: BoxDecoration(
-                color: (isDark ? Colors.white : Colors.black)
-                    .withValues(alpha: 0.07),
-                borderRadius: BorderRadius.circular(12),
-              ),
-              child: Icon(
-                Icons.arrow_back_ios_new_rounded,
-                size: 18,
-                color: isDark ? Colors.white70 : Colors.black54,
-              ),
-            ),
-          ),
-          const SizedBox(width: 14),
-          // أيقونة المجلد
+      trailing: [
+        if (!_loading && _error == null)
           Container(
-            padding: const EdgeInsets.all(10),
+            padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
             decoration: BoxDecoration(
-              color: color.withValues(alpha: isDark ? 0.2 : 0.12),
-              borderRadius: BorderRadius.circular(14),
+              color: color.withValues(alpha: isDark ? 0.2 : 0.1),
+              borderRadius: BorderRadius.circular(20),
             ),
-            child: const Icon(ApexIcons.sharedFolder,
-                color: Color(0xFF5856D6), size: 22),
-          ),
-          const SizedBox(width: 14),
-          // العنوان
-          Expanded(
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Text(
-                  l10n.sharedFolder,
-                  style: const TextStyle(
-                      fontWeight: FontWeight.bold, fontSize: 17),
-                ),
-                const SizedBox(height: 2),
-                Text(
-                  widget.device.name,
-                  style: TextStyle(
-                    fontSize: 13,
-                    fontWeight: FontWeight.w500,
-                    color: Theme.of(context).colorScheme.onSurfaceVariant,
-                  ),
-                ),
-                Text(
-                  '${widget.device.ip}:${widget.device.port}',
-                  style: TextStyle(
-                    fontSize: 11,
-                    color: Theme.of(context)
-                        .colorScheme
-                        .onSurfaceVariant
-                        .withValues(alpha: 0.6),
-                  ),
-                ),
-              ],
-            ),
-          ),
-          // عدد الملفات
-          if (!_loading && _error == null)
-            Container(
-              padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
-              decoration: BoxDecoration(
-                color: color.withValues(alpha: isDark ? 0.2 : 0.1),
-                borderRadius: BorderRadius.circular(20),
-              ),
-              child: Text(
-                l10n.shareFileCount(_files.length),
-                style: TextStyle(
-                  fontSize: 12,
-                  fontWeight: FontWeight.w600,
-                  color: color,
-                ),
+            child: Text(
+              l10n.shareFileCount(_files.length),
+              style: TextStyle(
+                fontSize: 12,
+                fontWeight: FontWeight.w600,
+                color: color,
               ),
             ),
-          const SizedBox(width: 10),
-          // زر رفع: only when the other user agreed to uploads too.
-          if (_canUpload) ...[
-            _HeaderIconButton(
-              icon: Icons.upload_rounded,
-              tooltip: l10n.uploadToSharedFolder,
-              color: color,
-              isDark: isDark,
-              enabled: _progress.isEmpty,
-              onTap: _upload,
-            ),
-            const SizedBox(width: 8),
-          ],
-          // زر تحديث
+          ),
+        const SizedBox(width: 10),
+        // Only when the other user agreed to uploads too.
+        if (_canUpload) ...[
           _HeaderIconButton(
-            icon: Icons.refresh_rounded,
-            tooltip: l10n.restartingSystem,
+            icon: Icons.upload_rounded,
+            tooltip: l10n.uploadToSharedFolder,
             color: color,
             isDark: isDark,
-            enabled: !_loading,
-            onTap: _load,
+            enabled: _progress.isEmpty,
+            onTap: _upload,
           ),
+          const SizedBox(width: 8),
         ],
-      ),
+        _HeaderIconButton(
+          icon: Icons.refresh_rounded,
+          tooltip: l10n.restartingSystem,
+          color: color,
+          isDark: isDark,
+          enabled: !_loading,
+          onTap: _load,
+        ),
+      ],
     );
   }
 

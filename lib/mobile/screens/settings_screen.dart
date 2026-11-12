@@ -7,6 +7,7 @@ import 'package:permission_handler/permission_handler.dart';
 import '../../core/apex_core.dart';
 import '../../l10n/generated/app_localizations.dart';
 import '../../services/settings_service.dart';
+import '../../shared/apex_header.dart';
 import '../../shared/apex_icons.dart';
 import '../../utils/platform_detector.dart';
 import 'settings_sheets.dart';
@@ -178,44 +179,14 @@ class SettingsScreen extends StatelessWidget {
 
   // ─── Header ────────────────────────────────────────────────────────────────
 
-  /// The sheet's head, under its handle: [ApexBottomSheet.header].
-  static Widget header(BuildContext context) {
-    final l10n = AppLocalizations.of(context);
-    final isDark = Theme.of(context).brightness == Brightness.dark;
-    const color = Color(0xFF8E8E93);
-    return Container(
-      padding: const EdgeInsets.fromLTRB(36, 28, 36, 20),
-      decoration: BoxDecoration(
-        gradient: LinearGradient(
-          begin: Alignment.topLeft,
-          end: Alignment.bottomRight,
-          colors: isDark
-              ? [color.withValues(alpha: 0.15), color.withValues(alpha: 0.03)]
-              : [color.withValues(alpha: 0.1), color.withValues(alpha: 0.02)],
-        ),
-        borderRadius: const BorderRadius.vertical(bottom: Radius.circular(28)),
-      ),
-      child: Row(
-        children: [
-          Container(
-            padding: const EdgeInsets.all(10),
-            decoration: BoxDecoration(
-              color: color.withValues(alpha: 0.15),
-              borderRadius: BorderRadius.circular(14),
-            ),
-            child: const Icon(ApexIcons.settings, color: color, size: 22),
-          ),
-          const SizedBox(width: 12),
-          Text(
-            l10n.settings,
-            style: Theme.of(context).textTheme.titleLarge?.copyWith(
-                  fontWeight: FontWeight.bold,
-                ),
-          ),
-        ],
-      ),
-    );
-  }
+  /// The sheet's head, under its handle: [ApexBottomSheet.header]. In line
+  /// with the groups below it (the sheet's 20 and their 16).
+  static Widget header(BuildContext context) => ApexHeader(
+        icon: ApexIcons.settings,
+        color: const Color(0xFF8E8E93),
+        title: AppLocalizations.of(context).settings,
+        inset: 36,
+      );
 
   // ─── Group ─────────────────────────────────────────────────────────────────
 
