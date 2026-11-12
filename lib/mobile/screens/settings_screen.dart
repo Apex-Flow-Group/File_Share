@@ -47,8 +47,6 @@ class SettingsScreen extends StatelessWidget {
       mainAxisSize: MainAxisSize.min,
       crossAxisAlignment: CrossAxisAlignment.stretch,
       children: [
-        _buildHeader(context, l10n),
-        const SizedBox(height: 8),
 
         // ─── Device ───────────────────────────────────────────────────
         _sectionLabel(context, l10n.device),
@@ -180,11 +178,13 @@ class SettingsScreen extends StatelessWidget {
 
   // ─── Header ────────────────────────────────────────────────────────────────
 
-  Widget _buildHeader(BuildContext context, AppLocalizations l10n) {
+  /// The sheet's head, under its handle: [ApexBottomSheet.header].
+  static Widget header(BuildContext context) {
+    final l10n = AppLocalizations.of(context);
     final isDark = Theme.of(context).brightness == Brightness.dark;
     const color = Color(0xFF8E8E93);
     return Container(
-      padding: const EdgeInsets.fromLTRB(20, 16, 20, 20),
+      padding: const EdgeInsets.fromLTRB(20, 28, 20, 20),
       decoration: BoxDecoration(
         gradient: LinearGradient(
           begin: Alignment.topLeft,

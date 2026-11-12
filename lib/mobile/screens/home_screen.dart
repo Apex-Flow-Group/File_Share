@@ -245,6 +245,7 @@ class _HomeScreenState extends State<HomeScreen>
       context,
       scrollable: true,
       isScrollControlled: true,
+      header: const Builder(builder: SettingsScreen.header),
       child: SettingsScreen(
         settings: widget.settings,
         embedded: true,

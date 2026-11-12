@@ -5,13 +5,18 @@ class ApexBottomSheet extends StatelessWidget {
   final Widget child;
   final bool scrollable;
 
+  /// Drawn edge to edge under the handle, its top in the sheet's curve, and
+  /// held while the content scrolls. It leaves room above for the handle.
+  final Widget? header;
+
   const ApexBottomSheet(
-      {required this.child, this.scrollable = false, super.key});
+      {required this.child, this.scrollable = false, this.header, super.key});
 
   /// عرض bottom sheet عائم بالتصميم الموحد
   static Future<T?> show<T>(
     BuildContext context, {
     required Widget child,
+    Widget? header,
     bool scrollable = false,
     bool isDismissible = true,
     bool enableDrag = true,
@@ -27,6 +32,7 @@ class ApexBottomSheet extends StatelessWidget {
       useSafeArea: useSafeArea,
       builder: (_) => ApexBottomSheet(
         scrollable: scrollable,
+        header: header,
         child: child,
       ),
     );
@@ -275,9 +281,18 @@ class ApexBottomSheet extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final isDark = Theme.of(context).brightness == Brightness.dark;
+    final handle = Container(
+      width: 36,
+      height: 4,
+      decoration: BoxDecoration(
+        color: Colors.grey.withValues(alpha: 0.3),
+        borderRadius: BorderRadius.circular(2),
+      ),
+    );
 
     final sheet = Container(
       margin: const EdgeInsets.fromLTRB(12, 0, 12, 12),
+      clipBehavior: Clip.antiAlias,
       decoration: BoxDecoration(
         color: isDark ? Colors.grey[900] : Colors.white,
         borderRadius: BorderRadius.circular(28),
@@ -292,16 +307,22 @@ class ApexBottomSheet extends StatelessWidget {
       child: Column(
         mainAxisSize: scrollable ? MainAxisSize.max : MainAxisSize.min,
         children: [
-          const SizedBox(height: 12),
-          Container(
-            width: 36,
-            height: 4,
-            decoration: BoxDecoration(
-              color: Colors.grey.withValues(alpha: 0.3),
-              borderRadius: BorderRadius.circular(2),
+          if (header == null) ...[
+            const SizedBox(height: 12),
+            handle,
+            const SizedBox(height: 8),
+          ] else
+            SizedBox(
+              width: double.infinity,
+              child: Stack(
+                alignment: Alignment.topCenter,
+                fit: StackFit.passthrough,
+                children: [
+                  header!,
+                  Padding(padding: const EdgeInsets.only(top: 12), child: handle),
+                ],
+              ),
             ),
-          ),
-          const SizedBox(height: 8),
           scrollable
               ? Expanded(
                   child: SingleChildScrollView(
