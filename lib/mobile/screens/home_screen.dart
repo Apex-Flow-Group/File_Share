@@ -44,7 +44,8 @@ class _HomeScreenState extends State<HomeScreen>
     _ctrl = HomeController(settings: widget.settings);
     _ctrl.onFileReceived = showFileReceivedSheet;
     _ctrl.onConnectionRequest = showConnectionRequestDialog;
-    _ctrl.onError = (msg) => ApexSnackBar.error(context, msg);
+    _ctrl.onStartFailed = () =>
+        ApexSnackBar.error(context, AppLocalizations.of(context).startFailed);
     _ctrl.onUpdateAvailable = showUpdateAvailableSheet;
     _ctrl.onUpdateReady = showUpdateReadySheet;
     _ctrl.addListener(_onStateChanged);
@@ -211,7 +212,9 @@ class _HomeScreenState extends State<HomeScreen>
       case 1:
         return ReceiveTab(
             localDevice: ApexCore.instance.localDevice,
-            isRunning: _ctrl.isRunning);
+            isRunning: _ctrl.isRunning,
+            startFailed: _ctrl.startFailed,
+            onRetry: _ctrl.retryStart);
       case 2:
         return FilesTab(
           key: _filesTabKey,

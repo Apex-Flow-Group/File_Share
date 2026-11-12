@@ -12,11 +12,15 @@ import '../tv_focusable_widgets.dart';
 class TVReceiveTab extends StatefulWidget {
   final Device? localDevice;
   final bool isRunning;
+  final bool startFailed;
+  final VoidCallback onRetry;
   final VoidCallback? onBackToSidebar;
   final FocusNode? contentFocusNode;
   const TVReceiveTab({
     required this.localDevice,
     required this.isRunning,
+    required this.startFailed,
+    required this.onRetry,
     this.onBackToSidebar,
     this.contentFocusNode,
     super.key,
@@ -103,7 +107,20 @@ class _TVReceiveTabState extends State<TVReceiveTab>
   // ─── Not Ready ─────────────────────────────────────────────────────────────
 
   Widget _buildNotReady() {
-    final isAr = Localizations.localeOf(context).languageCode == 'ar';
+    final l10n = AppLocalizations.of(context);
+    if (!widget.startFailed) {
+      return Center(
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            const CircularProgressIndicator(),
+            const SizedBox(height: 16),
+            Text(l10n.starting,
+                style: Theme.of(context).textTheme.titleMedium),
+          ],
+        ),
+      );
+    }
     return Center(
       child: Padding(
         padding: const EdgeInsets.all(32),
@@ -121,20 +138,18 @@ class _TVReceiveTabState extends State<TVReceiveTab>
             ),
             const SizedBox(height: 24),
             Text(
-              isAr ? 'النظام غير جاهز' : 'System not ready',
+              l10n.startFailed,
               style: Theme.of(context).textTheme.titleLarge?.copyWith(
                     fontWeight: FontWeight.bold,
                   ),
             ),
-            const SizedBox(height: 8),
-            Text(
-              isAr
-                  ? 'تأكد من تشغيل النظام'
-                  : 'Make sure the system is running',
-              style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                    color: Theme.of(context).colorScheme.onSurfaceVariant,
-                  ),
-              textAlign: TextAlign.center,
+            const SizedBox(height: 16),
+            // The content focus node: the remote reaches it from the sidebar.
+            TVFocusableButton(
+              focusNode: _copyFocus,
+              onTap: widget.onRetry,
+              color: Colors.orange,
+              label: l10n.retry,
             ),
           ],
         ),

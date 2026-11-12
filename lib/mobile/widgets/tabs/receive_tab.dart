@@ -16,8 +16,14 @@ import '../../screens/settings_sheets.dart';
 class ReceiveTab extends StatefulWidget {
   final Device? localDevice;
   final bool isRunning;
+  final bool startFailed;
+  final VoidCallback onRetry;
   const ReceiveTab(
-      {required this.localDevice, required this.isRunning, super.key});
+      {required this.localDevice,
+      required this.isRunning,
+      required this.startFailed,
+      required this.onRetry,
+      super.key});
 
   @override
   State<ReceiveTab> createState() => _ReceiveTabState();
@@ -98,7 +104,20 @@ class _ReceiveTabState extends State<ReceiveTab>
   // ─── Not Ready ─────────────────────────────────────────────────────────────
 
   Widget _buildNotReady() {
-    final isAr = Localizations.localeOf(context).languageCode == 'ar';
+    final l10n = AppLocalizations.of(context);
+    if (!widget.startFailed) {
+      return Center(
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            const CircularProgressIndicator(),
+            const SizedBox(height: 16),
+            Text(l10n.starting,
+                style: Theme.of(context).textTheme.titleMedium),
+          ],
+        ),
+      );
+    }
     return Center(
       child: Padding(
         padding: const EdgeInsets.all(32),
@@ -116,18 +135,16 @@ class _ReceiveTabState extends State<ReceiveTab>
             ),
             const SizedBox(height: 24),
             Text(
-              isAr ? 'النظام غير جاهز' : 'System not ready',
+              l10n.startFailed,
               style: Theme.of(context).textTheme.titleLarge?.copyWith(
                     fontWeight: FontWeight.bold,
                   ),
             ),
-            const SizedBox(height: 8),
-            Text(
-              isAr ? 'تأكد من تشغيل النظام' : 'Make sure the system is running',
-              style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                    color: Theme.of(context).colorScheme.onSurfaceVariant,
-                  ),
-              textAlign: TextAlign.center,
+            const SizedBox(height: 16),
+            FilledButton.icon(
+              onPressed: widget.onRetry,
+              icon: const Icon(Icons.refresh_rounded),
+              label: Text(l10n.retry),
             ),
           ],
         ),

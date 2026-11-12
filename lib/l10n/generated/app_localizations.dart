@@ -740,11 +740,11 @@ abstract class AppLocalizations {
   /// **'Reconnect failed'**
   String get reconnectFailed;
 
-  /// No description provided for @restartingSystem.
+  /// No description provided for @starting.
   ///
   /// In en, this message translates to:
-  /// **'Refresh'**
-  String get restartingSystem;
+  /// **'Starting…'**
+  String get starting;
 
   /// No description provided for @sendApp.
   ///
@@ -1106,11 +1106,11 @@ abstract class AppLocalizations {
   /// **'Made in the Arab World'**
   String get madeInArabWorld;
 
-  /// No description provided for @systemNotRunning.
+  /// No description provided for @startFailed.
   ///
   /// In en, this message translates to:
-  /// **'System not running'**
-  String get systemNotRunning;
+  /// **'Couldn\'t start'**
+  String get startFailed;
 
   /// Number of songs found
   ///

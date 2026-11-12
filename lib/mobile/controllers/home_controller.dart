@@ -12,6 +12,7 @@ import '../../services/file_storage_service.dart';
 import '../../services/pinned_devices_service.dart';
 import '../../services/settings_service.dart';
 import '../../services/update_service.dart';
+import '../../utils/apex_logger.dart';
 
 /// Controller مركزي لـ HomeScreen — يدير الحالة والمنطق بمعزل عن الـ UI
 class HomeController extends ChangeNotifier {
@@ -36,6 +37,10 @@ class HomeController extends ChangeNotifier {
 
   bool _isRunning = false;
   bool get isRunning => _isRunning;
+
+  /// False while the first start is still running: that is not a failure.
+  bool _startFailed = false;
+  bool get startFailed => _startFailed;
 
   String? _pendingSinanFilePath;
   String? get pendingSinanFilePath => _pendingSinanFilePath;
@@ -72,7 +77,7 @@ class HomeController extends ChangeNotifier {
 
   void Function(FileReceivedEvent event)? onFileReceived;
   void Function(ConnectionRequest request)? onConnectionRequest;
-  void Function(String message)? onError;
+  void Function()? onStartFailed;
   void Function()? onUpdateAvailable;
   void Function()? onUpdateReady;
 
@@ -119,10 +124,19 @@ class HomeController extends ChangeNotifier {
       ApexCore.instance.setSettings(settings);
       await ApexCore.instance.start();
       _isRunning = true;
-      notifyListeners();
+      _startFailed = false;
     } catch (e) {
-      onError?.call('System start failed');
+      ApexLogger.instance.log('CORE', 'Start: $e', LogLevel.error);
+      _startFailed = true;
+      onStartFailed?.call();
     }
+    notifyListeners();
+  }
+
+  Future<void> retryStart() async {
+    _startFailed = false;
+    notifyListeners();
+    await _startSystem();
   }
 
   Future<void> stopSystem() async {

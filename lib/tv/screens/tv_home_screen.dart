@@ -13,6 +13,7 @@ import '../../services/settings_service.dart';
 import '../../shared/apex_colors.dart';
 import '../../shared/apex_icons.dart';
 import '../../shared/device_card.dart';
+import '../../utils/apex_logger.dart';
 import '../widgets/tabs/tv_files_tab.dart';
 import '../widgets/tabs/tv_receive_tab.dart';
 import '../widgets/tabs/tv_send_tab.dart';
@@ -49,6 +50,8 @@ class _TVHomeScreenState extends State<TVHomeScreen> {
   final List<Device> _devices = [];
   Device? _localDevice;
   bool _isRunning = false;
+  /// False while the first start is still running: that is not a failure.
+  bool _startFailed = false;
 
   // ─── Pinned devices ────────────────────────────────────────────────────────
   final _pinnedService = PinnedDevicesService();
@@ -132,17 +135,26 @@ class _TVHomeScreenState extends State<TVHomeScreen> {
       _localDevice = core.localDevice;
       _isRunning = core.isRunning;
     });
-    await core.start();
-    if (mounted) {
-      setState(() => _isRunning = core.isRunning);
-    }
+    await _start();
   }
 
-  Future<void> _restartCore() async {
-    await ApexCore.instance.stop();
-    await ApexCore.instance.start();
+  /// Also the retry: start() closes what it opened when it fails.
+  Future<void> _start() async {
+    if (_startFailed) {
+      setState(() => _startFailed = false);
+    }
+    var failed = false;
+    try {
+      await ApexCore.instance.start();
+    } catch (e) {
+      ApexLogger.instance.log('CORE', 'Start: $e', LogLevel.error);
+      failed = true;
+    }
     if (mounted) {
-      setState(() => _isRunning = ApexCore.instance.isRunning);
+      setState(() {
+        _isRunning = ApexCore.instance.isRunning;
+        _startFailed = failed;
+      });
     }
   }
 
@@ -340,13 +352,13 @@ class _TVHomeScreenState extends State<TVHomeScreen> {
                       onMoveToContent: () {},
                       onKey: (e) => _handleSidebarKey(_settingsFocus, e),
                     ),
-                    // ─── Refresh زر ───────────────────────────────────────
+                    // Searches only, as on the phone: a transfer goes on.
                     _TVNavItem(
                       icon: ApexIcons.findDevices,
-                      label: l10n.restartingSystem,
+                      label: l10n.findDevices,
                       selected: false,
                       focusNode: _refreshFocus,
-                      onSelect: _restartCore,
+                      onSelect: ApexCore.instance.refreshDiscovery,
                       onMoveToContent: () {},
                       onKey: (e) => _handleSidebarKey(_refreshFocus, e),
                     ),
@@ -379,6 +391,8 @@ class _TVHomeScreenState extends State<TVHomeScreen> {
         return TVReceiveTab(
           localDevice: _localDevice,
           isRunning: _isRunning,
+          startFailed: _startFailed,
+          onRetry: _start,
           onBackToSidebar: _moveToSidebar,
           contentFocusNode: _receiveContentFocus,
         );

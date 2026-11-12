@@ -370,7 +370,7 @@ class AppLocalizationsAr extends AppLocalizations {
   String get reconnectFailed => 'فشل إعادة الاتصال';
 
   @override
-  String get restartingSystem => 'تحديث';
+  String get starting => 'جارٍ التشغيل…';
 
   @override
   String get sendApp => 'إرسال تطبيق';
@@ -567,7 +567,7 @@ class AppLocalizationsAr extends AppLocalizations {
   String get madeInArabWorld => 'صُنع في العالم العربي';
 
   @override
-  String get systemNotRunning => 'النظام لا يعمل';
+  String get startFailed => 'تعذّر التشغيل';
 
   @override
   String foundSongs(int count) {

@@ -247,6 +247,22 @@ class ApexCore {
     if (_localDevice == null) {
       await initialize();
     }
+    try {
+      await _startParts();
+    } catch (_) {
+      // What opened before the failure is closed, so a retry binds afresh.
+      await _httpServer?.close(force: true);
+      _httpServer = null;
+      await _discoveryService?.stop();
+      _discoveryService = null;
+      rethrow;
+    }
+    _startCleanup();
+    _isRunning = true;
+    ApexLogger.instance.log('CORE', '🚀 النظام يعمل', LogLevel.success);
+  }
+
+  Future<void> _startParts() async {
     await _startHttpServer();
 
     _discoveryService = DiscoveryService(
@@ -281,9 +297,6 @@ class ApexCore {
     });
 
     await _discoveryService!.start(_localDevice!.copyWith(port: _httpPort));
-    _startCleanup();
-    _isRunning = true;
-    ApexLogger.instance.log('CORE', '🚀 النظام يعمل', LogLevel.success);
   }
 
   Future<void> stop() async {

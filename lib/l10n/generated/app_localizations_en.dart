@@ -362,7 +362,7 @@ class AppLocalizationsEn extends AppLocalizations {
   String get reconnectFailed => 'Reconnect failed';
 
   @override
-  String get restartingSystem => 'Refresh';
+  String get starting => 'Starting…';
 
   @override
   String get sendApp => 'Send App';
@@ -556,7 +556,7 @@ class AppLocalizationsEn extends AppLocalizations {
   String get madeInArabWorld => 'Made in the Arab World';
 
   @override
-  String get systemNotRunning => 'System not running';
+  String get startFailed => 'Couldn\'t start';
 
   @override
   String foundSongs(int count) {

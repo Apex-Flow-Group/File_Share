@@ -120,7 +120,7 @@
   },
   "ok": "حسناً",
   "reconnectFailed": "فشل إعادة الاتصال",
-  "restartingSystem": "تحديث",
+  "starting": "جارٍ التشغيل…",
   "sendApp": "إرسال تطبيق",
   "sendFolder": "إرسال مجلد",
   "sendThisFolder": "إرسال هذا المجلد",
@@ -187,7 +187,7 @@
   "copyright": "حقوق النشر",
   "copyrightText": "© 2025 Apex Flow Group. جميع الحقوق محفوظة.",
   "madeInArabWorld": "صُنع في العالم العربي",
-  "systemNotRunning": "النظام لا يعمل",
+  "startFailed": "تعذّر التشغيل",
   "foundSongs": "تم العثور على {count} أغنية",
   "@foundSongs": {
     "placeholders": {

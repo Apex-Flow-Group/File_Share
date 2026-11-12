@@ -122,7 +122,7 @@
   },
   "ok": "OK",
   "reconnectFailed": "Reconnect failed",
-  "restartingSystem": "Refresh",
+  "starting": "Starting…",
   "sendApp": "Send App",
   "sendFolder": "Send Folder",
   "sendThisFolder": "Send this folder",
@@ -189,7 +189,7 @@
   "copyright": "Copyright",
   "copyrightText": "© 2025 Apex Flow Group. All rights reserved.",
   "madeInArabWorld": "Made in the Arab World",
-  "systemNotRunning": "System not running",
+  "startFailed": "Couldn't start",
   "foundSongs": "Found {count} songs",
   "@foundSongs": {
     "description": "Number of songs found",
