@@ -4,7 +4,8 @@ import 'package:flutter/material.dart';
 
 import '../../../l10n/generated/app_localizations.dart';
 import '../../../services/clipboard_monitor_service.dart';
-import '../../../shared/framed_capsule_input.dart';
+import '../../../shared/apex_colors.dart';
+import '../../../shared/apex_icons.dart';
 import '../../../utils/path_name.dart';
 import '../../clipboard/ui/clipboard_label.dart';
 
@@ -58,7 +59,7 @@ class _Tile extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final l10n = AppLocalizations.of(context);
-    final c = FramedCapsuleColors.of(context);
+    final c = ApexColors.of(context);
     final face = file.isImage
         ? Image.file(File(file.path),
             width: ComposerTiles.size,
@@ -90,7 +91,7 @@ class _Tile extends StatelessWidget {
     ]);
   }
 
-  Widget _named(FramedCapsuleColors c) => Container(
+  Widget _named(ApexColors c) => Container(
         width: ComposerTiles.size,
         height: ComposerTiles.size,
         color: c.circle,
@@ -120,7 +121,7 @@ class CopiedSuggestion extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final l10n = AppLocalizations.of(context);
-    final c = FramedCapsuleColors.of(context);
+    final c = ApexColors.of(context);
     final label = clipboardLabel(l10n, item);
     final picture = item.type == ClipboardItemType.image && item.paths.isNotEmpty;
     return Align(
@@ -129,7 +130,7 @@ class CopiedSuggestion extends StatelessWidget {
         color: c.capsule,
         elevation: 4,
         shape: RoundedRectangleBorder(
-            borderRadius: BorderRadius.circular(20), side: BorderSide(color: c.border)),
+            borderRadius: BorderRadius.circular(20), side: BorderSide(color: c.capsuleBorder)),
         child: Padding(
           padding: const EdgeInsets.all(6),
           child: Row(mainAxisSize: MainAxisSize.min, children: [
@@ -156,7 +157,7 @@ class CopiedSuggestion extends StatelessWidget {
             const SizedBox(width: 8),
             FilledButton.icon(
               onPressed: onAdd,
-              icon: const Icon(Icons.add_rounded, size: 18),
+              icon: const Icon(ApexIcons.attach, size: 18),
               label: Text(l10n.chatAdd),
             ),
             IconButton(

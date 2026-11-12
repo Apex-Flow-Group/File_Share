@@ -7,6 +7,7 @@ import 'package:flutter/material.dart';
 
 import '../../../l10n/generated/app_localizations.dart';
 import '../../../services/share_folder_service.dart';
+import '../../../shared/apex_icons.dart';
 import '../../../shared/apex_snackbar.dart';
 import '../../../shared/file_open_message.dart';
 import '../../../shared/folder_open_message.dart';
@@ -153,7 +154,7 @@ class _SharedFolderSectionState extends State<SharedFolderSection> {
             Padding(
               padding: const EdgeInsets.symmetric(horizontal: 10),
               child: Row(children: [
-                const Icon(Icons.folder_shared_rounded,
+                const Icon(ApexIcons.sharedFolder,
                     size: 14, color: Color(0xFF5856D6)),
                 const SizedBox(width: 6),
                 Text(
@@ -192,7 +193,7 @@ class _SharedFolderSectionState extends State<SharedFolderSection> {
                       color: color.withValues(alpha: 0.15),
                       borderRadius: BorderRadius.circular(10),
                     ),
-                    child: const Icon(Icons.folder_shared_rounded,
+                    child: const Icon(ApexIcons.sharedFolder,
                         color: Color(0xFF5856D6), size: 20),
                   ),
                   const SizedBox(width: 12),

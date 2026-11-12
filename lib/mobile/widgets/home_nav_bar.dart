@@ -3,6 +3,8 @@ import 'dart:ui';
 import 'package:flutter/material.dart';
 
 import '../../l10n/generated/app_localizations.dart';
+import '../../shared/apex_colors.dart';
+import '../../shared/apex_icons.dart';
 
 /// شريط التنقل السفلي العائم (Mobile)
 class FloatingNavBar extends StatelessWidget {
@@ -26,8 +28,7 @@ class FloatingNavBar extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final l10n = AppLocalizations.of(context);
-    final isDark = Theme.of(context).brightness == Brightness.dark;
-    final bg = isDark ? Colors.grey[900]! : Colors.white;
+    final c = ApexColors.of(context);
 
     return SafeArea(
       child: Padding(
@@ -39,37 +40,27 @@ class FloatingNavBar extends StatelessWidget {
             child: Container(
               height: 64,
               decoration: BoxDecoration(
-                color: bg.withValues(alpha: 0.85),
+                // Floats over the cards, so a step above them (capsule-ui §2).
+                color: c.floating.withValues(alpha: 0.92),
                 borderRadius: BorderRadius.circular(28),
-                border: Border.all(
-                  color: isDark
-                      ? Colors.white.withValues(alpha: 0.08)
-                      : Colors.black.withValues(alpha: 0.06),
-                ),
-                boxShadow: [
-                  BoxShadow(
-                    color: Colors.black.withValues(alpha: isDark ? 0.4 : 0.12),
-                    blurRadius: 24,
-                    offset: const Offset(0, 8),
-                  ),
-                ],
+                border: Border.all(color: c.panelBorder),
               ),
               child: Row(
                 children: [
                   _NavItem(
-                    icon: Icons.send_rounded,
+                    icon: ApexIcons.sendPage,
                     label: l10n.send,
                     selected: currentIndex == 0,
                     onTap: () => onTap(0),
                   ),
                   _NavItem(
-                    icon: Icons.smartphone_rounded,
+                    icon: ApexIcons.receivePage,
                     label: l10n.receive,
                     selected: currentIndex == 1,
                     onTap: () => onTap(1),
                   ),
                   _NavItem(
-                    icon: Icons.folder_rounded,
+                    icon: ApexIcons.filesPage,
                     label: l10n.files,
                     selected: currentIndex == 2,
                     onTap: () => onTap(2),
@@ -79,9 +70,7 @@ class FloatingNavBar extends StatelessWidget {
                     width: 1,
                     height: 32,
                     margin: const EdgeInsets.symmetric(horizontal: 4),
-                    color: isDark
-                        ? Colors.white.withValues(alpha: 0.1)
-                        : Colors.black.withValues(alpha: 0.08),
+                    color: c.panelBorder,
                   ),
                   // More menu
                   _MoreButton(
@@ -117,30 +106,29 @@ class _NavItem extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final color = selected
-        ? Theme.of(context).colorScheme.primary
-        : Theme.of(context).colorScheme.onSurface.withValues(alpha: 0.45);
+    final c = ApexColors.of(context);
+    // Selected is a lighter surface, as in the sidebar, not a colour.
+    final color = selected ? c.text : c.muted;
 
     return Expanded(
-      child: GestureDetector(
+      child: Semantics(
+        button: true,
+        selected: selected,
+        child: GestureDetector(
         onTap: onTap,
         behavior: HitTestBehavior.opaque,
-        child: AnimatedContainer(
-          duration: const Duration(milliseconds: 200),
-          child: Column(
+        child: Column(
             mainAxisAlignment: MainAxisAlignment.center,
             children: [
               AnimatedContainer(
-                duration: const Duration(milliseconds: 200),
+                duration: Durations.short2,
+                curve: Easing.standard,
                 padding:
                     const EdgeInsets.symmetric(horizontal: 16, vertical: 4),
                 decoration: BoxDecoration(
                   color: selected
-                      ? Theme.of(context)
-                          .colorScheme
-                          .primary
-                          .withValues(alpha: 0.12)
-                      : Colors.transparent,
+                      ? c.floatingSelected
+                      : c.floatingSelected.withValues(alpha: 0),
                   borderRadius: BorderRadius.circular(12),
                 ),
                 child: Icon(icon, size: 22, color: color),
@@ -202,7 +190,7 @@ class _MoreButtonState extends State<_MoreButton>
 
   @override
   void dispose() {
-    _removeOverlay();
+    _overlay?.remove();
     _controller.dispose();
     super.dispose();
   }
@@ -217,7 +205,6 @@ class _MoreButtonState extends State<_MoreButton>
 
   void _open() {
     final l10n = AppLocalizations.of(context);
-    final isDark = Theme.of(context).brightness == Brightness.dark;
     final renderBox = context.findRenderObject() as RenderBox;
     final btnPos = renderBox.localToGlobal(Offset.zero);
     final btnSize = renderBox.size;
@@ -228,10 +215,9 @@ class _MoreButtonState extends State<_MoreButton>
         anchorSize: btnSize,
         scaleAnim: _scaleAnim,
         fadeAnim: _fadeAnim,
-        isDark: isDark,
         items: [
           _MenuItem(
-            icon: Icons.refresh_rounded,
+            icon: ApexIcons.findDevices,
             label: l10n.findDevices,
             onTap: () {
               _close();
@@ -239,7 +225,7 @@ class _MoreButtonState extends State<_MoreButton>
             },
           ),
           _MenuItem(
-            icon: Icons.settings_rounded,
+            icon: ApexIcons.settings,
             label: l10n.settings,
             onTap: () {
               _close();
@@ -247,7 +233,7 @@ class _MoreButtonState extends State<_MoreButton>
             },
           ),
           _MenuItem(
-            icon: Icons.info_outline_rounded,
+            icon: ApexIcons.about,
             label: l10n.about,
             onTap: () {
               _close();
@@ -260,6 +246,7 @@ class _MoreButtonState extends State<_MoreButton>
     );
 
     Overlay.of(context).insert(_overlay!);
+    setState(() {});
     _controller.forward(from: 0);
   }
 
@@ -271,6 +258,9 @@ class _MoreButtonState extends State<_MoreButton>
   void _removeOverlay() {
     _overlay?.remove();
     _overlay = null;
+    if (mounted) {
+      setState(() {});
+    }
   }
 
   @override
@@ -283,13 +273,9 @@ class _MoreButtonState extends State<_MoreButton>
         child: Stack(
           clipBehavior: Clip.none,
           children: [
-            Icon(
-              Icons.more_horiz_rounded,
-              color: Theme.of(context)
-                  .colorScheme
-                  .onSurface
-                  .withValues(alpha: 0.55),
-            ),
+            // ⋮ turns into ✕ while its menu is open (capsule-ui §4).
+            Icon(_overlay == null ? ApexIcons.menu : ApexIcons.close,
+                color: ApexColors.of(context).muted),
             if (widget.isRunning)
               Positioned(
                 top: -2,
@@ -297,8 +283,8 @@ class _MoreButtonState extends State<_MoreButton>
                 child: Container(
                   width: 7,
                   height: 7,
-                  decoration: const BoxDecoration(
-                    color: Colors.green,
+                  decoration: BoxDecoration(
+                    color: ApexColors.of(context).online,
                     shape: BoxShape.circle,
                   ),
                 ),
@@ -325,7 +311,6 @@ class _MenuOverlay extends StatelessWidget {
   final Size anchorSize;
   final Animation<double> scaleAnim;
   final Animation<double> fadeAnim;
-  final bool isDark;
   final List<_MenuItem> items;
   final VoidCallback onDismiss;
 
@@ -334,13 +319,13 @@ class _MenuOverlay extends StatelessWidget {
     required this.anchorSize,
     required this.scaleAnim,
     required this.fadeAnim,
-    required this.isDark,
     required this.items,
     required this.onDismiss,
   });
 
   @override
   Widget build(BuildContext context) {
+    final c = ApexColors.of(context);
     const menuWidth = 220.0;
     const itemHeight = 52.0;
     final menuHeight = items.length * itemHeight + 16;
@@ -370,16 +355,9 @@ class _MenuOverlay extends StatelessWidget {
                 color: Colors.transparent,
                 child: Container(
                   decoration: BoxDecoration(
-                    color: isDark ? const Color(0xFF2C2C2E) : Colors.white,
+                    color: c.floating,
                     borderRadius: BorderRadius.circular(20),
-                    boxShadow: [
-                      BoxShadow(
-                        color:
-                            Colors.black.withValues(alpha: isDark ? 0.5 : 0.15),
-                        blurRadius: 28,
-                        offset: const Offset(0, 8),
-                      ),
-                    ],
+                    border: Border.all(color: c.panelBorder),
                   ),
                   padding: const EdgeInsets.symmetric(vertical: 8),
                   child: Column(
@@ -395,9 +373,7 @@ class _MenuOverlay extends StatelessWidget {
                               height: 1,
                               indent: 16,
                               endIndent: 16,
-                              color: isDark
-                                  ? Colors.white.withValues(alpha: 0.08)
-                                  : Colors.black.withValues(alpha: 0.06),
+                              color: c.panelBorder,
                             ),
                           InkWell(
                             onTap: item.onTap,
@@ -408,18 +384,14 @@ class _MenuOverlay extends StatelessWidget {
                               child: Row(children: [
                                 Icon(item.icon,
                                     size: 20,
-                                    color: isDark
-                                        ? Colors.white.withValues(alpha: 0.85)
-                                        : Colors.black87),
+                                    color: c.text),
                                 const SizedBox(width: 12),
                                 Text(
                                   item.label,
                                   style: TextStyle(
                                     fontSize: 15,
                                     fontWeight: FontWeight.w500,
-                                    color: isDark
-                                        ? Colors.white.withValues(alpha: 0.9)
-                                        : Colors.black87,
+                                    color: c.text,
                                   ),
                                 ),
                               ]),

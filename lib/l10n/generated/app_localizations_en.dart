@@ -905,6 +905,9 @@ class AppLocalizationsEn extends AppLocalizations {
   String get deviceOptions => 'Device options';
 
   @override
+  String get cardFold => 'Fold the card';
+
+  @override
   String get findDevices => 'Find devices';
 
   @override

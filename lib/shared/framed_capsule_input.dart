@@ -2,59 +2,8 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 
 import '../utils/platform_detector.dart';
-
-/// Colour roles of the framed capsule (capsule-ui §1b). Dark is measured from
-/// the owner's reference; light follows the same steps and is not approved yet.
-class FramedCapsuleColors {
-  const FramedCapsuleColors._({
-    required this.capsule,
-    required this.border,
-    required this.filled,
-    required this.onFilled,
-    required this.hint,
-    required this.text,
-    required this.circle,
-    required this.onCircle,
-  });
-
-  final Color capsule;
-  final Color border;
-
-  /// The one filled circle, the first action: the background's opposite.
-  final Color filled;
-  final Color onFilled;
-  final Color hint;
-  final Color text;
-
-  /// The other circles: one small step lighter than the capsule.
-  final Color circle;
-  final Color onCircle;
-
-  static const _dark = FramedCapsuleColors._(
-    capsule: Color(0xFF20201E),
-    border: Color(0xFF3C3C3A),
-    filled: Color(0xFFF9F9F7),
-    onFilled: Color(0xFF1F1F1D),
-    hint: Color(0xFF9A9792),
-    text: Color(0xFFF4F4F2),
-    circle: Color(0xFF313131),
-    onCircle: Color(0xFFF4F4F2),
-  );
-
-  static const _light = FramedCapsuleColors._(
-    capsule: Color(0xFFF1F1EF),
-    border: Color(0xFFCFCFCB),
-    filled: Color(0xFF1F1F1D),
-    onFilled: Color(0xFFF9F9F7),
-    hint: Color(0xFF66645F),
-    text: Color(0xFF1F1F1D),
-    circle: Color(0xFFE2E2DF),
-    onCircle: Color(0xFF1F1F1D),
-  );
-
-  static FramedCapsuleColors of(BuildContext context) =>
-      Theme.of(context).brightness == Brightness.dark ? _dark : _light;
-}
+import 'apex_colors.dart';
+import 'apex_icons.dart';
 
 /// A plain circle of the box's button row.
 typedef CapsuleAction = ({IconData icon, String label, VoidCallback onTap});
@@ -180,7 +129,7 @@ class _FramedCapsuleInputState extends State<FramedCapsuleInput> {
 
   @override
   Widget build(BuildContext context) {
-    final c = FramedCapsuleColors.of(context);
+    final c = ApexColors.of(context);
     Widget field = TextField(
       controller: _controller,
       focusNode: _focus,
@@ -214,7 +163,7 @@ class _FramedCapsuleInputState extends State<FramedCapsuleInput> {
           enabled: true,
           onTap: widget.onAttach!,
           background: c.circle,
-          icon: Icons.add_rounded,
+          icon: ApexIcons.attach,
           iconColor: c.onCircle,
         ),
       if (widget.pasteLabel != null)
@@ -223,7 +172,7 @@ class _FramedCapsuleInputState extends State<FramedCapsuleInput> {
           enabled: true,
           onTap: _paste,
           background: c.circle,
-          icon: Icons.content_paste_rounded,
+          icon: ApexIcons.paste,
           iconColor: c.onCircle,
         ),
       for (final x in widget.extras)
@@ -241,7 +190,7 @@ class _FramedCapsuleInputState extends State<FramedCapsuleInput> {
       enabled: _canSend,
       onTap: _send,
       background: c.filled,
-      icon: Icons.arrow_upward_rounded,
+      icon: ApexIcons.send,
       iconColor: c.onFilled,
     );
     // The text above the buttons from the start (owner decision): beside
@@ -250,7 +199,7 @@ class _FramedCapsuleInputState extends State<FramedCapsuleInput> {
       decoration: BoxDecoration(
         color: c.capsule,
         borderRadius: BorderRadius.circular(28),
-        border: Border.all(color: c.border),
+        border: Border.all(color: c.capsuleBorder),
       ),
       padding: const EdgeInsets.all(8),
       child: Column(

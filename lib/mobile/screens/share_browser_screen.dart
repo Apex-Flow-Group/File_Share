@@ -20,6 +20,7 @@ import '../../l10n/generated/app_localizations.dart';
 import '../../models/device.dart';
 import '../../platform/media_store_save.dart';
 import '../../services/share_folder_service.dart';
+import '../../shared/apex_icons.dart';
 import '../../shared/apex_snackbar.dart';
 import '../../utils/file_utils.dart';
 
@@ -383,7 +384,7 @@ class _ShareBrowserScreenState extends State<ShareBrowserScreen> {
               color: color.withValues(alpha: isDark ? 0.2 : 0.12),
               borderRadius: BorderRadius.circular(14),
             ),
-            child: const Icon(Icons.folder_shared_rounded,
+            child: const Icon(ApexIcons.sharedFolder,
                 color: Color(0xFF5856D6), size: 22),
           ),
           const SizedBox(width: 14),
@@ -480,7 +481,7 @@ class _ShareBrowserScreenState extends State<ShareBrowserScreen> {
                 borderRadius: BorderRadius.circular(32),
               ),
               // The device answered: it is reachable, so no network icon.
-              child: Icon(_refusal == null ? Icons.wifi_off_rounded : Icons.block_rounded,
+              child: Icon(_refusal == null ? Icons.wifi_off_rounded : ApexIcons.block,
                   size: 56, color: Colors.red),
             ),
             const SizedBox(height: 20),

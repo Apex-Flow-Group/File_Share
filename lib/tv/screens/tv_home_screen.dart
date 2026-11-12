@@ -10,11 +10,13 @@ import '../../services/desktop_notification_service.dart';
 import '../../services/file_storage_service.dart';
 import '../../services/pinned_devices_service.dart';
 import '../../services/settings_service.dart';
+import '../../shared/apex_colors.dart';
+import '../../shared/apex_icons.dart';
+import '../../shared/device_card.dart';
 import '../widgets/tabs/tv_files_tab.dart';
 import '../widgets/tabs/tv_receive_tab.dart';
 import '../widgets/tabs/tv_send_tab.dart';
 import '../widgets/tv_accept_dialog.dart';
-import '../widgets/tv_chat_dialog.dart';
 import '../widgets/tv_details_panel.dart';
 
 class TVHomeScreen extends StatefulWidget {
@@ -110,17 +112,13 @@ class _TVHomeScreenState extends State<TVHomeScreen> {
       }
     });
     core.chat.incoming.listen((thread) {
-      // Never over another dialog (a question waiting for the remote): the
-      // chat would take the focus as the user presses OK.
+      // The writer's card opens on the send tab, its chat inside (owner
+      // decision: no chat dialog). Never over another dialog (a question
+      // waiting for the remote): the card would take the focus as the user
+      // presses OK.
       if (mounted && (ModalRoute.of(context)?.isCurrent ?? false)) {
-        TVChatDialog.show(
-            context,
-            Device(
-                id: thread.id,
-                name: thread.name,
-                type: 'unknown',
-                ip: thread.address,
-                fingerprint: thread.key.fingerprint));
+        setState(() => _selectedIndex = 0);
+        openDeviceCard(thread.key);
       }
     });
     core.fileReceivedStream.listen((e) {
@@ -228,8 +226,6 @@ class _TVHomeScreenState extends State<TVHomeScreen> {
   @override
   Widget build(BuildContext context) {
     final l10n = AppLocalizations.of(context);
-    final isDark = Theme.of(context).brightness == Brightness.dark;
-    final color = Theme.of(context).colorScheme.primary;
 
     return PopScope(
       canPop: false,
@@ -247,7 +243,7 @@ class _TVHomeScreenState extends State<TVHomeScreen> {
                 TextButton(
                   onPressed: () => Navigator.pop(context, true),
                   child: Text(l10n.exit,
-                      style: const TextStyle(color: Colors.red)),
+                      style: TextStyle(color: ApexColors.of(context).danger)),
                 ),
               ],
             ),
@@ -263,13 +259,9 @@ class _TVHomeScreenState extends State<TVHomeScreen> {
           Container(
             width: 260,
             decoration: BoxDecoration(
-              color: isDark ? const Color(0xFF1C1C1E) : const Color(0xFFF5F5F7),
-              border: Border(
-                  right: BorderSide(
-                color: isDark
-                    ? Colors.white.withValues(alpha: 0.06)
-                    : Colors.black.withValues(alpha: 0.06),
-              )),
+              color: ApexColors.of(context).panel,
+              border: BorderDirectional(
+                  end: BorderSide(color: ApexColors.of(context).panelBorder)),
             ),
             child: SafeArea(
               child: Column(
@@ -296,17 +288,17 @@ class _TVHomeScreenState extends State<TVHomeScreen> {
                                   style: TextStyle(
                                     fontWeight: FontWeight.bold,
                                     fontSize: 17,
-                                    color: isDark ? Colors.white : Colors.black,
+                                    color: ApexColors.of(context).text,
                                   )),
                               Text('TV Mode',
-                                  style: TextStyle(fontSize: 11, color: color)),
+                                  style: TextStyle(fontSize: 11, color: ApexColors.of(context).muted)),
                             ]),
                       ]),
                     ),
                     const SizedBox(height: 8),
                     // ─── Nav items ─────────────────────────────────────────
                     _TVNavItem(
-                      icon: Icons.send_rounded,
+                      icon: ApexIcons.sendPage,
                       label: l10n.send,
                       selected: _selectedIndex == 0,
                       focusNode: _sendFocus,
@@ -315,7 +307,7 @@ class _TVHomeScreenState extends State<TVHomeScreen> {
                       onKey: (e) => _handleSidebarKey(_sendFocus, e),
                     ),
                     _TVNavItem(
-                      icon: Icons.smartphone_rounded,
+                      icon: ApexIcons.receivePage,
                       label: l10n.receive,
                       selected: _selectedIndex == 1,
                       focusNode: _receiveFocus,
@@ -324,7 +316,7 @@ class _TVHomeScreenState extends State<TVHomeScreen> {
                       onKey: (e) => _handleSidebarKey(_receiveFocus, e),
                     ),
                     _TVNavItem(
-                      icon: Icons.folder_rounded,
+                      icon: ApexIcons.filesPage,
                       label: l10n.files,
                       selected: _selectedIndex == 2,
                       focusNode: _filesFocus,
@@ -339,7 +331,7 @@ class _TVHomeScreenState extends State<TVHomeScreen> {
                     ),
                     // ─── Settings زر ──────────────────────────────────────
                     _TVNavItem(
-                      icon: Icons.settings_rounded,
+                      icon: ApexIcons.settings,
                       label: l10n.settings,
                       selected: false,
                       focusNode: _settingsFocus,
@@ -350,7 +342,7 @@ class _TVHomeScreenState extends State<TVHomeScreen> {
                     ),
                     // ─── Refresh زر ───────────────────────────────────────
                     _TVNavItem(
-                      icon: Icons.refresh_rounded,
+                      icon: ApexIcons.findDevices,
                       label: l10n.restartingSystem,
                       selected: false,
                       focusNode: _refreshFocus,
@@ -424,8 +416,7 @@ class _TVNavItem extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final color = Theme.of(context).colorScheme.primary;
-    final isDark = Theme.of(context).brightness == Brightness.dark;
+    final c = ApexColors.of(context);
 
     return Focus(
       focusNode: focusNode,
@@ -451,34 +442,32 @@ class _TVNavItem extends StatelessWidget {
               onMoveToContent();
             },
             child: AnimatedContainer(
-              duration: const Duration(milliseconds: 180),
+              duration: Durations.short2,
+              curve: Easing.standard,
               padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
+              // As the desktop sidebar: selected two steps off the panel,
+              // the remote's row one. The ring says where the remote is,
+              // selected or not.
               decoration: BoxDecoration(
                 color: selected
-                    ? color.withValues(alpha: isDark ? 0.2 : 0.12)
-                    : hasFocus
-                        ? color.withValues(alpha: 0.08)
-                        : Colors.transparent,
+                    ? c.selected
+                    : (hasFocus ? c.hover : c.hover.withValues(alpha: 0)),
                 borderRadius: BorderRadius.circular(12),
-                border: hasFocus && !selected
-                    ? Border.all(color: color.withValues(alpha: 0.5), width: 2)
-                    : null,
+                border: Border.all(
+                    color: hasFocus ? c.accent : c.accent.withValues(alpha: 0),
+                    width: 2),
               ),
               child: Row(children: [
                 Icon(icon,
                     size: 22,
-                    color: selected || hasFocus
-                        ? color
-                        : (isDark ? Colors.white54 : Colors.black45)),
+                    color: selected || hasFocus ? c.text : c.muted),
                 const SizedBox(width: 12),
                 Text(label,
                     style: TextStyle(
                       fontSize: 15,
                       fontWeight:
                           selected ? FontWeight.w600 : FontWeight.normal,
-                      color: selected || hasFocus
-                          ? color
-                          : (isDark ? Colors.white70 : Colors.black54),
+                      color: selected || hasFocus ? c.text : c.muted,
                     )),
               ]),
             ),

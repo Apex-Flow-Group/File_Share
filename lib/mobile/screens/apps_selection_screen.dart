@@ -4,6 +4,7 @@ import 'package:flutter/material.dart';
 
 import '../../l10n/generated/app_localizations.dart';
 import '../../services/apex_apps_loader.dart';
+import '../../shared/apex_icons.dart';
 import '../../utils/apex_logger.dart';
 
 /// Bottom sheet for selecting apps to send.
@@ -309,7 +310,7 @@ class _AppsSelectionSheetState extends State<AppsSelectionSheet> {
                   width: double.infinity,
                   child: FilledButton.icon(
                     onPressed: _onSend,
-                    icon: const Icon(Icons.send_rounded),
+                    icon: const Icon(ApexIcons.send),
                     label: Text(
                       isAr
                           ? 'إرسال ${_selectedPackages.length} تطبيق'

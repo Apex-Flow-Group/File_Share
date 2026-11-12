@@ -275,12 +275,12 @@ class _DeviceChatViewState extends State<DeviceChatView> {
               const SizedBox(height: 8),
               Text(l10n.chatBlocked,
                   textAlign: TextAlign.center, style: TextStyle(color: Theme.of(context).hintColor)),
-              // The TV has its own buttons, reached by the remote.
-              if (widget.canWrite)
-                TextButton(
-                  onPressed: () => widget.store.unblock(_peer),
-                  child: Text(l10n.chatUnblock),
-                ),
+              // On the TV too, reached by the remote: the one place to
+              // unblock on every device.
+              TextButton(
+                onPressed: () => widget.store.unblock(_peer),
+                child: Text(l10n.chatUnblock),
+              ),
             ] else if (widget.canWrite) ...[
               if (_offered != null) ...[
                 const SizedBox(height: 8),

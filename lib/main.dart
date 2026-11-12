@@ -8,6 +8,7 @@ import 'screens/intro_screen.dart';
 import 'screens/splash_screen.dart';
 import 'services/desktop_notification_service.dart';
 import 'services/settings_service.dart';
+import 'shared/apex_theme.dart';
 import 'tv/screens/tv_home_screen.dart';
 import 'tv/screens/tv_intro_screen.dart';
 import 'utils/platform_detector.dart';
@@ -29,8 +30,8 @@ class _BootApp extends StatelessWidget {
       debugShowCheckedModeBanner: false,
       supportedLocales: const [Locale('ar'), Locale('en')],
       localizationsDelegates: AppLocalizations.localizationsDelegates,
-      theme: _buildTheme(Brightness.light),
-      darkTheme: _buildTheme(Brightness.dark),
+      theme: apexTheme(Brightness.light),
+      darkTheme: apexTheme(Brightness.dark),
       themeMode: ThemeMode.system,
       home: SplashScreen(
         onInit: _initAll,
@@ -81,8 +82,8 @@ class FileShareApp extends StatelessWidget {
           },
           supportedLocales: const [Locale('ar'), Locale('en')],
           localizationsDelegates: AppLocalizations.localizationsDelegates,
-          theme: _buildTheme(Brightness.light),
-          darkTheme: _buildTheme(Brightness.dark),
+          theme: apexTheme(Brightness.light),
+          darkTheme: apexTheme(Brightness.dark),
           themeMode: settings.themeMode,
           home: _buildHome(settings),
         );
@@ -134,56 +135,4 @@ class _PermissionGateState extends State<_PermissionGate> {
     }
     return widget.child;
   }
-}
-
-// ─── Theme builder ────────────────────────────────────────────────────────────
-
-ThemeData _buildTheme(Brightness brightness) {
-  final isLight = brightness == Brightness.light;
-  return ThemeData(
-    useMaterial3: true,
-    colorScheme: isLight
-        ? const ColorScheme.light(
-            primary: Color(0xFF6750A4),
-            onPrimary: Color(0xFFFFFFFF),
-            secondary: Color(0xFF00897B),
-            onSecondary: Color(0xFFFFFFFF),
-            surface: Color(0xFFFFFFFF),
-            onSurface: Color(0xFF1C1B1F),
-            outline: Color(0xFFCAC4D0),
-            surfaceContainerHighest: Color(0xFFE7E0EC),
-            onSurfaceVariant: Color(0xFF49454F),
-          )
-        : const ColorScheme.dark(
-            primary: Color(0xFF6750A4),
-            onPrimary: Color(0xFFFFFFFF),
-            secondary: Color(0xFF00897B),
-            onSecondary: Color(0xFFFFFFFF),
-            surface: Color(0xFF1C1B1F),
-            onSurface: Color(0xFFE6E1E5),
-            outline: Color(0xFF938F99),
-            surfaceContainerHighest: Color(0xFF49454F),
-            onSurfaceVariant: Color(0xFFCAC4D0),
-          ),
-    fontFamily: 'Roboto',
-    cardTheme: CardThemeData(
-      elevation: 0,
-      shape: RoundedRectangleBorder(
-        borderRadius: BorderRadius.circular(4),
-        side: BorderSide(
-          color: isLight ? const Color(0xFFCAC4D0) : const Color(0xFF938F99),
-        ),
-      ),
-    ),
-    elevatedButtonTheme: ElevatedButtonThemeData(
-      style: ElevatedButton.styleFrom(
-        elevation: 0,
-        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(4)),
-      ),
-    ),
-    dividerTheme: DividerThemeData(
-      color: isLight ? const Color(0xFFCAC4D0) : const Color(0xFF938F99),
-      thickness: 1,
-    ),
-  );
 }

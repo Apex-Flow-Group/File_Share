@@ -3,49 +3,8 @@ import 'dart:async';
 import 'package:flutter/material.dart';
 
 import '../../l10n/generated/app_localizations.dart';
-
-/// Colour roles of the desktop sidebar (owner's reference): a framed panel a
-/// step off the window, rows that light a step on hover and two on select.
-class SidebarColors {
-  const SidebarColors._({
-    required this.panel,
-    required this.border,
-    required this.hover,
-    required this.selected,
-    required this.text,
-    required this.muted,
-  });
-
-  final Color panel;
-  final Color border;
-  final Color hover;
-  final Color selected;
-  final Color text;
-
-  /// Rows not selected, and the group line.
-  final Color muted;
-
-  static const _dark = SidebarColors._(
-    panel: Color(0xFF1C1C1C),
-    border: Color(0xFF2E2E2E),
-    hover: Color(0xFF262626),
-    selected: Color(0xFF2E2E2E),
-    text: Color(0xFFF4F4F2),
-    muted: Color(0xFFC8C8C4),
-  );
-
-  static const _light = SidebarColors._(
-    panel: Color(0xFFF7F7F5),
-    border: Color(0xFFE2E2DF),
-    hover: Color(0xFFEDEDEA),
-    selected: Color(0xFFE4E4E1),
-    text: Color(0xFF1F1F1D),
-    muted: Color(0xFF4A4A47),
-  );
-
-  static SidebarColors of(BuildContext context) =>
-      Theme.of(context).brightness == Brightness.dark ? _dark : _light;
-}
+import '../../shared/apex_colors.dart';
+import '../../shared/apex_icons.dart';
 
 /// One row of the sidebar: lit a step while the mouse is over it, and more
 /// while [lit] (selected, or what it opened is open). [compact] leaves the
@@ -76,7 +35,7 @@ class _SidebarRowState extends State<_SidebarRow> {
 
   @override
   Widget build(BuildContext context) {
-    final c = SidebarColors.of(context);
+    final c = ApexColors.of(context);
     final fg = widget.lit ? c.text : c.muted;
     Widget icon = Icon(widget.icon, size: 20, color: fg);
     final spin = widget.spin;
@@ -192,21 +151,21 @@ class _DesktopSidebarState extends State<DesktopSidebar> {
   @override
   Widget build(BuildContext context) {
     final l10n = AppLocalizations.of(context);
-    final c = SidebarColors.of(context);
+    final c = ApexColors.of(context);
     final folded = _compact;
     final status = widget.isRunning ? l10n.connected : l10n.notConnected;
     final dot = Container(
       width: 8,
       height: 8,
       decoration: BoxDecoration(
-        color: widget.isRunning ? Colors.green : Colors.grey,
+        color: widget.isRunning ? c.online : c.muted,
         shape: BoxShape.circle,
       ),
     );
     final pages = [
-      (Icons.send_outlined, l10n.send),
-      (Icons.smartphone_outlined, l10n.receive),
-      (Icons.folder_outlined, l10n.files),
+      (ApexIcons.sendPage, l10n.send),
+      (ApexIcons.receivePage, l10n.receive),
+      (ApexIcons.filesPage, l10n.files),
     ];
     return AnimatedContainer(
       duration: Durations.medium1,
@@ -216,7 +175,7 @@ class _DesktopSidebarState extends State<DesktopSidebar> {
       decoration: BoxDecoration(
         color: c.panel,
         borderRadius: BorderRadius.circular(12),
-        border: Border.all(color: c.border),
+        border: Border.all(color: c.panelBorder),
       ),
       clipBehavior: Clip.antiAlias,
       child: SafeArea(
@@ -282,20 +241,20 @@ class _DesktopSidebarState extends State<DesktopSidebar> {
                     onTap: () => widget.onSelect(i),
                   ),
                 const Spacer(),
-                Divider(height: 17, color: c.border),
+                Divider(height: 17, color: c.panelBorder),
                 SidebarActionTile(
-                    icon: Icons.refresh_rounded,
+                    icon: ApexIcons.findDevices,
                     label: l10n.findDevices,
                     spinWhileBusy: true,
                     compact: compact,
                     onTap: widget.onRefresh),
                 SidebarActionTile(
-                    icon: Icons.settings_outlined,
+                    icon: ApexIcons.settings,
                     label: l10n.settings,
                     compact: compact,
                     onTap: widget.onSettings),
                 SidebarActionTile(
-                    icon: Icons.info_outline_rounded,
+                    icon: ApexIcons.about,
                     label: l10n.about,
                     compact: compact,
                     onTap: widget.onAbout),
@@ -327,7 +286,7 @@ class _CircleButtonState extends State<_CircleButton> {
 
   @override
   Widget build(BuildContext context) {
-    final c = SidebarColors.of(context);
+    final c = ApexColors.of(context);
     return Semantics(
       button: true,
       label: widget.label,

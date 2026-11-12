@@ -1700,6 +1700,12 @@ abstract class AppLocalizations {
   /// **'Device options'**
   String get deviceOptions;
 
+  /// No description provided for @cardFold.
+  ///
+  /// In en, this message translates to:
+  /// **'Fold the card'**
+  String get cardFold;
+
   /// No description provided for @findDevices.
   ///
   /// In en, this message translates to:

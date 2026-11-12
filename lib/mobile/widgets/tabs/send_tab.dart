@@ -6,6 +6,7 @@ import '../../../l10n/generated/app_localizations.dart';
 import '../../../models/device.dart';
 import '../../../services/clipboard_monitor_service.dart';
 import '../../../services/transfer_progress_service.dart';
+import '../../../shared/apex_icons.dart';
 import '../../../shared/radar_painter.dart';
 import '../connection_widget.dart';
 
@@ -221,7 +222,7 @@ class _SendTabState extends State<SendTab> with TickerProviderStateMixin {
                   // ─── الأجهزة المثبتة
                   if (widget.pinnedDevices.isNotEmpty) ...[
                     _SectionHeader(
-                      icon: Icons.star_rounded,
+                      icon: ApexIcons.favorite,
                       label: l10n.pinnedDevices,
                       isDark: isDark,
                     ),
@@ -310,7 +311,7 @@ class _SendTabState extends State<SendTab> with TickerProviderStateMixin {
                   // ─── الأجهزة المثبتة
                   if (widget.pinnedDevices.isNotEmpty) ...[
                     _SectionHeader(
-                      icon: Icons.star_rounded,
+                      icon: ApexIcons.favorite,
                       label: l10n.pinnedDevices,
                       isDark: isDark,
                     ),
@@ -394,7 +395,7 @@ class _SendTabState extends State<SendTab> with TickerProviderStateMixin {
               color: color.withValues(alpha: 0.15),
               borderRadius: BorderRadius.circular(14),
             ),
-            child: Icon(Icons.send_rounded, color: color, size: 22),
+            child: Icon(ApexIcons.sendPage, color: color, size: 22),
           ),
           const SizedBox(width: 12),
           Expanded(

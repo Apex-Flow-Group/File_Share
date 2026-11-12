@@ -11,11 +11,13 @@ import '../../screens/about_screen.dart';
 import '../../services/settings_service.dart';
 import '../../services/update_service.dart';
 import '../../shared/apex_bottom_sheet.dart';
+import '../../shared/apex_colors.dart';
+import '../../shared/apex_icons.dart';
 import '../../shared/apex_snackbar.dart';
+import '../../shared/device_card.dart';
 import '../../shared/file_open_message.dart';
 import '../../shared/folder_open_message.dart';
 import '../controllers/home_controller.dart';
-import '../widgets/connection_widget.dart';
 import '../widgets/home_nav_bar.dart';
 import '../widgets/home_sidebar.dart';
 import '../widgets/tabs/files_tab.dart';
@@ -69,7 +71,7 @@ class _HomeScreenState extends State<HomeScreen>
       return false;
     }
     _ctrl.setCurrentIndex(0);
-    openChatCard(key);
+    openDeviceCard(key);
     return true;
   }
 
@@ -148,21 +150,15 @@ class _HomeScreenState extends State<HomeScreen>
 
   Widget _buildTabletLayout() {
     final l10n = AppLocalizations.of(context);
-    final isDark = Theme.of(context).brightness == Brightness.dark;
+    final c = ApexColors.of(context);
 
     return Scaffold(
       body: SafeArea(
         child: Row(children: [
           Container(
             decoration: BoxDecoration(
-              color: isDark ? const Color(0xFF1C1C1E) : Colors.white,
-              border: Border(
-                right: BorderSide(
-                  color: isDark
-                      ? Colors.white.withValues(alpha: 0.06)
-                      : Colors.black.withValues(alpha: 0.06),
-                ),
-              ),
+              color: c.panel,
+              border: BorderDirectional(end: BorderSide(color: c.panelBorder)),
             ),
             child: NavigationRail(
               selectedIndex: _ctrl.currentIndex < 3 ? _ctrl.currentIndex : 0,
@@ -172,16 +168,13 @@ class _HomeScreenState extends State<HomeScreen>
               backgroundColor: Colors.transparent,
               destinations: [
                 NavigationRailDestination(
-                    icon: const Icon(Icons.send_outlined),
-                    selectedIcon: const Icon(Icons.send_rounded),
+                    icon: const Icon(ApexIcons.sendPage),
                     label: Text(l10n.send)),
                 NavigationRailDestination(
-                    icon: const Icon(Icons.smartphone_outlined),
-                    selectedIcon: const Icon(Icons.smartphone_rounded),
+                    icon: const Icon(ApexIcons.receivePage),
                     label: Text(l10n.receive)),
                 NavigationRailDestination(
-                    icon: const Icon(Icons.folder_outlined),
-                    selectedIcon: const Icon(Icons.folder_rounded),
+                    icon: const Icon(ApexIcons.filesPage),
                     label: Text(l10n.files)),
               ],
               trailing: Expanded(
@@ -191,17 +184,17 @@ class _HomeScreenState extends State<HomeScreen>
                     padding: const EdgeInsets.only(bottom: 16),
                     child: Column(mainAxisSize: MainAxisSize.min, children: [
                       RailIconButton(
-                          icon: Icons.refresh_rounded,
+                          icon: ApexIcons.findDevices,
                           tooltip: l10n.findDevices,
                           onTap: _ctrl.refreshDiscovery),
                       const SizedBox(height: 8),
                       RailIconButton(
-                          icon: Icons.settings_rounded,
+                          icon: ApexIcons.settings,
                           tooltip: l10n.settings,
                           onTap: _openSettings),
                       const SizedBox(height: 8),
                       RailIconButton(
-                          icon: Icons.info_outline_rounded,
+                          icon: ApexIcons.about,
                           tooltip: l10n.about,
                           onTap: _openAbout),
                       const SizedBox(height: 8),
@@ -209,7 +202,7 @@ class _HomeScreenState extends State<HomeScreen>
                         width: 8,
                         height: 8,
                         decoration: BoxDecoration(
-                          color: _ctrl.isRunning ? Colors.green : Colors.grey,
+                          color: _ctrl.isRunning ? c.online : c.muted,
                           shape: BoxShape.circle,
                         ),
                       ),

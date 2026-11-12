@@ -931,6 +931,9 @@ class AppLocalizationsAr extends AppLocalizations {
   String get deviceOptions => 'خيارات الجهاز';
 
   @override
+  String get cardFold => 'طي البطاقة';
+
+  @override
   String get findDevices => 'البحث عن الأجهزة';
 
   @override

@@ -6,6 +6,7 @@ import '../../l10n/generated/app_localizations.dart';
 import '../../services/transfer_progress_service.dart';
 import '../../services/update_service.dart';
 import '../../shared/apex_bottom_sheet.dart';
+import '../../shared/apex_icons.dart';
 import '../../shared/closes_with_request.dart';
 import '../../shared/file_ui_utils.dart';
 import '../../utils/file_utils.dart';
@@ -227,7 +228,7 @@ mixin HomeDialogs<T extends StatefulWidget> on State<T> {
           l10n.acceptConnection
         ),
       RequestKind.shareFolder => (
-          Icons.folder_shared_rounded,
+          ApexIcons.sharedFolder,
           l10n.shareAccessTitle,
           request.allowsUploads
               ? l10n.shareAccessDownloadUpload

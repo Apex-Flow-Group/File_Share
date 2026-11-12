@@ -5,6 +5,7 @@ import 'package:flutter/material.dart';
 import '../../../l10n/generated/app_localizations.dart';
 import '../../../models/device.dart';
 import '../../../services/transfer_progress_service.dart';
+import '../../../shared/apex_icons.dart';
 import '../../../shared/radar_painter.dart';
 import 'tv_send_device_card.dart';
 
@@ -185,7 +186,7 @@ class _TVSendTabState extends State<TVSendTab> with TickerProviderStateMixin {
                 // ─── الأجهزة المثبتة
                 if (widget.pinnedDevices.isNotEmpty) ...[
                   _TVSectionHeader(
-                    icon: Icons.star_rounded,
+                    icon: ApexIcons.favorite,
                     label: l10n.pinnedDevices,
                     isDark: isDark,
                   ),
@@ -268,7 +269,7 @@ class _TVSendTabState extends State<TVSendTab> with TickerProviderStateMixin {
             color: color.withValues(alpha: 0.15),
             borderRadius: BorderRadius.circular(14),
           ),
-          child: Icon(Icons.send_rounded, color: color, size: 22),
+          child: Icon(ApexIcons.sendPage, color: color, size: 22),
         ),
         const SizedBox(width: 12),
         Expanded(

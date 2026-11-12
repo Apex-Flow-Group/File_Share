@@ -7,6 +7,7 @@ import 'package:permission_handler/permission_handler.dart';
 import '../../core/apex_core.dart';
 import '../../l10n/generated/app_localizations.dart';
 import '../../services/settings_service.dart';
+import '../../shared/apex_icons.dart';
 import '../../utils/platform_detector.dart';
 import 'settings_sheets.dart';
 import 'tour_screen.dart';
@@ -72,7 +73,7 @@ class SettingsScreen extends StatelessWidget {
             listenable: settings,
             builder: (context, _) => _buildGroup(context, isDark, [
               _SettingsTile(
-                icon: Icons.content_paste_rounded,
+                icon: ApexIcons.paste,
                 iconColor: const Color(0xFFFF9500),
                 title: l10n.watchClipboard,
                 subtitle: l10n.watchClipboardDesc,
@@ -119,7 +120,7 @@ class SettingsScreen extends StatelessWidget {
               onTap: () => SettingsSheets.showPermissionsSheet(context, l10n),
             ),
             _SettingsTile(
-              icon: Icons.settings_rounded,
+              icon: ApexIcons.settings,
               iconColor: const Color(0xFF8E8E93),
               title: l10n.systemSettings,
               subtitle: l10n.openSystemSettings,
@@ -202,7 +203,7 @@ class SettingsScreen extends StatelessWidget {
               color: color.withValues(alpha: 0.15),
               borderRadius: BorderRadius.circular(14),
             ),
-            child: const Icon(Icons.settings_rounded, color: color, size: 22),
+            child: const Icon(ApexIcons.settings, color: color, size: 22),
           ),
           const SizedBox(width: 12),
           Text(
@@ -410,7 +411,7 @@ class _ShareSettingsSectionState extends State<_ShareSettingsSection> {
           children: [
             // Enable shared folder
             _ToggleTile(
-              icon: Icons.folder_shared_rounded,
+              icon: ApexIcons.sharedFolder,
               iconColor: color,
               title: l10n.enableSharedFolder,
               subtitle: l10n.enableSharedFolderDesc,

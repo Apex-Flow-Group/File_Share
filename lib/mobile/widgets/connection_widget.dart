@@ -15,11 +15,12 @@ import '../../models/device.dart';
 import '../../services/clipboard_monitor_service.dart';
 import '../../services/desktop_notification_service.dart';
 import '../../services/transfer_progress_service.dart';
+import '../../shared/apex_colors.dart';
+import '../../shared/apex_icons.dart';
 import '../../shared/apex_snackbar.dart';
-import '../../shared/device_look.dart';
-import '../../shared/framed_capsule_input.dart';
+import '../../shared/device_card.dart';
+import '../../shared/framed_capsule_input.dart' show CapsuleAction;
 import '../../utils/path_name.dart';
-import '../../utils/platform_detector.dart';
 import '../screens/share_browser_screen.dart';
 import 'chat_card_parts.dart';
 import 'connection_send_actions.dart';
@@ -27,15 +28,8 @@ import 'transfer_progress_indicator.dart';
 
 enum _Status { idle, sending }
 
-/// One opened chat card at a time: opening another folds it (owner decision).
-final _openChat = ValueNotifier<ChatKey?>(null);
-
-@visibleForTesting
-void foldChatCards() => _openChat.value = null;
-
-/// Opens the card of the device with [key], folding any other.
-void openChatCard(ChatKey key) => _openChat.value = key;
-
+/// A device's card on the phone and the computer: the shared [DeviceCard]
+/// with what these send with (the file picker, the message box).
 class ConnectionWidget extends StatefulWidget {
   final Device device;
   final bool isActive;
@@ -77,6 +71,7 @@ class _ConnectionWidgetState extends State<ConnectionWidget>
 
   @override
   Device get device => widget.device;
+
   @override
   void setSending() => setState(() => _status = _Status.sending);
   @override
@@ -114,61 +109,107 @@ class _ConnectionWidgetState extends State<ConnectionWidget>
   @override
   void dispose() {
     _sendAnim.dispose();
-    _cardFocus.dispose();
     super.dispose();
   }
 
   @override
   Widget build(BuildContext context) {
-    final isDark = Theme.of(context).brightness == Brightness.dark;
     final l10n = AppLocalizations.of(context);
+    final device = widget.device;
     // Another version is listed but nothing is sent to it.
-    final usable = widget.isActive && !widget.device.versionMismatch;
-
-    return Container(
-      margin: const EdgeInsets.only(bottom: 12),
-      decoration: BoxDecoration(
-        color: isDark ? const Color(0xFF1E1E1E) : Colors.white,
-        borderRadius: BorderRadius.circular(20),
-        boxShadow: [
-          BoxShadow(
-            color: Colors.black.withValues(alpha: isDark ? 0.3 : 0.07),
-            blurRadius: 16,
-            offset: const Offset(0, 4),
-          ),
-        ],
-      ),
-      child: Opacity(
-        opacity: usable ? 1.0 : 0.45,
-        child: Padding(
-          padding: const EdgeInsets.all(16),
-          // A network device is a chat (owner decision); the rest keep the card.
-          child: usable && widget.device.isMdns
-              ? _buildChatCard(l10n, isDark)
-              : Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    _buildHeader(isDark),
-                    const SizedBox(height: 14),
-                    ..._banners(l10n, usable),
-                    // Offline first, as on the TV: it is what the device is now.
-                    if (!widget.isActive)
-                      _buildOfflineBar(l10n)
-                    else if (widget.device.versionMismatch)
-                      _buildVersionBar(l10n)
-                    else
-                      _status == _Status.sending
-                          ? _buildSendingState()
-                          : _buildActions(l10n, isDark),
-                  ],
-                ),
-        ),
-      ),
+    final usable = widget.isActive && !device.versionMismatch;
+    // A network device is a chat (owner decision); a Nearby-only phone has
+    // no message box, so it sends at once from the opened card.
+    final chat = usable && device.isMdns;
+    final otherBusy = widget.isGloballyBusy &&
+        _status == _Status.idle &&
+        TransferProgressService().targetDeviceId != device.id;
+    final copied = _status != _Status.idle || widget.isGloballyBusy
+        ? null
+        : widget.pendingClipboardItem;
+    return DeviceCard(
+      device: device,
+      usable: usable,
+      chat: chat,
+      // Offline first, as on the TV: it is what the device is now.
+      status: widget.isActive ? null : l10n.deviceOffline,
+      rowActions: chat
+          ? [
+              (icon: ApexIcons.paste, label: l10n.chatPaste, onTap: _pasteFromRow),
+              (icon: ApexIcons.attach, label: l10n.chatAttach, onTap: _attachFromRow),
+            ]
+          : const [],
+      actions: usable && !chat && !otherBusy && _status == _Status.idle
+          ? [
+              (icon: ApexIcons.sendFilesNow, label: l10n.sendFilesNow, onTap: sendFile),
+              _appOrFolder(l10n),
+            ]
+          : const [],
+      menu: () => _menu(l10n, usable, chat),
+      below: [
+        ..._banners(l10n, usable, withClipboard: !chat),
+        if (widget.isActive && device.versionMismatch)
+          DeviceCardNote(icon: ApexIcons.versionDiffers, text: l10n.updateRequired),
+        if (_status == _Status.sending) _buildSendingState(),
+      ],
+      body: !usable
+          ? null
+          : (context) => Column(
+                crossAxisAlignment: CrossAxisAlignment.stretch,
+                children: [
+                  if (otherBusy) _buildBusyBar(l10n),
+                  if (otherBusy && chat) const SizedBox(height: 10),
+                  if (chat)
+                    ChatCardPanel(
+                      key: ValueKey(_pasteSeq),
+                      device: device,
+                      initialText: _paste,
+                      initialFiles: _picked,
+                      copied: copied,
+                      onCopiedUsed: _copiedUsed,
+                      // Sends at once from the box's row, after the clip and
+                      // paste (owner decision).
+                      extras: [_appOrFolder(l10n)],
+                    ),
+                ],
+              ),
     );
   }
 
+  /// An app on a phone, a folder elsewhere.
+  CapsuleAction _appOrFolder(AppLocalizations l10n) => Platform.isAndroid
+      ? (icon: ApexIcons.sendApp, label: l10n.sendApp, onTap: sendApp)
+      : (icon: ApexIcons.sendFolder, label: l10n.sendFolder, onTap: sendFolder);
+
+  /// The shared folder and the favourite, then block last, apart and red
+  /// (owner decision): three buttons in the head left the name a few letters
+  /// wide.
+  List<DeviceMenuEntry> _menu(AppLocalizations l10n, bool usable, bool chat) {
+    final store = ApexCore.instance.chat;
+    final pin = widget.isPinned ? widget.onUnpin : widget.onPin;
+    return [
+      if (usable && widget.device.hasShare)
+        (icon: ApexIcons.sharedFolder, label: l10n.sharedFolder, onTap: _openShareBrowser, danger: false),
+      if (pin != null)
+        (
+          icon: widget.isPinned ? ApexIcons.unfavorite : ApexIcons.favorite,
+          label: widget.isPinned ? l10n.unpinDevice : l10n.pinDevice,
+          onTap: pin,
+          danger: false,
+        ),
+      if (chat && store.canBlock(widget.device.chatPeer))
+        (icon: ApexIcons.block, label: l10n.chatBlock, onTap: _block, danger: true),
+    ];
+  }
+
+  Future<void> _block() async {
+    if (await confirmBlock(context, widget.device.name)) {
+      ApexCore.instance.chat.block(widget.device.chatPeer);
+    }
+  }
+
   /// [withClipboard] false on a chat card: what was copied shows inside the
-  /// writing line there (owner decision).
+  /// message box there (owner decision).
   List<Widget> _banners(AppLocalizations l10n, bool usable, {bool withClipboard = true}) {
     final idle = usable && _status == _Status.idle && !widget.isGloballyBusy;
     return [
@@ -188,7 +229,7 @@ class _ConnectionWidgetState extends State<ConnectionWidget>
 
   // ─── Chat card ────────────────────────────────────────────────────────────
 
-  /// What the card's paste took from the clipboard, for the writing line.
+  /// What the card's paste took from the clipboard, for the message box.
   String? _paste;
 
   /// What the row's clip picked, for the message box.
@@ -197,34 +238,14 @@ class _ConnectionWidgetState extends State<ConnectionWidget>
   /// A new paste or pick rebuilds the message box with it.
   int _pasteSeq = 0;
 
-  bool get _expanded => _openChat.value == widget.device.chatKey;
-
-  /// Holds the opened card, so back knows whether its box is being written in.
-  final _cardFocus = FocusNode(skipTraversal: true, canRequestFocus: false);
-
-  /// Back, one step at a time (owner decision): the system closes the
-  /// keyboard, then the box is left, then the card folds.
-  void _back(bool didPop, Object? _) {
-    if (didPop) {
-      return;
-    }
-    if (_cardFocus.hasFocus) {
-      FocusManager.instance.primaryFocus?.unfocus();
-    } else {
-      _openChat.value = null;
-    }
-  }
-
   void _open({String? paste, List<String> picked = const []}) {
     setState(() {
       _paste = paste;
       _picked = picked;
       _pasteSeq++;
     });
-    _openChat.value = widget.device.chatKey;
+    openDeviceCard(widget.device.chatKey);
   }
-
-  void _toggle() => _expanded ? _openChat.value = null : _open();
 
   /// Reads the clipboard only now, on the user's press (owner decision).
   Future<void> _pasteFromRow() async {
@@ -257,406 +278,39 @@ class _ConnectionWidgetState extends State<ConnectionWidget>
     }
   }
 
-  /// Whether the head's menu is open: its ⋮ shows ✕ then (capsule-ui §4).
-  bool _menuOpen = false;
-
-  /// The menu and the fold arrow side by side are one filled capsule
-  /// (capsule-ui §1), a step lighter than the card, no border and no glow
-  /// on a card. A touch on the arrow reaches the head, which folds.
-  Widget _headCapsule(AppLocalizations l10n) {
-    final c = FramedCapsuleColors.of(context);
-    return Container(
-      height: 48,
-      decoration: BoxDecoration(color: c.circle, borderRadius: BorderRadius.circular(24)),
-      child: Row(mainAxisSize: MainAxisSize.min, children: [
-        _headMenu(l10n, c),
-        SizedBox(
-          width: 48,
-          height: 48,
-          child: Icon(Icons.expand_less_rounded, color: c.onCircle),
-        ),
-      ]),
-    );
-  }
-
-  void _menuShut() => setState(() => _menuOpen = false);
-
-  /// The opened card's head keeps one menu beside the fold arrow (owner
-  /// decision): three buttons there left the name a few letters wide.
-  /// Block is last, apart and red.
-  Widget _headMenu(AppLocalizations l10n, FramedCapsuleColors c) {
-    final store = ApexCore.instance.chat;
-    final canPin = widget.isPinned ? widget.onUnpin != null : widget.onPin != null;
-    return PopupMenuButton<_HeadAction>(
-      tooltip: l10n.deviceOptions,
-      color: c.circle,
-      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(24)),
-      onOpened: () => setState(() => _menuOpen = true),
-      onCanceled: _menuShut,
-      // ⋮ in a narrower button, so the capsule stays small (capsule-ui §3).
-      child: SizedBox(
-        width: 40,
-        height: 48,
-        child: Icon(_menuOpen ? Icons.close_rounded : Icons.more_vert_rounded, color: c.onCircle),
-      ),
-      onSelected: (action) async {
-        _menuShut();
-        switch (action) {
-          case _HeadAction.share:
-            _openShareBrowser();
-          case _HeadAction.pin:
-            (widget.isPinned ? widget.onUnpin : widget.onPin)?.call();
-          case _HeadAction.block:
-            if (await confirmBlock(context, widget.device.name)) {
-              store.block(widget.device.chatPeer);
-            }
-        }
-      },
-      itemBuilder: (context) {
-        final canBlock = store.canBlock(widget.device.chatPeer);
-        return [
-          if (widget.device.hasShare)
-            PopupMenuItem(
-              value: _HeadAction.share,
-              child: ListTile(
-                leading: const Icon(Icons.folder_shared_rounded, color: Color(0xFFFF9500)),
-                title: Text(l10n.sharedFolder),
-              ),
-            ),
-          if (canPin)
-            PopupMenuItem(
-              value: _HeadAction.pin,
-              child: ListTile(
-                // The icon draws what the item does, as on the TV card.
-                leading: Icon(widget.isPinned ? Icons.star_border_rounded : Icons.star_rounded),
-                title: Text(widget.isPinned ? l10n.unpinDevice : l10n.pinDevice),
-              ),
-            ),
-          if (canBlock && (widget.device.hasShare || canPin)) const PopupMenuDivider(),
-          if (canBlock)
-            PopupMenuItem(
-              value: _HeadAction.block,
-              child: ListTile(
-                leading: const Icon(Icons.block_rounded, color: Colors.red),
-                title: Text(l10n.chatBlock, style: const TextStyle(color: Colors.red)),
-              ),
-            ),
-        ];
-      },
-    );
-  }
-
-  Widget _buildChatCard(AppLocalizations l10n, bool isDark) =>
-      ValueListenableBuilder<ChatKey?>(
-        valueListenable: _openChat,
-        builder: (context, open, _) {
-          final banners = _banners(l10n, true, withClipboard: false);
-          final copied = _status != _Status.idle || widget.isGloballyBusy ? null : widget.pendingClipboardItem;
-          if (open != widget.device.chatKey) {
-            return Column(
-              crossAxisAlignment: CrossAxisAlignment.stretch,
-              children: [
-                ChatProfileRow(
-                  device: widget.device,
-                  onOpen: _toggle,
-                  onPaste: _pasteFromRow,
-                  onAttach: _attachFromRow,
-                ),
-                if (banners.isNotEmpty) const SizedBox(height: 12),
-                ...banners,
-                if (_status == _Status.sending) ...[
-                  const SizedBox(height: 12),
-                  _buildSendingState()
-                ],
-              ],
-            );
-          }
-          return PopScope(
-            canPop: false,
-            onPopInvokedWithResult: _back,
-            child: Focus(
-            focusNode: _cardFocus,
-            child: Column(
-            crossAxisAlignment: CrossAxisAlignment.stretch,
-            children: [
-              // Touching the head folds the card again.
-              Semantics(
-                button: true,
-                label: l10n.chatClose,
-                child: GestureDetector(
-                  behavior: HitTestBehavior.opaque,
-                  onTap: _toggle,
-                  child: Row(children: [
-                    Expanded(child: _buildHeader(isDark, withStar: false)),
-                    _headCapsule(l10n),
-                  ]),
-                ),
-              ),
-              const SizedBox(height: 14),
-              ...banners,
-              // The send buttons are circles of the message box now; only
-              // a running send, or another device's, takes a row here.
-              if (_status == _Status.sending) ...[
-                _buildSendingState(),
-                const SizedBox(height: 10),
-              ] else if (widget.isGloballyBusy &&
-                  TransferProgressService().targetDeviceId != widget.device.id) ...[
-                _buildBusyBar(l10n),
-                const SizedBox(height: 10),
-              ],
-              ChatCardPanel(
-                key: ValueKey(_pasteSeq),
-                device: widget.device,
-                initialText: _paste,
-                initialFiles: _picked,
-                copied: copied,
-                onCopiedUsed: _copiedUsed,
-                extras: [
-                  // The same choice the button row made: an app on a phone,
-                  // a folder elsewhere.
-                  if (PlatformDetector.instance.isMobile)
-                    (icon: Icons.android_rounded, label: l10n.sendApp, onTap: sendApp)
-                  else
-                    (icon: Icons.folder_zip_rounded, label: l10n.sendFolder, onTap: sendFolder),
-                ],
-              ),
-            ],
-          ),
-          ),
-          );
-        },
-      );
-
-  Widget _buildHeader(bool isDark, {bool withStar = true}) {
-    final color = _deviceColor;
-    return Row(
-      children: [
-        Container(
-          width: 52,
-          height: 52,
-          decoration: BoxDecoration(
-            gradient: LinearGradient(
-              begin: Alignment.topLeft,
-              end: Alignment.bottomRight,
-              colors: [color, color.withValues(alpha: 0.7)],
-            ),
-            borderRadius: BorderRadius.circular(16),
-            boxShadow: [
-              BoxShadow(
-                color: color.withValues(alpha: 0.35),
-                blurRadius: 10,
-                offset: const Offset(0, 4),
-              ),
-            ],
-          ),
-          child: Icon(_deviceIcon, color: Colors.white, size: 26),
-        ),
-        const SizedBox(width: 14),
-        Expanded(
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              // ─── اسم الجهاز (قابل للتغيير) — خط عريض
-              // The online dot before the name, over the transport badge
-              // (owner decision), not at the row's end among the buttons.
-              Row(children: [
-                Container(
-                  width: 10,
-                  height: 10,
-                  decoration: BoxDecoration(
-                    color: widget.isActive && !widget.device.versionMismatch
-                        ? Colors.green
-                        : Colors.grey,
-                    shape: BoxShape.circle,
-                  ),
-                ),
-                const SizedBox(width: 6),
-                Flexible(
-                  child: Text(
-                    widget.device.name,
-                    style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 16),
-                    maxLines: 1,
-                    overflow: TextOverflow.ellipsis,
-                  ),
-                ),
-              ]),
-              // ─── السطر الثاني: hostname (إن اختلف عن name) أو IP + badges
-              const SizedBox(height: 3),
-              if (widget.device.hostname != null &&
-                  widget.device.hostname!.isNotEmpty &&
-                  widget.device.hostname != widget.device.name) ...[
-                // hostname مختلف عن الاسم — اعرضه بخط أصغر
-                Text(
-                  widget.device.hostname!,
-                  style: TextStyle(
-                    fontSize: 11,
-                    fontWeight: FontWeight.w500,
-                    color: Theme.of(context)
-                        .colorScheme
-                        .onSurfaceVariant
-                        .withValues(alpha: 0.75),
-                  ),
-                  maxLines: 1,
-                  overflow: TextOverflow.ellipsis,
-                ),
-                const SizedBox(height: 2),
-              ],
-              // ─── شارات النقل + IP
-              Row(children: [
-                // Another version gets its address only: no transport to offer.
-                if (widget.isActive && !widget.device.versionMismatch) ...[
-                  // Shrinks instead of overflowing with large system fonts.
-                  Flexible(
-                    child: FittedBox(
-                      fit: BoxFit.scaleDown,
-                      alignment: AlignmentDirectional.centerStart,
-                      child: _TransportBadge(
-                        isNearby: widget.device.isNearby,
-                        isWifi: widget.device.isMdns,
-                      ),
-                    ),
-                  ),
-                  if (!widget.device.isNearby &&
-                      widget.device.ip.isNotEmpty) ...[
-                    const SizedBox(width: 6),
-                    Flexible(
-                      child: Text(
-                        widget.device.ip,
-                        style: TextStyle(
-                          fontSize: 11,
-                          color: Theme.of(context).colorScheme.onSurfaceVariant,
-                        ),
-                        maxLines: 1,
-                        overflow: TextOverflow.ellipsis,
-                      ),
-                    ),
-                  ],
-                ] else
-                  Text(
-                    widget.device.ip.isNotEmpty ? widget.device.ip : '—',
-                    style: TextStyle(
-                      fontSize: 11,
-                      color: Theme.of(context).colorScheme.onSurfaceVariant,
-                    ),
-                  ),
-              ]),
-            ],
-          ),
-        ),
-        // ─── زر المفضلة
-        if (withStar && (widget.onPin != null || widget.onUnpin != null))
-          Tooltip(
-            message: widget.isPinned
-                ? AppLocalizations.of(context).unpinDevice
-                : AppLocalizations.of(context).pinDevice,
-            child: GestureDetector(
-              onTap: widget.isPinned ? widget.onUnpin : widget.onPin,
-              child: Container(
-                width: 30,
-                height: 30,
-                margin: const EdgeInsets.only(right: 6),
-                decoration: BoxDecoration(
-                  color: widget.isPinned
-                      ? color.withValues(alpha: isDark ? 0.25 : 0.15)
-                      : (isDark ? Colors.white : Colors.black)
-                          .withValues(alpha: 0.06),
-                  borderRadius: BorderRadius.circular(9),
-                ),
-                child: Icon(
-                  widget.isPinned
-                      ? Icons.star_rounded
-                      : Icons.star_border_rounded,
-                  size: 16,
-                  color: widget.isPinned
-                      ? color
-                      : (isDark ? Colors.white38 : Colors.black38),
-                ),
-              ),
-            ),
-          ),
-      ],
-    );
-  }
-
-  Widget _buildVersionBar(AppLocalizations l10n) {
-    return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
-      decoration: BoxDecoration(
-        color: Colors.orange.withValues(alpha: 0.08),
+  /// Something waiting to be sent to this device, sent with a touch.
+  Widget _sendBanner(IconData icon, String text, VoidCallback onTap) {
+    final c = ApexColors.of(context);
+    return Padding(
+      padding: const EdgeInsets.only(bottom: 10),
+      child: Material(
+        color: c.hover,
         borderRadius: BorderRadius.circular(12),
-        border: Border.all(color: Colors.orange.withValues(alpha: 0.3)),
-      ),
-      child: Row(children: [
-        const Icon(Icons.system_update_rounded, size: 16, color: Colors.orange),
-        const SizedBox(width: 8),
-        Expanded(
-          child: Text(
-            l10n.updateRequired,
-            style: const TextStyle(
-              fontSize: 12,
-              color: Colors.orange,
-              fontWeight: FontWeight.w500,
-            ),
+        child: InkWell(
+          borderRadius: BorderRadius.circular(12),
+          onTap: onTap,
+          child: Padding(
+            padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
+            child: Row(children: [
+              Icon(icon, color: c.muted, size: 18),
+              const SizedBox(width: 8),
+              Expanded(
+                child: Text(text,
+                    style: TextStyle(color: c.text, fontWeight: FontWeight.w600, fontSize: 13),
+                    overflow: TextOverflow.ellipsis),
+              ),
+              Icon(ApexIcons.send, color: c.text, size: 16),
+            ]),
           ),
         ),
-      ]),
-    );
-  }
-
-  Widget _buildOfflineBar(AppLocalizations l10n) {
-    final isAr = l10n.localeName == 'ar';
-    return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
-      decoration: BoxDecoration(
-        color: Colors.grey.withValues(alpha: 0.08),
-        borderRadius: BorderRadius.circular(12),
-        border: Border.all(color: Colors.grey.withValues(alpha: 0.2)),
       ),
-      child: Row(children: [
-        const Icon(Icons.wifi_off_rounded, size: 16, color: Colors.grey),
-        const SizedBox(width: 8),
-        Text(
-          isAr ? 'غير متصل حالياً' : 'Currently offline',
-          style: const TextStyle(
-            fontSize: 12,
-            color: Colors.grey,
-            fontWeight: FontWeight.w500,
-          ),
-        ),
-      ]),
     );
   }
 
   Widget _buildPendingFileBanner(AppLocalizations l10n) {
     final isAr = l10n.localeName == 'ar';
     final fileName = fileNameOf(widget.pendingFilePath!);
-    return GestureDetector(
-      onTap: _sendPendingFile,
-      child: Container(
-        margin: const EdgeInsets.only(bottom: 10),
-        padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
-        decoration: BoxDecoration(
-          color: Colors.purple.withValues(alpha: 0.1),
-          borderRadius: BorderRadius.circular(12),
-          border: Border.all(color: Colors.purple.withValues(alpha: 0.3)),
-        ),
-        child: Row(children: [
-          const Icon(Icons.note_rounded, color: Colors.purple, size: 18),
-          const SizedBox(width: 8),
-          Expanded(
-            child: Text(
-              isAr ? 'إرسال: $fileName' : 'Send: $fileName',
-              style: const TextStyle(
-                  color: Colors.purple,
-                  fontWeight: FontWeight.w600,
-                  fontSize: 13),
-              overflow: TextOverflow.ellipsis,
-            ),
-          ),
-          const Icon(Icons.send_rounded, color: Colors.purple, size: 16),
-        ]),
-      ),
-    );
+    return _sendBanner(Icons.note_rounded, isAr ? 'إرسال: $fileName' : 'Send: $fileName', _sendPendingFile);
   }
 
   Widget _buildSharedFilesBanner(AppLocalizations l10n) {
@@ -666,35 +320,7 @@ class _ConnectionWidgetState extends State<ConnectionWidget>
     final label = count == 1
         ? fileNameOf(files.first)
         : (isAr ? '$count ملفات مشاركة' : '$count shared files');
-
-    return GestureDetector(
-      onTap: _sendSharedFiles,
-      child: Container(
-        margin: const EdgeInsets.only(bottom: 10),
-        padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
-        decoration: BoxDecoration(
-          color: const Color(0xFF6750A4).withValues(alpha: 0.1),
-          borderRadius: BorderRadius.circular(12),
-          border:
-              Border.all(color: const Color(0xFF6750A4).withValues(alpha: 0.3)),
-        ),
-        child: Row(children: [
-          const Icon(Icons.share_rounded, color: Color(0xFF6750A4), size: 18),
-          const SizedBox(width: 8),
-          Expanded(
-            child: Text(
-              isAr ? 'إرسال: $label' : 'Send: $label',
-              style: const TextStyle(
-                  color: Color(0xFF6750A4),
-                  fontWeight: FontWeight.w600,
-                  fontSize: 13),
-              overflow: TextOverflow.ellipsis,
-            ),
-          ),
-          const Icon(Icons.send_rounded, color: Color(0xFF6750A4), size: 16),
-        ]),
-      ),
-    );
+    return _sendBanner(Icons.share_rounded, isAr ? 'إرسال: $label' : 'Send: $label', _sendSharedFiles);
   }
 
   Future<void> _sendPendingFile() async {
@@ -789,64 +415,6 @@ class _ConnectionWidgetState extends State<ConnectionWidget>
     }
   }
 
-  Widget _buildActions(AppLocalizations l10n, bool isDark) {
-    final svc = TransferProgressService();
-    final isThisDeviceTarget = svc.targetDeviceId == widget.device.id;
-    if (widget.isGloballyBusy &&
-        _status == _Status.idle &&
-        !isThisDeviceTarget) {
-      return _buildBusyBar(l10n);
-    }
-    return Row(
-      children: [
-        // Owner decision: on a network device the chat line's clip sends
-        // files. A Nearby-only phone has no chat line, so it keeps this button.
-        if (!widget.device.isMdns) ...[
-          Expanded(
-              child: _ActionButton(
-            icon: Icons.upload_file_rounded,
-            label: l10n.sendFilesNow,
-            color: Theme.of(context).colorScheme.primary,
-            isDark: isDark,
-            onTap: sendFile,
-          )),
-          const SizedBox(width: 10),
-        ],
-        if (Platform.isAndroid)
-          Expanded(
-              child: _ActionButton(
-            icon: Icons.android_rounded,
-            label: l10n.sendApp,
-            color: const Color(0xFF34C759),
-            isDark: isDark,
-            onTap: sendApp,
-          ))
-        else
-          Expanded(
-              child: _ActionButton(
-            icon: Icons.folder_zip_rounded,
-            label: l10n.sendFolder,
-            color: const Color(0xFF5856D6),
-            isDark: isDark,
-            onTap: sendFolder,
-          )),
-        // زر المجلد المشترك — يظهر فقط إذا الجهاز desktop وأعلن عن Share
-        if (widget.device.hasShare) ...[
-          const SizedBox(width: 10),
-          Expanded(
-            child: _ActionButton(
-              icon: Icons.folder_shared_rounded,
-              label: l10n.sharedFolder,
-              color: const Color(0xFFFF9500),
-              isDark: isDark,
-              onTap: _openShareBrowser,
-            ),
-          ),
-        ],
-      ],
-    );
-  }
-
   void _openShareBrowser() {
     Navigator.of(context).push(
       MaterialPageRoute(
@@ -857,26 +425,9 @@ class _ConnectionWidgetState extends State<ConnectionWidget>
 
   Widget _buildBusyBar(AppLocalizations l10n) {
     final isAr = l10n.localeName == 'ar';
-    return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
-      decoration: BoxDecoration(
-        color: Colors.orange.withValues(alpha: 0.08),
-        borderRadius: BorderRadius.circular(12),
-        border: Border.all(color: Colors.orange.withValues(alpha: 0.25)),
-      ),
-      child: Row(children: [
-        const Icon(Icons.hourglass_top_rounded, size: 16, color: Colors.orange),
-        const SizedBox(width: 8),
-        Text(
-          isAr ? 'يوجد إرسال جارٍ...' : 'Transfer in progress...',
-          style: const TextStyle(
-            fontSize: 12,
-            color: Colors.orange,
-            fontWeight: FontWeight.w500,
-          ),
-        ),
-      ]),
-    );
+    return DeviceCardNote(
+        icon: ApexIcons.busy,
+        text: isAr ? 'يوجد إرسال جارٍ...' : 'Transfer in progress...');
   }
 
   Widget _buildSendingState() {
@@ -886,101 +437,6 @@ class _ConnectionWidgetState extends State<ConnectionWidget>
         TransferProgressService().cancelTransfer();
         setState(() => _status = _Status.idle);
       },
-    );
-  }
-
-  IconData get _deviceIcon => deviceIcon(widget.device);
-
-  Color get _deviceColor => deviceColor(widget.device);
-}
-
-// ─── Action Button ────────────────────────────────────────────────────────────
-
-class _ActionButton extends StatelessWidget {
-  final IconData icon;
-  final String label;
-  final Color color;
-  final bool isDark;
-  final VoidCallback onTap;
-
-  const _ActionButton({
-    required this.icon,
-    required this.label,
-    required this.color,
-    required this.isDark,
-    required this.onTap,
-  });
-
-  @override
-  Widget build(BuildContext context) {
-    return GestureDetector(
-      onTap: onTap,
-      child: Container(
-        padding: const EdgeInsets.symmetric(vertical: 12),
-        decoration: BoxDecoration(
-          color: color.withValues(alpha: isDark ? 0.18 : 0.1),
-          borderRadius: BorderRadius.circular(14),
-          border: Border.all(
-            color: color.withValues(alpha: isDark ? 0.3 : 0.2),
-          ),
-        ),
-        child: Column(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            Icon(icon, color: color, size: 22),
-            const SizedBox(height: 4),
-            Text(label,
-                style: TextStyle(
-                  fontSize: 12,
-                  fontWeight: FontWeight.w600,
-                  color: color,
-                )),
-          ],
-        ),
-      ),
-    );
-  }
-}
-
-// ─── Transport Badge ──────────────────────────────────────────────────────────
-
-class _TransportBadge extends StatelessWidget {
-  final bool isNearby;
-  final bool isWifi;
-  const _TransportBadge({required this.isNearby, required this.isWifi});
-
-  @override
-  Widget build(BuildContext context) {
-    if (isNearby && isWifi) {
-      return Row(mainAxisSize: MainAxisSize.min, children: [
-        _badge(context, const Color(0xFF34C759), Icons.sensors_rounded,
-            AppLocalizations.of(context).directConnection),
-        const SizedBox(width: 4),
-        _badge(context, const Color(0xFF007AFF), Icons.wifi_rounded, 'WiFi'),
-      ]);
-    }
-    if (isNearby) {
-      return _badge(context, const Color(0xFF34C759), Icons.sensors_rounded,
-          AppLocalizations.of(context).directConnection);
-    }
-    return _badge(context, const Color(0xFF007AFF), Icons.wifi_rounded, 'WiFi');
-  }
-
-  Widget _badge(
-      BuildContext context, Color color, IconData icon, String label) {
-    return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 7, vertical: 2),
-      decoration: BoxDecoration(
-        color: color.withValues(alpha: 0.12),
-        borderRadius: BorderRadius.circular(8),
-      ),
-      child: Row(mainAxisSize: MainAxisSize.min, children: [
-        Icon(icon, size: 11, color: color),
-        const SizedBox(width: 3),
-        Text(label,
-            style: TextStyle(
-                fontSize: 10, color: color, fontWeight: FontWeight.bold)),
-      ]),
     );
   }
 }
@@ -1154,7 +610,7 @@ class _ClipboardBannerState extends State<_ClipboardBanner> {
                   Row(
                     children: [
                       Icon(
-                        Icons.content_paste_rounded,
+                        ApexIcons.paste,
                         size: 11,
                         color: color.withValues(alpha: 0.7),
                       ),
@@ -1214,7 +670,7 @@ class _ClipboardBannerState extends State<_ClipboardBanner> {
                 ),
               ),
               child: Row(mainAxisSize: MainAxisSize.min, children: [
-                Icon(Icons.send_rounded, size: 13, color: color),
+                Icon(ApexIcons.send, size: 13, color: color),
                 const SizedBox(width: 4),
                 Text(
                   l10n.clipboardSend,
@@ -1280,5 +736,3 @@ class _TypeChip extends StatelessWidget {
   }
 }
 
-/// What the opened card head's menu does.
-enum _HeadAction { share, pin, block }

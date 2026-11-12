@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 
 import '../../core/core_models.dart';
 import '../../l10n/generated/app_localizations.dart';
+import '../../shared/apex_icons.dart';
 import '../../shared/closes_with_request.dart';
 import '../../shared/file_ui_utils.dart';
 import 'tv_focusable_widgets.dart';
@@ -35,7 +36,7 @@ class TVAcceptDialog extends StatelessWidget {
     final (icon, title, question) = switch (request.kind) {
       RequestKind.connect => (Icons.link_rounded, l10n.connectionRequest, l10n.acceptConnection),
       RequestKind.shareFolder => (
-          Icons.folder_shared_rounded,
+          ApexIcons.sharedFolder,
           l10n.shareAccessTitle,
           request.allowsUploads
               ? l10n.shareAccessDownloadUpload
