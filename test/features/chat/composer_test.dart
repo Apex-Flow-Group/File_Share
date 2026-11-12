@@ -32,7 +32,10 @@ void main() {
           store: store,
           device: _pc,
           pickFiles: () async => pick,
-          sendFiles: (paths) async => sentFiles.add(paths),
+          sendFiles: (paths) async {
+            sentFiles.add(paths);
+            return SendOutcome.sent;
+          },
           copied: copied,
           onCopiedUsed: ({required bool sent}) => copiedUsed.add(sent),
         ),
