@@ -84,10 +84,31 @@ class _DeviceChatViewState extends State<DeviceChatView> {
   /// Offered above the box, not added yet.
   ClipboardItem? _offered;
 
+  /// The box, kept just above the keyboard while it is written in (owner
+  /// decision): a message arriving grows the card and would push it under.
+  final _boxKey = GlobalKey();
+  bool _writing = false;
+
+  void _keepBoxInView() {
+    if (!_writing) {
+      return;
+    }
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      final box = _boxKey.currentContext;
+      if (mounted && box != null) {
+        Scrollable.ensureVisible(box,
+            alignmentPolicy: ScrollPositionAlignmentPolicy.keepVisibleAtEnd,
+            duration: Durations.short2,
+            curve: Easing.standard);
+      }
+    });
+  }
+
   @override
   void initState() {
     super.initState();
     _offerCopied();
+    widget.store.addListener(_keepBoxInView);
     // After the frame: inside a card, marking read rebuilds the card's own
     // head and row, which are being built right now.
     WidgetsBinding.instance.addPostFrameCallback((_) {
@@ -107,6 +128,7 @@ class _DeviceChatViewState extends State<DeviceChatView> {
 
   @override
   void dispose() {
+    widget.store.removeListener(_keepBoxInView);
     widget.store.closed(_key);
     _text.dispose();
     super.dispose();
@@ -305,7 +327,15 @@ class _DeviceChatViewState extends State<DeviceChatView> {
                 CopiedSuggestion(item: _offered!, onAdd: _addCopied, onDismiss: _dropCopied),
               ],
               const SizedBox(height: 8),
-              FramedCapsuleInput(
+              Focus(
+                key: _boxKey,
+                skipTraversal: true,
+                canRequestFocus: false,
+                onFocusChange: (writing) {
+                  _writing = writing;
+                  _keepBoxInView();
+                },
+                child: FramedCapsuleInput(
                 hint: l10n.chatHint,
                 sendLabel: l10n.send,
                 onSend: _send,
@@ -320,6 +350,7 @@ class _DeviceChatViewState extends State<DeviceChatView> {
                 top: _files.isEmpty
                     ? null
                     : ComposerTiles(files: _files, onRemove: _remove),
+              ),
               ),
             ],
           ],

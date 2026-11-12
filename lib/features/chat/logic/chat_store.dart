@@ -73,6 +73,7 @@ class ChatStore extends ChangeNotifier {
     this.sendFilesNow,
     this.onBlock,
     this.onUnblock,
+    this.onReached,
     BlockList? blocks,
     DateTime Function()? clock,
   })  : _clock = clock ?? DateTime.now,
@@ -86,6 +87,9 @@ class ChatStore extends ChangeNotifier {
   /// Tell the door, which refuses a blocked device's messages.
   final void Function(ChatPeer peer)? onBlock;
   final void Function(ChatPeer peer)? onUnblock;
+
+  /// A message of the user reached [peer], at the certificate it was sent to.
+  final void Function(ChatPeer peer, String name)? onReached;
 
   final DateTime Function() _clock;
 
@@ -321,6 +325,7 @@ class ChatStore extends ChangeNotifier {
     }
     if (result.outcome == ChatOutcome.sent) {
       m.status = ChatStatus.sent;
+      onReached?.call(target.chatPeer, target.name);
     } else {
       m
         ..status = ChatStatus.failed

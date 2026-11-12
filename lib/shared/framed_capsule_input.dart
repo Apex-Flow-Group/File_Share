@@ -138,6 +138,9 @@ class _FramedCapsuleInputState extends State<FramedCapsuleInput> {
       maxLines: 6,
       keyboardType: TextInputType.multiline,
       textInputAction: TextInputAction.newline,
+      // Brought into view with the buttons under it, not the caret alone:
+      // the default 20 left the box's row under the keyboard.
+      scrollPadding: const EdgeInsets.fromLTRB(20, 20, 20, 20 + 10 + _touch + 8 + 1),
       style: TextStyle(color: c.text, fontSize: 16),
       cursorColor: c.text,
       decoration: InputDecoration(

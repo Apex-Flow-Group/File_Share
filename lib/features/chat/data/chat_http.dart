@@ -54,6 +54,9 @@ class ChatHttp {
 
   void unblock(ChatPeer peer) => _access.unblock(peer);
 
+  /// A message of this user reached [peer]: its replies come in unasked.
+  void wrote(ChatPeer peer, String name) => _access.wrote(peer, name);
+
   /// False when [req] is not for this door.
   Future<bool> handle(HttpRequest req) async {
     if (req.uri.path != ApexProtocol.chatPath) {

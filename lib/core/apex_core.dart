@@ -134,8 +134,15 @@ class ApexCore {
     sendFilesNow: (files, target, onDelivered) async => _send.sendFiles(
         [for (final f in files) (path: f.path, name: f.name, size: await File(f.path).length())], target,
         onDelivered: onDelivered),
-    onBlock: _chat.block,
-    onUnblock: _chat.unblock,
+    onBlock: (peer) {
+      _chat.block(peer);
+      _receive.forgetFiles(peer);
+    },
+    onUnblock: (peer) {
+      _chat.unblock(peer);
+      _receive.forgetFiles(peer);
+    },
+    onReached: _chat.wrote,
     blocks: _blocks,
   );
   SettingsService? _settings;

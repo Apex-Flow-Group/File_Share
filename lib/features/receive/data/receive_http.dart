@@ -16,6 +16,7 @@ import '../../../utils/apex_logger.dart';
 import '../../chat/logic/block_list.dart';
 import '../../chat/logic/chat_key.dart';
 import '../../identity/caller.dart';
+import '../../identity/fingerprint.dart';
 import '../../identity/pin_store.dart';
 import '../logic/offer.dart';
 import '../logic/receive_gate.dart';
@@ -70,6 +71,13 @@ class ReceiveHttp {
   final _random = Random();
 
   final OneQuestion _question;
+
+  /// Certificates whose files the user accepted this run: their next
+  /// batches come in unasked. In memory only, as the chat's agreements.
+  final _filesAgreed = <String>{};
+
+  /// A block, or its end, makes the device a new one: it is asked again.
+  void forgetFiles(ChatPeer peer) => _filesAgreed.remove(peer.key.fingerprint);
 
   TransferProgressService get _progress => TransferProgressService();
 
@@ -132,20 +140,29 @@ class ReceiveHttp {
       await _reply(req, HttpStatus.unprocessableEntity, {'error': problem.name});
       return;
     }
-    if (!_question.take()) {
-      await _reply(req, HttpStatus.tooManyRequests, {'error': 'busy'});
-      return;
-    }
-    final bool? accepted;
-    try {
-      accepted = await _ask(offer);
-    } finally {
-      _question.release();
-    }
-    if (accepted != true) {
-      await _reply(req, HttpStatus.ok,
-          {'accepted': false, if (accepted == null) 'reason': ApexProtocol.noAnswer});
-      return;
+    // Asked once per device until the app closes (owner decision), at the
+    // certificate the user agreed to; another key is a new device.
+    final agreed = _filesAgreed.contains(fingerprint) &&
+        !pins.keyChanged(offer.senderId, fingerprint);
+    if (!agreed) {
+      if (!_question.take()) {
+        await _reply(req, HttpStatus.tooManyRequests, {'error': 'busy'});
+        return;
+      }
+      final bool? accepted;
+      try {
+        accepted = await _ask(offer);
+      } finally {
+        _question.release();
+      }
+      if (accepted != true) {
+        await _reply(req, HttpStatus.ok,
+            {'accepted': false, if (accepted == null) 'reason': ApexProtocol.noAnswer});
+        return;
+      }
+      if (isFingerprint(fingerprint)) {
+        _filesAgreed.add(fingerprint);
+      }
     }
     await pins.pin(offer.senderId, fingerprint);
     final tokens = gate.admit(offer);

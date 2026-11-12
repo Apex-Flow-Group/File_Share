@@ -1,6 +1,7 @@
 import 'dart:convert';
 import 'dart:math';
 
+import '../../identity/fingerprint.dart';
 import 'block_list.dart';
 import 'chat_key.dart';
 
@@ -41,6 +42,17 @@ class ChatAccess {
   final BlockList _blocked;
   final _unanswered = <ChatKey, DateTime>{};
 
+  /// Devices this user wrote to and reached: writing is agreeing (owner
+  /// decision), so their replies need no question. Bound to the certificate
+  /// the message reached; a device without one is still asked.
+  final _wroteTo = <ChatKey, ChatGrant>{};
+
+  void wrote(ChatPeer peer, String name) {
+    if (isFingerprint(peer.key.fingerprint) && !_blocked.isBlocked(peer)) {
+      _wroteTo[peer.key] = ChatGrant(peer.key, peer.id, name);
+    }
+  }
+
   void unanswered(ChatKey key) => _unanswered[key] = _clock();
 
   bool isQuiet(ChatKey key) {
@@ -70,7 +82,7 @@ class ChatAccess {
   /// certificate than it was issued for.
   ChatGrant? check(String? token, ChatKey key) {
     final grant = _grants[token];
-    return grant == null || grant.key != key ? null : grant;
+    return grant == null || grant.key != key ? _wroteTo[key] : grant;
   }
 
   /// Owner decision: refusing the question, or the block button, blocks the
@@ -80,6 +92,7 @@ class ChatAccess {
   void block(ChatPeer peer) {
     _blocked.block(peer);
     _grants.removeWhere((_, g) => _blocked.isBlocked((key: g.key, id: g.id, address: '')));
+    _wroteTo.removeWhere((_, g) => _blocked.isBlocked((key: g.key, id: g.id, address: '')));
   }
 
   /// Back to a device never seen: its next message asks the user again,
