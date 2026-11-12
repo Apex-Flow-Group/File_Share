@@ -285,15 +285,16 @@ class ChatStore extends ChangeNotifier {
     notifyListeners();
   }
 
-  Future<void> write(Device target, String text) async {
+  /// How it went, so files sent with it wait for it (owner decision).
+  Future<ChatOutcome> write(Device target, String text) async {
     if (isBlocked(target.chatPeer)) {
-      return;
+      return ChatOutcome.declined;
     }
     final t = _thread(target.chatPeer, target.name);
     final m = ChatMessage._(_nextId++, true, text, ChatStatus.sending);
     _add(t, m);
     notifyListeners();
-    await _deliver(target, m);
+    return _deliver(target, m);
   }
 
   /// Only the user resends a failed message: it never goes again by itself.
@@ -308,7 +309,7 @@ class ChatStore extends ChangeNotifier {
     await _deliver(target, m);
   }
 
-  Future<void> _deliver(Device target, ChatMessage m) async {
+  Future<ChatOutcome> _deliver(Device target, ChatMessage m) async {
     final key = target.chatKey;
     final result = await send(m.text, target, _tokens[key]);
     final token = result.token;
@@ -326,6 +327,7 @@ class ChatStore extends ChangeNotifier {
         ..failure = result.outcome;
     }
     notifyListeners();
+    return result.outcome;
   }
 
   @override

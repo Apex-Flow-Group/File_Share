@@ -47,7 +47,7 @@ class DeviceChatView extends StatefulWidget {
   final Future<List<String>> Function()? pickFiles;
 
   /// Sends files to [device]; they show as a line of the chat.
-  final Future<void> Function(List<String> paths)? sendFiles;
+  final Future<SendOutcome> Function(List<String> paths)? sendFiles;
 
   /// Opened from the card's writing line: the keyboard comes up at once.
   final bool autofocus;
@@ -173,18 +173,36 @@ class _DeviceChatViewState extends State<DeviceChatView> {
       ApexSnackBar.info(context, l10n.chatTransferBusy);
       return false;
     }
-    if (text.trim().isNotEmpty) {
-      widget.store.write(widget.device, text);
-    }
     if (added.isNotEmpty) {
-      final fromClipboard = added.any((f) => f.fromClipboard);
       setState(() => _files.removeWhere(added.contains));
-      final sending = widget.sendFiles?.call([for (final f in added) f.path]);
-      if (fromClipboard) {
-        sending?.then((_) => widget.onCopiedUsed?.call(sent: true));
+    }
+    _sendInOrder(text.trim().isEmpty ? null : text, added);
+    return true;
+  }
+
+  /// The text first, then the files once it has arrived (owner decision):
+  /// sent together, the first message's "accept chat?" held the other
+  /// device's one question, and the files were turned away as busy. Text
+  /// that did not arrive keeps the files in the box, unsent.
+  Future<void> _sendInOrder(String? text, List<ComposerFile> files) async {
+    if (text != null) {
+      final outcome = await widget.store.write(widget.device, text);
+      if (outcome != ChatOutcome.sent) {
+        if (files.isNotEmpty && mounted) {
+          setState(() => _files.insertAll(0, files));
+        }
+        return;
       }
     }
-    return true;
+    if (files.isEmpty) {
+      return;
+    }
+    final outcome = await widget.sendFiles?.call([for (final f in files) f.path]);
+    if (files.any((f) => f.fromClipboard)) {
+      // The copy is deleted only once it arrived: a failed line keeps it,
+      // and its retry with it.
+      widget.onCopiedUsed?.call(sent: outcome == SendOutcome.sent);
+    }
   }
 
   Future<void> _open(ChatFile f) async {
