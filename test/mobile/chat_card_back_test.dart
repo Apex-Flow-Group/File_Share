@@ -1,4 +1,3 @@
-import 'package:apex_file_share/features/chat/logic/chat_key.dart';
 import 'package:apex_file_share/features/chat/ui/device_chat_view.dart';
 import 'package:apex_file_share/l10n/generated/app_localizations.dart';
 import 'package:apex_file_share/mobile/widgets/connection_widget.dart';
