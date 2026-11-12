@@ -34,11 +34,23 @@ class _HostState extends State<_Host> with HomeDialogs {
   final chats = <ChatKey>[];
   final folders = <String?>[];
 
+  /// Whether the sender's card is on the send tab.
+  bool listed = true;
+
   @override
   void onOpenFilesFromSheet([String? filePath]) => folders.add(filePath);
 
   @override
-  void onOpenChatFromSheet(ChatKey key) => chats.add(key);
+  bool hasChatCard(ChatKey key) => listed;
+
+  @override
+  bool onOpenChatFromSheet(ChatKey key) {
+    if (!listed) {
+      return false;
+    }
+    chats.add(key);
+    return true;
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -82,6 +94,22 @@ void main() {
     await tester.tap(find.text(l10n.chatOpen));
     await tester.pumpAndSettle();
     expect(_host.chats, [ChatKey(_fp)]);
+  });
+
+  // Arabic review: the chat opens in its device's card, so with the device
+  // gone from the list the button showed an empty send tab.
+  testWidgets('its device gone from the list: the sheet opens the folder', (tester) async {
+    final l10n = await start(tester);
+    final event = _overNetwork('late.pdf');
+    ApexCore.instance.chat.receivedFile(event);
+    _host.listed = false;
+    _host.showFileReceivedSheet(event);
+    await tester.pumpAndSettle();
+    expect(find.text(l10n.chatOpen), findsNothing);
+    await tester.tap(find.text(l10n.openFolder));
+    await tester.pumpAndSettle();
+    expect(_host.folders, ['/tmp/late.pdf']);
+    expect(_host.chats, isEmpty);
   });
 
   testWidgets('over Nearby there is no chat: the sheet still opens the folder', (tester) async {
