@@ -319,7 +319,8 @@ class ApexBottomSheet extends StatelessWidget {
                 fit: StackFit.passthrough,
                 children: [
                   header!,
-                  Padding(padding: const EdgeInsets.only(top: 12), child: handle),
+                  // Positioned: passthrough would stretch it across the sheet.
+                  Positioned(top: 12, child: handle),
                 ],
               ),
             ),
