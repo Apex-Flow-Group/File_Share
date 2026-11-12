@@ -44,13 +44,15 @@ void main() {
 
   double y(WidgetTester tester, Finder f) => tester.getCenter(f).dy;
 
-  testWidgets('one line until touched, then the text above the buttons', (tester) async {
+  // Owner decision (2026-11-12): beside three circles the one-line hint
+  // wrapped, so the text is above the buttons before it is touched too.
+  testWidgets('the text is above the buttons from the start, and its hint is one line',
+      (tester) async {
     final l10n = await show(tester);
     final send = find.bySemanticsLabel(l10n.send);
-    expect((y(tester, find.byType(TextField)) - y(tester, send)).abs(), lessThan(4));
-    await tester.tap(find.byType(TextField));
-    await tester.pump();
     expect(y(tester, send), greaterThan(y(tester, find.byType(TextField)) + 10));
+    final field = tester.widget<TextField>(find.byType(TextField));
+    expect(field.decoration!.hintMaxLines, 1);
   });
 
   testWidgets('the clip adds files to the box; send takes the text and the files together',
