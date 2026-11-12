@@ -14,7 +14,8 @@ void mergeFound(Map<String, Device> known, Device device) {
       .firstOrNull;
 
   if (device.isNearby) {
-    final key = known.containsKey(device.id) ? null : sameName((d) => d.isMdns && !d.isNearby);
+    // A merged one too: found again, Nearby gives it a new endpoint.
+    final key = known.containsKey(device.id) ? null : sameName((d) => d.isMdns);
     if (key != null) {
       known[key] = known[key]!.copyWith(endpointId: device.endpointId, lastSeen: device.lastSeen);
     } else {
@@ -30,14 +31,10 @@ void mergeFound(Map<String, Device> known, Device device) {
   }
   final nearbyOnly = sameName((d) => d.isNearby && !d.isMdns);
   if (nearbyOnly != null) {
-    known[nearbyOnly] = known[nearbyOnly]!.copyWith(
-      ip: device.ip,
-      port: device.port,
-      shareEnabled: device.shareEnabled,
-      lastSeen: device.lastSeen,
-      fingerprint: device.fingerprint,
-      certificate: device.certificate,
-    );
+    // Kept under the network id, where its next packet looks: under the
+    // endpoint it was listed twice with one fingerprint.
+    final endpoint = known.remove(nearbyOnly)!.endpointId;
+    known[device.id] = device.copyWith(endpointId: endpoint);
     return;
   }
   known[device.id] = device;

@@ -46,6 +46,25 @@ void main() {
     expect(other.values.single.port, 4000);
   });
 
+  test('heard on Nearby first, the network packets that follow keep it one card', () {
+    final known = <String, Device>{};
+    mergeFound(known, _nearby('ep1', 'Ali Phone'));
+    mergeFound(known, _lan('phone', 'Ali Phone', '192.168.8.84', 4000));
+    mergeFound(known, _lan('phone', 'Ali Phone', '192.168.8.84', 4000));
+    expect(known.keys, ['phone'],
+        reason: 'two records of one fingerprint open and fold together');
+    expect(known['phone']!.endpointId, 'ep1');
+  });
+
+  test('a merged phone found again on Nearby stays one card', () {
+    final known = <String, Device>{};
+    mergeFound(known, _lan('phone', 'Ali Phone', '192.168.8.84', 4000));
+    mergeFound(known, _nearby('ep1', 'Ali Phone'));
+    mergeFound(known, _nearby('ep2', 'Ali Phone'));
+    expect(known.keys, ['phone']);
+    expect(known['phone']!.endpointId, 'ep2');
+  });
+
   test('a network refresh keeps the Nearby link of a merged phone', () {
     final known = <String, Device>{};
     mergeFound(known, _lan('phone', 'Ali Phone', '192.168.8.84', 4000));
