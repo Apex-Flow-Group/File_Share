@@ -230,28 +230,35 @@ class _DesktopSidebarState extends State<DesktopSidebar> {
               crossAxisAlignment: CrossAxisAlignment.stretch,
               children: [
                 // ─── The fold button, then the name and whether it is on.
-                Row(children: [
-                  Tooltip(
-                    message: folded ? l10n.sidebarExpand : l10n.sidebarCollapse,
-                    child: _CircleButton(
-                      icon: Icons.view_sidebar_outlined,
-                      label: folded ? l10n.sidebarExpand : l10n.sidebarCollapse,
-                      onTap: () => setState(() => _compact = !_compact),
-                    ),
-                  ),
-                  if (!compact) ...[
-                    const SizedBox(width: 10),
-                    Expanded(
-                      child: Text('Apex Transfer',
-                          maxLines: 1,
-                          overflow: TextOverflow.ellipsis,
-                          style: TextStyle(
-                              fontWeight: FontWeight.bold,
-                              fontSize: 15,
-                              color: c.text)),
-                    ),
-                  ],
-                ]),
+                Row(
+                    mainAxisAlignment: compact
+                        ? MainAxisAlignment.center
+                        : MainAxisAlignment.start,
+                    children: [
+                      Tooltip(
+                        message:
+                            folded ? l10n.sidebarExpand : l10n.sidebarCollapse,
+                        child: _CircleButton(
+                          folded: folded,
+                          label: folded
+                              ? l10n.sidebarExpand
+                              : l10n.sidebarCollapse,
+                          onTap: () => setState(() => _compact = !_compact),
+                        ),
+                      ),
+                      if (!compact) ...[
+                        const SizedBox(width: 10),
+                        Expanded(
+                          child: Text('Apex Transfer',
+                              maxLines: 1,
+                              overflow: TextOverflow.ellipsis,
+                              style: TextStyle(
+                                  fontWeight: FontWeight.bold,
+                                  fontSize: 15,
+                                  color: c.text)),
+                        ),
+                      ],
+                    ]),
                 const SizedBox(height: 10),
                 Tooltip(
                   message: status,
@@ -301,12 +308,13 @@ class _DesktopSidebarState extends State<DesktopSidebar> {
   }
 }
 
-/// The fold button: a filled circle a step off the panel (capsule-ui §1).
+/// The fold button: a filled circle a step off the panel (capsule-ui §1),
+/// with the owner's panel icon.
 class _CircleButton extends StatefulWidget {
   const _CircleButton(
-      {required this.icon, required this.label, required this.onTap});
+      {required this.folded, required this.label, required this.onTap});
 
-  final IconData icon;
+  final bool folded;
   final String label;
   final VoidCallback onTap;
 
@@ -331,13 +339,23 @@ class _CircleButtonState extends State<_CircleButton> {
           onTap: widget.onTap,
           child: AnimatedContainer(
             duration: Durations.short2,
-            width: 46,
+            width: 40,
             height: 40,
             decoration: BoxDecoration(
               color: _hover ? c.selected : c.hover,
-              borderRadius: BorderRadius.circular(20),
+              shape: BoxShape.circle,
             ),
-            child: Icon(widget.icon, size: 20, color: c.text),
+            child: Center(
+              child: CustomPaint(
+                size: const Size.square(18),
+                painter: _PanelIconPainter(
+                  color: c.text,
+                  // The sidebar is on the reading side: the right in Arabic.
+                  panelRight: Directionality.of(context) == TextDirection.rtl,
+                  folded: widget.folded,
+                ),
+              ),
+            ),
           ),
         ),
       ),
@@ -439,4 +457,54 @@ class RailIconButton extends StatelessWidget {
       ),
     );
   }
+}
+
+/// The owner's fold icon, which Material does not have: a framed panel with
+/// a bar on the sidebar's side and an arrow towards it to fold, away from it
+/// to open.
+class _PanelIconPainter extends CustomPainter {
+  const _PanelIconPainter(
+      {required this.color, required this.panelRight, required this.folded});
+
+  final Color color;
+  final bool panelRight;
+  final bool folded;
+
+  @override
+  void paint(Canvas canvas, Size size) {
+    final s = size.width;
+    final pen = Paint()
+      ..color = color
+      ..style = PaintingStyle.stroke
+      ..strokeWidth = s * 0.09
+      ..strokeCap = StrokeCap.round
+      ..strokeJoin = StrokeJoin.round;
+    final inset = pen.strokeWidth / 2;
+    canvas.drawRRect(
+        RRect.fromRectAndRadius(
+            Rect.fromLTRB(inset, inset, s - inset, s - inset),
+            Radius.circular(s * 0.22)),
+        pen);
+    final bar = panelRight ? s * 0.68 : s * 0.32;
+    canvas.drawLine(Offset(bar, inset), Offset(bar, s - inset), pen);
+    // The arrow sits in the wide part; it points at the bar to fold.
+    final towardBar = !folded;
+    final pointsRight = panelRight == towardBar;
+    final mid = panelRight ? s * 0.36 : s * 0.64;
+    final half = s * 0.13;
+    final tip = pointsRight ? mid + half / 1.4 : mid - half / 1.4;
+    final back = pointsRight ? mid - half / 1.4 : mid + half / 1.4;
+    canvas.drawPath(
+        Path()
+          ..moveTo(back, s / 2 - half)
+          ..lineTo(tip, s / 2)
+          ..lineTo(back, s / 2 + half),
+        pen);
+  }
+
+  @override
+  bool shouldRepaint(_PanelIconPainter old) =>
+      old.color != color ||
+      old.panelRight != panelRight ||
+      old.folded != folded;
 }
