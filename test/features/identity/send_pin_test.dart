@@ -144,7 +144,7 @@ void main() {
       expect(await sender().sendFiles(oneFile(), office.device(server.port, id: 'office-pc')), SendOutcome.sent);
       expect(pins.pinned('office-pc'), office.fingerprint);
       expect(await sender().sendFiles(oneFile(), pins.withPin(favorite(server.port))), SendOutcome.sent);
-      expect(asked, hasLength(2));
+      expect(asked, hasLength(1), reason: 'files are asked about once per device (owner decision)');
     });
 
     test('a device with another key than the pinned one is offered nothing, and the pin stays', () async {
