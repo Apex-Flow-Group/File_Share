@@ -902,6 +902,9 @@ class AppLocalizationsEn extends AppLocalizations {
   String get chatClose => 'Close chat';
 
   @override
+  String get deviceOptions => 'Device options';
+
+  @override
   String get chatAdd => 'Add';
 
   @override

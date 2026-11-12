@@ -928,6 +928,9 @@ class AppLocalizationsAr extends AppLocalizations {
   String get chatClose => 'إغلاق المحادثة';
 
   @override
+  String get deviceOptions => 'خيارات الجهاز';
+
+  @override
   String get chatAdd => 'إضافة';
 
   @override

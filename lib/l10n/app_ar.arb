@@ -307,6 +307,7 @@
   "chatPaste": "لصق",
   "chatClipboardEmpty": "لا يوجد نص منسوخ",
   "chatClose": "إغلاق المحادثة",
+  "deviceOptions": "خيارات الجهاز",
   "chatAdd": "إضافة",
   "chatRemoveFile": "إزالة {name}",
   "@chatRemoveFile": {

@@ -236,32 +236,58 @@ class _ConnectionWidgetState extends State<ConnectionWidget>
     }
   }
 
-  /// The opened card's head: the shared folder and block, in the room
-  /// beside the favourite star (owner decision).
-  List<Widget> _headTools(AppLocalizations l10n) {
+  /// The opened card's head keeps one menu beside the fold arrow (owner
+  /// decision): three buttons there left the name a few letters wide.
+  /// Block is last, apart and red.
+  Widget _headMenu(AppLocalizations l10n) {
     final store = ApexCore.instance.chat;
-    return [
-      if (widget.device.hasShare)
-        IconButton(
-          tooltip: l10n.sharedFolder,
-          onPressed: _openShareBrowser,
-          icon: const Icon(Icons.folder_shared_rounded, color: Color(0xFFFF9500)),
-        ),
-      ListenableBuilder(
-        listenable: store,
-        builder: (context, _) => !store.canBlock(widget.device.chatPeer)
-            ? const SizedBox.shrink()
-            : IconButton(
-                tooltip: l10n.chatBlock,
-                onPressed: () async {
-                  if (await confirmBlock(context, widget.device.name)) {
-                    store.block(widget.device.chatPeer);
-                  }
-                },
-                icon: const Icon(Icons.block_rounded, color: Colors.red),
+    final canPin = widget.isPinned ? widget.onUnpin != null : widget.onPin != null;
+    return PopupMenuButton<_HeadAction>(
+      tooltip: l10n.deviceOptions,
+      icon: const Icon(Icons.more_vert_rounded),
+      onSelected: (action) async {
+        switch (action) {
+          case _HeadAction.share:
+            _openShareBrowser();
+          case _HeadAction.pin:
+            (widget.isPinned ? widget.onUnpin : widget.onPin)?.call();
+          case _HeadAction.block:
+            if (await confirmBlock(context, widget.device.name)) {
+              store.block(widget.device.chatPeer);
+            }
+        }
+      },
+      itemBuilder: (context) {
+        final canBlock = store.canBlock(widget.device.chatPeer);
+        return [
+          if (widget.device.hasShare)
+            PopupMenuItem(
+              value: _HeadAction.share,
+              child: ListTile(
+                leading: const Icon(Icons.folder_shared_rounded, color: Color(0xFFFF9500)),
+                title: Text(l10n.sharedFolder),
               ),
-      ),
-    ];
+            ),
+          if (canPin)
+            PopupMenuItem(
+              value: _HeadAction.pin,
+              child: ListTile(
+                leading: Icon(widget.isPinned ? Icons.star_rounded : Icons.star_border_rounded),
+                title: Text(widget.isPinned ? l10n.unpinDevice : l10n.pinDevice),
+              ),
+            ),
+          if (canBlock && (widget.device.hasShare || canPin)) const PopupMenuDivider(),
+          if (canBlock)
+            PopupMenuItem(
+              value: _HeadAction.block,
+              child: ListTile(
+                leading: const Icon(Icons.block_rounded, color: Colors.red),
+                title: Text(l10n.chatBlock, style: const TextStyle(color: Colors.red)),
+              ),
+            ),
+        ];
+      },
+    );
   }
 
   Widget _buildChatCard(AppLocalizations l10n, bool isDark) =>
@@ -300,7 +326,8 @@ class _ConnectionWidgetState extends State<ConnectionWidget>
                   behavior: HitTestBehavior.opaque,
                   onTap: _toggle,
                   child: Row(children: [
-                    Expanded(child: _buildHeader(isDark, trailing: _headTools(l10n))),
+                    Expanded(child: _buildHeader(isDark, withStar: false)),
+                    _headMenu(l10n),
                     const SizedBox(width: 6),
                     Icon(Icons.expand_less_rounded,
                         color: Theme.of(context).colorScheme.onSurfaceVariant),
@@ -340,7 +367,7 @@ class _ConnectionWidgetState extends State<ConnectionWidget>
         },
       );
 
-  Widget _buildHeader(bool isDark, {List<Widget> trailing = const []}) {
+  Widget _buildHeader(bool isDark, {bool withStar = true}) {
     final color = _deviceColor;
     return Row(
       children: [
@@ -440,9 +467,8 @@ class _ConnectionWidgetState extends State<ConnectionWidget>
             ],
           ),
         ),
-        ...trailing,
         // ─── زر المفضلة
-        if (widget.onPin != null || widget.onUnpin != null)
+        if (withStar && (widget.onPin != null || widget.onUnpin != null))
           Tooltip(
             message: widget.isPinned
                 ? AppLocalizations.of(context).unpinDevice
@@ -1187,3 +1213,6 @@ class _TypeChip extends StatelessWidget {
     );
   }
 }
+
+/// What the opened card head's menu does.
+enum _HeadAction { share, pin, block }

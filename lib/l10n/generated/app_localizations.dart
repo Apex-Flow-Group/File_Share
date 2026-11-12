@@ -1694,6 +1694,12 @@ abstract class AppLocalizations {
   /// **'Close chat'**
   String get chatClose;
 
+  /// No description provided for @deviceOptions.
+  ///
+  /// In en, this message translates to:
+  /// **'Device options'**
+  String get deviceOptions;
+
   /// No description provided for @chatAdd.
   ///
   /// In en, this message translates to:

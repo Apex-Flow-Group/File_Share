@@ -338,6 +338,7 @@
   "chatPaste": "Paste",
   "chatClipboardEmpty": "No copied text",
   "chatClose": "Close chat",
+  "deviceOptions": "Device options",
   "chatAdd": "Add",
   "chatRemoveFile": "Remove {name}",
   "@chatRemoveFile": {
