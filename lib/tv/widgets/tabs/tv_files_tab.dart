@@ -92,7 +92,7 @@ class _TVFilesTabState extends State<TVFilesTab> {
           icon: Icons.folder_rounded,
           color: color,
           title: l10n.files,
-          subtitle: _files == null ? '...' : '${_files!.length} ${l10n.files}',
+          subtitle: _files == null ? '...' : l10n.fileCount(_files!.length),
           trailing: [_TVFocusableRefreshButton(onTap: _load)],
         ),
         // ─── List ────────────────────────────────────────────────────
@@ -296,7 +296,10 @@ class _TVFocusableRefreshButtonState extends State<_TVFocusableRefreshButton> {
               borderRadius: BorderRadius.circular(12),
               border: hasFocus ? Border.all(color: color, width: 2) : null,
             ),
-            child: const Icon(Icons.refresh_rounded, color: color, size: 22),
+            child: Icon(Icons.refresh_rounded,
+                color: color,
+                size: 22,
+                semanticLabel: AppLocalizations.of(context).reloadFiles),
           ),
         );
       }),

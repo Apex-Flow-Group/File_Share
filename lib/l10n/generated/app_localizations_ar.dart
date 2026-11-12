@@ -24,9 +24,6 @@ class AppLocalizationsAr extends AppLocalizations {
   String get settings => 'الإعدادات';
 
   @override
-  String get about => 'حول';
-
-  @override
   String get support => 'الدعم';
 
   @override
@@ -69,7 +66,48 @@ class AppLocalizationsAr extends AppLocalizations {
   String get device => 'الجهاز';
 
   @override
-  String get discovering => 'يبحث...';
+  String get discovering => 'جارٍ البحث عن الأجهزة…';
+
+  @override
+  String availableDeviceCount(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '$count جهاز متاح',
+      many: '$count جهازاً متاحاً',
+      few: '$count أجهزة متاحة',
+      two: 'جهازان متاحان',
+      one: 'جهاز واحد متاح',
+      zero: 'لا أجهزة متاحة',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String fileCount(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '$count ملف',
+      many: '$count ملفاً',
+      few: '$count ملفات',
+      two: 'ملفان',
+      one: 'ملف واحد',
+      zero: 'لا ملفات',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String selectedCount(int count) {
+    return 'المحدد: $count';
+  }
+
+  @override
+  String get loadingApps => 'جارٍ تحميل التطبيقات…';
+
+  @override
+  String get reloadFiles => 'إعادة تحميل الملفات';
 
   @override
   String get idle => 'خامل';
@@ -447,7 +485,7 @@ class AppLocalizationsAr extends AppLocalizations {
   String get savedIn => 'حُفظ في';
 
   @override
-  String get receiving => 'جاري الاستقبال...';
+  String get receiving => 'جارٍ الاستقبال…';
 
   @override
   String get fileSize => 'حجم الملف';
@@ -524,9 +562,6 @@ class AppLocalizationsAr extends AppLocalizations {
 
   @override
   String get madeInArabWorld => 'صُنع في العالم العربي';
-
-  @override
-  String get availableDevices => 'الأجهزة المتاحة';
 
   @override
   String get systemNotRunning => 'النظام لا يعمل';
@@ -689,11 +724,6 @@ class AppLocalizationsAr extends AppLocalizations {
   @override
   String downloadSaved(String path) {
     return 'حُفظ الملف في $path';
-  }
-
-  @override
-  String shareFileCount(int count) {
-    return '$count ملف';
   }
 
   @override

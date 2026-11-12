@@ -234,7 +234,7 @@ class _MoreButtonState extends State<_MoreButton>
           ),
           _MenuItem(
             icon: ApexIcons.about,
-            label: l10n.about,
+            label: l10n.aboutApp,
             onTap: () {
               _close();
               widget.onAboutTap();

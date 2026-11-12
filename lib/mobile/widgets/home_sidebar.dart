@@ -255,7 +255,7 @@ class _DesktopSidebarState extends State<DesktopSidebar> {
                     onTap: widget.onSettings),
                 SidebarActionTile(
                     icon: ApexIcons.about,
-                    label: l10n.about,
+                    label: l10n.aboutApp,
                     compact: compact,
                     onTap: widget.onAbout),
               ],
@@ -531,7 +531,7 @@ class TabletRail extends StatelessWidget {
                         const SizedBox(height: 8),
                         RailIconButton(icon: ApexIcons.settings, tooltip: l10n.settings, onTap: onSettings),
                         const SizedBox(height: 8),
-                        RailIconButton(icon: ApexIcons.about, tooltip: l10n.about, onTap: onAbout),
+                        RailIconButton(icon: ApexIcons.about, tooltip: l10n.aboutApp, onTap: onAbout),
                         const SizedBox(height: 8),
                         Container(
                           width: 8,

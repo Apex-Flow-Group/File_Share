@@ -128,12 +128,6 @@ abstract class AppLocalizations {
   /// **'Settings'**
   String get settings;
 
-  /// No description provided for @about.
-  ///
-  /// In en, this message translates to:
-  /// **'About'**
-  String get about;
-
   /// No description provided for @support.
   ///
   /// In en, this message translates to:
@@ -223,6 +217,36 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Discovering...'**
   String get discovering;
+
+  /// No description provided for @availableDeviceCount.
+  ///
+  /// In en, this message translates to:
+  /// **'{count, plural, =0{No devices available} =1{1 device available} other{{count} devices available}}'**
+  String availableDeviceCount(int count);
+
+  /// No description provided for @fileCount.
+  ///
+  /// In en, this message translates to:
+  /// **'{count, plural, =0{No files} =1{1 file} other{{count} files}}'**
+  String fileCount(int count);
+
+  /// No description provided for @selectedCount.
+  ///
+  /// In en, this message translates to:
+  /// **'{count} selected'**
+  String selectedCount(int count);
+
+  /// No description provided for @loadingApps.
+  ///
+  /// In en, this message translates to:
+  /// **'Loading apps…'**
+  String get loadingApps;
+
+  /// No description provided for @reloadFiles.
+  ///
+  /// In en, this message translates to:
+  /// **'Reload files'**
+  String get reloadFiles;
 
   /// No description provided for @idle.
   ///
@@ -1076,12 +1100,6 @@ abstract class AppLocalizations {
   /// **'Made in the Arab World'**
   String get madeInArabWorld;
 
-  /// No description provided for @availableDevices.
-  ///
-  /// In en, this message translates to:
-  /// **'Available Devices'**
-  String get availableDevices;
-
   /// No description provided for @systemNotRunning.
   ///
   /// In en, this message translates to:
@@ -1393,12 +1411,6 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Saved to {path}'**
   String downloadSaved(String path);
-
-  /// No description provided for @shareFileCount.
-  ///
-  /// In en, this message translates to:
-  /// **'{count} file(s)'**
-  String shareFileCount(int count);
 
   /// No description provided for @browseSharedFolder.
   ///

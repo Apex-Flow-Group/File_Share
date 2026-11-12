@@ -6,7 +6,6 @@
   "receive": "جهازي",
   "files": "ملفات",
   "settings": "الإعدادات",
-  "about": "حول",
   "support": "الدعم",
   "home": "الرئيسية",
   "thisDevice": "هذا الجهاز",
@@ -21,7 +20,21 @@
   "editDeviceName": "تعديل اسم الجهاز",
   "deviceNameUpdated": "تم تحديث اسم الجهاز",
   "device": "الجهاز",
-  "discovering": "يبحث...",
+  "discovering": "جارٍ البحث عن الأجهزة…",
+  "availableDeviceCount": "{count, plural, =0{لا أجهزة متاحة} =1{جهاز واحد متاح} =2{جهازان متاحان} few{{count} أجهزة متاحة} many{{count} جهازاً متاحاً} other{{count} جهاز متاح}}",
+  "@availableDeviceCount": {
+    "placeholders": { "count": { "type": "int" } }
+  },
+  "fileCount": "{count, plural, =0{لا ملفات} =1{ملف واحد} =2{ملفان} few{{count} ملفات} many{{count} ملفاً} other{{count} ملف}}",
+  "@fileCount": {
+    "placeholders": { "count": { "type": "int" } }
+  },
+  "selectedCount": "المحدد: {count}",
+  "@selectedCount": {
+    "placeholders": { "count": { "type": "int" } }
+  },
+  "loadingApps": "جارٍ تحميل التطبيقات…",
+  "reloadFiles": "إعادة تحميل الملفات",
   "idle": "خامل",
   "unknown": "غير معروف",
   "unknownDevice": "جهاز غير معروف",
@@ -147,7 +160,7 @@
   "fileSendFailed": "فشل إرسال الملف",
   "from": "من",
   "savedIn": "حُفظ في",
-  "receiving": "جاري الاستقبال...",
+  "receiving": "جارٍ الاستقبال…",
   "fileSize": "حجم الملف",
   "contactUs": "اتصل بنا",
   "yourName": "الاسم",
@@ -173,7 +186,6 @@
   "copyright": "حقوق النشر",
   "copyrightText": "© 2025 Apex Flow Group. جميع الحقوق محفوظة.",
   "madeInArabWorld": "صُنع في العالم العربي",
-  "availableDevices": "الأجهزة المتاحة",
   "systemNotRunning": "النظام لا يعمل",
   "foundSongs": "تم العثور على {count} أغنية",
   "@foundSongs": {
@@ -235,10 +247,6 @@
   "downloadSaved": "حُفظ الملف في {path}",
   "@downloadSaved": {
     "placeholders": { "path": { "type": "String" } }
-  },
-  "shareFileCount": "{count} ملف",
-  "@shareFileCount": {
-    "placeholders": { "count": { "type": "int" } }
   },
   "browseSharedFolder": "تصفح المجلد المشترك",
   "deletedFromShare": "تم حذف الملف",

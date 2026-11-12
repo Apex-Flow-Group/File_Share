@@ -345,18 +345,21 @@ class _ShareBrowserScreenState extends State<ShareBrowserScreen> {
       subtitle: widget.device.name,
       detail: '${widget.device.ip}:${widget.device.port}',
       inset: isDesktop ? 24 : 16,
-      leading: GestureDetector(
-        onTap: () => Navigator.of(context).pop(),
-        child: Container(
-          padding: const EdgeInsets.all(8),
-          decoration: BoxDecoration(
-            color: (isDark ? Colors.white : Colors.black).withValues(alpha: 0.07),
-            borderRadius: BorderRadius.circular(12),
-          ),
-          child: Icon(
-            Icons.arrow_back_ios_new_rounded,
-            size: 18,
-            color: isDark ? Colors.white70 : Colors.black54,
+      leading: Tooltip(
+        message: MaterialLocalizations.of(context).backButtonTooltip,
+        child: GestureDetector(
+          onTap: () => Navigator.of(context).pop(),
+          child: Container(
+            padding: const EdgeInsets.all(8),
+            decoration: BoxDecoration(
+              color: (isDark ? Colors.white : Colors.black).withValues(alpha: 0.07),
+              borderRadius: BorderRadius.circular(12),
+            ),
+            child: Icon(
+              Icons.arrow_back_ios_new_rounded,
+              size: 18,
+              color: isDark ? Colors.white70 : Colors.black54,
+            ),
           ),
         ),
       ),
@@ -369,7 +372,7 @@ class _ShareBrowserScreenState extends State<ShareBrowserScreen> {
               borderRadius: BorderRadius.circular(20),
             ),
             child: Text(
-              l10n.shareFileCount(_files.length),
+              l10n.fileCount(_files.length),
               style: TextStyle(
                 fontSize: 12,
                 fontWeight: FontWeight.w600,
@@ -392,7 +395,7 @@ class _ShareBrowserScreenState extends State<ShareBrowserScreen> {
         ],
         _HeaderIconButton(
           icon: Icons.refresh_rounded,
-          tooltip: l10n.restartingSystem,
+          tooltip: l10n.reloadFiles,
           color: color,
           isDark: isDark,
           enabled: !_loading,

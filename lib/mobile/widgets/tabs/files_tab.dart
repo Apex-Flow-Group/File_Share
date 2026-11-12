@@ -175,10 +175,11 @@ class _FilesTabState extends State<FilesTab>
       icon: Icons.folder_rounded,
       color: color,
       title: l10n.files,
-      subtitle: _files == null ? '...' : '${_files!.length} ${l10n.files}',
+      subtitle: _files == null ? '...' : l10n.fileCount(_files!.length),
       trailing: [
         IconButton(
           onPressed: _load,
+          tooltip: l10n.reloadFiles,
           icon: const Icon(Icons.refresh_rounded),
           style: IconButton.styleFrom(
             backgroundColor: color.withValues(alpha: 0.12),

@@ -207,7 +207,7 @@ class _SharedFolderSectionState extends State<SharedFolderSection> {
                               fontWeight: FontWeight.bold, fontSize: 14),
                         ),
                         Text(
-                          _loading ? '...' : l10n.shareFileCount(_files.length),
+                          _loading ? '...' : l10n.fileCount(_files.length),
                           style: TextStyle(
                             fontSize: 12,
                             color:

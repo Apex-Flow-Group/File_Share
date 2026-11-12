@@ -383,7 +383,7 @@ class _SendTabState extends State<SendTab> with TickerProviderStateMixin {
       title: l10n.send,
       subtitle: widget.devices.isEmpty
           ? l10n.discovering
-          : '${widget.devices.length} ${l10n.availableDevices}',
+          : l10n.availableDeviceCount(widget.devices.length),
       trailing: [
         if (widget.isRunning)
           Container(

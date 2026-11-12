@@ -24,9 +24,6 @@ class AppLocalizationsEn extends AppLocalizations {
   String get settings => 'Settings';
 
   @override
-  String get about => 'About';
-
-  @override
   String get support => 'Support';
 
   @override
@@ -70,6 +67,41 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get discovering => 'Discovering...';
+
+  @override
+  String availableDeviceCount(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '$count devices available',
+      one: '1 device available',
+      zero: 'No devices available',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String fileCount(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '$count files',
+      one: '1 file',
+      zero: 'No files',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String selectedCount(int count) {
+    return '$count selected';
+  }
+
+  @override
+  String get loadingApps => 'Loading apps…';
+
+  @override
+  String get reloadFiles => 'Reload files';
 
   @override
   String get idle => 'Idle';
@@ -521,9 +553,6 @@ class AppLocalizationsEn extends AppLocalizations {
   String get madeInArabWorld => 'Made in the Arab World';
 
   @override
-  String get availableDevices => 'Available Devices';
-
-  @override
   String get systemNotRunning => 'System not running';
 
   @override
@@ -687,11 +716,6 @@ class AppLocalizationsEn extends AppLocalizations {
   @override
   String downloadSaved(String path) {
     return 'Saved to $path';
-  }
-
-  @override
-  String shareFileCount(int count) {
-    return '$count file(s)';
   }
 
   @override

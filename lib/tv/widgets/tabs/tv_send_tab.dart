@@ -254,7 +254,7 @@ class _TVSendTabState extends State<TVSendTab> with TickerProviderStateMixin {
       icon: ApexIcons.sendPage,
       color: color,
       title: l10n.send,
-      subtitle: '${widget.devices.length} ${l10n.availableDevices}',
+      subtitle: l10n.availableDeviceCount(widget.devices.length),
       trailing: [
         if (widget.isRunning)
           Container(

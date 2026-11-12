@@ -86,13 +86,12 @@ class _AppsSelectionSheetState extends State<AppsSelectionSheet> {
                 color: const Color(0xFF34C759),
                 title: l10n.installedApps,
                 subtitle: _selectedPackages.isNotEmpty
-                    ? isAr
-                          ? '${_selectedPackages.length} محدد'
-                          : '${_selectedPackages.length} selected'
+                    ? l10n.selectedCount(_selectedPackages.length)
                     : null,
                 trailing: [
                   IconButton(
                     onPressed: () => Navigator.pop(context),
+                    tooltip: l10n.close,
                     icon: Icon(
                       Icons.close_rounded,
                       color: isDark ? Colors.white54 : Colors.black45,
@@ -155,7 +154,7 @@ class _AppsSelectionSheetState extends State<AppsSelectionSheet> {
                         children: [
                           const CircularProgressIndicator(),
                           const SizedBox(height: 16),
-                          Text(l10n.discovering,
+                          Text(l10n.loadingApps,
                               style: const TextStyle(fontSize: 14)),
                         ],
                       ),

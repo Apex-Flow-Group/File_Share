@@ -233,7 +233,7 @@ class _TVFileBrowserState extends State<_TVFileBrowser> {
                     borderRadius: BorderRadius.circular(10),
                   ),
                   child: Text(
-                    '${_selected.length} محدد',
+                    AppLocalizations.of(context).selectedCount(_selected.length),
                     style: TextStyle(fontSize: 12, color: color, fontWeight: FontWeight.w600),
                   ),
                 ),

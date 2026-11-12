@@ -8,7 +8,6 @@
   "receive": "My Device",
   "files": "Files",
   "settings": "Settings",
-  "about": "About",
   "support": "Support",
   "home": "Home",
   "thisDevice": "This Device",
@@ -24,6 +23,20 @@
   "deviceNameUpdated": "Device name updated",
   "device": "Device",
   "discovering": "Discovering...",
+  "availableDeviceCount": "{count, plural, =0{No devices available} =1{1 device available} other{{count} devices available}}",
+  "@availableDeviceCount": {
+    "placeholders": { "count": { "type": "int" } }
+  },
+  "fileCount": "{count, plural, =0{No files} =1{1 file} other{{count} files}}",
+  "@fileCount": {
+    "placeholders": { "count": { "type": "int" } }
+  },
+  "selectedCount": "{count} selected",
+  "@selectedCount": {
+    "placeholders": { "count": { "type": "int" } }
+  },
+  "loadingApps": "Loading apps…",
+  "reloadFiles": "Reload files",
   "idle": "Idle",
   "unknown": "Unknown",
   "unknownDevice": "Unknown Device",
@@ -175,7 +188,6 @@
   "copyright": "Copyright",
   "copyrightText": "© 2025 Apex Flow Group. All rights reserved.",
   "madeInArabWorld": "Made in the Arab World",
-  "availableDevices": "Available Devices",
   "systemNotRunning": "System not running",
   "foundSongs": "Found {count} songs",
   "@foundSongs": {
@@ -238,10 +250,6 @@
   "downloadSaved": "Saved to {path}",
   "@downloadSaved": {
     "placeholders": { "path": { "type": "String" } }
-  },
-  "shareFileCount": "{count} file(s)",
-  "@shareFileCount": {
-    "placeholders": { "count": { "type": "int" } }
   },
   "browseSharedFolder": "Browse Shared Folder",
   "deletedFromShare": "File deleted",
