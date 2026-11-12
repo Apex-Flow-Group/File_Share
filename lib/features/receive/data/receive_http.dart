@@ -44,7 +44,11 @@ class ReceiveHttp {
     this.bodyIdleLimit = TransferRules.bodyIdleLimit,
   })  : _blocks = blocks ?? BlockList(pins),
         _question = question ?? OneQuestion() {
-    _blocks.onBlock(() => gate.revokeWhere(_blocks.isBlocked));
+    _blocks.onBlock(() {
+      gate.revokeWhere(_blocks.isBlocked);
+      // Every way of blocking, the chat question refused too, by key or id.
+      _filesAgreed.removeWhere((key, id) => _blocks.isBlocked(chatPeer(key, id, '')));
+    });
   }
 
   final ReceiveGate gate;
@@ -72,12 +76,15 @@ class ReceiveHttp {
 
   final OneQuestion _question;
 
-  /// Certificates whose files the user accepted this run: their next
-  /// batches come in unasked. In memory only, as the chat's agreements.
-  final _filesAgreed = <String>{};
+  /// Certificates whose files the user accepted this run, with the id they
+  /// came as: their next batches come in unasked. In memory only, as the
+  /// chat's agreements.
+  final _filesAgreed = <String, String>{};
 
-  /// A block, or its end, makes the device a new one: it is asked again.
-  void forgetFiles(ChatPeer peer) => _filesAgreed.remove(peer.key.fingerprint);
+  /// The end of a block makes the device a new one: it is asked again. A
+  /// block itself forgets every device it turns away (above).
+  void forgetFiles(ChatPeer peer) =>
+      _filesAgreed.removeWhere((key, id) => key == peer.key.fingerprint || id == peer.id);
 
   TransferProgressService get _progress => TransferProgressService();
 
@@ -141,9 +148,13 @@ class ReceiveHttp {
       return;
     }
     // Asked once per device until the app closes (owner decision), at the
-    // certificate the user agreed to; another key is a new device.
-    final agreed = _filesAgreed.contains(fingerprint) &&
-        !pins.keyChanged(offer.senderId, fingerprint);
+    // certificate and id the user agreed to, still pinned for that id: a
+    // device agreed to must not take a colleague's unpinned id unasked. One
+    // batch at a time unasked; another while it is open is asked about, so
+    // a device cannot open batches without end.
+    final agreed = _filesAgreed[fingerprint] == offer.senderId &&
+        pins.pinned(offer.senderId) == fingerprint &&
+        !gate.hasOpenBatch(fingerprint);
     if (!agreed) {
       if (!_question.take()) {
         await _reply(req, HttpStatus.tooManyRequests, {'error': 'busy'});
@@ -160,8 +171,14 @@ class ReceiveHttp {
             {'accepted': false, if (accepted == null) 'reason': ApexProtocol.noAnswer});
         return;
       }
+      // Blocked while the question was up (from its chat, say): an accept
+      // given before the block lets nothing in.
+      if (_blocks.isBlocked(chatPeer(fingerprint, offer.senderId, offer.senderAddress))) {
+        await _refuse(req);
+        return;
+      }
       if (isFingerprint(fingerprint)) {
-        _filesAgreed.add(fingerprint);
+        _filesAgreed[fingerprint] = offer.senderId;
       }
     }
     await pins.pin(offer.senderId, fingerprint);

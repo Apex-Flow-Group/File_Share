@@ -134,10 +134,8 @@ class ApexCore {
     sendFilesNow: (files, target, onDelivered) async => _send.sendFiles(
         [for (final f in files) (path: f.path, name: f.name, size: await File(f.path).length())], target,
         onDelivered: onDelivered),
-    onBlock: (peer) {
-      _chat.block(peer);
-      _receive.forgetFiles(peer);
-    },
+    // The file door forgets a blocked device by itself, on every block.
+    onBlock: _chat.block,
     onUnblock: (peer) {
       _chat.unblock(peer);
       _receive.forgetFiles(peer);

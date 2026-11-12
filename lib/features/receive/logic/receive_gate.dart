@@ -57,6 +57,14 @@ class ReceiveGate {
     return Upload._(this, ticket.batch, ticket.file);
   }
 
+  /// Whether a batch from [fingerprint] still has a file to come or moving.
+  bool hasOpenBatch(String fingerprint) {
+    _dropExpired();
+    return _batches.any((b) =>
+        b.fingerprint == fingerprint &&
+        (b.moving > 0 || _tickets.values.any((t) => identical(t.batch, b))));
+  }
+
   /// Ends every batch whose sender [turnedAway] now refuses: none of its
   /// tokens is accepted again, and a file of it moving now stops.
   void revokeWhere(bool Function(ChatPeer sender) turnedAway) {

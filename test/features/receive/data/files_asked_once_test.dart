@@ -28,6 +28,7 @@ void main() {
   late ReceiveHttp receive;
   late List<String> asked;
   late bool answer;
+  late BlockList blocks;
 
   setUpAll(() async {
     me = await TlsPeer.create();
@@ -42,6 +43,7 @@ void main() {
     root = await Directory.systemTemp.createTemp('apex_files_once_');
     Directory('${root.path}/tmp').createSync();
     final pins = PinStore.memory();
+    blocks = BlockList(pins);
     receive = ReceiveHttp(
       gate: ReceiveGate(),
       store: ReceiveStore(
@@ -56,10 +58,12 @@ void main() {
       expectedFingerprint: (id, address) => switch (id) {
         'phone' => phone.fingerprint,
         'other' => other.fingerprint,
+        // Discovery heard the agreed phone announce a colleague's id too.
+        'colleague' => phone.fingerprint,
         _ => null,
       },
       pins: pins,
-      blocks: BlockList(pins),
+      blocks: blocks,
     );
     server = await me.bind([phone, other]);
     server.listen((req) async {
@@ -76,7 +80,9 @@ void main() {
     await root.delete(recursive: true);
   });
 
-  Future<bool> offer(TlsPeer from, String id) async {
+  /// Offers one small file and, unless [upload] is false, sends it, so the
+  /// batch is over before the next one.
+  Future<bool> offer(TlsPeer from, String id, {bool upload = true}) async {
     final client = from.client(me);
     try {
       final req = await client.postUrl(Uri.https('127.0.0.1:${server.port}', ApexProtocol.offerPath));
@@ -89,8 +95,19 @@ void main() {
         ],
       }));
       final body = jsonDecode(await (await req.close()).transform(utf8.decoder).join()) as Map;
+      final accepted = body['accepted'] == true;
+      if (accepted && upload) {
+        final up = await client.postUrl(Uri.https('127.0.0.1:${server.port}', ApexProtocol.uploadPath));
+        up.headers
+          ..set(ApexProtocol.versionHeader, '${ApexProtocol.version}')
+          ..set(ApexProtocol.tokenHeader, (body['tokens'] as List).first as String);
+        up
+          ..contentLength = 3
+          ..add([1, 2, 3]);
+        await (await up.close()).drain<void>();
+      }
       TransferProgressService().clearProgress();
-      return body['accepted'] == true;
+      return accepted;
     } finally {
       client.close(force: true);
     }
@@ -122,5 +139,30 @@ void main() {
     receive.forgetFiles(chatPeer(phone.fingerprint, 'phone', '127.0.0.1'));
     await offer(phone, 'phone');
     expect(asked, ['phone', 'phone']);
+  });
+
+  test('an agreed device taking a colleague\'s unpinned id is asked, not let in', () async {
+    await offer(phone, 'phone');
+    await offer(phone, 'colleague');
+    expect(asked, ['phone', 'colleague'],
+        reason: 'unasked, its key would be pinned for the colleague and the colleague turned away');
+  });
+
+  test('every block forgets it: unblocking the id with another key lets the old key in unasked no more',
+      () async {
+    await offer(phone, 'phone');
+    // Blocked by the chat (its question refused, say), not by the card.
+    blocks.block(chatPeer(phone.fingerprint, 'phone', '127.0.0.1'));
+    // The same id back with another key is unblocked: that lifts the old block too.
+    blocks.unblock(chatPeer(other.fingerprint, 'phone', '127.0.0.1'));
+    expect(blocks.isBlocked(chatPeer(phone.fingerprint, 'phone', '127.0.0.1')), isFalse);
+    await offer(phone, 'phone');
+    expect(asked, ['phone', 'phone']);
+  });
+
+  test('one batch at a time unasked: another while it is open is asked about', () async {
+    await offer(phone, 'phone', upload: false);
+    await offer(phone, 'phone', upload: false);
+    expect(asked, ['phone', 'phone'], reason: 'a device must not open batches without end');
   });
 }
