@@ -53,6 +53,9 @@ class _PhoneHostState extends State<_PhoneHost> with HomeDialogs {
   void onOpenFilesFromSheet([String? filePath]) {}
 
   @override
+  void onOpenChatFromSheet(key) {}
+
+  @override
   Widget build(BuildContext context) => Scaffold(
         body: TextButton(
           onPressed: () => showConnectionRequestDialog(widget.request),
