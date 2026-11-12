@@ -4,6 +4,7 @@ import 'package:apex_file_share/features/chat/ui/device_chat_view.dart';
 import 'package:apex_file_share/l10n/generated/app_localizations.dart';
 import 'package:apex_file_share/mobile/widgets/connection_widget.dart';
 import 'package:apex_file_share/models/device.dart';
+import 'package:apex_file_share/shared/device_card.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 
@@ -19,7 +20,7 @@ final _second = Device(
 
 void main() {
   TestWidgetsFlutterBinding.ensureInitialized();
-  setUp(foldChatCards);
+  setUp(foldDeviceCards);
 
   Future<AppLocalizations> show(WidgetTester tester, Device device) async {
     tester.view.physicalSize = const Size(500, 2400);

@@ -4,6 +4,7 @@ import 'package:apex_file_share/features/chat/ui/device_chat_view.dart';
 import 'package:apex_file_share/l10n/generated/app_localizations.dart';
 import 'package:apex_file_share/mobile/widgets/connection_widget.dart';
 import 'package:apex_file_share/models/device.dart';
+import 'package:apex_file_share/shared/device_card.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_test/flutter_test.dart';
@@ -17,7 +18,7 @@ void main() {
 
   setUp(() {
     clipboard = null;
-    foldChatCards();
+    foldDeviceCards();
     TestDefaultBinaryMessengerBinding.instance.defaultBinaryMessenger
         .setMockMethodCallHandler(SystemChannels.platform, (call) async {
       if (call.method == 'Clipboard.getData') {
@@ -121,10 +122,13 @@ void main() {
     expect(find.byType(DeviceChatView), findsNothing);
   });
 
-  testWidgets('a Nearby-only phone keeps the old card: no chat row', (tester) async {
+  testWidgets('a Nearby-only phone: no chat row, and opened it sends at once', (tester) async {
     const phone = Device(id: 'nearby:x', name: 'Ali Phone', type: 'phone', endpointId: 'x');
     final l10n = await show(tester, [phone]);
     expect(find.bySemanticsLabel(l10n.chatPaste), findsNothing);
+    await tester.tap(find.text('Ali Phone'));
+    await tester.pumpAndSettle();
+    expect(find.byType(DeviceChatView), findsNothing);
     expect(find.text(l10n.sendFilesNow), findsOneWidget);
   });
 }

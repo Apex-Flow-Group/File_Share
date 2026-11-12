@@ -128,10 +128,12 @@ void main() {
     expect(find.byType(TextField), findsOneWidget);
   });
 
-  testWidgets('on the TV the chat says it is blocked; unblocking is on the dialog buttons', (tester) async {
+  testWidgets('on the TV the chat says it is blocked, and unblocks there as everywhere', (tester) async {
     final store = blockedStore();
     final l10n = await show(tester, store, canWrite: false);
     expect(find.text(l10n.chatBlocked), findsOneWidget);
-    expect(find.text(l10n.chatUnblock), findsNothing);
+    // The one place to unblock on every device (owner decision: no TV chat
+    // dialog with buttons of its own).
+    expect(find.text(l10n.chatUnblock), findsOneWidget);
   });
 }

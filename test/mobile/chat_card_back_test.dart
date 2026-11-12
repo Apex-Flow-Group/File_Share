@@ -2,6 +2,7 @@ import 'package:apex_file_share/features/chat/ui/device_chat_view.dart';
 import 'package:apex_file_share/l10n/generated/app_localizations.dart';
 import 'package:apex_file_share/mobile/widgets/connection_widget.dart';
 import 'package:apex_file_share/models/device.dart';
+import 'package:apex_file_share/shared/device_card.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 
@@ -11,7 +12,7 @@ const _pc = Device(id: 'p', name: 'Office PC', type: 'desktop', ip: '192.168.8.9
 
 void main() {
   TestWidgetsFlutterBinding.ensureInitialized();
-  setUp(foldChatCards);
+  setUp(foldDeviceCards);
 
   Future<void> open(WidgetTester tester) async {
     tester.view.physicalSize = const Size(500, 2400);
