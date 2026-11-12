@@ -110,6 +110,7 @@ class _ConnectionWidgetState extends State<ConnectionWidget>
   @override
   void dispose() {
     _sendAnim.dispose();
+    _cardFocus.dispose();
     super.dispose();
   }
 
@@ -193,6 +194,22 @@ class _ConnectionWidgetState extends State<ConnectionWidget>
   int _pasteSeq = 0;
 
   bool get _expanded => _openChat.value == widget.device.chatKey;
+
+  /// Holds the opened card, so back knows whether its box is being written in.
+  final _cardFocus = FocusNode(skipTraversal: true, canRequestFocus: false);
+
+  /// Back, one step at a time (owner decision): the system closes the
+  /// keyboard, then the box is left, then the card folds.
+  void _back(bool didPop, Object? _) {
+    if (didPop) {
+      return;
+    }
+    if (_cardFocus.hasFocus) {
+      FocusManager.instance.primaryFocus?.unfocus();
+    } else {
+      _openChat.value = null;
+    }
+  }
 
   void _open({String? paste, List<String> picked = const []}) {
     setState(() {
@@ -316,7 +333,12 @@ class _ConnectionWidgetState extends State<ConnectionWidget>
               ],
             );
           }
-          return Column(
+          return PopScope(
+            canPop: false,
+            onPopInvokedWithResult: _back,
+            child: Focus(
+            focusNode: _cardFocus,
+            child: Column(
             crossAxisAlignment: CrossAxisAlignment.stretch,
             children: [
               // Touching the head folds the card again.
@@ -364,6 +386,8 @@ class _ConnectionWidgetState extends State<ConnectionWidget>
                 ],
               ),
             ],
+          ),
+          ),
           );
         },
       );
