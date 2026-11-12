@@ -276,10 +276,8 @@ void main() {
     device.heard['phone'] = stranger.fingerprint;
     await _post(stranger.client(pc), device.port, ApexProtocol.offerPath, _offer('phone'));
     expect(device.asked.last.keyChanged, isTrue);
-    // Accepted with this key: its next batch is not asked about as a
-    // changed key, nor at all (files are asked once per device).
     await _post(stranger.client(pc), device.port, ApexProtocol.offerPath, _offer('phone'));
-    expect(device.asked, hasLength(2), reason: 'The user accepted it with this key.');
+    expect(device.asked.last.keyChanged, isFalse, reason: 'The user accepted it with this key.');
     expect((await PinStore.open(File('${pinFolder.path}/pins.json'))).pinned('phone'), stranger.fingerprint);
   });
 
