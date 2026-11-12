@@ -29,6 +29,9 @@ class _HostState extends State<_Host> with HomeDialogs {
   void onOpenFilesFromSheet([String? filePath]) {}
 
   @override
+  void onOpenChatFromSheet(key) {}
+
+  @override
   Widget build(BuildContext context) {
     _host = this;
     return const Scaffold(body: SizedBox.expand());
