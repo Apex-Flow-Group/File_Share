@@ -187,7 +187,7 @@
   "copyright": "Copyright",
   "copyrightText": "© 2025 Apex Flow Group. All rights reserved.",
   "madeInArabWorld": "Made in the Arab World",
-  "startFailed": "Couldn't start receiving and search",
+  "startFailed": "Couldn't start receiving and searching",
   "foundSongs": "Found {count} songs",
   "@foundSongs": {
     "description": "Number of songs found",

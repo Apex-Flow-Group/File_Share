@@ -1097,7 +1097,7 @@ abstract class AppLocalizations {
   /// No description provided for @startFailed.
   ///
   /// In en, this message translates to:
-  /// **'Couldn\'t start receiving and search'**
+  /// **'Couldn\'t start receiving and searching'**
   String get startFailed;
 
   /// Number of songs found

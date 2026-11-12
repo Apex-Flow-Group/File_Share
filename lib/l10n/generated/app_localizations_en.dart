@@ -550,7 +550,7 @@ class AppLocalizationsEn extends AppLocalizations {
   String get madeInArabWorld => 'Made in the Arab World';
 
   @override
-  String get startFailed => 'Couldn\'t start receiving and search';
+  String get startFailed => 'Couldn\'t start receiving and searching';
 
   @override
   String foundSongs(int count) {
