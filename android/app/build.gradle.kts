@@ -58,6 +58,11 @@ android {
                 "proguard-rules.pro"
             )
         }
+        // A debug build is signed with another key, so it cannot update the
+        // installed app; its own id installs it beside it instead.
+        debug {
+            applicationIdSuffix = ".debug"
+        }
     }
 }
 
