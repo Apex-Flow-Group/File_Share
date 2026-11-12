@@ -97,10 +97,6 @@ class _TVReceiveTabState extends State<TVReceiveTab>
       icon: Icons.smartphone_rounded,
       color: color,
       title: l10n.receive,
-      // Ready only when the body says so; otherwise the body says why not.
-      subtitle: _isReceiving
-          ? l10n.receiving
-          : (widget.localDevice != null && widget.isRunning ? l10n.readyToReceive : null),
     );
   }
 
@@ -265,7 +261,7 @@ class _TVReceiveTabState extends State<TVReceiveTab>
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
                     Text(
-                      isAr ? 'جاري الاستقبال...' : 'Receiving...',
+                      AppLocalizations.of(context).receiving,
                       style: const TextStyle(
                         fontWeight: FontWeight.bold,
                         fontSize: 16,
