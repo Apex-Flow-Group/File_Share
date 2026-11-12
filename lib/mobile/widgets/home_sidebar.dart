@@ -467,3 +467,89 @@ class _PanelIconPainter extends CustomPainter {
       old.panelRight != panelRight ||
       old.folded != folded;
 }
+
+/// The tablet's rail, and a phone's held sideways: its pages, then the
+/// tools at the foot, in the sidebars' roles.
+class TabletRail extends StatelessWidget {
+  const TabletRail({
+    required this.currentIndex,
+    required this.isRunning,
+    required this.onSelect,
+    required this.onRefresh,
+    required this.onSettings,
+    required this.onAbout,
+    super.key,
+  });
+
+  final int currentIndex;
+  final bool isRunning;
+  final ValueChanged<int> onSelect;
+  final VoidCallback onRefresh;
+  final VoidCallback onSettings;
+  final VoidCallback onAbout;
+
+  @override
+  Widget build(BuildContext context) {
+    final l10n = AppLocalizations.of(context);
+    final c = ApexColors.of(context);
+    return Container(
+      decoration: BoxDecoration(
+        color: c.panel,
+        border: BorderDirectional(end: BorderSide(color: c.panelBorder)),
+      ),
+      // With the keyboard up a phone held sideways has less height than the
+      // pages and tools: the rail scrolls then, and fills the height otherwise.
+      child: LayoutBuilder(
+        builder: (context, box) => SingleChildScrollView(
+          child: ConstrainedBox(
+            constraints: BoxConstraints(minHeight: box.maxHeight),
+            child: IntrinsicHeight(
+              child: NavigationRail(
+                selectedIndex: currentIndex < 3 ? currentIndex : 0,
+                onDestinationSelected: onSelect,
+                labelType: NavigationRailLabelType.all,
+                useIndicator: true,
+                backgroundColor: c.panel.withValues(alpha: 0),
+                // As the sidebars: selected is a lighter surface, not a colour.
+                indicatorColor: c.selected,
+                selectedIconTheme: IconThemeData(color: c.text),
+                unselectedIconTheme: IconThemeData(color: c.muted),
+                selectedLabelTextStyle: TextStyle(color: c.text, fontWeight: FontWeight.w600),
+                unselectedLabelTextStyle: TextStyle(color: c.muted),
+                destinations: [
+                  NavigationRailDestination(icon: const Icon(ApexIcons.sendPage), label: Text(l10n.send)),
+                  NavigationRailDestination(icon: const Icon(ApexIcons.receivePage), label: Text(l10n.receive)),
+                  NavigationRailDestination(icon: const Icon(ApexIcons.filesPage), label: Text(l10n.files)),
+                ],
+                trailing: Expanded(
+                  child: Align(
+                    alignment: Alignment.bottomCenter,
+                    child: Padding(
+                      padding: const EdgeInsets.only(bottom: 16),
+                      child: Column(mainAxisSize: MainAxisSize.min, children: [
+                        RailIconButton(icon: ApexIcons.findDevices, tooltip: l10n.findDevices, onTap: onRefresh),
+                        const SizedBox(height: 8),
+                        RailIconButton(icon: ApexIcons.settings, tooltip: l10n.settings, onTap: onSettings),
+                        const SizedBox(height: 8),
+                        RailIconButton(icon: ApexIcons.about, tooltip: l10n.about, onTap: onAbout),
+                        const SizedBox(height: 8),
+                        Container(
+                          width: 8,
+                          height: 8,
+                          decoration: BoxDecoration(
+                            color: isRunning ? c.online : c.muted,
+                            shape: BoxShape.circle,
+                          ),
+                        ),
+                      ]),
+                    ),
+                  ),
+                ),
+              ),
+            ),
+          ),
+        ),
+      ),
+    );
+  }
+}

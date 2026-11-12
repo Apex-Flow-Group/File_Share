@@ -7,6 +7,7 @@ import '../../core/apex_core.dart';
 import '../../l10n/generated/app_localizations.dart';
 import '../../services/settings_service.dart';
 import '../../shared/apex_bottom_sheet.dart';
+import '../../shared/apex_colors.dart';
 import '../../shared/apex_snackbar.dart';
 
 /// Helper class containing all bottom-sheet dialogs for SettingsScreen.
@@ -19,12 +20,15 @@ class SettingsSheets {
       BuildContext context, AppLocalizations l10n) async {
     final currentName = ApexCore.instance.localDevice?.name ?? '';
     final controller = TextEditingController(text: currentName);
-    final isDark = Theme.of(context).brightness == Brightness.dark;
+    final c = ApexColors.of(context);
 
     final newName = await showDialog<String>(
       context: context,
       builder: (ctx) => AlertDialog(
-        backgroundColor: isDark ? const Color(0xFF1E1E1E) : Colors.white,
+        // Scrolls above the keyboard: a phone held sideways has about 300
+        // points left, and the buttons overflowed under it.
+        scrollable: true,
+        backgroundColor: c.panel,
         shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
         title: Text(l10n.editDeviceName,
             style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 17)),
@@ -41,9 +45,7 @@ class SettingsSheets {
               borderSide: BorderSide.none,
             ),
             filled: true,
-            fillColor: isDark
-                ? Colors.white.withValues(alpha: 0.07)
-                : Colors.black.withValues(alpha: 0.05),
+            fillColor: c.hover,
             contentPadding:
                 const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
           ),

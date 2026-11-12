@@ -11,8 +11,6 @@ import '../../screens/about_screen.dart';
 import '../../services/settings_service.dart';
 import '../../services/update_service.dart';
 import '../../shared/apex_bottom_sheet.dart';
-import '../../shared/apex_colors.dart';
-import '../../shared/apex_icons.dart';
 import '../../shared/apex_snackbar.dart';
 import '../../shared/device_card.dart';
 import '../../shared/file_open_message.dart';
@@ -149,68 +147,16 @@ class _HomeScreenState extends State<HomeScreen>
   // ─── Tablet layout ──────────────────────────────────────────────────────────
 
   Widget _buildTabletLayout() {
-    final l10n = AppLocalizations.of(context);
-    final c = ApexColors.of(context);
-
     return Scaffold(
       body: SafeArea(
         child: Row(children: [
-          Container(
-            decoration: BoxDecoration(
-              color: c.panel,
-              border: BorderDirectional(end: BorderSide(color: c.panelBorder)),
-            ),
-            child: NavigationRail(
-              selectedIndex: _ctrl.currentIndex < 3 ? _ctrl.currentIndex : 0,
-              onDestinationSelected: (i) => _ctrl.setCurrentIndex(i),
-              labelType: NavigationRailLabelType.all,
-              useIndicator: true,
-              backgroundColor: Colors.transparent,
-              destinations: [
-                NavigationRailDestination(
-                    icon: const Icon(ApexIcons.sendPage),
-                    label: Text(l10n.send)),
-                NavigationRailDestination(
-                    icon: const Icon(ApexIcons.receivePage),
-                    label: Text(l10n.receive)),
-                NavigationRailDestination(
-                    icon: const Icon(ApexIcons.filesPage),
-                    label: Text(l10n.files)),
-              ],
-              trailing: Expanded(
-                child: Align(
-                  alignment: Alignment.bottomCenter,
-                  child: Padding(
-                    padding: const EdgeInsets.only(bottom: 16),
-                    child: Column(mainAxisSize: MainAxisSize.min, children: [
-                      RailIconButton(
-                          icon: ApexIcons.findDevices,
-                          tooltip: l10n.findDevices,
-                          onTap: _ctrl.refreshDiscovery),
-                      const SizedBox(height: 8),
-                      RailIconButton(
-                          icon: ApexIcons.settings,
-                          tooltip: l10n.settings,
-                          onTap: _openSettings),
-                      const SizedBox(height: 8),
-                      RailIconButton(
-                          icon: ApexIcons.about,
-                          tooltip: l10n.about,
-                          onTap: _openAbout),
-                      const SizedBox(height: 8),
-                      Container(
-                        width: 8,
-                        height: 8,
-                        decoration: BoxDecoration(
-                          color: _ctrl.isRunning ? c.online : c.muted,
-                          shape: BoxShape.circle,
-                        ),
-                      ),
-                    ]),
-                  ),
-                ),
-              ),
-            ),
+          TabletRail(
+            currentIndex: _ctrl.currentIndex,
+            isRunning: _ctrl.isRunning,
+            onSelect: _ctrl.setCurrentIndex,
+            onRefresh: _ctrl.refreshDiscovery,
+            onSettings: _openSettings,
+            onAbout: _openAbout,
           ),
           Expanded(child: _buildPage(_ctrl.currentIndex)),
         ]),
