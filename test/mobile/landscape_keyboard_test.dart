@@ -48,15 +48,15 @@ void main() {
   testWidgets('with the keyboard up the rail scrolls instead of overflowing', (tester) async {
     final l10n = await pump(tester, rail());
     expect(tester.takeException(), isNull);
-    await tester.scrollUntilVisible(find.byTooltip(l10n.about), 50,
+    await tester.scrollUntilVisible(find.byTooltip(l10n.aboutApp), 50,
         scrollable: find.descendant(of: find.byType(TabletRail), matching: find.byType(Scrollable)));
-    expect(find.byTooltip(l10n.about).hitTestable(), findsOneWidget, reason: 'its tools still in reach');
+    expect(find.byTooltip(l10n.aboutApp).hitTestable(), findsOneWidget, reason: 'its tools still in reach');
   });
 
   testWidgets('without the keyboard the rail fills the height, its tools at the foot', (tester) async {
     final l10n = await pump(tester, rail(), keyboard: false);
     expect(tester.takeException(), isNull);
-    expect(tester.getRect(find.byTooltip(l10n.about)).bottom, greaterThan(_size.height - 80));
+    expect(tester.getRect(find.byTooltip(l10n.aboutApp)).bottom, greaterThan(_size.height - 80));
   });
 
   testWidgets('its selected page is a lighter surface, not a colour', (tester) async {
