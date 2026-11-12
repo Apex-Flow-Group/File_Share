@@ -215,7 +215,7 @@ abstract class AppLocalizations {
   /// No description provided for @discovering.
   ///
   /// In en, this message translates to:
-  /// **'Discovering...'**
+  /// **'Searching for devices…'**
   String get discovering;
 
   /// No description provided for @availableDeviceCount.

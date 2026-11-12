@@ -66,7 +66,7 @@ class AppLocalizationsEn extends AppLocalizations {
   String get device => 'Device';
 
   @override
-  String get discovering => 'Discovering...';
+  String get discovering => 'Searching for devices…';
 
   @override
   String availableDeviceCount(int count) {

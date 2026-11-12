@@ -22,7 +22,7 @@
   "editDeviceName": "Edit Device Name",
   "deviceNameUpdated": "Device name updated",
   "device": "Device",
-  "discovering": "Discovering...",
+  "discovering": "Searching for devices…",
   "availableDeviceCount": "{count, plural, =0{No devices available} =1{1 device available} other{{count} devices available}}",
   "@availableDeviceCount": {
     "placeholders": { "count": { "type": "int" } }

@@ -381,9 +381,8 @@ class _SendTabState extends State<SendTab> with TickerProviderStateMixin {
       icon: ApexIcons.sendPage,
       color: color,
       title: l10n.send,
-      subtitle: widget.devices.isEmpty
-          ? l10n.discovering
-          : l10n.availableDeviceCount(widget.devices.length),
+      // The search itself is said in the body, which knows whether it runs.
+      subtitle: l10n.availableDeviceCount(widget.devices.length),
       trailing: [
         if (widget.isRunning)
           Container(
