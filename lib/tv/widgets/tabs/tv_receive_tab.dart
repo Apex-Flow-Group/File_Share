@@ -270,7 +270,7 @@ class _TVReceiveTabState extends State<TVReceiveTab>
                     ),
                     if (senderName != null && senderName.isNotEmpty)
                       Text(
-                        isAr ? 'ظ…ظ†: $senderName' : 'From: $senderName',
+                        isAr ? 'من: $senderName' : 'From: $senderName',
                         style: const TextStyle(
                           fontSize: 12,
                           color: Colors.purple,
@@ -284,7 +284,7 @@ class _TVReceiveTabState extends State<TVReceiveTab>
                 Text(p.speedFormatted,
                     style: const TextStyle(fontSize: 12, color: Colors.purple)),
               const SizedBox(width: 8),
-              // Cancel button â€” focusable for remote
+              // Cancel button — focusable for remote
               TVFocusableButton(
                 focusNode: _cancelFocus,
                 onTap: () {
@@ -466,7 +466,7 @@ class _TVReceiveTabState extends State<TVReceiveTab>
             ],
           ),
         ),
-        // Copy button â€” focusable for TV remote
+        // Copy button — focusable for TV remote
         TVFocusableIconButton(
           focusNode: _copyFocus,
           icon: Icons.copy_rounded,
