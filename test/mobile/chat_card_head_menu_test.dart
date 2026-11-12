@@ -1,4 +1,3 @@
-import 'package:apex_file_share/features/chat/logic/chat_key.dart';
 import 'package:apex_file_share/l10n/generated/app_localizations.dart';
 import 'package:apex_file_share/mobile/widgets/connection_widget.dart';
 import 'package:apex_file_share/models/device.dart';
@@ -50,6 +49,40 @@ void main() {
     final ys = [for (final t in titles) tester.getCenter(find.text(t)).dy];
     expect(ys, orderedEquals([...ys]..sort()));
     expect(find.byType(PopupMenuDivider), findsOneWidget);
+  });
+
+  testWidgets('the menu and the fold arrow are one capsule, and ⋮ turns to ✕ while open',
+      (tester) async {
+    final l10n = await open(tester);
+    final capsule = find.ancestor(
+      of: find.byIcon(Icons.more_vert_rounded),
+      matching: find.byWidgetPredicate((w) =>
+          w is Container && (w.decoration as BoxDecoration?)?.borderRadius == BorderRadius.circular(24)),
+    );
+    expect(capsule, findsOneWidget);
+    expect(find.descendant(of: capsule, matching: find.byIcon(Icons.expand_less_rounded)), findsOneWidget);
+    expect(tester.getSize(capsule).height, 48);
+
+    await tester.tap(find.byTooltip(l10n.deviceOptions));
+    await tester.pumpAndSettle();
+    expect(find.byIcon(Icons.close_rounded), findsOneWidget);
+    await tester.tapAt(const Offset(10, 2300));
+    await tester.pumpAndSettle();
+    expect(find.byIcon(Icons.more_vert_rounded), findsOneWidget);
+  });
+
+  testWidgets('the online dot is beside the name, over the Wi-Fi badge', (tester) async {
+    await open(tester);
+    final dot = find.byWidgetPredicate((w) =>
+        w is Container && (w.decoration as BoxDecoration?)?.shape == BoxShape.circle && w.constraints?.maxWidth == 10);
+    expect(dot, findsOneWidget);
+    final name = tester.getRect(find.text('Office PC'));
+    final d = tester.getRect(dot);
+    expect((d.center.dy - name.center.dy).abs(), lessThan(4), reason: 'on the name line');
+    // Arabic reads right to left: the dot is at the start, right of the name.
+    expect(d.left, greaterThanOrEqualTo(name.right));
+    expect(d.center.dx, greaterThan(tester.getCenter(find.byIcon(Icons.expand_less_rounded)).dx),
+        reason: 'not among the buttons at the row end');
   });
 
   testWidgets('the favourite in the menu pins the device', (tester) async {

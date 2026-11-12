@@ -17,6 +17,7 @@ import '../../services/desktop_notification_service.dart';
 import '../../services/transfer_progress_service.dart';
 import '../../shared/apex_snackbar.dart';
 import '../../shared/device_look.dart';
+import '../../shared/framed_capsule_input.dart';
 import '../../utils/path_name.dart';
 import '../../utils/platform_detector.dart';
 import '../screens/share_browser_screen.dart';
@@ -253,16 +254,50 @@ class _ConnectionWidgetState extends State<ConnectionWidget>
     }
   }
 
+  /// Whether the head's menu is open: its ⋮ shows ✕ then (capsule-ui §4).
+  bool _menuOpen = false;
+
+  /// The menu and the fold arrow side by side are one filled capsule
+  /// (capsule-ui §1), a step lighter than the card, no border and no glow
+  /// on a card. A touch on the arrow reaches the head, which folds.
+  Widget _headCapsule(AppLocalizations l10n) {
+    final c = FramedCapsuleColors.of(context);
+    return Container(
+      height: 48,
+      decoration: BoxDecoration(color: c.circle, borderRadius: BorderRadius.circular(24)),
+      child: Row(mainAxisSize: MainAxisSize.min, children: [
+        _headMenu(l10n, c),
+        SizedBox(
+          width: 48,
+          height: 48,
+          child: Icon(Icons.expand_less_rounded, color: c.onCircle),
+        ),
+      ]),
+    );
+  }
+
+  void _menuShut() => setState(() => _menuOpen = false);
+
   /// The opened card's head keeps one menu beside the fold arrow (owner
   /// decision): three buttons there left the name a few letters wide.
   /// Block is last, apart and red.
-  Widget _headMenu(AppLocalizations l10n) {
+  Widget _headMenu(AppLocalizations l10n, FramedCapsuleColors c) {
     final store = ApexCore.instance.chat;
     final canPin = widget.isPinned ? widget.onUnpin != null : widget.onPin != null;
     return PopupMenuButton<_HeadAction>(
       tooltip: l10n.deviceOptions,
-      icon: const Icon(Icons.more_vert_rounded),
+      color: c.circle,
+      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(24)),
+      onOpened: () => setState(() => _menuOpen = true),
+      onCanceled: _menuShut,
+      // ⋮ in a narrower button, so the capsule stays small (capsule-ui §3).
+      child: SizedBox(
+        width: 40,
+        height: 48,
+        child: Icon(_menuOpen ? Icons.close_rounded : Icons.more_vert_rounded, color: c.onCircle),
+      ),
       onSelected: (action) async {
+        _menuShut();
         switch (action) {
           case _HeadAction.share:
             _openShareBrowser();
@@ -350,10 +385,7 @@ class _ConnectionWidgetState extends State<ConnectionWidget>
                   onTap: _toggle,
                   child: Row(children: [
                     Expanded(child: _buildHeader(isDark, withStar: false)),
-                    _headMenu(l10n),
-                    const SizedBox(width: 6),
-                    Icon(Icons.expand_less_rounded,
-                        color: Theme.of(context).colorScheme.onSurfaceVariant),
+                    _headCapsule(l10n),
                   ]),
                 ),
               ),
@@ -422,13 +454,29 @@ class _ConnectionWidgetState extends State<ConnectionWidget>
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
               // ─── اسم الجهاز (قابل للتغيير) — خط عريض
-              Text(
-                widget.device.name,
-                style:
-                    const TextStyle(fontWeight: FontWeight.bold, fontSize: 16),
-                maxLines: 1,
-                overflow: TextOverflow.ellipsis,
-              ),
+              // The online dot before the name, over the transport badge
+              // (owner decision), not at the row's end among the buttons.
+              Row(children: [
+                Container(
+                  width: 10,
+                  height: 10,
+                  decoration: BoxDecoration(
+                    color: widget.isActive && !widget.device.versionMismatch
+                        ? Colors.green
+                        : Colors.grey,
+                    shape: BoxShape.circle,
+                  ),
+                ),
+                const SizedBox(width: 6),
+                Flexible(
+                  child: Text(
+                    widget.device.name,
+                    style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 16),
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
+                  ),
+                ),
+              ]),
               // ─── السطر الثاني: hostname (إن اختلف عن name) أو IP + badges
               const SizedBox(height: 3),
               if (widget.device.hostname != null &&
@@ -523,16 +571,6 @@ class _ConnectionWidgetState extends State<ConnectionWidget>
               ),
             ),
           ),
-        Container(
-          width: 10,
-          height: 10,
-          decoration: BoxDecoration(
-            color: widget.isActive && !widget.device.versionMismatch
-                ? Colors.green
-                : Colors.grey,
-            shape: BoxShape.circle,
-          ),
-        ),
       ],
     );
   }
