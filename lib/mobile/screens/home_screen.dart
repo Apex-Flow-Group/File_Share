@@ -220,117 +220,15 @@ class _HomeScreenState extends State<HomeScreen>
   // ─── Desktop layout ─────────────────────────────────────────────────────────
 
   Widget _buildDesktopLayout() {
-    final l10n = AppLocalizations.of(context);
-    final isDark = Theme.of(context).brightness == Brightness.dark;
-    final color = Theme.of(context).colorScheme.primary;
-
     return Scaffold(
       body: Row(children: [
-        Container(
-          width: 220,
-          decoration: BoxDecoration(
-            color: isDark ? const Color(0xFF1C1C1E) : const Color(0xFFF5F5F7),
-            border: Border(
-              right: BorderSide(
-                color: isDark
-                    ? Colors.white.withValues(alpha: 0.06)
-                    : Colors.black.withValues(alpha: 0.06),
-              ),
-            ),
-          ),
-          child: SafeArea(
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.stretch,
-              children: [
-                Padding(
-                  padding: const EdgeInsets.fromLTRB(20, 20, 20, 16),
-                  child: Row(children: [
-                    Container(
-                      width: 32,
-                      height: 32,
-                      decoration: BoxDecoration(
-                        color: color.withValues(alpha: 0.15),
-                        borderRadius: BorderRadius.circular(10),
-                      ),
-                      child: Icon(Icons.share_rounded, color: color, size: 18),
-                    ),
-                    const SizedBox(width: 10),
-                    Text('Apex Transfer',
-                        style: TextStyle(
-                            fontWeight: FontWeight.bold,
-                            fontSize: 15,
-                            color: isDark ? Colors.white : Colors.black)),
-                  ]),
-                ),
-                Padding(
-                  padding: const EdgeInsets.symmetric(horizontal: 16),
-                  child: Container(
-                    padding:
-                        const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
-                    decoration: BoxDecoration(
-                      color: _ctrl.isRunning
-                          ? Colors.green.withValues(alpha: 0.12)
-                          : Colors.grey.withValues(alpha: 0.12),
-                      borderRadius: BorderRadius.circular(10),
-                    ),
-                    child: Row(mainAxisSize: MainAxisSize.min, children: [
-                      Container(
-                          width: 7,
-                          height: 7,
-                          decoration: BoxDecoration(
-                              color:
-                                  _ctrl.isRunning ? Colors.green : Colors.grey,
-                              shape: BoxShape.circle)),
-                      const SizedBox(width: 6),
-                      Text(_ctrl.isRunning ? 'Online' : 'Offline',
-                          style: TextStyle(
-                              fontSize: 12,
-                              fontWeight: FontWeight.w600,
-                              color: _ctrl.isRunning
-                                  ? Colors.green
-                                  : Colors.grey)),
-                    ]),
-                  ),
-                ),
-                const SizedBox(height: 16),
-                SidebarItem(
-                    icon: Icons.send_rounded,
-                    label: l10n.send,
-                    selected: _ctrl.currentIndex == 0,
-                    onTap: () => _ctrl.setCurrentIndex(0)),
-                SidebarItem(
-                    icon: Icons.smartphone_rounded,
-                    label: l10n.receive,
-                    selected: _ctrl.currentIndex == 1,
-                    onTap: () => _ctrl.setCurrentIndex(1)),
-                SidebarItem(
-                    icon: Icons.folder_rounded,
-                    label: l10n.files,
-                    selected: _ctrl.currentIndex == 2,
-                    onTap: () => _ctrl.setCurrentIndex(2)),
-                const Spacer(),
-                Padding(
-                  padding: const EdgeInsets.fromLTRB(12, 0, 12, 8),
-                  child: Column(children: [
-                    SidebarActionTile(
-                        icon: Icons.restart_alt_rounded,
-                        label: l10n.restartingSystem,
-                        spinWhileBusy: true,
-                        onTap: _ctrl.refreshDiscovery),
-                    SidebarActionTile(
-                        icon: Icons.settings_rounded,
-                        label: l10n.settings,
-                        onTap: _openSettings),
-                    SidebarActionTile(
-                        icon: Icons.info_outline_rounded,
-                        label: l10n.about,
-                        onTap: _openAbout),
-                  ]),
-                ),
-                SizedBox(height: MediaQuery.of(context).padding.bottom + 8),
-              ],
-            ),
-          ),
+        DesktopSidebar(
+          isRunning: _ctrl.isRunning,
+          currentIndex: _ctrl.currentIndex,
+          onSelect: _ctrl.setCurrentIndex,
+          onRefresh: _ctrl.refreshDiscovery,
+          onSettings: _openSettings,
+          onAbout: _openAbout,
         ),
         Expanded(
           child: Center(

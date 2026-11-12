@@ -308,6 +308,8 @@
   "chatClipboardEmpty": "لا يوجد نص منسوخ",
   "chatClose": "إغلاق المحادثة",
   "deviceOptions": "خيارات الجهاز",
+  "sidebarCollapse": "طي القائمة",
+  "sidebarExpand": "توسيع القائمة",
   "chatAdd": "إضافة",
   "chatRemoveFile": "إزالة {name}",
   "@chatRemoveFile": {

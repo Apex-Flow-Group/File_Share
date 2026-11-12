@@ -339,6 +339,8 @@
   "chatClipboardEmpty": "No copied text",
   "chatClose": "Close chat",
   "deviceOptions": "Device options",
+  "sidebarCollapse": "Collapse sidebar",
+  "sidebarExpand": "Expand sidebar",
   "chatAdd": "Add",
   "chatRemoveFile": "Remove {name}",
   "@chatRemoveFile": {

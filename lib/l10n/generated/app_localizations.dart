@@ -1700,6 +1700,18 @@ abstract class AppLocalizations {
   /// **'Device options'**
   String get deviceOptions;
 
+  /// No description provided for @sidebarCollapse.
+  ///
+  /// In en, this message translates to:
+  /// **'Collapse sidebar'**
+  String get sidebarCollapse;
+
+  /// No description provided for @sidebarExpand.
+  ///
+  /// In en, this message translates to:
+  /// **'Expand sidebar'**
+  String get sidebarExpand;
+
   /// No description provided for @chatAdd.
   ///
   /// In en, this message translates to:

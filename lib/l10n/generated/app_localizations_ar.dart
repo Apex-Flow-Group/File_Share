@@ -931,6 +931,12 @@ class AppLocalizationsAr extends AppLocalizations {
   String get deviceOptions => 'خيارات الجهاز';
 
   @override
+  String get sidebarCollapse => 'طي القائمة';
+
+  @override
+  String get sidebarExpand => 'توسيع القائمة';
+
+  @override
   String get chatAdd => 'إضافة';
 
   @override

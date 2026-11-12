@@ -905,6 +905,12 @@ class AppLocalizationsEn extends AppLocalizations {
   String get deviceOptions => 'Device options';
 
   @override
+  String get sidebarCollapse => 'Collapse sidebar';
+
+  @override
+  String get sidebarExpand => 'Expand sidebar';
+
+  @override
   String get chatAdd => 'Add';
 
   @override
