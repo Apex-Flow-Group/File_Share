@@ -910,7 +910,7 @@ class AppLocalizationsAr extends AppLocalizations {
       count,
       locale: localeName,
       other: '$count رسالة جديدة',
-      many: '$count رسالة جديدة',
+      many: '$count رسالةً جديدةً',
       few: '$count رسائل جديدة',
       two: 'رسالتان جديدتان',
       one: 'رسالة جديدة',
@@ -932,6 +932,37 @@ class AppLocalizationsAr extends AppLocalizations {
 
   @override
   String get cardFold => 'طي البطاقة';
+
+  @override
+  String get cardExpand => 'توسيع البطاقة';
+
+  @override
+  String get moreOptions => 'المزيد من الخيارات';
+
+  @override
+  String get closeOptions => 'إغلاق الخيارات';
+
+  @override
+  String get dismiss => 'تجاهل';
+
+  @override
+  String sendPending(String name) {
+    return 'إرسال: $name';
+  }
+
+  @override
+  String sendAppsCount(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: 'إرسال $count تطبيق',
+      many: 'إرسال $count تطبيقاً',
+      few: 'إرسال $count تطبيقات',
+      two: 'إرسال تطبيقين',
+      one: 'إرسال تطبيق واحد',
+    );
+    return '$_temp0';
+  }
 
   @override
   String get findDevices => 'البحث عن الأجهزة';

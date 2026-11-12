@@ -905,7 +905,35 @@ class AppLocalizationsEn extends AppLocalizations {
   String get deviceOptions => 'Device options';
 
   @override
-  String get cardFold => 'Fold the card';
+  String get cardFold => 'Collapse card';
+
+  @override
+  String get cardExpand => 'Expand card';
+
+  @override
+  String get moreOptions => 'More options';
+
+  @override
+  String get closeOptions => 'Close options';
+
+  @override
+  String get dismiss => 'Dismiss';
+
+  @override
+  String sendPending(String name) {
+    return 'Send: $name';
+  }
+
+  @override
+  String sendAppsCount(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: 'Send $count apps',
+      one: 'Send 1 app',
+    );
+    return '$_temp0';
+  }
 
   @override
   String get findDevices => 'Find devices';

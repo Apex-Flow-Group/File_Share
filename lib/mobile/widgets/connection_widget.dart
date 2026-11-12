@@ -2,6 +2,7 @@ import 'dart:io';
 
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
+import 'package:intl/intl.dart' show BidiFormatter;
 
 import '../../core/apex_core.dart';
 import '../../features/chat/logic/chat_key.dart';
@@ -168,8 +169,11 @@ class _ConnectionWidgetState extends State<ConnectionWidget>
                       copied: copied,
                       onCopiedUsed: _copiedUsed,
                       // Sends at once from the box's row, after the clip and
-                      // paste (owner decision).
-                      extras: [_appOrFolder(l10n)],
+                      // paste (owner decision); not while another send runs,
+                      // one at a time as the box's own files.
+                      extras: widget.isGloballyBusy || _status != _Status.idle
+                          ? const []
+                          : [_appOrFolder(l10n)],
                     ),
                 ],
               ),
@@ -307,20 +311,21 @@ class _ConnectionWidgetState extends State<ConnectionWidget>
     );
   }
 
+  /// A Latin file name inside an Arabic line would turn the line around: it
+  /// is isolated in its own direction.
+  String _isolated(String name) => BidiFormatter.UNKNOWN().wrapWithUnicode(name);
+
   Widget _buildPendingFileBanner(AppLocalizations l10n) {
-    final isAr = l10n.localeName == 'ar';
     final fileName = fileNameOf(widget.pendingFilePath!);
-    return _sendBanner(Icons.note_rounded, isAr ? 'إرسال: $fileName' : 'Send: $fileName', _sendPendingFile);
+    return _sendBanner(Icons.note_rounded, l10n.sendPending(_isolated(fileName)), _sendPendingFile);
   }
 
   Widget _buildSharedFilesBanner(AppLocalizations l10n) {
-    final isAr = l10n.localeName == 'ar';
     final files = widget.pendingSharedFiles!;
-    final count = files.length;
-    final label = count == 1
-        ? fileNameOf(files.first)
-        : (isAr ? '$count ملفات مشاركة' : '$count shared files');
-    return _sendBanner(Icons.share_rounded, isAr ? 'إرسال: $label' : 'Send: $label', _sendSharedFiles);
+    final label = files.length == 1
+        ? _isolated(fileNameOf(files.first))
+        : l10n.clipboardFileCount(files.length);
+    return _sendBanner(Icons.share_rounded, l10n.sendPending(label), _sendSharedFiles);
   }
 
   Future<void> _sendPendingFile() async {
@@ -423,12 +428,9 @@ class _ConnectionWidgetState extends State<ConnectionWidget>
     );
   }
 
-  Widget _buildBusyBar(AppLocalizations l10n) {
-    final isAr = l10n.localeName == 'ar';
-    return DeviceCardNote(
-        icon: ApexIcons.busy,
-        text: isAr ? 'يوجد إرسال جارٍ...' : 'Transfer in progress...');
-  }
+  /// The words the message box says for the same wait, and the TV card.
+  Widget _buildBusyBar(AppLocalizations l10n) =>
+      DeviceCardNote(icon: ApexIcons.busy, text: l10n.chatTransferBusy);
 
   Widget _buildSendingState() {
     return TransferProgressIndicator(
@@ -685,7 +687,10 @@ class _ClipboardBannerState extends State<_ClipboardBanner> {
             const SizedBox(width: 6),
 
             // ─── زر الإغلاق ──────────────────────────────────────────────
-            GestureDetector(
+            Semantics(
+              button: true,
+              label: AppLocalizations.of(context).dismiss,
+              child: GestureDetector(
               onTap: widget.onDismiss,
               child: Container(
                 width: 26,
@@ -701,6 +706,7 @@ class _ClipboardBannerState extends State<_ClipboardBanner> {
                   color: isDark ? Colors.white54 : Colors.black45,
                 ),
               ),
+            ),
             ),
           ],
         ),

@@ -265,7 +265,11 @@ class _MoreButtonState extends State<_MoreButton>
 
   @override
   Widget build(BuildContext context) {
-    return GestureDetector(
+    final l10n = AppLocalizations.of(context);
+    return Semantics(
+      button: true,
+      label: _overlay == null ? l10n.moreOptions : l10n.closeOptions,
+      child: GestureDetector(
       onTap: _toggle,
       behavior: HitTestBehavior.opaque,
       child: Padding(
@@ -291,6 +295,7 @@ class _MoreButtonState extends State<_MoreButton>
               ),
           ],
         ),
+      ),
       ),
     );
   }

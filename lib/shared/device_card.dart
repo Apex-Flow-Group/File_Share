@@ -277,20 +277,30 @@ class _DeviceCardState extends State<DeviceCard>
 
   Widget _opened(BuildContext context) {
     final body = widget.body;
+    final store = ApexCore.instance.chat;
     return Padding(
       padding: const EdgeInsets.only(top: 14),
-      child: Column(
+      child: ListenableBuilder(
+        listenable: store,
+        builder: (context, _) {
+      // Blocked: nothing goes to it, from any device (owner decision).
+      final actions = widget.chat && store.isBlocked(widget.device.chatPeer)
+          ? const <CapsuleAction>[]
+          : widget.actions;
+      return Column(
         crossAxisAlignment: CrossAxisAlignment.stretch,
         children: [
-          if (widget.actions.isNotEmpty) ...[
+          if (actions.isNotEmpty) ...[
             Wrap(spacing: 10, runSpacing: 10, children: [
-              for (final (i, a) in widget.actions.indexed)
+              for (final (i, a) in actions.indexed)
                 _Circle(action: a, labeled: true, focusNode: i == 0 ? _firstAction : null),
             ]),
             if (body != null) const SizedBox(height: 14),
           ],
           if (body != null) body(context),
         ],
+      );
+        },
       ),
     );
   }
@@ -391,7 +401,7 @@ class _DeviceCardState extends State<DeviceCard>
           button: true,
           label: expanded
               ? (widget.chat ? l10n.chatClose : l10n.cardFold)
-              : (widget.chat ? l10n.chatOpen : l10n.deviceOptions),
+              : (widget.chat ? l10n.chatOpen : l10n.cardExpand),
           // The remote opens it from the card itself; a touch on the head.
           child: widget.remote
               ? row
@@ -565,7 +575,7 @@ class _TransportBadge extends StatelessWidget {
     return Row(mainAxisSize: MainAxisSize.min, children: [
       if (device.isNearby) _badge(context, ApexIcons.direct, l10n.directConnection),
       if (device.isNearby && device.isMdns) const SizedBox(width: 4),
-      if (device.isMdns || !device.isNearby) _badge(context, ApexIcons.network, 'WiFi'),
+      if (device.isMdns || !device.isNearby) _badge(context, ApexIcons.network, l10n.network),
     ]);
   }
 

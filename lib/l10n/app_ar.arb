@@ -300,7 +300,7 @@
   "@chatFilesDelivered": {
     "placeholders": { "delivered": { "type": "int" }, "total": { "type": "int" } }
   },
-  "chatUnread": "{count, plural, one{رسالة جديدة} two{رسالتان جديدتان} few{{count} رسائل جديدة} many{{count} رسالة جديدة} other{{count} رسالة جديدة}}",
+  "chatUnread": "{count, plural, one{رسالة جديدة} two{رسالتان جديدتان} few{{count} رسائل جديدة} many{{count} رسالةً جديدةً} other{{count} رسالة جديدة}}",
   "@chatUnread": {
     "placeholders": { "count": { "type": "int" } }
   },
@@ -309,6 +309,12 @@
   "chatClose": "إغلاق المحادثة",
   "deviceOptions": "خيارات الجهاز",
   "cardFold": "طي البطاقة",
+  "cardExpand": "توسيع البطاقة",
+  "moreOptions": "المزيد من الخيارات",
+  "closeOptions": "إغلاق الخيارات",
+  "dismiss": "تجاهل",
+  "sendPending": "إرسال: {name}",
+  "sendAppsCount": "{count, plural, =1{إرسال تطبيق واحد} =2{إرسال تطبيقين} few{إرسال {count} تطبيقات} many{إرسال {count} تطبيقاً} other{إرسال {count} تطبيق}}",
   "findDevices": "البحث عن الأجهزة",
   "sidebarCollapse": "طي القائمة",
   "sidebarExpand": "توسيع القائمة",

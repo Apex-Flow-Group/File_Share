@@ -311,11 +311,8 @@ class _AppsSelectionSheetState extends State<AppsSelectionSheet> {
                   child: FilledButton.icon(
                     onPressed: _onSend,
                     icon: const Icon(ApexIcons.send),
-                    label: Text(
-                      isAr
-                          ? 'إرسال ${_selectedPackages.length} تطبيق'
-                          : 'Send ${_selectedPackages.length} app${_selectedPackages.length > 1 ? 's' : ''}',
-                    ),
+                    label: Text(AppLocalizations.of(context)
+                        .sendAppsCount(_selectedPackages.length)),
                     style: FilledButton.styleFrom(
                       padding: const EdgeInsets.symmetric(vertical: 14),
                       backgroundColor: const Color(0xFF34C759),

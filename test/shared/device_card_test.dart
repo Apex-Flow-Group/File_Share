@@ -1,3 +1,5 @@
+import 'package:apex_file_share/core/apex_core.dart';
+import 'package:apex_file_share/features/chat/logic/chat_key.dart';
 import 'package:apex_file_share/features/chat/ui/device_chat_view.dart';
 import 'package:apex_file_share/l10n/generated/app_localizations.dart';
 import 'package:apex_file_share/mobile/widgets/connection_widget.dart';
@@ -122,6 +124,29 @@ void main() {
       expect(first.focusNode?.hasPrimaryFocus, isTrue);
     });
   }
+
+  testWidgets('a blocked device gets no send on the TV either', (tester) async {
+    const blocked = Device(id: 'b', name: 'Stranger', type: 'phone', ip: '192.168.8.66', port: 4000);
+    ApexCore.instance.chat.blocked(blocked.chatPeer);
+    addTearDown(() => ApexCore.instance.chat.unblock(blocked.chatPeer));
+    final l10n = await pump(tester, const TVDeviceCard(device: blocked, autofocus: true),
+        locale: const Locale('en'));
+    await tester.sendKeyEvent(LogicalKeyboardKey.select);
+    await tester.pumpAndSettle();
+    expect(find.text(l10n.chatBlocked), findsOneWidget);
+    expect(find.text(l10n.sendFilesNow), findsNothing);
+    expect(find.text(l10n.sendApp), findsNothing);
+    expect(find.text(l10n.sendFolder), findsNothing);
+  });
+
+  testWidgets('while another send runs, the phone box offers no send of its own', (tester) async {
+    final l10n = await pump(tester, const ConnectionWidget(device: _pc, isGloballyBusy: true));
+    await tester.tap(find.text('Office PC'));
+    await tester.pumpAndSettle();
+    expect(find.text(l10n.chatTransferBusy), findsOneWidget);
+    expect(find.bySemanticsLabel(l10n.sendFolder), findsNothing);
+    expect(find.bySemanticsLabel(l10n.sendApp), findsNothing);
+  });
 
   testWidgets('the TV writes nothing: its chat has no message box', (tester) async {
     await pump(tester, const TVDeviceCard(device: _pc, autofocus: true));

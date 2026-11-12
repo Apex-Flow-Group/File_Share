@@ -1703,8 +1703,44 @@ abstract class AppLocalizations {
   /// No description provided for @cardFold.
   ///
   /// In en, this message translates to:
-  /// **'Fold the card'**
+  /// **'Collapse card'**
   String get cardFold;
+
+  /// No description provided for @cardExpand.
+  ///
+  /// In en, this message translates to:
+  /// **'Expand card'**
+  String get cardExpand;
+
+  /// No description provided for @moreOptions.
+  ///
+  /// In en, this message translates to:
+  /// **'More options'**
+  String get moreOptions;
+
+  /// No description provided for @closeOptions.
+  ///
+  /// In en, this message translates to:
+  /// **'Close options'**
+  String get closeOptions;
+
+  /// No description provided for @dismiss.
+  ///
+  /// In en, this message translates to:
+  /// **'Dismiss'**
+  String get dismiss;
+
+  /// No description provided for @sendPending.
+  ///
+  /// In en, this message translates to:
+  /// **'Send: {name}'**
+  String sendPending(String name);
+
+  /// No description provided for @sendAppsCount.
+  ///
+  /// In en, this message translates to:
+  /// **'{count, plural, =1{Send 1 app} other{Send {count} apps}}'**
+  String sendAppsCount(int count);
 
   /// No description provided for @findDevices.
   ///
