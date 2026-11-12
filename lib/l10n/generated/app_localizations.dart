@@ -377,7 +377,7 @@ abstract class AppLocalizations {
   /// No description provided for @instruction4.
   ///
   /// In en, this message translates to:
-  /// **'Files sent to you arrive here'**
+  /// **'Find received files in \"Files\"'**
   String get instruction4;
 
   /// No description provided for @readyToReceive.

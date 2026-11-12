@@ -58,7 +58,7 @@
   "instruction1": "Make sure all devices are connected to the same WiFi network",
   "instruction2": "Open the app on other devices",
   "instruction3": "Devices will be discovered automatically",
-  "instruction4": "Files sent to you arrive here",
+  "instruction4": "Find received files in \"Files\"",
   "readyToReceive": "Ready to receive files",
   "startDiscovery": "Start Discovery",
   "stopDiscovery": "Stop Discovery",
