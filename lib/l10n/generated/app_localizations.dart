@@ -1700,6 +1700,12 @@ abstract class AppLocalizations {
   /// **'Device options'**
   String get deviceOptions;
 
+  /// No description provided for @findDevices.
+  ///
+  /// In en, this message translates to:
+  /// **'Find devices'**
+  String get findDevices;
+
   /// No description provided for @sidebarCollapse.
   ///
   /// In en, this message translates to:

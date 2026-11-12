@@ -905,6 +905,9 @@ class AppLocalizationsEn extends AppLocalizations {
   String get deviceOptions => 'Device options';
 
   @override
+  String get findDevices => 'Find devices';
+
+  @override
   String get sidebarCollapse => 'Collapse sidebar';
 
   @override

@@ -231,8 +231,8 @@ class _MoreButtonState extends State<_MoreButton>
         isDark: isDark,
         items: [
           _MenuItem(
-            icon: Icons.restart_alt_rounded,
-            label: l10n.restartingSystem,
+            icon: Icons.refresh_rounded,
+            label: l10n.findDevices,
             onTap: () {
               _close();
               widget.onRestartTap();

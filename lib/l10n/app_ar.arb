@@ -308,6 +308,7 @@
   "chatClipboardEmpty": "لا يوجد نص منسوخ",
   "chatClose": "إغلاق المحادثة",
   "deviceOptions": "خيارات الجهاز",
+  "findDevices": "البحث عن الأجهزة",
   "sidebarCollapse": "طي القائمة",
   "sidebarExpand": "توسيع القائمة",
   "chatAdd": "إضافة",

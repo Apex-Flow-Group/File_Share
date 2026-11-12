@@ -191,8 +191,8 @@ class _HomeScreenState extends State<HomeScreen>
                     padding: const EdgeInsets.only(bottom: 16),
                     child: Column(mainAxisSize: MainAxisSize.min, children: [
                       RailIconButton(
-                          icon: Icons.restart_alt_rounded,
-                          tooltip: l10n.restartingSystem,
+                          icon: Icons.refresh_rounded,
+                          tooltip: l10n.findDevices,
                           onTap: _ctrl.refreshDiscovery),
                       const SizedBox(height: 8),
                       RailIconButton(

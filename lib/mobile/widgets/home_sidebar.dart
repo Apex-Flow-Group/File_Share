@@ -277,8 +277,8 @@ class _DesktopSidebarState extends State<DesktopSidebar> {
                 const Spacer(),
                 Divider(height: 17, color: c.border),
                 SidebarActionTile(
-                    icon: Icons.restart_alt_rounded,
-                    label: l10n.restartingSystem,
+                    icon: Icons.refresh_rounded,
+                    label: l10n.findDevices,
                     spinWhileBusy: true,
                     compact: compact,
                     onTap: widget.onRefresh),

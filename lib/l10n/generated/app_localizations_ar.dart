@@ -931,6 +931,9 @@ class AppLocalizationsAr extends AppLocalizations {
   String get deviceOptions => 'خيارات الجهاز';
 
   @override
+  String get findDevices => 'البحث عن الأجهزة';
+
+  @override
   String get sidebarCollapse => 'طي القائمة';
 
   @override
