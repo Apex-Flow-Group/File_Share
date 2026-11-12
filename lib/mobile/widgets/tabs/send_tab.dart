@@ -15,6 +15,8 @@ class SendTab extends StatefulWidget {
   final List<Device> devices;
   final List<Device> pinnedDevices;
   final bool isRunning;
+  final bool startFailed;
+  final VoidCallback onRetry;
   final String? pendingFilePath;
   final VoidCallback? onPendingFileSent;
   final List<String>? pendingSharedFiles;
@@ -29,6 +31,8 @@ class SendTab extends StatefulWidget {
     required this.devices,
     required this.pinnedDevices,
     required this.isRunning,
+    required this.startFailed,
+    required this.onRetry,
     required this.isPinned,
     required this.onPin,
     required this.onUnpin,
@@ -173,19 +177,30 @@ class _SendTabState extends State<SendTab> with TickerProviderStateMixin {
                 ),
                 const SizedBox(height: 28),
                 Text(
-                  widget.isRunning ? l10n.discovering : l10n.noDevicesFound,
+                  widget.isRunning
+                      ? l10n.discovering
+                      : widget.startFailed
+                          ? l10n.startFailed
+                          : l10n.starting,
+                  textAlign: TextAlign.center,
                   style: Theme.of(context).textTheme.titleLarge?.copyWith(
                         fontWeight: FontWeight.bold,
                       ),
                 ),
                 const SizedBox(height: 8),
-                Text(
-                  l10n.makeSureDevicesOnSameNetwork,
-                  textAlign: TextAlign.center,
-                  style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                        color: Theme.of(context).colorScheme.onSurfaceVariant,
-                      ),
-                ),
+                if (widget.isRunning)
+                  Text(
+                    l10n.makeSureDevicesOnSameNetwork,
+                    textAlign: TextAlign.center,
+                    style: Theme.of(context).textTheme.bodyMedium?.copyWith(
+                          color: Theme.of(context).colorScheme.onSurfaceVariant,
+                        ),
+                  ),
+                if (widget.startFailed)
+                  FilledButton(
+                    onPressed: widget.onRetry,
+                    child: Text(l10n.retry),
+                  ),
               ],
             ),
           ),

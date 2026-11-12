@@ -240,10 +240,17 @@ class ApexCore {
     );
   }
 
-  Future<void> start() async {
+  Future<void>? _starting;
+
+  /// A second call while one runs waits for it instead of binding again.
+  Future<void> start() {
     if (_isRunning) {
-      return;
+      return Future.value();
     }
+    return _starting ??= _start().whenComplete(() => _starting = null);
+  }
+
+  Future<void> _start() async {
     if (_localDevice == null) {
       await initialize();
     }

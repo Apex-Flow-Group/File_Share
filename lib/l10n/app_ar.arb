@@ -41,9 +41,8 @@
   "phone": "هاتف",
   "tablet": "تابلت",
   "desktop": "كمبيوتر",
-  "noDevicesFound": "لم يتم العثور على أجهزة",
   "makeSureDevicesOnSameNetwork": "تأكد من أن الأجهزة على نفس الشبكة",
-  "connecting": "يتصل...",
+  "connecting": "يتصل…",
   "connected": "متصل",
   "tapToConnect": "اضغط للاتصال",
   "sendFile": "إرسال ملف",
@@ -144,7 +143,6 @@
   "next": "التالي",
   "finish": "ابدأ الآن",
   "textCopied": "نُسخ النص",
-  "systemStartFailed": "فشل بدء النظام",
   "fileReceived": "تم استلام ملف",
   "filesReceivedTitle": "{count, plural, one{تم استلام ملف} two{تم استلام ملفين} few{تم استلام {count} ملفات} many{تم استلام {count} ملفاً} other{تم استلام {count} ملف}}",
   "@filesReceivedTitle": {
@@ -187,7 +185,7 @@
   "copyright": "حقوق النشر",
   "copyrightText": "© 2025 Apex Flow Group. جميع الحقوق محفوظة.",
   "madeInArabWorld": "صُنع في العالم العربي",
-  "startFailed": "تعذّر التشغيل",
+  "startFailed": "تعذّر تشغيل الاستقبال والبحث",
   "foundSongs": "تم العثور على {count} أغنية",
   "@foundSongs": {
     "placeholders": {
@@ -259,8 +257,8 @@
   "retry": "إعادة المحاولة",
   "updateRequired": "إصدار التطبيق مختلف بين الجهازين. حدّثه على الجهازين",
   "versionDiffers": "إصدار التطبيق مختلف",
-  "uploading": "جاري الرفع...",
-  "downloading": "جاري التنزيل...",
+  "uploading": "جارٍ الرفع…",
+  "downloading": "جارٍ التنزيل…",
   "sendDeclined": "رفض الجهاز الآخر الاستلام",
   "sendNoAnswer": "لم يُجب الجهاز الآخر",
   "sendReceiverBusy": "الجهاز الآخر مشغول بطلب آخر. حاول بعد قليل",

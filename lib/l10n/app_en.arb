@@ -43,7 +43,6 @@
   "phone": "Phone",
   "tablet": "Tablet",
   "desktop": "Desktop",
-  "noDevicesFound": "No devices found",
   "makeSureDevicesOnSameNetwork": "Make sure devices are on the same network",
   "connecting": "Connecting...",
   "connected": "Connected",
@@ -146,7 +145,6 @@
   "next": "Next",
   "finish": "Get Started",
   "textCopied": "Text copied",
-  "systemStartFailed": "System start failed",
   "fileReceived": "File received",
   "filesReceivedTitle": "{count, plural, one{File received} other{{count} files received}}",
   "@filesReceivedTitle": {
@@ -189,7 +187,7 @@
   "copyright": "Copyright",
   "copyrightText": "© 2025 Apex Flow Group. All rights reserved.",
   "madeInArabWorld": "Made in the Arab World",
-  "startFailed": "Couldn't start",
+  "startFailed": "Couldn't start receiving and search",
   "foundSongs": "Found {count} songs",
   "@foundSongs": {
     "description": "Number of songs found",

@@ -8,12 +8,15 @@ import '../../../services/transfer_progress_service.dart';
 import '../../../shared/apex_header.dart';
 import '../../../shared/apex_icons.dart';
 import '../../../shared/radar_painter.dart';
+import '../tv_focusable_widgets.dart';
 import 'tv_send_device_card.dart';
 
 class TVSendTab extends StatefulWidget {
   final List<Device> devices;
   final List<Device> pinnedDevices;
   final bool isRunning;
+  final bool startFailed;
+  final VoidCallback onRetry;
   final bool Function(String) isPinned;
   final Future<void> Function(Device) onPin;
   final Future<void> Function(String) onUnpin;
@@ -23,6 +26,8 @@ class TVSendTab extends StatefulWidget {
     required this.devices,
     required this.pinnedDevices,
     required this.isRunning,
+    required this.startFailed,
+    required this.onRetry,
     required this.isPinned,
     required this.onPin,
     required this.onUnpin,
@@ -36,6 +41,7 @@ class TVSendTab extends StatefulWidget {
 }
 
 class _TVSendTabState extends State<TVSendTab> with TickerProviderStateMixin {
+  final FocusNode _retryFocus = FocusNode(debugLabel: 'retry-start');
   late AnimationController _radarSpin;
   late AnimationController _pulseFast;
   late AnimationController _pulseSlow;
@@ -59,6 +65,7 @@ class _TVSendTabState extends State<TVSendTab> with TickerProviderStateMixin {
     _radarSpin.dispose();
     _pulseFast.dispose();
     _pulseSlow.dispose();
+    _retryFocus.dispose();
     super.dispose();
   }
 
@@ -145,20 +152,34 @@ class _TVSendTabState extends State<TVSendTab> with TickerProviderStateMixin {
             ),
             const SizedBox(height: 28),
             Text(
-              widget.isRunning ? l10n.discovering : l10n.noDevicesFound,
+              widget.isRunning
+                  ? l10n.discovering
+                  : widget.startFailed
+                      ? l10n.startFailed
+                      : l10n.starting,
+              textAlign: TextAlign.center,
               style: Theme.of(context)
                   .textTheme
                   .titleLarge
                   ?.copyWith(fontWeight: FontWeight.bold),
             ),
             const SizedBox(height: 8),
-            Text(
-              l10n.makeSureDevicesOnSameNetwork,
-              textAlign: TextAlign.center,
-              style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                    color: Theme.of(context).colorScheme.onSurfaceVariant,
-                  ),
-            ),
+            if (widget.isRunning)
+              Text(
+                l10n.makeSureDevicesOnSameNetwork,
+                textAlign: TextAlign.center,
+                style: Theme.of(context).textTheme.bodyMedium?.copyWith(
+                      color: Theme.of(context).colorScheme.onSurfaceVariant,
+                    ),
+              ),
+            if (widget.startFailed)
+              // The content focus node: the remote reaches it from the sidebar.
+              TVFocusableButton(
+                focusNode: widget.contentFocusNode ?? _retryFocus,
+                onTap: widget.onRetry,
+                color: Colors.orange,
+                label: l10n.retry,
+              ),
           ]),
         ),
       ),

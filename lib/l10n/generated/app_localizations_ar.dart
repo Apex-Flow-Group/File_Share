@@ -128,14 +128,11 @@ class AppLocalizationsAr extends AppLocalizations {
   String get desktop => 'كمبيوتر';
 
   @override
-  String get noDevicesFound => 'لم يتم العثور على أجهزة';
-
-  @override
   String get makeSureDevicesOnSameNetwork =>
       'تأكد من أن الأجهزة على نفس الشبكة';
 
   @override
-  String get connecting => 'يتصل...';
+  String get connecting => 'يتصل…';
 
   @override
   String get connected => 'متصل';
@@ -435,9 +432,6 @@ class AppLocalizationsAr extends AppLocalizations {
   String get textCopied => 'نُسخ النص';
 
   @override
-  String get systemStartFailed => 'فشل بدء النظام';
-
-  @override
   String get fileReceived => 'تم استلام ملف';
 
   @override
@@ -567,7 +561,7 @@ class AppLocalizationsAr extends AppLocalizations {
   String get madeInArabWorld => 'صُنع في العالم العربي';
 
   @override
-  String get startFailed => 'تعذّر التشغيل';
+  String get startFailed => 'تعذّر تشغيل الاستقبال والبحث';
 
   @override
   String foundSongs(int count) {
@@ -762,10 +756,10 @@ class AppLocalizationsAr extends AppLocalizations {
   String get versionDiffers => 'إصدار التطبيق مختلف';
 
   @override
-  String get uploading => 'جاري الرفع...';
+  String get uploading => 'جارٍ الرفع…';
 
   @override
-  String get downloading => 'جاري التنزيل...';
+  String get downloading => 'جارٍ التنزيل…';
 
   @override
   String get sendDeclined => 'رفض الجهاز الآخر الاستلام';

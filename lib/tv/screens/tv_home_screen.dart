@@ -138,6 +138,17 @@ class _TVHomeScreenState extends State<TVHomeScreen> {
     await _start();
   }
 
+  /// Searching needs the system; after a failure it starts it.
+  Future<void> _findDevices() async {
+    if (!_isRunning) {
+      if (_startFailed) {
+        await _start();
+      }
+      return;
+    }
+    await ApexCore.instance.refreshDiscovery();
+  }
+
   /// Also the retry: start() closes what it opened when it fails.
   Future<void> _start() async {
     if (_startFailed) {
@@ -358,7 +369,7 @@ class _TVHomeScreenState extends State<TVHomeScreen> {
                       label: l10n.findDevices,
                       selected: false,
                       focusNode: _refreshFocus,
-                      onSelect: ApexCore.instance.refreshDiscovery,
+                      onSelect: _findDevices,
                       onMoveToContent: () {},
                       onKey: (e) => _handleSidebarKey(_refreshFocus, e),
                     ),
@@ -381,6 +392,8 @@ class _TVHomeScreenState extends State<TVHomeScreen> {
           // A favorite discovery has not heard is sent to by its pinned key.
           pinnedDevices: [for (final d in _pinnedDevices) ApexCore.instance.withPinnedKey(d)],
           isRunning: _isRunning,
+          startFailed: _startFailed,
+          onRetry: _start,
           isPinned: _isPinned,
           onPin: _pinDevice,
           onUnpin: _unpinDevice,

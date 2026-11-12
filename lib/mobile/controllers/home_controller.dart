@@ -148,6 +148,12 @@ class HomeController extends ChangeNotifier {
 
   /// Pings favorites after the socket is reopened, so the ping is not lost.
   Future<void> refreshDiscovery() async {
+    if (!_isRunning) {
+      if (_startFailed) {
+        await retryStart();
+      }
+      return;
+    }
     await ApexCore.instance.refreshDiscovery();
     _pingPinnedDevices();
   }

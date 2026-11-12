@@ -122,9 +122,6 @@ class AppLocalizationsEn extends AppLocalizations {
   String get desktop => 'Desktop';
 
   @override
-  String get noDevicesFound => 'No devices found';
-
-  @override
   String get makeSureDevicesOnSameNetwork =>
       'Make sure devices are on the same network';
 
@@ -427,9 +424,6 @@ class AppLocalizationsEn extends AppLocalizations {
   String get textCopied => 'Text copied';
 
   @override
-  String get systemStartFailed => 'System start failed';
-
-  @override
   String get fileReceived => 'File received';
 
   @override
@@ -556,7 +550,7 @@ class AppLocalizationsEn extends AppLocalizations {
   String get madeInArabWorld => 'Made in the Arab World';
 
   @override
-  String get startFailed => 'Couldn\'t start';
+  String get startFailed => 'Couldn\'t start receiving and search';
 
   @override
   String foundSongs(int count) {

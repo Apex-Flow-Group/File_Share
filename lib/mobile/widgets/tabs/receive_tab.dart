@@ -141,10 +141,9 @@ class _ReceiveTabState extends State<ReceiveTab>
                   ),
             ),
             const SizedBox(height: 16),
-            FilledButton.icon(
+            FilledButton(
               onPressed: widget.onRetry,
-              icon: const Icon(Icons.refresh_rounded),
-              label: Text(l10n.retry),
+              child: Text(l10n.retry),
             ),
           ],
         ),

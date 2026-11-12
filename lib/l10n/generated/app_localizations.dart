@@ -284,12 +284,6 @@ abstract class AppLocalizations {
   /// **'Desktop'**
   String get desktop;
 
-  /// No description provided for @noDevicesFound.
-  ///
-  /// In en, this message translates to:
-  /// **'No devices found'**
-  String get noDevicesFound;
-
   /// No description provided for @makeSureDevicesOnSameNetwork.
   ///
   /// In en, this message translates to:
@@ -866,12 +860,6 @@ abstract class AppLocalizations {
   /// **'Text copied'**
   String get textCopied;
 
-  /// No description provided for @systemStartFailed.
-  ///
-  /// In en, this message translates to:
-  /// **'System start failed'**
-  String get systemStartFailed;
-
   /// No description provided for @fileReceived.
   ///
   /// In en, this message translates to:
@@ -1109,7 +1097,7 @@ abstract class AppLocalizations {
   /// No description provided for @startFailed.
   ///
   /// In en, this message translates to:
-  /// **'Couldn\'t start'**
+  /// **'Couldn\'t start receiving and search'**
   String get startFailed;
 
   /// Number of songs found

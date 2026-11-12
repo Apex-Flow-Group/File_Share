@@ -199,6 +199,8 @@ class _HomeScreenState extends State<HomeScreen>
           devices: _ctrl.devices,
           pinnedDevices: _ctrl.pinnedDevices,
           isRunning: _ctrl.isRunning,
+          startFailed: _ctrl.startFailed,
+          onRetry: _ctrl.retryStart,
           isPinned: _ctrl.isPinned,
           onPin: _ctrl.pinDevice,
           onUnpin: _ctrl.unpinDevice,
