@@ -272,7 +272,8 @@ class _ConnectionWidgetState extends State<ConnectionWidget>
             PopupMenuItem(
               value: _HeadAction.pin,
               child: ListTile(
-                leading: Icon(widget.isPinned ? Icons.star_rounded : Icons.star_border_rounded),
+                // The icon draws what the item does, as on the TV card.
+                leading: Icon(widget.isPinned ? Icons.star_border_rounded : Icons.star_rounded),
                 title: Text(widget.isPinned ? l10n.unpinDevice : l10n.pinDevice),
               ),
             ),
