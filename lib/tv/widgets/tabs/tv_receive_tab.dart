@@ -87,7 +87,7 @@ class _TVReceiveTabState extends State<TVReceiveTab>
     );
   }
 
-  // â”€â”€â”€ Header â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+  // ─── Header ────────────────────────────────────────────────────────────────
 
   Widget _buildHeader() {
     final l10n = AppLocalizations.of(context);
@@ -101,7 +101,7 @@ class _TVReceiveTabState extends State<TVReceiveTab>
     );
   }
 
-  // â”€â”€â”€ Not Ready â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+  // ─── Not Ready ─────────────────────────────────────────────────────────────
 
   Widget _buildNotReady() {
     final isAr = Localizations.localeOf(context).languageCode == 'ar';
@@ -122,7 +122,7 @@ class _TVReceiveTabState extends State<TVReceiveTab>
             ),
             const SizedBox(height: 24),
             Text(
-              isAr ? 'ط§ظ„ظ†ط¸ط§ظ… ط؛ظٹط± ط¬ط§ظ‡ط²' : 'System not ready',
+              isAr ? 'النظام غير جاهز' : 'System not ready',
               style: Theme.of(context).textTheme.titleLarge?.copyWith(
                     fontWeight: FontWeight.bold,
                   ),
@@ -130,7 +130,7 @@ class _TVReceiveTabState extends State<TVReceiveTab>
             const SizedBox(height: 8),
             Text(
               isAr
-                  ? 'طھط£ظƒط¯ ظ…ظ† طھط´ط؛ظٹظ„ ط§ظ„ظ†ط¸ط§ظ…'
+                  ? 'تأكد من تشغيل النظام'
                   : 'Make sure the system is running',
               style: Theme.of(context).textTheme.bodyMedium?.copyWith(
                     color: Theme.of(context).colorScheme.onSurfaceVariant,
@@ -143,7 +143,7 @@ class _TVReceiveTabState extends State<TVReceiveTab>
     );
   }
 
-  // â”€â”€â”€ Ready â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+  // ─── Ready ─────────────────────────────────────────────────────────────────
 
   Widget _buildReady() {
     final l10n = AppLocalizations.of(context);
@@ -219,7 +219,7 @@ class _TVReceiveTabState extends State<TVReceiveTab>
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
               Text(
-                isAr ? 'ط¬ط§ظ‡ط² ظ„ظ„ط§ط³طھظ‚ط¨ط§ظ„' : 'Ready to Receive',
+                isAr ? 'جاهز للاستقبال' : 'Ready to Receive',
                 style: const TextStyle(
                   fontWeight: FontWeight.bold,
                   fontSize: 17,
@@ -268,7 +268,7 @@ class _TVReceiveTabState extends State<TVReceiveTab>
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
                     Text(
-                      isAr ? 'ط¬ط§ط±ظٹ ط§ظ„ط§ط³طھظ‚ط¨ط§ظ„...' : 'Receiving...',
+                      isAr ? 'جاري الاستقبال...' : 'Receiving...',
                       style: const TextStyle(
                         fontWeight: FontWeight.bold,
                         fontSize: 16,
@@ -300,7 +300,7 @@ class _TVReceiveTabState extends State<TVReceiveTab>
                   setState(() => _isReceiving = false);
                 },
                 color: Colors.red,
-                label: isAr ? 'ط¥ظ„ط؛ط§ط،' : 'Cancel',
+                label: isAr ? 'إلغاء' : 'Cancel',
               ),
             ]),
             if (p != null) ...[
@@ -554,4 +554,4 @@ class _TVReceiveTabState extends State<TVReceiveTab>
   }
 }
 
-// â”€â”€â”€ TV Focusable Button â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+// ─── TV Focusable Button ──────────────────────────────────────────────────────

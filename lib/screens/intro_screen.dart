@@ -137,7 +137,7 @@ class _IntroScreenState extends State<IntroScreen>
               children: [
                 _AnimatedBackground(progress: _backgroundAnimation.value),
 
-                // ط§ظ„ظ…ط­طھظˆظ‰ ط§ظ„ظ…طھط­ط±ظƒ (ط§ظ„ط¹ظ†ظˆط§ظ† ظˆط§ظ„ظˆطµظپ)
+                // المحتوى المتحرك (العنوان والوصف)
                 Positioned.fill(
                   child: SafeArea(
                     bottom: false,
@@ -196,7 +196,7 @@ class _IntroScreenState extends State<IntroScreen>
                   ),
                 ),
 
-                // ط§ظ„ط²ط± ط§ظ„ط«ط§ط¨طھ ظپظٹ ط§ظ„ط£ط³ظپظ„
+                // الزر الثابت في الأسفل
                 Positioned(
                   left: 0,
                   right: 0,
