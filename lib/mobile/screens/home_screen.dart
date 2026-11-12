@@ -60,9 +60,17 @@ class _HomeScreenState extends State<HomeScreen>
   StreamSubscription<ChatThread>? _chatSub;
 
   @override
-  void onOpenChatFromSheet(ChatKey key) {
+  bool hasChatCard(ChatKey key) =>
+      [..._ctrl.devices, ..._ctrl.pinnedDevices].any((d) => d.chatKey == key);
+
+  @override
+  bool onOpenChatFromSheet(ChatKey key) {
+    if (!hasChatCard(key)) {
+      return false;
+    }
     _ctrl.setCurrentIndex(0);
     openChatCard(key);
+    return true;
   }
 
   @override

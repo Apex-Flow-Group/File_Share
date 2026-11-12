@@ -44,18 +44,26 @@ mixin HomeDialogs<T extends StatefulWidget> on State<T> {
   void onOpenFilesFromSheet([String? filePath]);
 
   /// The sheet's open button when the files went to a chat (owner decision):
-  /// that chat, whose line opens the file and its folder.
-  void onOpenChatFromSheet(ChatKey key);
+  /// that chat, whose line opens the file and its folder. False when no card
+  /// on the send tab holds it any more (the device left the list).
+  bool onOpenChatFromSheet(ChatKey key);
+
+  /// Whether a card on the send tab holds the chat [key]: a chat is opened
+  /// in its device's card, so without one the button would show nothing.
+  bool hasChatCard(ChatKey key);
 
   /// The sheet's main button: the sender's chat, or [fallback] where the
-  /// files have none (Nearby).
+  /// files have none (Nearby) or its device is not listed.
   Widget _openButton(FileReceivedEvent event, AppLocalizations l10n,
       {required IconData icon, required String label, required VoidCallback fallback}) {
-    final chat = ApexCore.instance.chat.chatOf(event);
+    final found = ApexCore.instance.chat.chatOf(event);
+    final chat = found != null && hasChatCard(found) ? found : null;
     return FilledButton.icon(
       onPressed: () {
         Navigator.pop(context);
-        chat == null ? fallback() : onOpenChatFromSheet(chat);
+        if (chat == null || !onOpenChatFromSheet(chat)) {
+          fallback();
+        }
       },
       icon: Icon(chat == null ? icon : Icons.chat_bubble_rounded, size: 18),
       label: Text(chat == null ? label : l10n.chatOpen, maxLines: 1, overflow: TextOverflow.ellipsis),
