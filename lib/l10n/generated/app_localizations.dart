@@ -377,8 +377,14 @@ abstract class AppLocalizations {
   /// No description provided for @instruction4.
   ///
   /// In en, this message translates to:
-  /// **'Wait to receive files from other devices'**
+  /// **'Files sent to you arrive here'**
   String get instruction4;
+
+  /// No description provided for @readyToReceive.
+  ///
+  /// In en, this message translates to:
+  /// **'Ready to receive files'**
+  String get readyToReceive;
 
   /// No description provided for @startDiscovery.
   ///

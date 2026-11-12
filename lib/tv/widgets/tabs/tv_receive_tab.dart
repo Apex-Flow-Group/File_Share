@@ -97,43 +97,7 @@ class _TVReceiveTabState extends State<TVReceiveTab>
       icon: Icons.smartphone_rounded,
       color: color,
       title: l10n.receive,
-      subtitle: _isReceiving ? l10n.receiving : l10n.instruction4,
-      trailing: [
-        AnimatedBuilder(
-          animation: _pulseAnim,
-          builder: (_, __) => Container(
-            padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
-            decoration: BoxDecoration(
-              color: (_isReceiving ? Colors.purple : Colors.green).withValues(
-                alpha: 0.1 + _pulseAnim.value * 0.1,
-              ),
-              borderRadius: BorderRadius.circular(20),
-            ),
-            child: Row(
-              mainAxisSize: MainAxisSize.min,
-              children: [
-                Container(
-                  width: 6,
-                  height: 6,
-                  decoration: BoxDecoration(
-                    color: _isReceiving ? Colors.purple : Colors.green,
-                    shape: BoxShape.circle,
-                  ),
-                ),
-                const SizedBox(width: 5),
-                Text(
-                  _isReceiving ? 'RX' : 'Ready',
-                  style: TextStyle(
-                    color: _isReceiving ? Colors.purple : Colors.green,
-                    fontSize: 12,
-                    fontWeight: FontWeight.w600,
-                  ),
-                ),
-              ],
-            ),
-          ),
-        ),
-      ],
+      subtitle: _isReceiving ? l10n.receiving : l10n.readyToReceive,
     );
   }
 
@@ -264,7 +228,7 @@ class _TVReceiveTabState extends State<TVReceiveTab>
               ),
               const SizedBox(height: 4),
               Text(
-                l10n.instruction4,
+                l10n.readyToReceive,
                 style: TextStyle(
                     fontSize: 13, color: Colors.green.withValues(alpha: 0.8)),
               ),

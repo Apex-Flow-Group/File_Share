@@ -169,7 +169,10 @@ class AppLocalizationsEn extends AppLocalizations {
   String get instruction3 => 'Devices will be discovered automatically';
 
   @override
-  String get instruction4 => 'Wait to receive files from other devices';
+  String get instruction4 => 'Files sent to you arrive here';
+
+  @override
+  String get readyToReceive => 'Ready to receive files';
 
   @override
   String get startDiscovery => 'Start Discovery';

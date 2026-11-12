@@ -174,7 +174,10 @@ class AppLocalizationsAr extends AppLocalizations {
   String get instruction3 => 'سيتم اكتشاف الأجهزة تلقائياً';
 
   @override
-  String get instruction4 => 'انتظر استقبال الملفات من الأجهزة الأخرى';
+  String get instruction4 => 'تصل الملفات المرسلة إليك هنا';
+
+  @override
+  String get readyToReceive => 'جاهز لاستقبال الملفات';
 
   @override
   String get startDiscovery => 'بدء البحث';
