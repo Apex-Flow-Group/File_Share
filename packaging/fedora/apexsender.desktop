@@ -2,8 +2,8 @@
 Version=1.0
 Type=Application
 Name=Apex Transfer
-Comment=Share files across devices via Wi-Fi
-Comment[ar]=مشاركة الملفات بين الأجهزة عبر Wi-Fi
+Comment=Share files across devices on the local network
+Comment[ar]=مشاركة الملفات بين الأجهزة على الشبكة المحلية
 Exec=/usr/bin/apexsender
 Icon=apexsender
 Terminal=false
