@@ -155,7 +155,7 @@ class AppLocalizationsAr extends AppLocalizations {
 
   @override
   String get makeSureDevicesOnSameNetwork =>
-      'تأكد من أن الأجهزة على نفس الشبكة';
+      'تأكد من أن الأجهزة على الشبكة نفسها';
 
   @override
   String get connecting => 'يتصل…';
@@ -188,7 +188,7 @@ class AppLocalizationsAr extends AppLocalizations {
   String get howToReceive => 'كيفية الاستقبال';
 
   @override
-  String get instruction1 => 'تأكد من اتصال جميع الأجهزة بنفس شبكة Wi-Fi';
+  String get instruction1 => 'تأكد من اتصال جميع الأجهزة بالشبكة نفسها';
 
   @override
   String get instruction2 => 'افتح التطبيق على الأجهزة الأخرى';
@@ -287,7 +287,7 @@ class AppLocalizationsAr extends AppLocalizations {
   String get localNetwork => 'الشبكة المحلية';
 
   @override
-  String get localNetworkDesc => 'اكتشاف الأجهزة على نفس الشبكة';
+  String get localNetworkDesc => 'اكتشاف الأجهزة على الشبكة نفسها';
 
   @override
   String get selectLanguage => 'اختر اللغة';
