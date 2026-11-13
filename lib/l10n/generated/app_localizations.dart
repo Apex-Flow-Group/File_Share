@@ -116,6 +116,18 @@ abstract class AppLocalizations {
   /// **'Android, Windows, Linux'**
   String get tourMultiPlatformTitle;
 
+  /// No description provided for @filesDeleteFailed.
+  ///
+  /// In en, this message translates to:
+  /// **'Couldn\'t delete the files'**
+  String get filesDeleteFailed;
+
+  /// No description provided for @filesDeletedPartly.
+  ///
+  /// In en, this message translates to:
+  /// **'Deleted {count} of {total}; the rest couldn\'t be deleted'**
+  String filesDeletedPartly(int count, int total);
+
   /// App name
   ///
   /// In en, this message translates to:
@@ -1999,12 +2011,6 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Scroll the features, then agree to start'**
   String get tvTourBeforeStartHint;
-
-  /// No description provided for @tvTourShareApps.
-  ///
-  /// In en, this message translates to:
-  /// **'Share your installed apps'**
-  String get tvTourShareApps;
 
   /// No description provided for @emptyFolder.
   ///

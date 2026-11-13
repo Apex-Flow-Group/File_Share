@@ -108,15 +108,23 @@ class _FilesTabState extends State<FilesTab>
   }
 
   Future<void> _showDeleteSheet() async {
+    final total = widget.selectedFiles.length;
     final confirmed = await DeleteFilesSheet.show(
       context,
-      fileCount: widget.selectedFiles.length,
+      fileCount: total,
     );
     if (confirmed && mounted) {
       final count = await widget.onDeleteSelected();
       if (mounted) {
         final l10n = AppLocalizations.of(context);
-        ApexSnackBar.success(context, l10n.filesDeletedCount(count));
+        // Success only when all went; otherwise how many did.
+        if (count == total) {
+          ApexSnackBar.success(context, l10n.filesDeletedCount(count));
+        } else if (count == 0) {
+          ApexSnackBar.error(context, l10n.filesDeleteFailed);
+        } else {
+          ApexSnackBar.error(context, l10n.filesDeletedPartly(count, total));
+        }
         await _load();
       }
     }

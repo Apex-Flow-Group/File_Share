@@ -4,6 +4,7 @@ import 'dart:io';
 import 'package:flutter/foundation.dart';
 import 'package:in_app_update/in_app_update.dart';
 
+import 'idle_wait.dart';
 import 'transfer_progress_service.dart';
 
 /// يدير دورة حياة In-App Update مع مراعاة حالة الإرسال/الاستقبال
@@ -70,14 +71,13 @@ class UpdateService {
     }
   }
 
+  final _idleWait = IdleWait();
+
   /// ينتظر انتهاء الإرسال/الاستقبال ثم يُخطر الـ UI
   void _waitForIdle() {
-    Timer.periodic(const Duration(seconds: 2), (timer) {
-      if (!_isBusy) {
-        timer.cancel();
-        if (_updateDownloaded) {
-          _emit(UpdateState.readyToInstall);
-        }
+    _idleWait.start(() => _isBusy, () {
+      if (_updateDownloaded) {
+        _emit(UpdateState.readyToInstall);
       }
     });
   }

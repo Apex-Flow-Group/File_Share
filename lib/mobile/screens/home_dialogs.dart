@@ -56,7 +56,9 @@ mixin HomeDialogs<T extends StatefulWidget> on State<T> {
   /// The sheet's main button: the sender's chat, or [fallback] where the
   /// files have none (Nearby) or its device is not listed.
   Widget _openButton(FileReceivedEvent event, AppLocalizations l10n,
-      {required IconData icon, required String label, required VoidCallback fallback}) {
+      {required IconData icon,
+      required String label,
+      required VoidCallback fallback}) {
     final found = ApexCore.instance.chat.chatOf(event);
     final chat = found != null && hasChatCard(found) ? found : null;
     return FilledButton.icon(
@@ -67,7 +69,8 @@ mixin HomeDialogs<T extends StatefulWidget> on State<T> {
         }
       },
       icon: Icon(chat == null ? icon : Icons.chat_bubble_rounded, size: 18),
-      label: Text(chat == null ? label : l10n.chatOpen, maxLines: 1, overflow: TextOverflow.ellipsis),
+      label: Text(chat == null ? label : l10n.chatOpen,
+          maxLines: 1, overflow: TextOverflow.ellipsis),
       style: FilledButton.styleFrom(
         backgroundColor: Colors.green,
         padding: const EdgeInsets.symmetric(vertical: 14),
@@ -79,8 +82,9 @@ mixin HomeDialogs<T extends StatefulWidget> on State<T> {
   void _showFileReceivedSheetInternal(FileReceivedEvent event) {
     final l10n = AppLocalizations.of(context);
     final sepIndex = event.filePath.lastIndexOf(RegExp(r'[/\\]'));
-    final displayPath = FileUtils.displayPath(
-        sepIndex == -1 ? event.filePath : event.filePath.substring(0, sepIndex));
+    final displayPath = FileUtils.displayPath(sepIndex == -1
+        ? event.filePath
+        : event.filePath.substring(0, sepIndex));
 
     _fileReceivedSheetGeneration++;
     final myGeneration = _fileReceivedSheetGeneration;
@@ -175,7 +179,8 @@ mixin HomeDialogs<T extends StatefulWidget> on State<T> {
             borderRadius: BorderRadius.circular(14),
             border: Border.all(color: Colors.green.withValues(alpha: 0.2)),
           ),
-          child: const Icon(Icons.folder_rounded, size: 36, color: Colors.green),
+          child:
+              const Icon(Icons.folder_rounded, size: 36, color: Colors.green),
         ),
         const SizedBox(height: 10),
         Text('${l10n.from}: $fromDevice',
@@ -195,7 +200,8 @@ mixin HomeDialogs<T extends StatefulWidget> on State<T> {
           onPressed: () => Navigator.pop(context),
           style: OutlinedButton.styleFrom(
             padding: const EdgeInsets.symmetric(vertical: 14),
-            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(14)),
+            shape:
+                RoundedRectangleBorder(borderRadius: BorderRadius.circular(14)),
           ),
           child: Text(l10n.close, maxLines: 1, overflow: TextOverflow.ellipsis),
         )),
@@ -264,7 +270,8 @@ mixin HomeDialogs<T extends StatefulWidget> on State<T> {
             borderRadius: BorderRadius.circular(14),
             border: Border.all(color: Colors.blue.withValues(alpha: 0.2)),
           ),
-          child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+          child:
+              Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
             Row(children: [
               CircleAvatar(
                   radius: 16,
@@ -295,11 +302,13 @@ mixin HomeDialogs<T extends StatefulWidget> on State<T> {
             if (request.keyChanged) ...[
               const SizedBox(height: 10),
               Row(children: [
-                const Icon(Icons.warning_amber_rounded, size: 18, color: Colors.orange),
+                const Icon(Icons.warning_amber_rounded,
+                    size: 18, color: Colors.orange),
                 const SizedBox(width: 6),
                 Expanded(
                     child: Text(l10n.requestNewKey,
-                        style: const TextStyle(fontSize: 13, fontWeight: FontWeight.w600))),
+                        style: const TextStyle(
+                            fontSize: 13, fontWeight: FontWeight.w600))),
               ]),
             ],
             // Only a files request has files to show.
@@ -422,7 +431,9 @@ mixin HomeDialogs<T extends StatefulWidget> on State<T> {
     }
     final l10n = AppLocalizations.of(context);
     final isBusy = TransferProgressService().isTransferring;
-    ApexBottomSheet.show(context,
+    // However it closes, a busy sheet starts the wait for the transfer;
+    // then it shows again.
+    ApexBottomSheet.show<void>(context,
         child: Column(mainAxisSize: MainAxisSize.min, children: [
           Container(
               padding: const EdgeInsets.all(14),
@@ -462,17 +473,15 @@ mixin HomeDialogs<T extends StatefulWidget> on State<T> {
           SizedBox(
               width: double.infinity,
               child: OutlinedButton(
-                onPressed: () {
-                  Navigator.pop(context);
-                  // It waits for the transfer, then this sheet shows again.
-                  if (isBusy) {
-                    UpdateService.instance.completeUpdate();
-                  }
-                },
+                onPressed: () => Navigator.pop(context),
                 style: OutlinedButton.styleFrom(
                     padding: const EdgeInsets.symmetric(vertical: 14)),
                 child: Text(isBusy ? l10n.ok : l10n.later),
               )),
-        ]));
+        ])).whenComplete(() {
+      if (isBusy) {
+        UpdateService.instance.completeUpdate();
+      }
+    });
   }
 }

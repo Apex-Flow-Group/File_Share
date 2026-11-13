@@ -4,6 +4,18 @@
   "tourDiscoveryTitle": "Auto-discovery",
   "tourDiscoveryDesc": "Finds devices on your network",
   "tourMultiPlatformTitle": "Android, Windows, Linux",
+  "filesDeleteFailed": "Couldn't delete the files",
+  "filesDeletedPartly": "Deleted {count} of {total}; the rest couldn't be deleted",
+  "@filesDeletedPartly": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      },
+      "total": {
+        "type": "int"
+      }
+    }
+  },
   "appTitle": "Apex Transfer",
   "@appTitle": { "description": "App name" },
 
@@ -437,7 +449,6 @@
   },
   "tvTourBeforeStart": "Before You Start",
   "tvTourBeforeStartHint": "Scroll the features, then agree to start",
-  "tvTourShareApps": "Share your installed apps",
   "emptyFolder": "Empty folder",
   "updateAvailable": "Update available",
   "tourAgree": "I agree to grant the permissions",

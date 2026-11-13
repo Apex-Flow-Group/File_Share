@@ -18,6 +18,14 @@ class AppLocalizationsAr extends AppLocalizations {
   String get tourMultiPlatformTitle => 'أندرويد وWindows وLinux';
 
   @override
+  String get filesDeleteFailed => 'تعذّر حذف الملفات';
+
+  @override
+  String filesDeletedPartly(int count, int total) {
+    return 'حُذف $count من $total، وتعذّر حذف الباقي';
+  }
+
+  @override
   String get appTitle => 'Apex Transfer';
 
   @override
@@ -1159,9 +1167,6 @@ class AppLocalizationsAr extends AppLocalizations {
 
   @override
   String get tvTourBeforeStartHint => 'مرّر المميزات، ثم وافق لتبدأ';
-
-  @override
-  String get tvTourShareApps => 'شارك تطبيقاتك المثبتة';
 
   @override
   String get emptyFolder => 'مجلد فارغ';

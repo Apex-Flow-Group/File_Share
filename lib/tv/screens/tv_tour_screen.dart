@@ -389,7 +389,7 @@ class _TVTourScreenState extends State<TVTourScreen> {
             Icons.phone_android_rounded,
             const Color(0xFFFF2D55),
             l10n.tourApkShareTitle,
-            l10n.tvTourShareApps),
+            l10n.tourApkShareDesc),
         _Feature(
             Icons.devices_rounded,
             const Color(0xFF32ADE6),
