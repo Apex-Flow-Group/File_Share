@@ -4,7 +4,7 @@
   "tourDiscoveryTitle": "اكتشاف تلقائي",
   "tourDiscoveryDesc": "يجد الأجهزة على شبكتك",
   "tourMultiPlatformTitle": "أندرويد وWindows وLinux",
-  "filesDeleteFailed": "{total, plural, =1{تعذّر حذف الملف} other{تعذّر حذف الملفات}}",
+  "filesDeleteFailed": "{total, plural, =1{تعذّر حذف الملف} =2{تعذّر حذف الملفين} other{تعذّر حذف الملفات}}",
   "filesDeletedPartly": "حُذف {count} من {total}، وتعذّر حذف الباقي",
   "appTitle": "Apex Transfer",
   "send": "إرسال",

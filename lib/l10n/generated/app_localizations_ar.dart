@@ -23,6 +23,7 @@ class AppLocalizationsAr extends AppLocalizations {
       total,
       locale: localeName,
       other: 'تعذّر حذف الملفات',
+      two: 'تعذّر حذف الملفين',
       one: 'تعذّر حذف الملف',
     );
     return '$_temp0';
