@@ -4,7 +4,14 @@
   "tourDiscoveryTitle": "Auto-discovery",
   "tourDiscoveryDesc": "Finds devices on your network",
   "tourMultiPlatformTitle": "Android, Windows, Linux",
-  "filesDeleteFailed": "Couldn't delete the files",
+  "filesDeleteFailed": "{total, plural, =1{Couldn't delete the file} other{Couldn't delete the files}}",
+  "@filesDeleteFailed": {
+    "placeholders": {
+      "total": {
+        "type": "int"
+      }
+    }
+  },
   "filesDeletedPartly": "Deleted {count} of {total}; the rest couldn't be deleted",
   "@filesDeletedPartly": {
     "placeholders": {

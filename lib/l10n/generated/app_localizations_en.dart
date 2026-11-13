@@ -18,7 +18,15 @@ class AppLocalizationsEn extends AppLocalizations {
   String get tourMultiPlatformTitle => 'Android, Windows, Linux';
 
   @override
-  String get filesDeleteFailed => 'Couldn\'t delete the files';
+  String filesDeleteFailed(int total) {
+    String _temp0 = intl.Intl.pluralLogic(
+      total,
+      locale: localeName,
+      other: 'Couldn\'t delete the files',
+      one: 'Couldn\'t delete the file',
+    );
+    return '$_temp0';
+  }
 
   @override
   String filesDeletedPartly(int count, int total) {

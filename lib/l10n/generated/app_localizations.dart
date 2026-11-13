@@ -119,8 +119,8 @@ abstract class AppLocalizations {
   /// No description provided for @filesDeleteFailed.
   ///
   /// In en, this message translates to:
-  /// **'Couldn\'t delete the files'**
-  String get filesDeleteFailed;
+  /// **'{total, plural, =1{Couldn\'t delete the file} other{Couldn\'t delete the files}}'**
+  String filesDeleteFailed(int total);
 
   /// No description provided for @filesDeletedPartly.
   ///

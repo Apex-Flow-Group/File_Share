@@ -18,7 +18,15 @@ class AppLocalizationsAr extends AppLocalizations {
   String get tourMultiPlatformTitle => 'أندرويد وWindows وLinux';
 
   @override
-  String get filesDeleteFailed => 'تعذّر حذف الملفات';
+  String filesDeleteFailed(int total) {
+    String _temp0 = intl.Intl.pluralLogic(
+      total,
+      locale: localeName,
+      other: 'تعذّر حذف الملفات',
+      one: 'تعذّر حذف الملف',
+    );
+    return '$_temp0';
+  }
 
   @override
   String filesDeletedPartly(int count, int total) {

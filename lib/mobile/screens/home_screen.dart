@@ -101,7 +101,7 @@ class _HomeScreenState extends State<HomeScreen>
   @override
   void didChangeAppLifecycleState(AppLifecycleState state) {
     if (state == AppLifecycleState.resumed) {
-      UpdateService.instance.onAppResumed();
+      UpdateService.instance.offerWhenIdle();
     }
   }
 

@@ -480,7 +480,7 @@ mixin HomeDialogs<T extends StatefulWidget> on State<T> {
               )),
         ])).whenComplete(() {
       if (isBusy) {
-        UpdateService.instance.completeUpdate();
+        UpdateService.instance.offerWhenIdle();
       }
     });
   }

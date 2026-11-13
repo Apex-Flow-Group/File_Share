@@ -121,7 +121,7 @@ class _FilesTabState extends State<FilesTab>
         if (count == total) {
           ApexSnackBar.success(context, l10n.filesDeletedCount(count));
         } else if (count == 0) {
-          ApexSnackBar.error(context, l10n.filesDeleteFailed);
+          ApexSnackBar.error(context, l10n.filesDeleteFailed(total));
         } else {
           ApexSnackBar.error(context, l10n.filesDeletedPartly(count, total));
         }

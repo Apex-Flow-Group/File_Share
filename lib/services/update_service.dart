@@ -102,9 +102,9 @@ class UpdateService {
     }
   }
 
-  /// يُستدعى عند عودة التطبيق من الخلفية
-  /// يتحقق إذا كان التحديث جاهزاً وينتظر إذا كان مشغولاً
-  void onAppResumed() {
+  /// Offers the install sheet once no transfer runs; never installs. On
+  /// return to the app, and when a busy install sheet closes.
+  void offerWhenIdle() {
     if (!_updateDownloaded) {
       return;
     }
