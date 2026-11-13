@@ -623,9 +623,6 @@ class AppLocalizationsAr extends AppLocalizations {
   String get weAreHappyToHear => 'نسعد بتواصلك معنا';
 
   @override
-  String get deleteFromFolders => 'حذف من المجلدات أيضاً';
-
-  @override
   String get permanentDeleteWarning => '⚠️ سيتم حذف الملفات نهائياً من التخزين';
 
   @override
@@ -1027,40 +1024,28 @@ class AppLocalizationsAr extends AppLocalizations {
   }
 
   @override
-  String get permBluetoothAdvertise => 'بلوتوث (إعلان)';
-
-  @override
-  String get permBluetoothConnect => 'بلوتوث (اتصال)';
-
-  @override
-  String get permBluetoothScan => 'بلوتوث (مسح)';
-
-  @override
-  String get permNearbyWifi => 'الأجهزة القريبة (WiFi)';
-
-  @override
   String timeSecondsShort(int seconds) {
-    return '$seconds ث';
+    return 'بقي $seconds ث';
   }
 
   @override
   String timeMinutesShort(int minutes) {
-    return '$minutes د';
+    return 'بقي $minutes د';
   }
 
   @override
   String timeHoursShort(int hours) {
-    return '$hours س';
+    return 'بقي $hours س';
   }
 
   @override
   String get aboutOfficialWebsite => 'الموقع الرسمي';
 
   @override
-  String get aboutGetOnAndroid => 'حمّل على أندرويد';
+  String get aboutGetOnAndroid => 'نزّله على أندرويد';
 
   @override
-  String get aboutScanWithPhone => 'امسح الباركود بهاتفك';
+  String get aboutScanWithPhone => 'امسح الرمز بهاتفك';
 
   @override
   String get aboutOrTapButton => 'أو اضغط على الزر';
@@ -1069,31 +1054,25 @@ class AppLocalizationsAr extends AppLocalizations {
   String get updateCheck => 'التحقق من التحديثات';
 
   @override
-  String get updateChecking => 'جاري التحقق...';
+  String get updateChecking => 'جارٍ التحقق…';
 
   @override
-  String get updateUpToDate => 'التطبيق محدّث ✓';
+  String get updateUpToDate => 'التطبيق محدّث';
 
   @override
   String get updateUpToDateHint => 'لديك أحدث إصدار';
 
   @override
-  String get updateAvailableBang => 'تحديث جديد متاح!';
-
-  @override
-  String get updateTapToDownload => 'اضغط لتحميل التحديث';
-
-  @override
-  String get updateDownloadingEllipsis => 'جاري التحميل...';
+  String get updateTapToDownload => 'اضغط للتنزيل';
 
   @override
   String get updateReadyToInstall => 'جاهز للتثبيت';
 
   @override
-  String get updateTapToRestart => 'اضغط لإعادة التشغيل وتثبيت التحديث';
+  String get updateTapToRestart => 'اضغط للتثبيت وإعادة التشغيل';
 
   @override
-  String get notifFileReceivedTitle => 'تم استلام ملف ✅';
+  String get notifFileReceivedTitle => 'تم استلام ملف';
 
   @override
   String notifFromDevice(String fileName, String fromDevice) {
@@ -1101,72 +1080,64 @@ class AppLocalizationsAr extends AppLocalizations {
   }
 
   @override
-  String get notifSentTitle => 'تم الإرسال ✅';
+  String get notifSentTitle => 'اكتمل الإرسال';
 
   @override
-  String get notifSendFailedTitle => 'فشل الإرسال ❌';
+  String get notifSendFailedTitle => 'فشل الإرسال';
 
   @override
-  String get notifShareUploadTitle => 'ملف رُفع إلى Share 📂';
+  String get notifShareUploadTitle => 'رُفع ملف إلى مجلدك المشترك';
 
   @override
-  String get tourAgreeMobile =>
-      'قرأت المميزات وأوافق على منح الصلاحيات اللازمة للتطبيق';
-
-  @override
-  String get tourNearbyWifiDesc =>
-      'اكتشاف تلقائي سريع عبر Nearby للهاتف أو WiFi للحاسوب';
+  String get tourNearbyWifiDesc => 'يجد الأجهزة على شبكتك تلقائياً';
 
   @override
   String get tourApkShareDesc => 'شارك تطبيقاتك المثبتة مع الأجهزة الأخرى';
 
   @override
-  String get tourMultiPlatformDesc => 'يعمل على الهاتف والتابلت وسطح المكتب';
+  String get tourMultiPlatformDesc => 'الهاتف والجهاز اللوحي والحاسوب والتلفاز';
 
   @override
-  String get appsNoUserApps => 'لا توجد تطبيقات مستخدم';
+  String get appsNoUserApps => 'لا تطبيقات ثبّتها بنفسك';
 
   @override
-  String get updateSheetTitle => 'تحديث جديد متاح';
-
-  @override
-  String get updateSheetBody => 'يوجد إصدار جديد من Apex File Share';
-
-  @override
-  String get updateNow => 'تحديث الآن';
+  String get updateNow => 'تنزيل التحديث';
 
   @override
   String get later => 'لاحقاً';
 
   @override
-  String get updateReadyTitle => 'التحديث جاهز';
-
-  @override
   String get updateInstallsAfterTransfer =>
-      'سيُثبَّت التحديث تلقائياً بعد انتهاء الإرسال';
+      'ستظهر نافذة التثبيت بعد انتهاء النقل';
 
   @override
-  String get updateDownloadedReady => 'التحديث محمّل وجاهز للتثبيت';
+  String get updateDownloadedReady => 'سيُعاد تشغيل التطبيق لتثبيته.';
 
   @override
   String get installNow => 'تثبيت الآن';
 
   @override
-  String get permGranted => '✓ ممنوح';
+  String get permGranted => 'ممنوح';
 
   @override
-  String get permBlocked => '✗ محظور';
+  String get permBlocked => 'امنح من الإعدادات';
 
   @override
-  String get permTapToGrant => '← اضغط للمنح';
+  String get permTapToGrant => 'اضغط للمنح';
 
   @override
   String deleteFilesConfirm(int count) {
-    return 'هل تريد حذف $count ملفات؟';
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: 'حذف $count ملف؟',
+      many: 'حذف $count ملفاً؟',
+      few: 'حذف $count ملفات؟',
+      two: 'حذف ملفين؟',
+      one: 'حذف ملف واحد؟',
+    );
+    return '$_temp0';
   }
-
-  @override
-  String get deleteAlsoFromDevice => 'حذف من ذاكرة الجهاز أيضاً';
 
   @override
   String fromSender(String name) {
@@ -1174,10 +1145,10 @@ class AppLocalizationsAr extends AppLocalizations {
   }
 
   @override
-  String get pcVersionGet => 'حمّل نسخة الكمبيوتر';
+  String get pcVersionGet => 'نزّل نسخة الحاسوب';
 
   @override
-  String get pcVersionPlatforms => 'Windows و Linux • apexflow.now';
+  String get pcVersionPlatforms => 'Windows وLinux · apexflow.now';
 
   @override
   String fileOfTotal(int current, int total) {
@@ -1185,17 +1156,10 @@ class AppLocalizationsAr extends AppLocalizations {
   }
 
   @override
-  String get sendingInProgress => 'جاري الإرسال...';
-
-  @override
   String get tvTourBeforeStart => 'قبل البدء';
 
   @override
-  String get tvTourBeforeStartHint =>
-      'مرر المميزات للأعلى والأسفل\nثم وافق على الشروط للمتابعة';
-
-  @override
-  String get tvTourAgree => 'أوافق على الشروط';
+  String get tvTourBeforeStartHint => 'مرّر المميزات، ثم وافق لتبدأ';
 
   @override
   String get tvTourFastDiscovery => 'اكتشاف تلقائي سريع';
@@ -1204,8 +1168,26 @@ class AppLocalizationsAr extends AppLocalizations {
   String get tvTourShareApps => 'شارك تطبيقاتك المثبتة';
 
   @override
-  String get tvTourDevices => 'هاتف، تابلت، كمبيوتر';
+  String get tvTourDevices => 'هاتف، لوحي، حاسوب، تلفاز';
 
   @override
   String get emptyFolder => 'مجلد فارغ';
+
+  @override
+  String get updateAvailable => 'يوجد تحديث';
+
+  @override
+  String get tourAgree => 'أوافق على منح الصلاحيات';
+
+  @override
+  String get tourNearbyWifiTitle => 'Nearby وWi-Fi';
+
+  @override
+  String get tourApkShareTitle => 'مشاركة التطبيقات';
+
+  @override
+  String get tourMultiPlatformTitle => 'على كل الأجهزة';
+
+  @override
+  String get tvTourDiscoveryTitle => 'Wi-Fi';
 }

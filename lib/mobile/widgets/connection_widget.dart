@@ -358,6 +358,7 @@ class _ConnectionWidgetState extends State<ConnectionWidget>
     if (paths == null || paths.isEmpty) {
       return;
     }
+    final l10n = AppLocalizations.of(context);
     setSending();
     try {
       final outcome = await ApexCore.instance.sendFiles(paths, widget.device);
@@ -372,12 +373,9 @@ class _ConnectionWidgetState extends State<ConnectionWidget>
       }
       final label = paths.length == 1
           ? fileNameOf(paths.first)
-          : '${paths.length} files';
-      if (ok) {
-        await DesktopNotificationService.instance.showFileSent(label);
-      } else {
-        await DesktopNotificationService.instance.showSendFailed(label);
-      }
+          : l10n.clipboardFileCount(paths.length);
+      await DesktopNotificationService.instance
+          .showSendResult(outcome, label);
     } finally {
       TransferProgressService().clearProgress();
       if (mounted) {
@@ -407,11 +405,8 @@ class _ConnectionWidgetState extends State<ConnectionWidget>
           await ClipboardMonitorService.instance.cleanupTempImages();
         }
       }
-      if (ok) {
-        await DesktopNotificationService.instance.showFileSent(label);
-      } else {
-        await DesktopNotificationService.instance.showSendFailed(label);
-      }
+      await DesktopNotificationService.instance
+          .showSendResult(outcome, label);
     } finally {
       TransferProgressService().clearProgress();
       if (mounted) {

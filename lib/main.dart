@@ -66,7 +66,7 @@ class FileShareApp extends StatelessWidget {
       animation: settings,
       builder: (context, _) {
         return MaterialApp(
-          title: 'Apex File Share',
+          onGenerateTitle: (context) => AppLocalizations.of(context).appTitle,
           debugShowCheckedModeBanner: false,
           locale: settings.locale,
           localeResolutionCallback: (locale, supportedLocales) {

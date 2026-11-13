@@ -613,9 +613,6 @@ class AppLocalizationsEn extends AppLocalizations {
   String get weAreHappyToHear => 'We are happy to hear from you';
 
   @override
-  String get deleteFromFolders => 'Delete from folders too';
-
-  @override
   String get permanentDeleteWarning =>
       'Files will be permanently deleted from storage';
 
@@ -753,7 +750,7 @@ class AppLocalizationsEn extends AppLocalizations {
   String get uploading => 'Uploading...';
 
   @override
-  String get downloading => 'Downloading...';
+  String get downloading => 'Downloading…';
 
   @override
   String get sendDeclined => 'The other device declined';
@@ -992,30 +989,18 @@ class AppLocalizationsEn extends AppLocalizations {
   }
 
   @override
-  String get permBluetoothAdvertise => 'Bluetooth Advertise';
-
-  @override
-  String get permBluetoothConnect => 'Bluetooth Connect';
-
-  @override
-  String get permBluetoothScan => 'Bluetooth Scan';
-
-  @override
-  String get permNearbyWifi => 'Nearby WiFi Devices';
-
-  @override
   String timeSecondsShort(int seconds) {
-    return '$seconds s';
+    return '$seconds s left';
   }
 
   @override
   String timeMinutesShort(int minutes) {
-    return '$minutes m';
+    return '$minutes min left';
   }
 
   @override
   String timeHoursShort(int hours) {
-    return '$hours h';
+    return '$hours h left';
   }
 
   @override
@@ -1025,7 +1010,7 @@ class AppLocalizationsEn extends AppLocalizations {
   String get aboutGetOnAndroid => 'Get on Android';
 
   @override
-  String get aboutScanWithPhone => 'Scan with your phone';
+  String get aboutScanWithPhone => 'Scan the code with your phone';
 
   @override
   String get aboutOrTapButton => 'Or tap the button';
@@ -1034,31 +1019,25 @@ class AppLocalizationsEn extends AppLocalizations {
   String get updateCheck => 'Check for Updates';
 
   @override
-  String get updateChecking => 'Checking...';
+  String get updateChecking => 'Checking…';
 
   @override
-  String get updateUpToDate => 'Up to date ✓';
+  String get updateUpToDate => 'Up to date';
 
   @override
   String get updateUpToDateHint => 'You have the latest version';
 
   @override
-  String get updateAvailableBang => 'New update available!';
-
-  @override
   String get updateTapToDownload => 'Tap to download';
-
-  @override
-  String get updateDownloadingEllipsis => 'Downloading...';
 
   @override
   String get updateReadyToInstall => 'Ready to install';
 
   @override
-  String get updateTapToRestart => 'Tap to restart & install';
+  String get updateTapToRestart => 'Tap to install and restart';
 
   @override
-  String get notifFileReceivedTitle => 'File received ✅';
+  String get notifFileReceivedTitle => 'File received';
 
   @override
   String notifFromDevice(String fileName, String fromDevice) {
@@ -1066,73 +1045,62 @@ class AppLocalizationsEn extends AppLocalizations {
   }
 
   @override
-  String get notifSentTitle => 'Sent ✅';
+  String get notifSentTitle => 'Sent';
 
   @override
-  String get notifSendFailedTitle => 'Send failed ❌';
+  String get notifSendFailedTitle => 'Send failed';
 
   @override
-  String get notifShareUploadTitle => 'File uploaded to Share 📂';
-
-  @override
-  String get tourAgreeMobile =>
-      'I have read the features and agree to grant the required permissions';
+  String get notifShareUploadTitle => 'File uploaded to your shared folder';
 
   @override
   String get tourNearbyWifiDesc =>
-      'Auto-discovery via Nearby for phones or WiFi for PC';
+      'Finds devices on your network automatically';
 
   @override
   String get tourApkShareDesc => 'Share your installed apps with other devices';
 
   @override
-  String get tourMultiPlatformDesc => 'Works on phone, tablet & desktop';
+  String get tourMultiPlatformDesc => 'Phone, tablet, PC and TV';
 
   @override
-  String get appsNoUserApps => 'No user apps found';
+  String get appsNoUserApps => 'No apps you installed';
 
   @override
-  String get updateSheetTitle => 'New Update Available';
-
-  @override
-  String get updateSheetBody => 'A new version of Apex File Share is ready';
-
-  @override
-  String get updateNow => 'Update Now';
+  String get updateNow => 'Download update';
 
   @override
   String get later => 'Later';
 
   @override
-  String get updateReadyTitle => 'Update Ready';
-
-  @override
   String get updateInstallsAfterTransfer =>
-      'Update will install after transfer finishes';
+      'You\'ll be asked to install when the transfer ends';
 
   @override
-  String get updateDownloadedReady =>
-      'The update is downloaded and ready to install';
+  String get updateDownloadedReady => 'The app restarts to install it.';
 
   @override
   String get installNow => 'Install Now';
 
   @override
-  String get permGranted => '✓ Granted';
+  String get permGranted => 'Granted';
 
   @override
-  String get permBlocked => '✗ Blocked';
+  String get permBlocked => 'Grant in Settings';
 
   @override
-  String get permTapToGrant => '← Tap to grant';
+  String get permTapToGrant => 'Tap to grant';
 
   @override
   String deleteFilesConfirm(int count) {
-    return 'Delete $count files?';
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: 'Delete $count files?',
+      one: 'Delete 1 file?',
+    );
+    return '$_temp0';
   }
-
-  @override
-  String get deleteAlsoFromDevice => 'Also delete from device storage';
 
   @override
   String fromSender(String name) {
@@ -1140,10 +1108,10 @@ class AppLocalizationsEn extends AppLocalizations {
   }
 
   @override
-  String get pcVersionGet => 'Get PC Version';
+  String get pcVersionGet => 'Get the PC version';
 
   @override
-  String get pcVersionPlatforms => 'Windows & Linux • apexflow.now';
+  String get pcVersionPlatforms => 'Windows & Linux · apexflow.now';
 
   @override
   String fileOfTotal(int current, int total) {
@@ -1151,17 +1119,11 @@ class AppLocalizationsEn extends AppLocalizations {
   }
 
   @override
-  String get sendingInProgress => 'Sending...';
-
-  @override
   String get tvTourBeforeStart => 'Before You Start';
 
   @override
   String get tvTourBeforeStartHint =>
-      'Scroll through the features\nthen agree to continue';
-
-  @override
-  String get tvTourAgree => 'I agree to terms';
+      'Scroll the features, then agree to start';
 
   @override
   String get tvTourFastDiscovery => 'Fast auto-discovery';
@@ -1170,8 +1132,26 @@ class AppLocalizationsEn extends AppLocalizations {
   String get tvTourShareApps => 'Share your installed apps';
 
   @override
-  String get tvTourDevices => 'Phone, tablet & desktop';
+  String get tvTourDevices => 'Phone, tablet, PC, TV';
 
   @override
   String get emptyFolder => 'Empty folder';
+
+  @override
+  String get updateAvailable => 'Update available';
+
+  @override
+  String get tourAgree => 'I agree to grant the permissions';
+
+  @override
+  String get tourNearbyWifiTitle => 'Nearby + Wi-Fi';
+
+  @override
+  String get tourApkShareTitle => 'App sharing';
+
+  @override
+  String get tourMultiPlatformTitle => 'On every device';
+
+  @override
+  String get tvTourDiscoveryTitle => 'Wi-Fi';
 }

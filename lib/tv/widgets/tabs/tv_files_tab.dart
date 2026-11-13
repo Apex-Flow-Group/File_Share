@@ -185,7 +185,7 @@ class _TVFilesTabState extends State<TVFilesTab> {
       ),
     );
     if (ok == true && mounted) {
-      await _fileOpsService.deleteFiles({file.path}, deleteFromFolder: true);
+      await _fileOpsService.deleteFiles({file.path});
       await _load();
     }
   }

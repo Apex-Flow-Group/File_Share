@@ -3,7 +3,13 @@ import 'package:flutter/material.dart';
 import '../../l10n/generated/app_localizations.dart';
 import '../../managers/permission_manager.dart';
 import '../../services/settings_service.dart';
+import '../../utils/platform_detector.dart';
 import 'home_screen.dart';
+
+/// The agreement line. Only Android asks for permissions; on Windows and
+/// Linux the line must not promise any.
+String tourAgreeText(AppLocalizations l10n, {required bool asksPermissions}) =>
+    asksPermissions ? l10n.tourAgree : l10n.finish;
 
 class TourScreen extends StatefulWidget {
   final SettingsService settings;
@@ -292,7 +298,8 @@ class _TourScreenState extends State<TourScreen> {
     );
   }
 
-  String _agreeText() => AppLocalizations.of(context).tourAgreeMobile;
+  String _agreeText() => tourAgreeText(AppLocalizations.of(context),
+      asksPermissions: !PlatformDetector.instance.isDesktop);
 
   List<_Feature> _features(AppLocalizations l10n) {
     return [
@@ -317,19 +324,19 @@ class _TourScreenState extends State<TourScreen> {
       _Feature(
         icon: Icons.sensors_rounded,
         color: const Color(0xFF007AFF),
-        title: 'Nearby + WiFi',
+        title: l10n.tourNearbyWifiTitle,
         desc: l10n.tourNearbyWifiDesc,
       ),
       _Feature(
         icon: Icons.phone_android_rounded,
         color: const Color(0xFFFF2D55),
-        title: 'APK Sharing',
+        title: l10n.tourApkShareTitle,
         desc: l10n.tourApkShareDesc,
       ),
       _Feature(
         icon: Icons.devices_rounded,
         color: const Color(0xFF32ADE6),
-        title: 'Multi-platform',
+        title: l10n.tourMultiPlatformTitle,
         desc: l10n.tourMultiPlatformDesc,
       ),
     ];

@@ -8,6 +8,7 @@ import '../../core/apex_core.dart';
 import '../../core/start_guard.dart';
 import '../../models/device.dart';
 import '../../services/clipboard_monitor_service.dart';
+import '../../services/desktop_notification_service.dart';
 import '../../services/file_operations_service.dart';
 import '../../services/file_storage_service.dart';
 import '../../services/pinned_devices_service.dart';
@@ -110,6 +111,9 @@ class HomeController extends ChangeNotifier {
 
       // اعرض الإشعار فقط عند آخر ملف في الدفعة
       if (e.isLastInBatch) {
+        // Does nothing off the desktop.
+        DesktopNotificationService.instance
+            .showFileReceived(e.fileName, e.fromDevice);
         onFileReceived?.call(e);
       }
     });
@@ -236,19 +240,7 @@ class HomeController extends ChangeNotifier {
   }
 
   Future<int> deleteSelectedFiles() async {
-    final count = await _fileOpsService.deleteFiles(
-      _selectedFiles,
-      deleteFromFolder: true,
-    );
-    exitSelectionMode();
-    return count;
-  }
-
-  Future<int> deleteSelectedFilesWithOption(bool deleteFromDevice) async {
-    final count = await _fileOpsService.deleteFiles(
-      _selectedFiles,
-      deleteFromFolder: deleteFromDevice,
-    );
+    final count = await _fileOpsService.deleteFiles(_selectedFiles);
     exitSelectionMode();
     return count;
   }

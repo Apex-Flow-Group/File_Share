@@ -3,6 +3,8 @@ import 'package:flutter/foundation.dart';
 import 'package:flutter/widgets.dart' show Locale;
 import 'package:local_notifier/local_notifier.dart';
 
+import '../features/send/data/send_http.dart' show SendOutcome;
+import '../features/send/send_notice.dart';
 import '../l10n/generated/app_localizations.dart';
 
 class DesktopNotificationService {
@@ -28,7 +30,7 @@ class DesktopNotificationService {
     if (!_isDesktop) {
       return;
     }
-    await localNotifier.setup(appName: 'Apex File Share');
+    await localNotifier.setup(appName: 'Apex Transfer');
   }
 
   Future<void> showFileReceived(String fileName, String fromDevice) async {
@@ -48,6 +50,31 @@ class DesktopNotificationService {
     }
     final n = LocalNotification(
       title: _l10n.notifSentTitle,
+      body: fileName,
+    );
+    await n.show();
+  }
+
+  /// The notice that fits how a send ended; none when the user cancelled.
+  Future<void> showSendResult(SendOutcome outcome, String label) async {
+    switch (sendNoticeFor(outcome)) {
+      case SendNotice.sent:
+        await showFileSent(label);
+      case SendNotice.declined:
+        await showSendDeclined(label);
+      case SendNotice.failed:
+        await showSendFailed(label);
+      case null:
+        break;
+    }
+  }
+
+  Future<void> showSendDeclined(String fileName) async {
+    if (!_isDesktop) {
+      return;
+    }
+    final n = LocalNotification(
+      title: _l10n.sendDeclined,
       body: fileName,
     );
     await n.show();

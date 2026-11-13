@@ -1214,12 +1214,6 @@ abstract class AppLocalizations {
   /// **'We are happy to hear from you'**
   String get weAreHappyToHear;
 
-  /// No description provided for @deleteFromFolders.
-  ///
-  /// In en, this message translates to:
-  /// **'Delete from folders too'**
-  String get deleteFromFolders;
-
   /// No description provided for @permanentDeleteWarning.
   ///
   /// In en, this message translates to:
@@ -1475,7 +1469,7 @@ abstract class AppLocalizations {
   /// No description provided for @downloading.
   ///
   /// In en, this message translates to:
-  /// **'Downloading...'**
+  /// **'Downloading…'**
   String get downloading;
 
   /// No description provided for @sendDeclined.
@@ -1802,46 +1796,22 @@ abstract class AppLocalizations {
   /// **'Yesterday {time}'**
   String whenYesterday(String time);
 
-  /// No description provided for @permBluetoothAdvertise.
-  ///
-  /// In en, this message translates to:
-  /// **'Bluetooth Advertise'**
-  String get permBluetoothAdvertise;
-
-  /// No description provided for @permBluetoothConnect.
-  ///
-  /// In en, this message translates to:
-  /// **'Bluetooth Connect'**
-  String get permBluetoothConnect;
-
-  /// No description provided for @permBluetoothScan.
-  ///
-  /// In en, this message translates to:
-  /// **'Bluetooth Scan'**
-  String get permBluetoothScan;
-
-  /// No description provided for @permNearbyWifi.
-  ///
-  /// In en, this message translates to:
-  /// **'Nearby WiFi Devices'**
-  String get permNearbyWifi;
-
   /// No description provided for @timeSecondsShort.
   ///
   /// In en, this message translates to:
-  /// **'{seconds} s'**
+  /// **'{seconds} s left'**
   String timeSecondsShort(int seconds);
 
   /// No description provided for @timeMinutesShort.
   ///
   /// In en, this message translates to:
-  /// **'{minutes} m'**
+  /// **'{minutes} min left'**
   String timeMinutesShort(int minutes);
 
   /// No description provided for @timeHoursShort.
   ///
   /// In en, this message translates to:
-  /// **'{hours} h'**
+  /// **'{hours} h left'**
   String timeHoursShort(int hours);
 
   /// No description provided for @aboutOfficialWebsite.
@@ -1859,7 +1829,7 @@ abstract class AppLocalizations {
   /// No description provided for @aboutScanWithPhone.
   ///
   /// In en, this message translates to:
-  /// **'Scan with your phone'**
+  /// **'Scan the code with your phone'**
   String get aboutScanWithPhone;
 
   /// No description provided for @aboutOrTapButton.
@@ -1877,13 +1847,13 @@ abstract class AppLocalizations {
   /// No description provided for @updateChecking.
   ///
   /// In en, this message translates to:
-  /// **'Checking...'**
+  /// **'Checking…'**
   String get updateChecking;
 
   /// No description provided for @updateUpToDate.
   ///
   /// In en, this message translates to:
-  /// **'Up to date ✓'**
+  /// **'Up to date'**
   String get updateUpToDate;
 
   /// No description provided for @updateUpToDateHint.
@@ -1892,23 +1862,11 @@ abstract class AppLocalizations {
   /// **'You have the latest version'**
   String get updateUpToDateHint;
 
-  /// No description provided for @updateAvailableBang.
-  ///
-  /// In en, this message translates to:
-  /// **'New update available!'**
-  String get updateAvailableBang;
-
   /// No description provided for @updateTapToDownload.
   ///
   /// In en, this message translates to:
   /// **'Tap to download'**
   String get updateTapToDownload;
-
-  /// No description provided for @updateDownloadingEllipsis.
-  ///
-  /// In en, this message translates to:
-  /// **'Downloading...'**
-  String get updateDownloadingEllipsis;
 
   /// No description provided for @updateReadyToInstall.
   ///
@@ -1919,13 +1877,13 @@ abstract class AppLocalizations {
   /// No description provided for @updateTapToRestart.
   ///
   /// In en, this message translates to:
-  /// **'Tap to restart & install'**
+  /// **'Tap to install and restart'**
   String get updateTapToRestart;
 
   /// No description provided for @notifFileReceivedTitle.
   ///
   /// In en, this message translates to:
-  /// **'File received ✅'**
+  /// **'File received'**
   String get notifFileReceivedTitle;
 
   /// No description provided for @notifFromDevice.
@@ -1937,31 +1895,25 @@ abstract class AppLocalizations {
   /// No description provided for @notifSentTitle.
   ///
   /// In en, this message translates to:
-  /// **'Sent ✅'**
+  /// **'Sent'**
   String get notifSentTitle;
 
   /// No description provided for @notifSendFailedTitle.
   ///
   /// In en, this message translates to:
-  /// **'Send failed ❌'**
+  /// **'Send failed'**
   String get notifSendFailedTitle;
 
   /// No description provided for @notifShareUploadTitle.
   ///
   /// In en, this message translates to:
-  /// **'File uploaded to Share 📂'**
+  /// **'File uploaded to your shared folder'**
   String get notifShareUploadTitle;
-
-  /// No description provided for @tourAgreeMobile.
-  ///
-  /// In en, this message translates to:
-  /// **'I have read the features and agree to grant the required permissions'**
-  String get tourAgreeMobile;
 
   /// No description provided for @tourNearbyWifiDesc.
   ///
   /// In en, this message translates to:
-  /// **'Auto-discovery via Nearby for phones or WiFi for PC'**
+  /// **'Finds devices on your network automatically'**
   String get tourNearbyWifiDesc;
 
   /// No description provided for @tourApkShareDesc.
@@ -1973,31 +1925,19 @@ abstract class AppLocalizations {
   /// No description provided for @tourMultiPlatformDesc.
   ///
   /// In en, this message translates to:
-  /// **'Works on phone, tablet & desktop'**
+  /// **'Phone, tablet, PC and TV'**
   String get tourMultiPlatformDesc;
 
   /// No description provided for @appsNoUserApps.
   ///
   /// In en, this message translates to:
-  /// **'No user apps found'**
+  /// **'No apps you installed'**
   String get appsNoUserApps;
-
-  /// No description provided for @updateSheetTitle.
-  ///
-  /// In en, this message translates to:
-  /// **'New Update Available'**
-  String get updateSheetTitle;
-
-  /// No description provided for @updateSheetBody.
-  ///
-  /// In en, this message translates to:
-  /// **'A new version of Apex File Share is ready'**
-  String get updateSheetBody;
 
   /// No description provided for @updateNow.
   ///
   /// In en, this message translates to:
-  /// **'Update Now'**
+  /// **'Download update'**
   String get updateNow;
 
   /// No description provided for @later.
@@ -2006,22 +1946,16 @@ abstract class AppLocalizations {
   /// **'Later'**
   String get later;
 
-  /// No description provided for @updateReadyTitle.
-  ///
-  /// In en, this message translates to:
-  /// **'Update Ready'**
-  String get updateReadyTitle;
-
   /// No description provided for @updateInstallsAfterTransfer.
   ///
   /// In en, this message translates to:
-  /// **'Update will install after transfer finishes'**
+  /// **'You\'ll be asked to install when the transfer ends'**
   String get updateInstallsAfterTransfer;
 
   /// No description provided for @updateDownloadedReady.
   ///
   /// In en, this message translates to:
-  /// **'The update is downloaded and ready to install'**
+  /// **'The app restarts to install it.'**
   String get updateDownloadedReady;
 
   /// No description provided for @installNow.
@@ -2033,32 +1967,26 @@ abstract class AppLocalizations {
   /// No description provided for @permGranted.
   ///
   /// In en, this message translates to:
-  /// **'✓ Granted'**
+  /// **'Granted'**
   String get permGranted;
 
   /// No description provided for @permBlocked.
   ///
   /// In en, this message translates to:
-  /// **'✗ Blocked'**
+  /// **'Grant in Settings'**
   String get permBlocked;
 
   /// No description provided for @permTapToGrant.
   ///
   /// In en, this message translates to:
-  /// **'← Tap to grant'**
+  /// **'Tap to grant'**
   String get permTapToGrant;
 
   /// No description provided for @deleteFilesConfirm.
   ///
   /// In en, this message translates to:
-  /// **'Delete {count} files?'**
+  /// **'{count, plural, =1{Delete 1 file?} other{Delete {count} files?}}'**
   String deleteFilesConfirm(int count);
-
-  /// No description provided for @deleteAlsoFromDevice.
-  ///
-  /// In en, this message translates to:
-  /// **'Also delete from device storage'**
-  String get deleteAlsoFromDevice;
 
   /// No description provided for @fromSender.
   ///
@@ -2069,13 +1997,13 @@ abstract class AppLocalizations {
   /// No description provided for @pcVersionGet.
   ///
   /// In en, this message translates to:
-  /// **'Get PC Version'**
+  /// **'Get the PC version'**
   String get pcVersionGet;
 
   /// No description provided for @pcVersionPlatforms.
   ///
   /// In en, this message translates to:
-  /// **'Windows & Linux • apexflow.now'**
+  /// **'Windows & Linux · apexflow.now'**
   String get pcVersionPlatforms;
 
   /// No description provided for @fileOfTotal.
@@ -2083,12 +2011,6 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'File {current} of {total}'**
   String fileOfTotal(int current, int total);
-
-  /// No description provided for @sendingInProgress.
-  ///
-  /// In en, this message translates to:
-  /// **'Sending...'**
-  String get sendingInProgress;
 
   /// No description provided for @tvTourBeforeStart.
   ///
@@ -2099,14 +2021,8 @@ abstract class AppLocalizations {
   /// No description provided for @tvTourBeforeStartHint.
   ///
   /// In en, this message translates to:
-  /// **'Scroll through the features\nthen agree to continue'**
+  /// **'Scroll the features, then agree to start'**
   String get tvTourBeforeStartHint;
-
-  /// No description provided for @tvTourAgree.
-  ///
-  /// In en, this message translates to:
-  /// **'I agree to terms'**
-  String get tvTourAgree;
 
   /// No description provided for @tvTourFastDiscovery.
   ///
@@ -2123,7 +2039,7 @@ abstract class AppLocalizations {
   /// No description provided for @tvTourDevices.
   ///
   /// In en, this message translates to:
-  /// **'Phone, tablet & desktop'**
+  /// **'Phone, tablet, PC, TV'**
   String get tvTourDevices;
 
   /// No description provided for @emptyFolder.
@@ -2131,6 +2047,42 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Empty folder'**
   String get emptyFolder;
+
+  /// No description provided for @updateAvailable.
+  ///
+  /// In en, this message translates to:
+  /// **'Update available'**
+  String get updateAvailable;
+
+  /// No description provided for @tourAgree.
+  ///
+  /// In en, this message translates to:
+  /// **'I agree to grant the permissions'**
+  String get tourAgree;
+
+  /// No description provided for @tourNearbyWifiTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Nearby + Wi-Fi'**
+  String get tourNearbyWifiTitle;
+
+  /// No description provided for @tourApkShareTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'App sharing'**
+  String get tourApkShareTitle;
+
+  /// No description provided for @tourMultiPlatformTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'On every device'**
+  String get tourMultiPlatformTitle;
+
+  /// No description provided for @tvTourDiscoveryTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Wi-Fi'**
+  String get tvTourDiscoveryTitle;
 }
 
 class _AppLocalizationsDelegate

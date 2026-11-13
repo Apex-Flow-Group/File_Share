@@ -129,7 +129,7 @@ int APIENTRY wWinMain(_In_ HINSTANCE instance, _In_opt_ HINSTANCE prev,
   bool maximized = false;
   LoadWindowState(origin, size, maximized);
 
-  if (!window.Create(L"Apex File Share", origin, size)) {
+  if (!window.Create(L"Apex Transfer", origin, size)) {
     return EXIT_FAILURE;
   }
 

@@ -19,7 +19,7 @@ class FilesTab extends StatefulWidget {
   final String sortBy;
   final bool sortAscending;
   final VoidCallback onExitSelection;
-  final Future<int> Function(bool deleteFromDevice) onDeleteSelected;
+  final Future<int> Function() onDeleteSelected;
   final VoidCallback onSelectAll;
   final VoidCallback onSaveSortPreference;
   final Function(String) onSortByChanged;
@@ -108,12 +108,12 @@ class _FilesTabState extends State<FilesTab>
   }
 
   Future<void> _showDeleteSheet() async {
-    final result = await DeleteFilesSheet.show(
+    final confirmed = await DeleteFilesSheet.show(
       context,
       fileCount: widget.selectedFiles.length,
     );
-    if (result != null && mounted) {
-      final count = await widget.onDeleteSelected(result.deleteFromDevice);
+    if (confirmed && mounted) {
+      final count = await widget.onDeleteSelected();
       if (mounted) {
         final l10n = AppLocalizations.of(context);
         ApexSnackBar.success(context, '$count ${l10n.filesDeletedCount}');

@@ -43,7 +43,7 @@ class TransferProgressIndicator extends StatelessWidget {
                 child: Text(
                   isBatch
                       ? l10n.fileOfTotal(current, total)
-                      : l10n.sendingInProgress,
+                      : l10n.sending,
                   style: TextStyle(
                     fontWeight: FontWeight.w600,
                     fontSize: 13,

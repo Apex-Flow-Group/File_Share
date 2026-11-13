@@ -10,20 +10,15 @@ class FileOperationsService {
   /// A deleted file's sender line goes with it.
   final SenderLog? senders;
 
-  Future<int> deleteFiles(
-    Set<String> filePaths, {
-    required bool deleteFromFolder,
-  }) async {
+  Future<int> deleteFiles(Set<String> filePaths) async {
     int deletedCount = 0;
 
     for (final filePath in filePaths) {
       try {
         final file = File(filePath);
-        if (deleteFromFolder && await file.exists()) {
+        if (await file.exists()) {
           await file.delete();
           senders?.forget(filePath);
-          deletedCount++;
-        } else if (!deleteFromFolder) {
           deletedCount++;
         }
       } catch (e) {

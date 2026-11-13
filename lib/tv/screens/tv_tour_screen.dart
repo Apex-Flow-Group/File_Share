@@ -274,7 +274,7 @@ class _TVTourScreenState extends State<TVTourScreen> {
                           const SizedBox(width: 10),
                           Expanded(
                             child: Text(
-                              l10n.tvTourAgree,
+                              l10n.tourAgree,
                               style: TextStyle(
                                 fontSize: 13,
                                 color: _agreed || hasFocus ? color : null,
@@ -383,17 +383,17 @@ class _TVTourScreenState extends State<TVTourScreen> {
         _Feature(
             Icons.sensors_rounded,
             const Color(0xFF007AFF),
-            'Nearby + WiFi',
+            l10n.tvTourDiscoveryTitle,
             l10n.tvTourFastDiscovery),
         _Feature(
             Icons.phone_android_rounded,
             const Color(0xFFFF2D55),
-            'APK Sharing',
+            l10n.tourApkShareTitle,
             l10n.tvTourShareApps),
         _Feature(
             Icons.devices_rounded,
             const Color(0xFF32ADE6),
-            'Multi-platform',
+            l10n.tourMultiPlatformTitle,
             l10n.tvTourDevices),
       ];
 }

@@ -3,35 +3,26 @@ import 'package:flutter/material.dart';
 import '../../l10n/generated/app_localizations.dart';
 import '../../shared/apex_bottom_sheet.dart';
 
-/// Bottom sheet for confirming file deletion with option to delete from device.
-///
-/// Returns `null` if cancelled, or a [DeleteFilesResult] with the user's choice.
-class DeleteFilesResult {
-  final bool deleteFromDevice;
-  const DeleteFilesResult({required this.deleteFromDevice});
-}
-
+/// Bottom sheet for confirming file deletion.
 class DeleteFilesSheet {
   DeleteFilesSheet._();
 
   /// Shows the delete confirmation bottom sheet.
   ///
-  /// Returns [DeleteFilesResult] if confirmed, `null` if cancelled.
-  static Future<DeleteFilesResult?> show(
+  /// Returns `true` only if the user confirmed.
+  static Future<bool> show(
     BuildContext context, {
     required int fileCount,
   }) async {
     final l10n = AppLocalizations.of(context);
-    bool deleteFromDevice = false;
 
     final ok = await ApexBottomSheet.showStyled<bool>(
       context,
       headerIcon: Icons.delete_rounded,
       headerColor: Colors.red,
       headerTitle: l10n.deleteFiles,
-      headerSubtitle: '$fileCount ${l10n.files}',
-      content: StatefulBuilder(
-        builder: (ctx, setSheetState) => Column(
+      headerSubtitle: '$fileCount',
+      content: Column(
           mainAxisSize: MainAxisSize.min,
           children: [
             Container(
@@ -48,42 +39,7 @@ class DeleteFilesSheet {
                 textAlign: TextAlign.center,
               ),
             ),
-            const SizedBox(height: 14),
-            Container(
-              padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
-              decoration: BoxDecoration(
-                color: Theme.of(ctx).colorScheme.surfaceContainerHighest,
-                borderRadius: BorderRadius.circular(14),
-              ),
-              child: Row(
-                children: [
-                  Icon(Icons.phone_android_rounded,
-                      size: 20,
-                      color: deleteFromDevice ? Colors.red : Colors.grey),
-                  const SizedBox(width: 10),
-                  Expanded(
-                    child: Text(
-                      l10n.deleteAlsoFromDevice,
-                      style: TextStyle(
-                        fontSize: 13,
-                        fontWeight: FontWeight.w500,
-                        color: deleteFromDevice ? Colors.red : null,
-                      ),
-                    ),
-                  ),
-                  Switch.adaptive(
-                    value: deleteFromDevice,
-                    activeTrackColor: Colors.red.withValues(alpha: 0.5),
-                    thumbColor: WidgetStateProperty.resolveWith(
-                      (s) => s.contains(WidgetState.selected) ? Colors.red : null,
-                    ),
-                    onChanged: (v) => setSheetState(() => deleteFromDevice = v),
-                  ),
-                ],
-              ),
-            ),
           ],
-        ),
       ),
       actions: [
         Expanded(
@@ -114,9 +70,6 @@ class DeleteFilesSheet {
       ],
     );
 
-    if (ok == true) {
-      return DeleteFilesResult(deleteFromDevice: deleteFromDevice);
-    }
-    return null;
+    return ok == true;
   }
 }

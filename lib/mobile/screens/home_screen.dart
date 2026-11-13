@@ -223,7 +223,7 @@ class _HomeScreenState extends State<HomeScreen>
           sortBy: _ctrl.sortBy,
           sortAscending: _ctrl.sortAscending,
           onExitSelection: _ctrl.exitSelectionMode,
-          onDeleteSelected: _ctrl.deleteSelectedFilesWithOption,
+          onDeleteSelected: _ctrl.deleteSelectedFiles,
           onSelectAll: _ctrl.selectAllFiles,
           onSaveSortPreference: _saveSortPreference,
           onSortByChanged: (v) => _ctrl.setSortBy(v),

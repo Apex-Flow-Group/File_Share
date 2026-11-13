@@ -3,7 +3,6 @@ import 'package:file_picker/file_picker.dart';
 import 'package:flutter/material.dart';
 
 import '../../core/apex_core.dart';
-import '../../features/send/data/send_http.dart';
 import '../../features/send/logic/send_folder.dart';
 import '../../features/send/ui/send_outcome_message.dart';
 import '../../l10n/generated/app_localizations.dart';
@@ -32,7 +31,6 @@ mixin ConnectionSendActions<T extends StatefulWidget> on State<T> {
     setSending();
     try {
       final outcome = await ApexCore.instance.sendFiles(paths, device);
-      final ok = outcome == SendOutcome.sent;
       if (mounted) {
         showSendOutcome(context, outcome,
             sent: AppLocalizations.of(context).fileSentSuccess,
@@ -42,11 +40,8 @@ mixin ConnectionSendActions<T extends StatefulWidget> on State<T> {
       final label = paths.length == 1
           ? fileNameOf(paths.first)
           : l10n.clipboardFileCount(paths.length);
-      if (ok) {
-        await DesktopNotificationService.instance.showFileSent(label);
-      } else {
-        await DesktopNotificationService.instance.showSendFailed(label);
-      }
+      await DesktopNotificationService.instance
+          .showSendResult(outcome, label);
     } finally {
       TransferProgressService().clearProgress();
       if (mounted) {
@@ -100,11 +95,8 @@ mixin ConnectionSendActions<T extends StatefulWidget> on State<T> {
             sent: AppLocalizations.of(context).folderSent,
             failed: AppLocalizations.of(context).sendFailed);
       }
-      if (outcome == SendOutcome.sent) {
-        await DesktopNotificationService.instance.showFileSent(label);
-      } else {
-        await DesktopNotificationService.instance.showSendFailed(label);
-      }
+      await DesktopNotificationService.instance
+          .showSendResult(outcome, label);
     } finally {
       TransferProgressService().clearProgress();
       if (mounted) {

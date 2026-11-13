@@ -8,9 +8,11 @@ import 'package:qr_flutter/qr_flutter.dart';
 import 'package:url_launcher/url_launcher.dart';
 
 import '../l10n/generated/app_localizations.dart';
+import '../services/transfer_progress_service.dart';
 import '../services/update_service.dart';
 import '../shared/apex_header.dart';
 import '../shared/apex_icons.dart';
+import '../shared/apex_snackbar.dart';
 
 const _kPlayStoreUrl =
     'https://play.google.com/store/apps/dev?id=5409981776310932919';
@@ -117,6 +119,12 @@ class _AboutScreenState extends State<AboutScreen> {
   }
 
   Future<void> _installUpdate() async {
+    // Installing restarts the app, so a running transfer comes first.
+    if (TransferProgressService().isTransferring) {
+      ApexSnackBar.info(
+          context, AppLocalizations.of(context).updateInstallsAfterTransfer);
+      return;
+    }
     await UpdateService.instance.completeUpdate();
     // التطبيق سيُعاد تشغيله — لكن كحماية إذا لم يحدث ذلك
     if (mounted) {
@@ -398,7 +406,7 @@ class _AboutScreenState extends State<AboutScreen> {
         return _UpdateTile(
           icon: Icons.new_releases_rounded,
           color: const Color(0xFFFF9500),
-          label: l10n.updateAvailableBang,
+          label: l10n.updateAvailable,
           subtitle: l10n.updateTapToDownload,
           onTap: _downloadUpdate,
           badge: true,
@@ -407,7 +415,7 @@ class _AboutScreenState extends State<AboutScreen> {
         return _UpdateTile(
           icon: Icons.download_rounded,
           color: Theme.of(context).colorScheme.primary,
-          label: l10n.updateDownloadingEllipsis,
+          label: l10n.downloading,
           loading: true,
         );
       case _CheckState.readyToInstall:

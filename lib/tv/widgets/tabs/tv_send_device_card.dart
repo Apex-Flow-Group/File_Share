@@ -6,7 +6,6 @@ import '../../../core/apex_core.dart';
 import '../../../features/chat/logic/chat_key.dart';
 import '../../../features/chat/ui/confirm_block.dart';
 import '../../../features/chat/ui/device_chat_view.dart';
-import '../../../features/send/data/send_http.dart';
 import '../../../features/send/logic/send_folder.dart';
 import '../../../features/send/ui/send_outcome_message.dart';
 import '../../../l10n/generated/app_localizations.dart';
@@ -132,22 +131,18 @@ class _TVDeviceCardState extends State<TVDeviceCard> {
       return;
     }
 
+    final l10n = AppLocalizations.of(context);
     final outcome = await ApexCore.instance.sendFiles(paths, widget.device);
-    final ok = outcome == SendOutcome.sent;
     if (mounted) {
-      final l10n = AppLocalizations.of(context);
       showSendOutcome(context, outcome,
           sent: l10n.fileSentSuccess,
           failed: l10n.fileSendFailed);
     }
     final label = paths.length == 1
         ? fileNameOf(paths.first)
-        : '${paths.length} files';
-    if (ok) {
-      await DesktopNotificationService.instance.showFileSent(label);
-    } else {
-      await DesktopNotificationService.instance.showSendFailed(label);
-    }
+        : l10n.clipboardFileCount(paths.length);
+    await DesktopNotificationService.instance
+        .showSendResult(outcome, label);
     TransferProgressService().clearProgress();
   }
 
@@ -211,11 +206,8 @@ class _TVDeviceCardState extends State<TVDeviceCard> {
         final l10n = AppLocalizations.of(context);
         showSendOutcome(context, outcome, sent: l10n.folderSent, failed: l10n.sendFailed);
       }
-      if (outcome == SendOutcome.sent) {
-        await DesktopNotificationService.instance.showFileSent(label);
-      } else {
-        await DesktopNotificationService.instance.showSendFailed(label);
-      }
+      await DesktopNotificationService.instance
+          .showSendResult(outcome, label);
     } finally {
       closeCompressing();
       TransferProgressService().clearProgress();

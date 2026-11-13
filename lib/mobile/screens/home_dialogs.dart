@@ -386,13 +386,9 @@ mixin HomeDialogs<T extends StatefulWidget> on State<T> {
                   borderRadius: BorderRadius.circular(18)),
               child: Icon(Icons.system_update_rounded, size: 36, color: color)),
           const SizedBox(height: 14),
-          Text(l10n.updateSheetTitle,
+          Text(l10n.updateAvailable,
               style:
                   const TextStyle(fontSize: 18, fontWeight: FontWeight.bold)),
-          const SizedBox(height: 6),
-          Text(l10n.updateSheetBody,
-              textAlign: TextAlign.center,
-              style: TextStyle(fontSize: 13, color: Colors.grey[600])),
           const SizedBox(height: 22),
           Row(children: [
             Expanded(
@@ -436,7 +432,7 @@ mixin HomeDialogs<T extends StatefulWidget> on State<T> {
               child: const Icon(Icons.download_done_rounded,
                   size: 36, color: Colors.green)),
           const SizedBox(height: 14),
-          Text(l10n.updateReadyTitle,
+          Text(l10n.updateReadyToInstall,
               style:
                   const TextStyle(fontSize: 18, fontWeight: FontWeight.bold)),
           const SizedBox(height: 6),
