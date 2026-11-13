@@ -17,7 +17,7 @@ ExclusiveArch:  x86_64
 Requires:       gtk3
 
 %description
-Apex Sender sends files between phones, TVs and computers on the same network.
+Apex Transfer sends files between phones, TVs and computers on the same network.
 
 %install
 mkdir -p %{buildroot}/opt/apexsender %{buildroot}%{_bindir}
