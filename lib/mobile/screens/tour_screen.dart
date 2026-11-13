@@ -6,10 +6,11 @@ import '../../services/settings_service.dart';
 import '../../utils/platform_detector.dart';
 import 'home_screen.dart';
 
-/// The agreement line. Only Android asks for permissions; on Windows and
-/// Linux the line must not promise any.
-String tourAgreeText(AppLocalizations l10n, {required bool asksPermissions}) =>
-    asksPermissions ? l10n.tourAgree : l10n.finish;
+/// Only Android asks for permissions. On Windows and Linux there is nothing
+/// to agree to: no agreement line, and the start button works at once
+/// (owner decision).
+bool tourCanStart({required bool asksPermissions, required bool agreed}) =>
+    agreed || !asksPermissions;
 
 class TourScreen extends StatefulWidget {
   final SettingsService settings;
@@ -225,53 +226,55 @@ class _TourScreenState extends State<TourScreen> {
       child: Column(
         mainAxisSize: MainAxisSize.min,
         children: [
-          GestureDetector(
-            onTap: () => setState(() => _agreed = !_agreed),
-            behavior: HitTestBehavior.opaque,
-            child: Row(
-              children: [
-                AnimatedContainer(
-                  duration: const Duration(milliseconds: 200),
-                  width: 24,
-                  height: 24,
-                  decoration: BoxDecoration(
-                    color: _agreed
-                        ? Theme.of(context).colorScheme.primary
-                        : Colors.transparent,
-                    borderRadius: BorderRadius.circular(7),
-                    border: Border.all(
+          if (_asksPermissions) ...[
+            GestureDetector(
+              onTap: () => setState(() => _agreed = !_agreed),
+              behavior: HitTestBehavior.opaque,
+              child: Row(
+                children: [
+                  AnimatedContainer(
+                    duration: const Duration(milliseconds: 200),
+                    width: 24,
+                    height: 24,
+                    decoration: BoxDecoration(
                       color: _agreed
                           ? Theme.of(context).colorScheme.primary
-                          : Colors.grey.withValues(alpha: 0.5),
-                      width: 2,
+                          : Colors.transparent,
+                      borderRadius: BorderRadius.circular(7),
+                      border: Border.all(
+                        color: _agreed
+                            ? Theme.of(context).colorScheme.primary
+                            : Colors.grey.withValues(alpha: 0.5),
+                        width: 2,
+                      ),
+                    ),
+                    child: _agreed
+                        ? const Icon(Icons.check_rounded,
+                            color: Colors.white, size: 16)
+                        : null,
+                  ),
+                  const SizedBox(width: 12),
+                  Expanded(
+                    child: Text(
+                      l10n.tourAgree,
+                      style: TextStyle(
+                        fontSize: 13,
+                        color: Theme.of(context).colorScheme.onSurfaceVariant,
+                      ),
                     ),
                   ),
-                  child: _agreed
-                      ? const Icon(Icons.check_rounded,
-                          color: Colors.white, size: 16)
-                      : null,
-                ),
-                const SizedBox(width: 12),
-                Expanded(
-                  child: Text(
-                    _agreeText(),
-                    style: TextStyle(
-                      fontSize: 13,
-                      color: Theme.of(context).colorScheme.onSurfaceVariant,
-                    ),
-                  ),
-                ),
-              ],
+                ],
+              ),
             ),
-          ),
-          const SizedBox(height: 16),
+            const SizedBox(height: 16),
+          ],
           AnimatedOpacity(
             duration: const Duration(milliseconds: 300),
-            opacity: _agreed ? 1.0 : 0.4,
+            opacity: _canStart ? 1.0 : 0.4,
             child: SizedBox(
               width: isWide ? 320 : double.infinity,
               child: FilledButton(
-                onPressed: _agreed ? _start : null,
+                onPressed: _canStart ? _start : null,
                 style: FilledButton.styleFrom(
                   padding: EdgeInsets.symmetric(vertical: isWide ? 12 : 16),
                   shape: RoundedRectangleBorder(
@@ -298,8 +301,10 @@ class _TourScreenState extends State<TourScreen> {
     );
   }
 
-  String _agreeText() => tourAgreeText(AppLocalizations.of(context),
-      asksPermissions: !PlatformDetector.instance.isDesktop);
+  bool get _asksPermissions => !PlatformDetector.instance.isDesktop;
+
+  bool get _canStart =>
+      tourCanStart(asksPermissions: _asksPermissions, agreed: _agreed);
 
   List<_Feature> _features(AppLocalizations l10n) {
     return [

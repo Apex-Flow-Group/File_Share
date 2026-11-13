@@ -1,7 +1,10 @@
 ; Apex File Share — Inno Setup Script
 ; Copyright © 2025 ApexFlow. All rights reserved.
 
-#define AppName "Apex File Share"
+#define AppName "Apex Transfer"
+; The folder keeps its first name: a new name would install a second copy
+; beside the old one instead of replacing it.
+#define InstallDir "Apex File Share"
 #define AppPublisher "ApexFlow"
 #define AppURL "https://apexflow.app"
 #define AppExeName "file_share_app.exe"
@@ -18,7 +21,7 @@ AppPublisher={#AppPublisher}
 AppPublisherURL={#AppURL}
 AppSupportURL={#AppURL}
 AppUpdatesURL={#AppURL}
-DefaultDirName={autopf}\{#AppName}
+DefaultDirName={autopf}\{#InstallDir}
 DefaultGroupName={#AppName}
 AllowNoIcons=yes
 OutputDir={#ProjectDir}\installer
@@ -56,6 +59,12 @@ Name: "{autodesktop}\{#AppName}"; Filename: "{app}\{#AppExeName}"; Tasks: deskto
 
 [Run]
 Filename: "{app}\{#AppExeName}"; Description: "{cm:LaunchProgram,{#AppName}}"; Flags: nowait postinstall skipifsilent
+
+[InstallDelete]
+; Shortcuts under the old name, so the old and the new do not both stay.
+Type: files; Name: "{autodesktop}\Apex File Share.lnk"
+Type: files; Name: "{group}\Apex File Share.lnk"
+Type: files; Name: "{group}\Uninstall Apex File Share.lnk"
 
 [UninstallDelete]
 Type: filesandordirs; Name: "{app}"
