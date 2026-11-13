@@ -149,18 +149,16 @@ class _HomeScreenState extends State<HomeScreen>
 
   Widget _buildTabletLayout() {
     return Scaffold(
-      body: SafeArea(
-        child: Row(children: [
-          TabletRail(
-            currentIndex: _ctrl.currentIndex,
-            isRunning: _ctrl.isRunning,
-            onSelect: _ctrl.setCurrentIndex,
-            onRefresh: _ctrl.refreshDiscovery,
-            onSettings: _openSettings,
-            onAbout: _openAbout,
-          ),
-          Expanded(child: _buildPage(_ctrl.currentIndex)),
-        ]),
+      body: TabletBody(
+        rail: TabletRail(
+          currentIndex: _ctrl.currentIndex,
+          isRunning: _ctrl.isRunning,
+          onSelect: _ctrl.setCurrentIndex,
+          onRefresh: _ctrl.refreshDiscovery,
+          onSettings: _openSettings,
+          onAbout: _openAbout,
+        ),
+        page: _buildPage(_ctrl.currentIndex),
       ),
     );
   }

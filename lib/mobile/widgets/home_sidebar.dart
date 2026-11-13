@@ -468,6 +468,23 @@ class _PanelIconPainter extends CustomPainter {
       old.folded != folded;
 }
 
+/// The page's header reaches behind the status bar, as on the phone: only
+/// the rail stays below it.
+class TabletBody extends StatelessWidget {
+  final Widget rail;
+  final Widget page;
+  const TabletBody({required this.rail, required this.page, super.key});
+
+  @override
+  Widget build(BuildContext context) => SafeArea(
+        top: false,
+        child: Row(children: [
+          SafeArea(bottom: false, child: rail),
+          Expanded(child: page),
+        ]),
+      );
+}
+
 /// The tablet's rail, and a phone's held sideways: its pages, then the
 /// tools at the foot, in the sidebars' roles.
 class TabletRail extends StatelessWidget {
