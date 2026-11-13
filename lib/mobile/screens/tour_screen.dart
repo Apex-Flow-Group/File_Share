@@ -329,15 +329,17 @@ class _TourScreenState extends State<TourScreen> {
       _Feature(
         icon: Icons.sensors_rounded,
         color: const Color(0xFF007AFF),
-        title: l10n.tourNearbyWifiTitle,
-        desc: l10n.tourNearbyWifiDesc,
+        title: l10n.tourDiscoveryTitle,
+        desc: l10n.tourDiscoveryDesc,
       ),
-      _Feature(
-        icon: Icons.phone_android_rounded,
-        color: const Color(0xFFFF2D55),
-        title: l10n.tourApkShareTitle,
-        desc: l10n.tourApkShareDesc,
-      ),
+      // Sharing installed apps is Android's alone.
+      if (_asksPermissions)
+        _Feature(
+          icon: Icons.phone_android_rounded,
+          color: const Color(0xFFFF2D55),
+          title: l10n.tourApkShareTitle,
+          desc: l10n.tourApkShareDesc,
+        ),
       _Feature(
         icon: Icons.devices_rounded,
         color: const Color(0xFF32ADE6),

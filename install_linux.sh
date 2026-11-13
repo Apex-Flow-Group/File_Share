@@ -103,10 +103,9 @@ cat > "$DESKTOP_DIR/apexsender.desktop" << EOF
 [Desktop Entry]
 Version=1.0
 Type=Application
-Name=Apex Sender
-Name[ar]=أبكس سندر
-Comment=Share files across devices via WiFi
-Comment[ar]=مشاركة الملفات بين الأجهزة عبر الواي فاي
+Name=Apex Transfer
+Comment=Share files across devices via Wi-Fi
+Comment[ar]=مشاركة الملفات بين الأجهزة عبر Wi-Fi
 Exec=$BIN_DIR/apexsender
 Icon=apexsender
 Terminal=false

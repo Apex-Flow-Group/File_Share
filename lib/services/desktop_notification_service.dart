@@ -33,13 +33,19 @@ class DesktopNotificationService {
     await localNotifier.setup(appName: 'Apex Transfer');
   }
 
-  Future<void> showFileReceived(String fileName, String fromDevice) async {
+  /// One notice per batch: the file's name, or how many came.
+  static String receivedBody(
+          AppLocalizations l10n, String fileName, int count, String fromDevice) =>
+      l10n.notifFromDevice(count > 1 ? l10n.clipboardFileCount(count) : fileName, fromDevice);
+
+  Future<void> showFileReceived(String fileName, String fromDevice,
+      {int count = 1}) async {
     if (!_isDesktop) {
       return;
     }
     final n = LocalNotification(
       title: _l10n.notifFileReceivedTitle,
-      body: _l10n.notifFromDevice(fileName, fromDevice),
+      body: receivedBody(_l10n, fileName, count, fromDevice),
     );
     await n.show();
   }

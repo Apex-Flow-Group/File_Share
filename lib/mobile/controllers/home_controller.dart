@@ -113,7 +113,7 @@ class HomeController extends ChangeNotifier {
       if (e.isLastInBatch) {
         // Does nothing off the desktop.
         DesktopNotificationService.instance
-            .showFileReceived(e.fileName, e.fromDevice);
+            .showFileReceived(e.fileName, e.fromDevice, count: e.batchTotal);
         onFileReceived?.call(e);
       }
     });

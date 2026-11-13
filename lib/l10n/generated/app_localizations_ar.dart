@@ -9,6 +9,15 @@ class AppLocalizationsAr extends AppLocalizations {
   AppLocalizationsAr([String locale = 'ar']) : super(locale);
 
   @override
+  String get tourDiscoveryTitle => 'اكتشاف تلقائي';
+
+  @override
+  String get tourDiscoveryDesc => 'يجد الأجهزة على شبكتك';
+
+  @override
+  String get tourMultiPlatformTitle => 'أندرويد وWindows وLinux';
+
+  @override
   String get appTitle => 'Apex Transfer';
 
   @override
@@ -162,7 +171,7 @@ class AppLocalizationsAr extends AppLocalizations {
   String get howToReceive => 'كيفية الاستقبال';
 
   @override
-  String get instruction1 => 'تأكد من اتصال جميع الأجهزة بنفس شبكة WiFi';
+  String get instruction1 => 'تأكد من اتصال جميع الأجهزة بنفس شبكة Wi-Fi';
 
   @override
   String get instruction2 => 'افتح التطبيق على الأجهزة الأخرى';
@@ -252,7 +261,7 @@ class AppLocalizationsAr extends AppLocalizations {
   String get network => 'الشبكة';
 
   @override
-  String get wifiDirect => 'WiFi Direct';
+  String get wifiDirect => 'Wi-Fi Direct';
 
   @override
   String get wifiDirectDesc => 'اتصال مباشر بين الأجهزة';
@@ -467,7 +476,18 @@ class AppLocalizationsAr extends AppLocalizations {
   String get noAppForFile => 'لا يوجد تطبيق يفتح هذا النوع من الملفات.';
 
   @override
-  String get filesDeletedCount => 'ملف تم حذفه';
+  String filesDeletedCount(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: 'حُذف $count ملف',
+      many: 'حُذف $count ملفاً',
+      few: 'حُذفت $count ملفات',
+      two: 'حُذف ملفان',
+      one: 'حُذف ملف واحد',
+    );
+    return '$_temp0';
+  }
 
   @override
   String get fileSentSuccess => 'تم إرسال الملف بنجاح';
@@ -578,7 +598,7 @@ class AppLocalizationsAr extends AppLocalizations {
   String get feature1Title => 'نقل سريع';
 
   @override
-  String get feature1Desc => 'إرسال الملفات بسرعة عالية عبر WiFi';
+  String get feature1Desc => 'إرسال الملفات بسرعة عالية عبر Wi-Fi';
 
   @override
   String get feature2Title => 'بدون إنترنت';
@@ -591,15 +611,6 @@ class AppLocalizationsAr extends AppLocalizations {
 
   @override
   String get feature3Desc => 'حماية كاملة لملفاتك';
-
-  @override
-  String get notConnectedToWiFi => 'غير متصل بالواي فاي';
-
-  @override
-  String get mustConnectToWiFi => 'يجب الاتصال بشبكة WiFi لاستخدام التطبيق';
-
-  @override
-  String get openWiFiSettings => 'فتح إعدادات WiFi';
 
   @override
   String get createHotspot => 'إنشاء نقطة اتصال';
@@ -621,15 +632,6 @@ class AppLocalizationsAr extends AppLocalizations {
 
   @override
   String get weAreHappyToHear => 'نسعد بتواصلك معنا';
-
-  @override
-  String get permanentDeleteWarning => '⚠️ سيتم حذف الملفات نهائياً من التخزين';
-
-  @override
-  String get deleteFromListOnly => 'سيتم حذف الملفات من القائمة فقط';
-
-  @override
-  String get cannotUndoWarning => 'تحذير: هذا الإجراء لا يمكن التراجع عنه';
 
   @override
   String get deletePermanent => 'حذف نهائي';
@@ -1066,13 +1068,13 @@ class AppLocalizationsAr extends AppLocalizations {
   String get updateTapToDownload => 'اضغط للتنزيل';
 
   @override
-  String get updateReadyToInstall => 'جاهز للتثبيت';
+  String get updateReadyToInstall => 'التحديث جاهز للتثبيت';
 
   @override
   String get updateTapToRestart => 'اضغط للتثبيت وإعادة التشغيل';
 
   @override
-  String get notifFileReceivedTitle => 'تم استلام ملف';
+  String get notifFileReceivedTitle => 'اكتمل الاستلام';
 
   @override
   String notifFromDevice(String fileName, String fromDevice) {
@@ -1087,9 +1089,6 @@ class AppLocalizationsAr extends AppLocalizations {
 
   @override
   String get notifShareUploadTitle => 'رُفع ملف إلى مجلدك المشترك';
-
-  @override
-  String get tourNearbyWifiDesc => 'يجد الأجهزة على شبكتك تلقائياً';
 
   @override
   String get tourApkShareDesc => 'شارك تطبيقاتك المثبتة مع الأجهزة الأخرى';
@@ -1111,7 +1110,7 @@ class AppLocalizationsAr extends AppLocalizations {
       'ستظهر نافذة التثبيت بعد انتهاء النقل';
 
   @override
-  String get updateDownloadedReady => 'سيُعاد تشغيل التطبيق لتثبيته.';
+  String get updateDownloadedReady => 'يُعاد تشغيل التطبيق أثناء التثبيت';
 
   @override
   String get installNow => 'تثبيت الآن';
@@ -1162,13 +1161,7 @@ class AppLocalizationsAr extends AppLocalizations {
   String get tvTourBeforeStartHint => 'مرّر المميزات، ثم وافق لتبدأ';
 
   @override
-  String get tvTourFastDiscovery => 'اكتشاف تلقائي سريع';
-
-  @override
   String get tvTourShareApps => 'شارك تطبيقاتك المثبتة';
-
-  @override
-  String get tvTourDevices => 'هاتف، لوحي، حاسوب، تلفاز';
 
   @override
   String get emptyFolder => 'مجلد فارغ';
@@ -1180,14 +1173,5 @@ class AppLocalizationsAr extends AppLocalizations {
   String get tourAgree => 'أوافق على منح الصلاحيات';
 
   @override
-  String get tourNearbyWifiTitle => 'Nearby وWi-Fi';
-
-  @override
   String get tourApkShareTitle => 'مشاركة التطبيقات';
-
-  @override
-  String get tourMultiPlatformTitle => 'على كل الأجهزة';
-
-  @override
-  String get tvTourDiscoveryTitle => 'Wi-Fi';
 }

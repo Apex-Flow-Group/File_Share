@@ -383,8 +383,8 @@ class _TVTourScreenState extends State<TVTourScreen> {
         _Feature(
             Icons.sensors_rounded,
             const Color(0xFF007AFF),
-            l10n.tvTourDiscoveryTitle,
-            l10n.tvTourFastDiscovery),
+            l10n.tourDiscoveryTitle,
+            l10n.tourDiscoveryDesc),
         _Feature(
             Icons.phone_android_rounded,
             const Color(0xFFFF2D55),
@@ -394,7 +394,7 @@ class _TVTourScreenState extends State<TVTourScreen> {
             Icons.devices_rounded,
             const Color(0xFF32ADE6),
             l10n.tourMultiPlatformTitle,
-            l10n.tvTourDevices),
+            l10n.tourMultiPlatformDesc),
       ];
 }
 

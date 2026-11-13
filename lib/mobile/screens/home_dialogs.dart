@@ -462,7 +462,13 @@ mixin HomeDialogs<T extends StatefulWidget> on State<T> {
           SizedBox(
               width: double.infinity,
               child: OutlinedButton(
-                onPressed: () => Navigator.pop(context),
+                onPressed: () {
+                  Navigator.pop(context);
+                  // It waits for the transfer, then this sheet shows again.
+                  if (isBusy) {
+                    UpdateService.instance.completeUpdate();
+                  }
+                },
                 style: OutlinedButton.styleFrom(
                     padding: const EdgeInsets.symmetric(vertical: 14)),
                 child: Text(isBusy ? l10n.ok : l10n.later),

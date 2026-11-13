@@ -127,7 +127,7 @@ class _TVHomeScreenState extends State<TVHomeScreen> {
     });
     core.fileReceivedStream.listen((e) {
       DesktopNotificationService.instance
-          .showFileReceived(e.fileName, e.fromDevice);
+          .showFileReceived(e.fileName, e.fromDevice, count: e.batchTotal);
       if (mounted) {
         setState(() => _selectedIndex = 2);
       }

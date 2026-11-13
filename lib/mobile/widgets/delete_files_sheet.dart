@@ -21,7 +21,6 @@ class DeleteFilesSheet {
       headerIcon: Icons.delete_rounded,
       headerColor: Colors.red,
       headerTitle: l10n.deleteFiles,
-      headerSubtitle: '$fileCount',
       content: Column(
           mainAxisSize: MainAxisSize.min,
           children: [

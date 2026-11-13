@@ -1,6 +1,9 @@
 {
   "@@locale": "en",
 
+  "tourDiscoveryTitle": "Auto-discovery",
+  "tourDiscoveryDesc": "Finds devices on your network",
+  "tourMultiPlatformTitle": "Android, Windows, Linux",
   "appTitle": "Apex Transfer",
   "@appTitle": { "description": "App name" },
 
@@ -54,7 +57,7 @@
   "sendingFileTo": "Sending file to",
   "noDevicesConnected": "No devices connected",
   "howToReceive": "How to Receive",
-  "instruction1": "Make sure all devices are connected to the same WiFi network",
+  "instruction1": "Make sure all devices are connected to the same Wi-Fi network",
   "instruction2": "Open the app on other devices",
   "instruction3": "Devices will be discovered automatically",
   "instruction4": "Find received files in \"Files\"",
@@ -84,7 +87,7 @@
   "systemSettings": "System Settings",
   "openSystemSettings": "Open System Settings",
   "network": "Network",
-  "wifiDirect": "WiFi Direct",
+  "wifiDirect": "Wi-Fi Direct",
   "wifiDirectDesc": "Direct connection between devices",
   "localNetwork": "Local Network",
   "localNetworkDesc": "Discover devices on same network",
@@ -156,7 +159,14 @@
   "folderMissing": "The folder was deleted or moved.",
   "fileMissing": "The file was deleted or moved.",
   "noAppForFile": "No app can open this type of file.",
-  "filesDeletedCount": "files deleted",
+  "filesDeletedCount": "{count, plural, =1{1 file deleted} other{{count} files deleted}}",
+  "@filesDeletedCount": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
   "fileSentSuccess": "File sent successfully",
   "fileSendFailed": "Failed to send file",
   "from": "From",
@@ -198,14 +208,11 @@
   "fastAndSecure": "Fast, Secure & Offline",
   "startTour": "Start Tour",
   "feature1Title": "Fast Transfer",
-  "feature1Desc": "Send files at high speed via WiFi",
+  "feature1Desc": "Send files at high speed via Wi-Fi",
   "feature2Title": "No Internet",
   "feature2Desc": "Works on local network only",
   "feature3Title": "Secure & Encrypted",
   "feature3Desc": "Full protection for your files",
-  "notConnectedToWiFi": "Not Connected to WiFi",
-  "mustConnectToWiFi": "You must connect to a WiFi network to use the app",
-  "openWiFiSettings": "Open WiFi Settings",
   "createHotspot": "Create Hotspot",
   "exitApp": "Exit App",
   "exitConfirmation": "Do you want to exit the app?",
@@ -213,9 +220,6 @@
   "pressMenuForSettings": "Press MENU for Settings",
   "category": "Category",
   "weAreHappyToHear": "We are happy to hear from you",
-  "permanentDeleteWarning": "Files will be permanently deleted from storage",
-  "deleteFromListOnly": "Files will be removed from list only",
-  "cannotUndoWarning": "Warning: This action cannot be undone",
   "deletePermanent": "Delete Permanently",
   "deleteWarning": "Files will be permanently deleted!",
   "filesCount": "Files Count",
@@ -388,7 +392,7 @@
     "placeholders": { "hours": { "type": "int" } }
   },
   "aboutOfficialWebsite": "Official Website",
-  "aboutGetOnAndroid": "Get on Android",
+  "aboutGetOnAndroid": "Get it on Android",
   "aboutScanWithPhone": "Scan the code with your phone",
   "aboutOrTapButton": "Or tap the button",
   "updateCheck": "Check for Updates",
@@ -396,9 +400,9 @@
   "updateUpToDate": "Up to date",
   "updateUpToDateHint": "You have the latest version",
   "updateTapToDownload": "Tap to download",
-  "updateReadyToInstall": "Ready to install",
+  "updateReadyToInstall": "Update ready to install",
   "updateTapToRestart": "Tap to install and restart",
-  "notifFileReceivedTitle": "File received",
+  "notifFileReceivedTitle": "Received",
   "notifFromDevice": "{fileName} — from {fromDevice}",
   "@notifFromDevice": {
     "placeholders": { "fileName": { "type": "String" }, "fromDevice": { "type": "String" } }
@@ -406,14 +410,13 @@
   "notifSentTitle": "Sent",
   "notifSendFailedTitle": "Send failed",
   "notifShareUploadTitle": "File uploaded to your shared folder",
-  "tourNearbyWifiDesc": "Finds devices on your network automatically",
   "tourApkShareDesc": "Share your installed apps with other devices",
   "tourMultiPlatformDesc": "Phone, tablet, PC and TV",
   "appsNoUserApps": "No apps you installed",
   "updateNow": "Download update",
   "later": "Later",
   "updateInstallsAfterTransfer": "You'll be asked to install when the transfer ends",
-  "updateDownloadedReady": "The app restarts to install it.",
+  "updateDownloadedReady": "The app restarts during installation",
   "installNow": "Install Now",
   "permGranted": "Granted",
   "permBlocked": "Grant in Settings",
@@ -434,14 +437,9 @@
   },
   "tvTourBeforeStart": "Before You Start",
   "tvTourBeforeStartHint": "Scroll the features, then agree to start",
-  "tvTourFastDiscovery": "Fast auto-discovery",
   "tvTourShareApps": "Share your installed apps",
-  "tvTourDevices": "Phone, tablet, PC, TV",
   "emptyFolder": "Empty folder",
   "updateAvailable": "Update available",
   "tourAgree": "I agree to grant the permissions",
-  "tourNearbyWifiTitle": "Nearby + Wi-Fi",
-  "tourApkShareTitle": "App sharing",
-  "tourMultiPlatformTitle": "On every device",
-  "tvTourDiscoveryTitle": "Wi-Fi"
+  "tourApkShareTitle": "App sharing"
 }

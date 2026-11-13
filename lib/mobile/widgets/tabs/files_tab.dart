@@ -116,7 +116,7 @@ class _FilesTabState extends State<FilesTab>
       final count = await widget.onDeleteSelected();
       if (mounted) {
         final l10n = AppLocalizations.of(context);
-        ApexSnackBar.success(context, '$count ${l10n.filesDeletedCount}');
+        ApexSnackBar.success(context, l10n.filesDeletedCount(count));
         await _load();
       }
     }

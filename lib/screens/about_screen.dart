@@ -120,9 +120,11 @@ class _AboutScreenState extends State<AboutScreen> {
 
   Future<void> _installUpdate() async {
     // Installing restarts the app, so a running transfer comes first.
+    // completeUpdate waits for the transfer, then the install sheet shows.
     if (TransferProgressService().isTransferring) {
       ApexSnackBar.info(
           context, AppLocalizations.of(context).updateInstallsAfterTransfer);
+      unawaited(UpdateService.instance.completeUpdate());
       return;
     }
     await UpdateService.instance.completeUpdate();

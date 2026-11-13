@@ -9,6 +9,15 @@ class AppLocalizationsEn extends AppLocalizations {
   AppLocalizationsEn([String locale = 'en']) : super(locale);
 
   @override
+  String get tourDiscoveryTitle => 'Auto-discovery';
+
+  @override
+  String get tourDiscoveryDesc => 'Finds devices on your network';
+
+  @override
+  String get tourMultiPlatformTitle => 'Android, Windows, Linux';
+
+  @override
   String get appTitle => 'Apex Transfer';
 
   @override
@@ -157,7 +166,7 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get instruction1 =>
-      'Make sure all devices are connected to the same WiFi network';
+      'Make sure all devices are connected to the same Wi-Fi network';
 
   @override
   String get instruction2 => 'Open the app on other devices';
@@ -247,7 +256,7 @@ class AppLocalizationsEn extends AppLocalizations {
   String get network => 'Network';
 
   @override
-  String get wifiDirect => 'WiFi Direct';
+  String get wifiDirect => 'Wi-Fi Direct';
 
   @override
   String get wifiDirectDesc => 'Direct connection between devices';
@@ -456,7 +465,15 @@ class AppLocalizationsEn extends AppLocalizations {
   String get noAppForFile => 'No app can open this type of file.';
 
   @override
-  String get filesDeletedCount => 'files deleted';
+  String filesDeletedCount(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '$count files deleted',
+      one: '1 file deleted',
+    );
+    return '$_temp0';
+  }
 
   @override
   String get fileSentSuccess => 'File sent successfully';
@@ -567,7 +584,7 @@ class AppLocalizationsEn extends AppLocalizations {
   String get feature1Title => 'Fast Transfer';
 
   @override
-  String get feature1Desc => 'Send files at high speed via WiFi';
+  String get feature1Desc => 'Send files at high speed via Wi-Fi';
 
   @override
   String get feature2Title => 'No Internet';
@@ -580,16 +597,6 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get feature3Desc => 'Full protection for your files';
-
-  @override
-  String get notConnectedToWiFi => 'Not Connected to WiFi';
-
-  @override
-  String get mustConnectToWiFi =>
-      'You must connect to a WiFi network to use the app';
-
-  @override
-  String get openWiFiSettings => 'Open WiFi Settings';
 
   @override
   String get createHotspot => 'Create Hotspot';
@@ -611,16 +618,6 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get weAreHappyToHear => 'We are happy to hear from you';
-
-  @override
-  String get permanentDeleteWarning =>
-      'Files will be permanently deleted from storage';
-
-  @override
-  String get deleteFromListOnly => 'Files will be removed from list only';
-
-  @override
-  String get cannotUndoWarning => 'Warning: This action cannot be undone';
 
   @override
   String get deletePermanent => 'Delete Permanently';
@@ -1007,7 +1004,7 @@ class AppLocalizationsEn extends AppLocalizations {
   String get aboutOfficialWebsite => 'Official Website';
 
   @override
-  String get aboutGetOnAndroid => 'Get on Android';
+  String get aboutGetOnAndroid => 'Get it on Android';
 
   @override
   String get aboutScanWithPhone => 'Scan the code with your phone';
@@ -1031,13 +1028,13 @@ class AppLocalizationsEn extends AppLocalizations {
   String get updateTapToDownload => 'Tap to download';
 
   @override
-  String get updateReadyToInstall => 'Ready to install';
+  String get updateReadyToInstall => 'Update ready to install';
 
   @override
   String get updateTapToRestart => 'Tap to install and restart';
 
   @override
-  String get notifFileReceivedTitle => 'File received';
+  String get notifFileReceivedTitle => 'Received';
 
   @override
   String notifFromDevice(String fileName, String fromDevice) {
@@ -1052,10 +1049,6 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get notifShareUploadTitle => 'File uploaded to your shared folder';
-
-  @override
-  String get tourNearbyWifiDesc =>
-      'Finds devices on your network automatically';
 
   @override
   String get tourApkShareDesc => 'Share your installed apps with other devices';
@@ -1077,7 +1070,7 @@ class AppLocalizationsEn extends AppLocalizations {
       'You\'ll be asked to install when the transfer ends';
 
   @override
-  String get updateDownloadedReady => 'The app restarts to install it.';
+  String get updateDownloadedReady => 'The app restarts during installation';
 
   @override
   String get installNow => 'Install Now';
@@ -1126,13 +1119,7 @@ class AppLocalizationsEn extends AppLocalizations {
       'Scroll the features, then agree to start';
 
   @override
-  String get tvTourFastDiscovery => 'Fast auto-discovery';
-
-  @override
   String get tvTourShareApps => 'Share your installed apps';
-
-  @override
-  String get tvTourDevices => 'Phone, tablet, PC, TV';
 
   @override
   String get emptyFolder => 'Empty folder';
@@ -1144,14 +1131,5 @@ class AppLocalizationsEn extends AppLocalizations {
   String get tourAgree => 'I agree to grant the permissions';
 
   @override
-  String get tourNearbyWifiTitle => 'Nearby + Wi-Fi';
-
-  @override
   String get tourApkShareTitle => 'App sharing';
-
-  @override
-  String get tourMultiPlatformTitle => 'On every device';
-
-  @override
-  String get tvTourDiscoveryTitle => 'Wi-Fi';
 }

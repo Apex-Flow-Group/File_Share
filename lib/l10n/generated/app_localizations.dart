@@ -98,6 +98,24 @@ abstract class AppLocalizations {
     Locale('en')
   ];
 
+  /// No description provided for @tourDiscoveryTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Auto-discovery'**
+  String get tourDiscoveryTitle;
+
+  /// No description provided for @tourDiscoveryDesc.
+  ///
+  /// In en, this message translates to:
+  /// **'Finds devices on your network'**
+  String get tourDiscoveryDesc;
+
+  /// No description provided for @tourMultiPlatformTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Android, Windows, Linux'**
+  String get tourMultiPlatformTitle;
+
   /// App name
   ///
   /// In en, this message translates to:
@@ -353,7 +371,7 @@ abstract class AppLocalizations {
   /// No description provided for @instruction1.
   ///
   /// In en, this message translates to:
-  /// **'Make sure all devices are connected to the same WiFi network'**
+  /// **'Make sure all devices are connected to the same Wi-Fi network'**
   String get instruction1;
 
   /// No description provided for @instruction2.
@@ -533,7 +551,7 @@ abstract class AppLocalizations {
   /// No description provided for @wifiDirect.
   ///
   /// In en, this message translates to:
-  /// **'WiFi Direct'**
+  /// **'Wi-Fi Direct'**
   String get wifiDirect;
 
   /// No description provided for @wifiDirectDesc.
@@ -911,8 +929,8 @@ abstract class AppLocalizations {
   /// No description provided for @filesDeletedCount.
   ///
   /// In en, this message translates to:
-  /// **'files deleted'**
-  String get filesDeletedCount;
+  /// **'{count, plural, =1{1 file deleted} other{{count} files deleted}}'**
+  String filesDeletedCount(int count);
 
   /// No description provided for @fileSentSuccess.
   ///
@@ -1127,7 +1145,7 @@ abstract class AppLocalizations {
   /// No description provided for @feature1Desc.
   ///
   /// In en, this message translates to:
-  /// **'Send files at high speed via WiFi'**
+  /// **'Send files at high speed via Wi-Fi'**
   String get feature1Desc;
 
   /// No description provided for @feature2Title.
@@ -1153,24 +1171,6 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Full protection for your files'**
   String get feature3Desc;
-
-  /// No description provided for @notConnectedToWiFi.
-  ///
-  /// In en, this message translates to:
-  /// **'Not Connected to WiFi'**
-  String get notConnectedToWiFi;
-
-  /// No description provided for @mustConnectToWiFi.
-  ///
-  /// In en, this message translates to:
-  /// **'You must connect to a WiFi network to use the app'**
-  String get mustConnectToWiFi;
-
-  /// No description provided for @openWiFiSettings.
-  ///
-  /// In en, this message translates to:
-  /// **'Open WiFi Settings'**
-  String get openWiFiSettings;
 
   /// No description provided for @createHotspot.
   ///
@@ -1213,24 +1213,6 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'We are happy to hear from you'**
   String get weAreHappyToHear;
-
-  /// No description provided for @permanentDeleteWarning.
-  ///
-  /// In en, this message translates to:
-  /// **'Files will be permanently deleted from storage'**
-  String get permanentDeleteWarning;
-
-  /// No description provided for @deleteFromListOnly.
-  ///
-  /// In en, this message translates to:
-  /// **'Files will be removed from list only'**
-  String get deleteFromListOnly;
-
-  /// No description provided for @cannotUndoWarning.
-  ///
-  /// In en, this message translates to:
-  /// **'Warning: This action cannot be undone'**
-  String get cannotUndoWarning;
 
   /// No description provided for @deletePermanent.
   ///
@@ -1823,7 +1805,7 @@ abstract class AppLocalizations {
   /// No description provided for @aboutGetOnAndroid.
   ///
   /// In en, this message translates to:
-  /// **'Get on Android'**
+  /// **'Get it on Android'**
   String get aboutGetOnAndroid;
 
   /// No description provided for @aboutScanWithPhone.
@@ -1871,7 +1853,7 @@ abstract class AppLocalizations {
   /// No description provided for @updateReadyToInstall.
   ///
   /// In en, this message translates to:
-  /// **'Ready to install'**
+  /// **'Update ready to install'**
   String get updateReadyToInstall;
 
   /// No description provided for @updateTapToRestart.
@@ -1883,7 +1865,7 @@ abstract class AppLocalizations {
   /// No description provided for @notifFileReceivedTitle.
   ///
   /// In en, this message translates to:
-  /// **'File received'**
+  /// **'Received'**
   String get notifFileReceivedTitle;
 
   /// No description provided for @notifFromDevice.
@@ -1909,12 +1891,6 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'File uploaded to your shared folder'**
   String get notifShareUploadTitle;
-
-  /// No description provided for @tourNearbyWifiDesc.
-  ///
-  /// In en, this message translates to:
-  /// **'Finds devices on your network automatically'**
-  String get tourNearbyWifiDesc;
 
   /// No description provided for @tourApkShareDesc.
   ///
@@ -1955,7 +1931,7 @@ abstract class AppLocalizations {
   /// No description provided for @updateDownloadedReady.
   ///
   /// In en, this message translates to:
-  /// **'The app restarts to install it.'**
+  /// **'The app restarts during installation'**
   String get updateDownloadedReady;
 
   /// No description provided for @installNow.
@@ -2024,23 +2000,11 @@ abstract class AppLocalizations {
   /// **'Scroll the features, then agree to start'**
   String get tvTourBeforeStartHint;
 
-  /// No description provided for @tvTourFastDiscovery.
-  ///
-  /// In en, this message translates to:
-  /// **'Fast auto-discovery'**
-  String get tvTourFastDiscovery;
-
   /// No description provided for @tvTourShareApps.
   ///
   /// In en, this message translates to:
   /// **'Share your installed apps'**
   String get tvTourShareApps;
-
-  /// No description provided for @tvTourDevices.
-  ///
-  /// In en, this message translates to:
-  /// **'Phone, tablet, PC, TV'**
-  String get tvTourDevices;
 
   /// No description provided for @emptyFolder.
   ///
@@ -2060,29 +2024,11 @@ abstract class AppLocalizations {
   /// **'I agree to grant the permissions'**
   String get tourAgree;
 
-  /// No description provided for @tourNearbyWifiTitle.
-  ///
-  /// In en, this message translates to:
-  /// **'Nearby + Wi-Fi'**
-  String get tourNearbyWifiTitle;
-
   /// No description provided for @tourApkShareTitle.
   ///
   /// In en, this message translates to:
   /// **'App sharing'**
   String get tourApkShareTitle;
-
-  /// No description provided for @tourMultiPlatformTitle.
-  ///
-  /// In en, this message translates to:
-  /// **'On every device'**
-  String get tourMultiPlatformTitle;
-
-  /// No description provided for @tvTourDiscoveryTitle.
-  ///
-  /// In en, this message translates to:
-  /// **'Wi-Fi'**
-  String get tvTourDiscoveryTitle;
 }
 
 class _AppLocalizationsDelegate
