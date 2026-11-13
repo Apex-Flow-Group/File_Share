@@ -149,7 +149,7 @@ class _TVTourScreenState extends State<TVTourScreen> {
                         ]),
                         const SizedBox(height: 24),
                         // Features
-                        ..._features(l10n, isAr).map((f) => Padding(
+                        ..._features(l10n).map((f) => Padding(
                               padding: const EdgeInsets.only(bottom: 12),
                               child: _TVFeatureCard(feature: f, isDark: isDark),
                             )),
@@ -183,15 +183,13 @@ class _TVTourScreenState extends State<TVTourScreen> {
                     size: 48, color: color.withValues(alpha: 0.7)),
                 const SizedBox(height: 16),
                 Text(
-                  isAr ? 'قبل البدء' : 'Before You Start',
+                  l10n.tvTourBeforeStart,
                   style: const TextStyle(
                       fontSize: 18, fontWeight: FontWeight.bold),
                 ),
                 const SizedBox(height: 8),
                 Text(
-                  isAr
-                      ? 'مرر المميزات للأعلى والأسفل\nثم وافق على الشروط للمتابعة'
-                      : 'Scroll through the features\nthen agree to continue',
+                  l10n.tvTourBeforeStartHint,
                   textAlign: TextAlign.center,
                   style: TextStyle(
                     fontSize: 12,
@@ -276,7 +274,7 @@ class _TVTourScreenState extends State<TVTourScreen> {
                           const SizedBox(width: 10),
                           Expanded(
                             child: Text(
-                              isAr ? 'أوافق على الشروط' : 'I agree to terms',
+                              l10n.tvTourAgree,
                               style: TextStyle(
                                 fontSize: 13,
                                 color: _agreed || hasFocus ? color : null,
@@ -375,7 +373,7 @@ class _TVTourScreenState extends State<TVTourScreen> {
     );
   }
 
-  List<_Feature> _features(AppLocalizations l10n, bool isAr) => [
+  List<_Feature> _features(AppLocalizations l10n) => [
         _Feature(Icons.bolt_rounded, const Color(0xFFFF9500),
             l10n.feature1Title, l10n.feature1Desc),
         _Feature(Icons.wifi_off_rounded, const Color(0xFF34C759),
@@ -386,17 +384,17 @@ class _TVTourScreenState extends State<TVTourScreen> {
             Icons.sensors_rounded,
             const Color(0xFF007AFF),
             'Nearby + WiFi',
-            isAr ? 'اكتشاف تلقائي سريع' : 'Fast auto-discovery'),
+            l10n.tvTourFastDiscovery),
         _Feature(
             Icons.phone_android_rounded,
             const Color(0xFFFF2D55),
             'APK Sharing',
-            isAr ? 'شارك تطبيقاتك المثبتة' : 'Share your installed apps'),
+            l10n.tvTourShareApps),
         _Feature(
             Icons.devices_rounded,
             const Color(0xFF32ADE6),
             'Multi-platform',
-            isAr ? 'هاتف، تابلت، كمبيوتر' : 'Phone, tablet & desktop'),
+            l10n.tvTourDevices),
       ];
 }
 

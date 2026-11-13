@@ -2,6 +2,7 @@ import 'dart:ui';
 
 import 'package:flutter/material.dart';
 
+import '../../l10n/generated/app_localizations.dart';
 import '../../models/transfer_progress.dart';
 import '../../services/transfer_progress_service.dart';
 
@@ -249,7 +250,7 @@ class _ReceiveProgressFloatingState extends State<_ReceiveProgressFloating>
                 const SizedBox(height: 5),
                 // ─── الوقت المتبقي ────────────────────────────────────
                 Text(
-                  p.remainingTimeFormatted,
+                  p.remainingTimeFormatted(AppLocalizations.of(context)),
                   style: TextStyle(
                     fontSize: 10,
                     color: isDark ? Colors.white38 : Colors.black38,

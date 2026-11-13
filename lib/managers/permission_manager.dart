@@ -1,6 +1,7 @@
 import 'dart:io';
 import 'package:flutter/material.dart';
 import 'package:permission_handler/permission_handler.dart';
+import '../l10n/generated/app_localizations.dart';
 
 class PermissionManager {
   static Future<bool> requestAll() async {
@@ -38,18 +39,15 @@ class PermissionManager {
       return [];
     }
 
-    final isArabic = Localizations.localeOf(context).languageCode == 'ar';
+    final l10n = AppLocalizations.of(context);
     final issues = <String>[];
 
     final checks = {
-      Permission.bluetoothAdvertise:
-          isArabic ? 'بلوتوث (إعلان)' : 'Bluetooth Advertise',
-      Permission.bluetoothConnect:
-          isArabic ? 'بلوتوث (اتصال)' : 'Bluetooth Connect',
-      Permission.bluetoothScan: isArabic ? 'بلوتوث (مسح)' : 'Bluetooth Scan',
-      Permission.nearbyWifiDevices:
-          isArabic ? 'الأجهزة القريبة (WiFi)' : 'Nearby WiFi Devices',
-      Permission.locationWhenInUse: isArabic ? 'الموقع' : 'Location',
+      Permission.bluetoothAdvertise: l10n.permBluetoothAdvertise,
+      Permission.bluetoothConnect: l10n.permBluetoothConnect,
+      Permission.bluetoothScan: l10n.permBluetoothScan,
+      Permission.nearbyWifiDevices: l10n.permNearbyWifi,
+      Permission.locationWhenInUse: l10n.location,
     };
 
     for (final entry in checks.entries) {

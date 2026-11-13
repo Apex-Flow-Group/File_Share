@@ -180,7 +180,6 @@ class _ReceiveTabState extends State<ReceiveTab>
   }
 
   Widget _buildStatusCard(AppLocalizations l10n) {
-    final isAr = Localizations.localeOf(context).languageCode == 'ar';
     final isDark = Theme.of(context).brightness == Brightness.dark;
 
     return AnimatedBuilder(
@@ -211,12 +210,12 @@ class _ReceiveTabState extends State<ReceiveTab>
         ),
         child: _isReceiving
             ? _buildReceivingContent()
-            : _buildReadyContent(isAr, l10n),
+            : _buildReadyContent(l10n),
       ),
     );
   }
 
-  Widget _buildReadyContent(bool isAr, AppLocalizations l10n) {
+  Widget _buildReadyContent(AppLocalizations l10n) {
     return Row(
       children: [
         Container(
@@ -249,7 +248,6 @@ class _ReceiveTabState extends State<ReceiveTab>
   }
 
   Widget _buildReceivingContent() {
-    final isAr = Localizations.localeOf(context).languageCode == 'ar';
     return StreamBuilder<TransferProgress?>(
       stream: TransferProgressService().progressStream,
       builder: (context, snapshot) {
@@ -257,7 +255,7 @@ class _ReceiveTabState extends State<ReceiveTab>
         final svc = TransferProgressService();
         // تأكد أن هذا تقدم استقبال وليس إرسال
         if (svc.isSending) {
-          return _buildReadyContent(isAr, AppLocalizations.of(context));
+          return _buildReadyContent(AppLocalizations.of(context));
         }
         final senderName = svc.senderDeviceName;
         return Column(
@@ -287,7 +285,7 @@ class _ReceiveTabState extends State<ReceiveTab>
                     ),
                     if (senderName != null && senderName.isNotEmpty)
                       Text(
-                        isAr ? 'من: $senderName' : 'From: $senderName',
+                        AppLocalizations.of(context).fromSender(senderName),
                         style: const TextStyle(
                           fontSize: 12,
                           color: Colors.purple,
@@ -318,7 +316,7 @@ class _ReceiveTabState extends State<ReceiveTab>
                         Border.all(color: Colors.red.withValues(alpha: 0.3)),
                   ),
                   child: Text(
-                    isAr ? 'إلغاء' : 'Cancel',
+                    AppLocalizations.of(context).cancel,
                     style: const TextStyle(
                       fontSize: 12,
                       color: Colors.red,
@@ -354,7 +352,7 @@ class _ReceiveTabState extends State<ReceiveTab>
                           fontSize: 12,
                           color: Colors.purple,
                           fontWeight: FontWeight.w600)),
-                  Text(p.remainingTimeFormatted,
+                  Text(p.remainingTimeFormatted(AppLocalizations.of(context)),
                       style: const TextStyle(fontSize: 12, color: Colors.grey)),
                 ],
               ),
@@ -544,7 +542,6 @@ class _ReceiveTabState extends State<ReceiveTab>
 
   Widget _buildPcBanner() {
     final isDark = Theme.of(context).brightness == Brightness.dark;
-    final isAr = Localizations.localeOf(context).languageCode == 'ar';
     const color = Color(0xFF007AFF);
 
     return GestureDetector(
@@ -576,7 +573,7 @@ class _ReceiveTabState extends State<ReceiveTab>
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 Text(
-                  isAr ? 'حمّل نسخة الكمبيوتر' : 'Get PC Version',
+                  AppLocalizations.of(context).pcVersionGet,
                   style: const TextStyle(
                     fontWeight: FontWeight.bold,
                     fontSize: 14,
@@ -585,9 +582,7 @@ class _ReceiveTabState extends State<ReceiveTab>
                 ),
                 const SizedBox(height: 2),
                 Text(
-                  isAr
-                      ? 'Windows و Linux • apexflow.now'
-                      : 'Windows & Linux • apexflow.now',
+                  AppLocalizations.of(context).pcVersionPlatforms,
                   style: TextStyle(fontSize: 12, color: Colors.grey[600]),
                 ),
               ],

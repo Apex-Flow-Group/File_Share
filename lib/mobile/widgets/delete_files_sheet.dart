@@ -22,7 +22,6 @@ class DeleteFilesSheet {
     required int fileCount,
   }) async {
     final l10n = AppLocalizations.of(context);
-    final isAr = l10n.localeName == 'ar';
     bool deleteFromDevice = false;
 
     final ok = await ApexBottomSheet.showStyled<bool>(
@@ -44,9 +43,7 @@ class DeleteFilesSheet {
                 border: Border.all(color: Colors.red.withValues(alpha: 0.2)),
               ),
               child: Text(
-                isAr
-                    ? 'هل تريد حذف $fileCount ملفات؟'
-                    : 'Delete $fileCount files?',
+                l10n.deleteFilesConfirm(fileCount),
                 style: const TextStyle(fontSize: 14),
                 textAlign: TextAlign.center,
               ),
@@ -66,9 +63,7 @@ class DeleteFilesSheet {
                   const SizedBox(width: 10),
                   Expanded(
                     child: Text(
-                      isAr
-                          ? 'حذف من ذاكرة الجهاز أيضاً'
-                          : 'Also delete from device storage',
+                      l10n.deleteAlsoFromDevice,
                       style: TextStyle(
                         fontSize: 13,
                         fontWeight: FontWeight.w500,

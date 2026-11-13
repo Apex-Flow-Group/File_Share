@@ -1,3 +1,4 @@
+import '../l10n/generated/app_localizations.dart';
 enum TransferStatus {
   idle,
   connecting,
@@ -57,15 +58,15 @@ class TransferProgress {
     return '${(speed / 1024 / 1024).toStringAsFixed(1)} MB/s';
   }
   
-  String get remainingTimeFormatted {
+  String remainingTimeFormatted(AppLocalizations l10n) {
     final seconds = remainingTime.inSeconds;
     if (seconds < 60) {
-      return '$seconds ث';
+      return l10n.timeSecondsShort(seconds);
     }
     if (seconds < 3600) {
-      return '${(seconds / 60).round()} د';
+      return l10n.timeMinutesShort((seconds / 60).round());
     }
-    return '${(seconds / 3600).round()} س';
+    return l10n.timeHoursShort((seconds / 3600).round());
   }
   
   TransferProgress copyWith({

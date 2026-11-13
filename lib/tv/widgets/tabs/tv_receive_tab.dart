@@ -179,7 +179,6 @@ class _TVReceiveTabState extends State<TVReceiveTab>
   }
 
   Widget _buildStatusCard(AppLocalizations l10n) {
-    final isAr = Localizations.localeOf(context).languageCode == 'ar';
     final isDark = Theme.of(context).brightness == Brightness.dark;
 
     return AnimatedBuilder(
@@ -210,12 +209,12 @@ class _TVReceiveTabState extends State<TVReceiveTab>
         ),
         child: _isReceiving
             ? _buildReceivingContent()
-            : _buildReadyContent(isAr, l10n),
+            : _buildReadyContent(l10n),
       ),
     );
   }
 
-  Widget _buildReadyContent(bool isAr, AppLocalizations l10n) {
+  Widget _buildReadyContent(AppLocalizations l10n) {
     return Row(
       children: [
         Container(
@@ -248,14 +247,13 @@ class _TVReceiveTabState extends State<TVReceiveTab>
   }
 
   Widget _buildReceivingContent() {
-    final isAr = Localizations.localeOf(context).languageCode == 'ar';
     return StreamBuilder<TransferProgress?>(
       stream: TransferProgressService().progressStream,
       builder: (context, snapshot) {
         final p = snapshot.data;
         final svc = TransferProgressService();
         if (svc.isSending) {
-          return _buildReadyContent(isAr, AppLocalizations.of(context));
+          return _buildReadyContent(AppLocalizations.of(context));
         }
         final senderName = svc.senderDeviceName;
         return Column(
@@ -285,7 +283,7 @@ class _TVReceiveTabState extends State<TVReceiveTab>
                     ),
                     if (senderName != null && senderName.isNotEmpty)
                       Text(
-                        isAr ? 'من: $senderName' : 'From: $senderName',
+                        AppLocalizations.of(context).fromSender(senderName),
                         style: const TextStyle(
                           fontSize: 12,
                           color: Colors.purple,
@@ -308,7 +306,7 @@ class _TVReceiveTabState extends State<TVReceiveTab>
                   setState(() => _isReceiving = false);
                 },
                 color: Colors.red,
-                label: isAr ? 'إلغاء' : 'Cancel',
+                label: AppLocalizations.of(context).cancel,
               ),
             ]),
             if (p != null) ...[
@@ -337,7 +335,7 @@ class _TVReceiveTabState extends State<TVReceiveTab>
                           fontSize: 12,
                           color: Colors.purple,
                           fontWeight: FontWeight.w600)),
-                  Text(p.remainingTimeFormatted,
+                  Text(p.remainingTimeFormatted(AppLocalizations.of(context)),
                       style: const TextStyle(fontSize: 12, color: Colors.grey)),
                 ],
               ),

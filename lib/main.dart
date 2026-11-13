@@ -85,6 +85,11 @@ class FileShareApp extends StatelessWidget {
           theme: apexTheme(Brightness.light),
           darkTheme: apexTheme(Brightness.dark),
           themeMode: settings.themeMode,
+          builder: (context, child) {
+            DesktopNotificationService.instance.locale =
+                Localizations.localeOf(context);
+            return child ?? const SizedBox.shrink();
+          },
           home: _buildHome(settings),
         );
       },

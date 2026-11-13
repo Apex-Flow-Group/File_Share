@@ -1025,4 +1025,187 @@ class AppLocalizationsAr extends AppLocalizations {
   String whenYesterday(String time) {
     return 'أمس $time';
   }
+
+  @override
+  String get permBluetoothAdvertise => 'بلوتوث (إعلان)';
+
+  @override
+  String get permBluetoothConnect => 'بلوتوث (اتصال)';
+
+  @override
+  String get permBluetoothScan => 'بلوتوث (مسح)';
+
+  @override
+  String get permNearbyWifi => 'الأجهزة القريبة (WiFi)';
+
+  @override
+  String timeSecondsShort(int seconds) {
+    return '$seconds ث';
+  }
+
+  @override
+  String timeMinutesShort(int minutes) {
+    return '$minutes د';
+  }
+
+  @override
+  String timeHoursShort(int hours) {
+    return '$hours س';
+  }
+
+  @override
+  String get aboutOfficialWebsite => 'الموقع الرسمي';
+
+  @override
+  String get aboutGetOnAndroid => 'حمّل على أندرويد';
+
+  @override
+  String get aboutScanWithPhone => 'امسح الباركود بهاتفك';
+
+  @override
+  String get aboutOrTapButton => 'أو اضغط على الزر';
+
+  @override
+  String get updateCheck => 'التحقق من التحديثات';
+
+  @override
+  String get updateChecking => 'جاري التحقق...';
+
+  @override
+  String get updateUpToDate => 'التطبيق محدّث ✓';
+
+  @override
+  String get updateUpToDateHint => 'لديك أحدث إصدار';
+
+  @override
+  String get updateAvailableBang => 'تحديث جديد متاح!';
+
+  @override
+  String get updateTapToDownload => 'اضغط لتحميل التحديث';
+
+  @override
+  String get updateDownloadingEllipsis => 'جاري التحميل...';
+
+  @override
+  String get updateReadyToInstall => 'جاهز للتثبيت';
+
+  @override
+  String get updateTapToRestart => 'اضغط لإعادة التشغيل وتثبيت التحديث';
+
+  @override
+  String get notifFileReceivedTitle => 'تم استلام ملف ✅';
+
+  @override
+  String notifFromDevice(String fileName, String fromDevice) {
+    return '$fileName — من $fromDevice';
+  }
+
+  @override
+  String get notifSentTitle => 'تم الإرسال ✅';
+
+  @override
+  String get notifSendFailedTitle => 'فشل الإرسال ❌';
+
+  @override
+  String get notifShareUploadTitle => 'ملف رُفع إلى Share 📂';
+
+  @override
+  String get tourAgreeMobile =>
+      'قرأت المميزات وأوافق على منح الصلاحيات اللازمة للتطبيق';
+
+  @override
+  String get tourNearbyWifiDesc =>
+      'اكتشاف تلقائي سريع عبر Nearby للهاتف أو WiFi للحاسوب';
+
+  @override
+  String get tourApkShareDesc => 'شارك تطبيقاتك المثبتة مع الأجهزة الأخرى';
+
+  @override
+  String get tourMultiPlatformDesc => 'يعمل على الهاتف والتابلت وسطح المكتب';
+
+  @override
+  String get appsNoUserApps => 'لا توجد تطبيقات مستخدم';
+
+  @override
+  String get updateSheetTitle => 'تحديث جديد متاح';
+
+  @override
+  String get updateSheetBody => 'يوجد إصدار جديد من Apex File Share';
+
+  @override
+  String get updateNow => 'تحديث الآن';
+
+  @override
+  String get later => 'لاحقاً';
+
+  @override
+  String get updateReadyTitle => 'التحديث جاهز';
+
+  @override
+  String get updateInstallsAfterTransfer =>
+      'سيُثبَّت التحديث تلقائياً بعد انتهاء الإرسال';
+
+  @override
+  String get updateDownloadedReady => 'التحديث محمّل وجاهز للتثبيت';
+
+  @override
+  String get installNow => 'تثبيت الآن';
+
+  @override
+  String get permGranted => '✓ ممنوح';
+
+  @override
+  String get permBlocked => '✗ محظور';
+
+  @override
+  String get permTapToGrant => '← اضغط للمنح';
+
+  @override
+  String deleteFilesConfirm(int count) {
+    return 'هل تريد حذف $count ملفات؟';
+  }
+
+  @override
+  String get deleteAlsoFromDevice => 'حذف من ذاكرة الجهاز أيضاً';
+
+  @override
+  String fromSender(String name) {
+    return 'من: $name';
+  }
+
+  @override
+  String get pcVersionGet => 'حمّل نسخة الكمبيوتر';
+
+  @override
+  String get pcVersionPlatforms => 'Windows و Linux • apexflow.now';
+
+  @override
+  String fileOfTotal(int current, int total) {
+    return 'ملف $current من $total';
+  }
+
+  @override
+  String get sendingInProgress => 'جاري الإرسال...';
+
+  @override
+  String get tvTourBeforeStart => 'قبل البدء';
+
+  @override
+  String get tvTourBeforeStartHint =>
+      'مرر المميزات للأعلى والأسفل\nثم وافق على الشروط للمتابعة';
+
+  @override
+  String get tvTourAgree => 'أوافق على الشروط';
+
+  @override
+  String get tvTourFastDiscovery => 'اكتشاف تلقائي سريع';
+
+  @override
+  String get tvTourShareApps => 'شارك تطبيقاتك المثبتة';
+
+  @override
+  String get tvTourDevices => 'هاتف، تابلت، كمبيوتر';
+
+  @override
+  String get emptyFolder => 'مجلد فارغ';
 }

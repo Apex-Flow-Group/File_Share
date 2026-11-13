@@ -58,7 +58,6 @@ class _AppsSelectionSheetState extends State<AppsSelectionSheet> {
     final isDark = Theme.of(context).brightness == Brightness.dark;
     final color = Theme.of(context).colorScheme.primary;
     final l10n = AppLocalizations.of(context);
-    final isAr = l10n.localeName == 'ar';
     final screenHeight = MediaQuery.of(context).size.height;
 
     return SafeArea(
@@ -202,7 +201,7 @@ class _AppsSelectionSheetState extends State<AppsSelectionSheet> {
                   if (apps.isEmpty) {
                     return Center(
                       child: Text(
-                        isAr ? 'لا توجد تطبيقات مستخدم' : 'No user apps found',
+                        l10n.appsNoUserApps,
                         style:
                             const TextStyle(fontSize: 14, color: Colors.grey),
                       ),
@@ -287,8 +286,7 @@ class _AppsSelectionSheetState extends State<AppsSelectionSheet> {
       return;
     }
 
-    ApexLogger.instance.log(
-      'APP_SELECT',
+    ApexLogger.instance.log('APP_SELECT',
       '📦 تم اختيار ${selected.length} تطبيق للإرسال',
       LogLevel.info,
     );

@@ -292,15 +292,9 @@ class _TourScreenState extends State<TourScreen> {
     );
   }
 
-  String _agreeText() {
-    final isAr = Localizations.localeOf(context).languageCode == 'ar';
-    return isAr
-        ? 'قرأت المميزات وأوافق على منح الصلاحيات اللازمة للتطبيق'
-        : 'I have read the features and agree to grant the required permissions';
-  }
+  String _agreeText() => AppLocalizations.of(context).tourAgreeMobile;
 
   List<_Feature> _features(AppLocalizations l10n) {
-    final isAr = Localizations.localeOf(context).languageCode == 'ar';
     return [
       _Feature(
         icon: Icons.bolt_rounded,
@@ -324,25 +318,19 @@ class _TourScreenState extends State<TourScreen> {
         icon: Icons.sensors_rounded,
         color: const Color(0xFF007AFF),
         title: 'Nearby + WiFi',
-        desc: isAr
-            ? 'اكتشاف تلقائي سريع عبر Nearby للهاتف أو WiFi للحاسوب'
-            : 'Auto-discovery via Nearby for phones or WiFi for PC',
+        desc: l10n.tourNearbyWifiDesc,
       ),
       _Feature(
         icon: Icons.phone_android_rounded,
         color: const Color(0xFFFF2D55),
         title: 'APK Sharing',
-        desc: isAr
-            ? 'شارك تطبيقاتك المثبتة مع الأجهزة الأخرى'
-            : 'Share your installed apps with other devices',
+        desc: l10n.tourApkShareDesc,
       ),
       _Feature(
         icon: Icons.devices_rounded,
         color: const Color(0xFF32ADE6),
         title: 'Multi-platform',
-        desc: isAr
-            ? 'يعمل على الهاتف والتابلت وسطح المكتب'
-            : 'Works on phone, tablet & desktop',
+        desc: l10n.tourMultiPlatformDesc,
       ),
     ];
   }

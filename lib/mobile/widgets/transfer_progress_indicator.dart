@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 
+import '../../l10n/generated/app_localizations.dart';
 import '../../services/transfer_progress_service.dart';
 
 /// Reusable widget that displays file transfer progress with batch support.
@@ -10,7 +11,7 @@ class TransferProgressIndicator extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final isAr = Localizations.localeOf(context).languageCode == 'ar';
+    final l10n = AppLocalizations.of(context);
     final svc = TransferProgressService();
 
     return StreamBuilder<dynamic>(
@@ -41,10 +42,8 @@ class TransferProgressIndicator extends StatelessWidget {
               Expanded(
                 child: Text(
                   isBatch
-                      ? (isAr
-                          ? 'ملف $current من $total'
-                          : 'File $current of $total')
-                      : (isAr ? 'جاري الإرسال...' : 'Sending...'),
+                      ? l10n.fileOfTotal(current, total)
+                      : l10n.sendingInProgress,
                   style: TextStyle(
                     fontWeight: FontWeight.w600,
                     fontSize: 13,
@@ -68,7 +67,7 @@ class TransferProgressIndicator extends StatelessWidget {
                         Border.all(color: Colors.red.withValues(alpha: 0.3)),
                   ),
                   child: Text(
-                    isAr ? 'إلغاء' : 'Cancel',
+                    l10n.cancel,
                     style: const TextStyle(
                       fontSize: 11,
                       color: Colors.red,
@@ -115,7 +114,7 @@ class TransferProgressIndicator extends StatelessWidget {
                 ),
                 if (p != null)
                   Text(
-                    p.remainingTimeFormatted,
+                    p.remainingTimeFormatted(l10n),
                     style: const TextStyle(fontSize: 10, color: Colors.grey),
                   ),
               ],

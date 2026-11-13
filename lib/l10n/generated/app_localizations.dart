@@ -1801,6 +1801,336 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Yesterday {time}'**
   String whenYesterday(String time);
+
+  /// No description provided for @permBluetoothAdvertise.
+  ///
+  /// In en, this message translates to:
+  /// **'Bluetooth Advertise'**
+  String get permBluetoothAdvertise;
+
+  /// No description provided for @permBluetoothConnect.
+  ///
+  /// In en, this message translates to:
+  /// **'Bluetooth Connect'**
+  String get permBluetoothConnect;
+
+  /// No description provided for @permBluetoothScan.
+  ///
+  /// In en, this message translates to:
+  /// **'Bluetooth Scan'**
+  String get permBluetoothScan;
+
+  /// No description provided for @permNearbyWifi.
+  ///
+  /// In en, this message translates to:
+  /// **'Nearby WiFi Devices'**
+  String get permNearbyWifi;
+
+  /// No description provided for @timeSecondsShort.
+  ///
+  /// In en, this message translates to:
+  /// **'{seconds} s'**
+  String timeSecondsShort(int seconds);
+
+  /// No description provided for @timeMinutesShort.
+  ///
+  /// In en, this message translates to:
+  /// **'{minutes} m'**
+  String timeMinutesShort(int minutes);
+
+  /// No description provided for @timeHoursShort.
+  ///
+  /// In en, this message translates to:
+  /// **'{hours} h'**
+  String timeHoursShort(int hours);
+
+  /// No description provided for @aboutOfficialWebsite.
+  ///
+  /// In en, this message translates to:
+  /// **'Official Website'**
+  String get aboutOfficialWebsite;
+
+  /// No description provided for @aboutGetOnAndroid.
+  ///
+  /// In en, this message translates to:
+  /// **'Get on Android'**
+  String get aboutGetOnAndroid;
+
+  /// No description provided for @aboutScanWithPhone.
+  ///
+  /// In en, this message translates to:
+  /// **'Scan with your phone'**
+  String get aboutScanWithPhone;
+
+  /// No description provided for @aboutOrTapButton.
+  ///
+  /// In en, this message translates to:
+  /// **'Or tap the button'**
+  String get aboutOrTapButton;
+
+  /// No description provided for @updateCheck.
+  ///
+  /// In en, this message translates to:
+  /// **'Check for Updates'**
+  String get updateCheck;
+
+  /// No description provided for @updateChecking.
+  ///
+  /// In en, this message translates to:
+  /// **'Checking...'**
+  String get updateChecking;
+
+  /// No description provided for @updateUpToDate.
+  ///
+  /// In en, this message translates to:
+  /// **'Up to date ✓'**
+  String get updateUpToDate;
+
+  /// No description provided for @updateUpToDateHint.
+  ///
+  /// In en, this message translates to:
+  /// **'You have the latest version'**
+  String get updateUpToDateHint;
+
+  /// No description provided for @updateAvailableBang.
+  ///
+  /// In en, this message translates to:
+  /// **'New update available!'**
+  String get updateAvailableBang;
+
+  /// No description provided for @updateTapToDownload.
+  ///
+  /// In en, this message translates to:
+  /// **'Tap to download'**
+  String get updateTapToDownload;
+
+  /// No description provided for @updateDownloadingEllipsis.
+  ///
+  /// In en, this message translates to:
+  /// **'Downloading...'**
+  String get updateDownloadingEllipsis;
+
+  /// No description provided for @updateReadyToInstall.
+  ///
+  /// In en, this message translates to:
+  /// **'Ready to install'**
+  String get updateReadyToInstall;
+
+  /// No description provided for @updateTapToRestart.
+  ///
+  /// In en, this message translates to:
+  /// **'Tap to restart & install'**
+  String get updateTapToRestart;
+
+  /// No description provided for @notifFileReceivedTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'File received ✅'**
+  String get notifFileReceivedTitle;
+
+  /// No description provided for @notifFromDevice.
+  ///
+  /// In en, this message translates to:
+  /// **'{fileName} — from {fromDevice}'**
+  String notifFromDevice(String fileName, String fromDevice);
+
+  /// No description provided for @notifSentTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Sent ✅'**
+  String get notifSentTitle;
+
+  /// No description provided for @notifSendFailedTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Send failed ❌'**
+  String get notifSendFailedTitle;
+
+  /// No description provided for @notifShareUploadTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'File uploaded to Share 📂'**
+  String get notifShareUploadTitle;
+
+  /// No description provided for @tourAgreeMobile.
+  ///
+  /// In en, this message translates to:
+  /// **'I have read the features and agree to grant the required permissions'**
+  String get tourAgreeMobile;
+
+  /// No description provided for @tourNearbyWifiDesc.
+  ///
+  /// In en, this message translates to:
+  /// **'Auto-discovery via Nearby for phones or WiFi for PC'**
+  String get tourNearbyWifiDesc;
+
+  /// No description provided for @tourApkShareDesc.
+  ///
+  /// In en, this message translates to:
+  /// **'Share your installed apps with other devices'**
+  String get tourApkShareDesc;
+
+  /// No description provided for @tourMultiPlatformDesc.
+  ///
+  /// In en, this message translates to:
+  /// **'Works on phone, tablet & desktop'**
+  String get tourMultiPlatformDesc;
+
+  /// No description provided for @appsNoUserApps.
+  ///
+  /// In en, this message translates to:
+  /// **'No user apps found'**
+  String get appsNoUserApps;
+
+  /// No description provided for @updateSheetTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'New Update Available'**
+  String get updateSheetTitle;
+
+  /// No description provided for @updateSheetBody.
+  ///
+  /// In en, this message translates to:
+  /// **'A new version of Apex File Share is ready'**
+  String get updateSheetBody;
+
+  /// No description provided for @updateNow.
+  ///
+  /// In en, this message translates to:
+  /// **'Update Now'**
+  String get updateNow;
+
+  /// No description provided for @later.
+  ///
+  /// In en, this message translates to:
+  /// **'Later'**
+  String get later;
+
+  /// No description provided for @updateReadyTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Update Ready'**
+  String get updateReadyTitle;
+
+  /// No description provided for @updateInstallsAfterTransfer.
+  ///
+  /// In en, this message translates to:
+  /// **'Update will install after transfer finishes'**
+  String get updateInstallsAfterTransfer;
+
+  /// No description provided for @updateDownloadedReady.
+  ///
+  /// In en, this message translates to:
+  /// **'The update is downloaded and ready to install'**
+  String get updateDownloadedReady;
+
+  /// No description provided for @installNow.
+  ///
+  /// In en, this message translates to:
+  /// **'Install Now'**
+  String get installNow;
+
+  /// No description provided for @permGranted.
+  ///
+  /// In en, this message translates to:
+  /// **'✓ Granted'**
+  String get permGranted;
+
+  /// No description provided for @permBlocked.
+  ///
+  /// In en, this message translates to:
+  /// **'✗ Blocked'**
+  String get permBlocked;
+
+  /// No description provided for @permTapToGrant.
+  ///
+  /// In en, this message translates to:
+  /// **'← Tap to grant'**
+  String get permTapToGrant;
+
+  /// No description provided for @deleteFilesConfirm.
+  ///
+  /// In en, this message translates to:
+  /// **'Delete {count} files?'**
+  String deleteFilesConfirm(int count);
+
+  /// No description provided for @deleteAlsoFromDevice.
+  ///
+  /// In en, this message translates to:
+  /// **'Also delete from device storage'**
+  String get deleteAlsoFromDevice;
+
+  /// No description provided for @fromSender.
+  ///
+  /// In en, this message translates to:
+  /// **'From: {name}'**
+  String fromSender(String name);
+
+  /// No description provided for @pcVersionGet.
+  ///
+  /// In en, this message translates to:
+  /// **'Get PC Version'**
+  String get pcVersionGet;
+
+  /// No description provided for @pcVersionPlatforms.
+  ///
+  /// In en, this message translates to:
+  /// **'Windows & Linux • apexflow.now'**
+  String get pcVersionPlatforms;
+
+  /// No description provided for @fileOfTotal.
+  ///
+  /// In en, this message translates to:
+  /// **'File {current} of {total}'**
+  String fileOfTotal(int current, int total);
+
+  /// No description provided for @sendingInProgress.
+  ///
+  /// In en, this message translates to:
+  /// **'Sending...'**
+  String get sendingInProgress;
+
+  /// No description provided for @tvTourBeforeStart.
+  ///
+  /// In en, this message translates to:
+  /// **'Before You Start'**
+  String get tvTourBeforeStart;
+
+  /// No description provided for @tvTourBeforeStartHint.
+  ///
+  /// In en, this message translates to:
+  /// **'Scroll through the features\nthen agree to continue'**
+  String get tvTourBeforeStartHint;
+
+  /// No description provided for @tvTourAgree.
+  ///
+  /// In en, this message translates to:
+  /// **'I agree to terms'**
+  String get tvTourAgree;
+
+  /// No description provided for @tvTourFastDiscovery.
+  ///
+  /// In en, this message translates to:
+  /// **'Fast auto-discovery'**
+  String get tvTourFastDiscovery;
+
+  /// No description provided for @tvTourShareApps.
+  ///
+  /// In en, this message translates to:
+  /// **'Share your installed apps'**
+  String get tvTourShareApps;
+
+  /// No description provided for @tvTourDevices.
+  ///
+  /// In en, this message translates to:
+  /// **'Phone, tablet & desktop'**
+  String get tvTourDevices;
+
+  /// No description provided for @emptyFolder.
+  ///
+  /// In en, this message translates to:
+  /// **'Empty folder'**
+  String get emptyFolder;
 }
 
 class _AppLocalizationsDelegate

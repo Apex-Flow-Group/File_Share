@@ -180,7 +180,6 @@ class SettingsSheets {
       return;
     }
     final isDark = Theme.of(context).brightness == Brightness.dark;
-    final isAr = Localizations.localeOf(context).languageCode == 'ar';
 
     await showModalBottomSheet(
       context: context,
@@ -231,10 +230,10 @@ class SettingsSheets {
                         ? Colors.red
                         : Colors.orange;
                 final label = granted
-                    ? (isAr ? '✓ ممنوح' : '✓ Granted')
+                    ? l10n.permGranted
                     : restricted
-                        ? (isAr ? '✗ محظور' : '✗ Blocked')
-                        : (isAr ? '← اضغط للمنح' : '← Tap to grant');
+                        ? l10n.permBlocked
+                        : l10n.permTapToGrant;
                 return ListTile(
                   onTap: granted
                       ? null

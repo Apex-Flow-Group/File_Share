@@ -375,5 +375,81 @@
   "whenYesterday": "Yesterday {time}",
   "@whenYesterday": {
     "placeholders": { "time": { "type": "String" } }
-  }
+  },
+  "permBluetoothAdvertise": "Bluetooth Advertise",
+  "permBluetoothConnect": "Bluetooth Connect",
+  "permBluetoothScan": "Bluetooth Scan",
+  "permNearbyWifi": "Nearby WiFi Devices",
+  "timeSecondsShort": "{seconds} s",
+  "@timeSecondsShort": {
+    "placeholders": { "seconds": { "type": "int" } }
+  },
+  "timeMinutesShort": "{minutes} m",
+  "@timeMinutesShort": {
+    "placeholders": { "minutes": { "type": "int" } }
+  },
+  "timeHoursShort": "{hours} h",
+  "@timeHoursShort": {
+    "placeholders": { "hours": { "type": "int" } }
+  },
+  "aboutOfficialWebsite": "Official Website",
+  "aboutGetOnAndroid": "Get on Android",
+  "aboutScanWithPhone": "Scan with your phone",
+  "aboutOrTapButton": "Or tap the button",
+  "updateCheck": "Check for Updates",
+  "updateChecking": "Checking...",
+  "updateUpToDate": "Up to date ✓",
+  "updateUpToDateHint": "You have the latest version",
+  "updateAvailableBang": "New update available!",
+  "updateTapToDownload": "Tap to download",
+  "updateDownloadingEllipsis": "Downloading...",
+  "updateReadyToInstall": "Ready to install",
+  "updateTapToRestart": "Tap to restart & install",
+  "notifFileReceivedTitle": "File received ✅",
+  "notifFromDevice": "{fileName} — from {fromDevice}",
+  "@notifFromDevice": {
+    "placeholders": { "fileName": { "type": "String" }, "fromDevice": { "type": "String" } }
+  },
+  "notifSentTitle": "Sent ✅",
+  "notifSendFailedTitle": "Send failed ❌",
+  "notifShareUploadTitle": "File uploaded to Share 📂",
+  "tourAgreeMobile": "I have read the features and agree to grant the required permissions",
+  "tourNearbyWifiDesc": "Auto-discovery via Nearby for phones or WiFi for PC",
+  "tourApkShareDesc": "Share your installed apps with other devices",
+  "tourMultiPlatformDesc": "Works on phone, tablet & desktop",
+  "appsNoUserApps": "No user apps found",
+  "updateSheetTitle": "New Update Available",
+  "updateSheetBody": "A new version of Apex File Share is ready",
+  "updateNow": "Update Now",
+  "later": "Later",
+  "updateReadyTitle": "Update Ready",
+  "updateInstallsAfterTransfer": "Update will install after transfer finishes",
+  "updateDownloadedReady": "The update is downloaded and ready to install",
+  "installNow": "Install Now",
+  "permGranted": "✓ Granted",
+  "permBlocked": "✗ Blocked",
+  "permTapToGrant": "← Tap to grant",
+  "deleteFilesConfirm": "Delete {count} files?",
+  "@deleteFilesConfirm": {
+    "placeholders": { "count": { "type": "int" } }
+  },
+  "deleteAlsoFromDevice": "Also delete from device storage",
+  "fromSender": "From: {name}",
+  "@fromSender": {
+    "placeholders": { "name": { "type": "String" } }
+  },
+  "pcVersionGet": "Get PC Version",
+  "pcVersionPlatforms": "Windows & Linux • apexflow.now",
+  "fileOfTotal": "File {current} of {total}",
+  "@fileOfTotal": {
+    "placeholders": { "current": { "type": "int" }, "total": { "type": "int" } }
+  },
+  "sendingInProgress": "Sending...",
+  "tvTourBeforeStart": "Before You Start",
+  "tvTourBeforeStartHint": "Scroll through the features\nthen agree to continue",
+  "tvTourAgree": "I agree to terms",
+  "tvTourFastDiscovery": "Fast auto-discovery",
+  "tvTourShareApps": "Share your installed apps",
+  "tvTourDevices": "Phone, tablet & desktop",
+  "emptyFolder": "Empty folder"
 }

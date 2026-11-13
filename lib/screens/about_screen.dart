@@ -142,7 +142,6 @@ class _AboutScreenState extends State<AboutScreen> {
   }
 
   Widget _buildContent(BuildContext context, AppLocalizations l10n) {
-    final isAr = Localizations.localeOf(context).languageCode == 'ar';
     return Column(
       crossAxisAlignment: CrossAxisAlignment.center,
       mainAxisSize: MainAxisSize.min,
@@ -164,7 +163,7 @@ class _AboutScreenState extends State<AboutScreen> {
         const SizedBox(height: 12),
         // ─── زر التحديث — Android فقط (Desktop يستخدم QR card) ──────────────
         if (!kIsWeb && Platform.isAndroid) ...[
-          _buildUpdateButton(context, isAr),
+          _buildUpdateButton(context, l10n),
           const SizedBox(height: 6),
         ],
         Text(l10n.appDescription,
@@ -180,7 +179,7 @@ class _AboutScreenState extends State<AboutScreen> {
         _buildSection(l10n.importantLinks, [
           _buildLink(
             context,
-            isAr ? 'الموقع الرسمي' : 'Official Website',
+            l10n.aboutOfficialWebsite,
             'https://apexflow.now/en',
             icon: Icons.language_rounded,
             color: Theme.of(context).colorScheme.primary,
@@ -215,7 +214,7 @@ class _AboutScreenState extends State<AboutScreen> {
 
   Widget _buildAndroidCard(BuildContext context) {
     final isDark = Theme.of(context).brightness == Brightness.dark;
-    final isAr = Localizations.localeOf(context).languageCode == 'ar';
+    final l10n = AppLocalizations.of(context);
     const color = Color(0xFF34C759);
 
     return Container(
@@ -249,12 +248,12 @@ class _AboutScreenState extends State<AboutScreen> {
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
                   Text(
-                    isAr ? 'حمّل على أندرويد' : 'Get on Android',
+                    l10n.aboutGetOnAndroid,
                     style: const TextStyle(
                         fontWeight: FontWeight.bold, fontSize: 15),
                   ),
                   Text(
-                    isAr ? 'امسح الباركود بهاتفك' : 'Scan with your phone',
+                    l10n.aboutScanWithPhone,
                     style: TextStyle(fontSize: 12, color: Colors.grey[600]),
                   ),
                 ],
@@ -286,7 +285,7 @@ class _AboutScreenState extends State<AboutScreen> {
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
                     Text(
-                      isAr ? 'أو اضغط على الزر' : 'Or tap the button',
+                      l10n.aboutOrTapButton,
                       style: TextStyle(fontSize: 12, color: Colors.grey[600]),
                     ),
                     const SizedBox(height: 10),
@@ -295,9 +294,9 @@ class _AboutScreenState extends State<AboutScreen> {
                       child: FilledButton.icon(
                         onPressed: () => _launchUrl(_kPlayStoreUrl),
                         icon: const Icon(Icons.shop_rounded, size: 18),
-                        label: Text(
-                          isAr ? 'Google Play' : 'Google Play',
-                          style: const TextStyle(fontSize: 13),
+                        label: const Text(
+                          'Google Play',
+                          style: TextStyle(fontSize: 13),
                         ),
                         style: FilledButton.styleFrom(
                           backgroundColor: color,
@@ -371,36 +370,36 @@ class _AboutScreenState extends State<AboutScreen> {
   // ─── زر التحقق من التحديث ──────────────────────────────────────────────────
   // يظهر على Android فقط — Desktop يستخدم QR card أدناه بدلاً منه
 
-  Widget _buildUpdateButton(BuildContext context, bool isAr) {
+  Widget _buildUpdateButton(BuildContext context, AppLocalizations l10n) {
     switch (_checkState) {
       case _CheckState.idle:
         return _UpdateTile(
           icon: Icons.system_update_rounded,
           color: Theme.of(context).colorScheme.primary,
-          label: isAr ? 'التحقق من التحديثات' : 'Check for Updates',
+          label: l10n.updateCheck,
           onTap: _checkForUpdate,
         );
       case _CheckState.checking:
         return _UpdateTile(
           icon: Icons.sync_rounded,
           color: Theme.of(context).colorScheme.primary,
-          label: isAr ? 'جاري التحقق...' : 'Checking...',
+          label: l10n.updateChecking,
           loading: true,
         );
       case _CheckState.upToDate:
         return _UpdateTile(
           icon: Icons.check_circle_rounded,
           color: Colors.green,
-          label: isAr ? 'التطبيق محدّث ✓' : 'Up to date ✓',
-          subtitle: isAr ? 'لديك أحدث إصدار' : 'You have the latest version',
+          label: l10n.updateUpToDate,
+          subtitle: l10n.updateUpToDateHint,
           onTap: _checkForUpdate, // يتيح إعادة التحقق
         );
       case _CheckState.available:
         return _UpdateTile(
           icon: Icons.new_releases_rounded,
           color: const Color(0xFFFF9500),
-          label: isAr ? 'تحديث جديد متاح!' : 'New update available!',
-          subtitle: isAr ? 'اضغط لتحميل التحديث' : 'Tap to download',
+          label: l10n.updateAvailableBang,
+          subtitle: l10n.updateTapToDownload,
           onTap: _downloadUpdate,
           badge: true,
         );
@@ -408,17 +407,15 @@ class _AboutScreenState extends State<AboutScreen> {
         return _UpdateTile(
           icon: Icons.download_rounded,
           color: Theme.of(context).colorScheme.primary,
-          label: isAr ? 'جاري التحميل...' : 'Downloading...',
+          label: l10n.updateDownloadingEllipsis,
           loading: true,
         );
       case _CheckState.readyToInstall:
         return _UpdateTile(
           icon: Icons.install_mobile_rounded,
           color: Colors.green,
-          label: isAr ? 'جاهز للتثبيت' : 'Ready to install',
-          subtitle: isAr
-              ? 'اضغط لإعادة التشغيل وتثبيت التحديث'
-              : 'Tap to restart & install',
+          label: l10n.updateReadyToInstall,
+          subtitle: l10n.updateTapToRestart,
           onTap: _installUpdate,
           badge: true,
         );

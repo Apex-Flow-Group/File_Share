@@ -375,7 +375,7 @@ mixin HomeDialogs<T extends StatefulWidget> on State<T> {
   // ─── Update Available Sheet ────────────────────────────────────────────────
 
   void showUpdateAvailableSheet() {
-    final isAr = AppLocalizations.of(context).localeName == 'ar';
+    final l10n = AppLocalizations.of(context);
     final color = Theme.of(context).colorScheme.primary;
     ApexBottomSheet.show(context,
         child: Column(mainAxisSize: MainAxisSize.min, children: [
@@ -386,14 +386,11 @@ mixin HomeDialogs<T extends StatefulWidget> on State<T> {
                   borderRadius: BorderRadius.circular(18)),
               child: Icon(Icons.system_update_rounded, size: 36, color: color)),
           const SizedBox(height: 14),
-          Text(isAr ? 'تحديث جديد متاح' : 'New Update Available',
+          Text(l10n.updateSheetTitle,
               style:
                   const TextStyle(fontSize: 18, fontWeight: FontWeight.bold)),
           const SizedBox(height: 6),
-          Text(
-              isAr
-                  ? 'يوجد إصدار جديد من Apex File Share'
-                  : 'A new version of Apex File Share is ready',
+          Text(l10n.updateSheetBody,
               textAlign: TextAlign.center,
               style: TextStyle(fontSize: 13, color: Colors.grey[600])),
           const SizedBox(height: 22),
@@ -405,7 +402,7 @@ mixin HomeDialogs<T extends StatefulWidget> on State<T> {
                 UpdateService.instance.startFlexibleDownload();
               },
               icon: const Icon(Icons.download_rounded, size: 18),
-              label: Text(isAr ? 'تحديث الآن' : 'Update Now'),
+              label: Text(l10n.updateNow),
               style: FilledButton.styleFrom(
                   padding: const EdgeInsets.symmetric(vertical: 14)),
             )),
@@ -415,7 +412,7 @@ mixin HomeDialogs<T extends StatefulWidget> on State<T> {
               onPressed: () => Navigator.pop(context),
               style: OutlinedButton.styleFrom(
                   padding: const EdgeInsets.symmetric(vertical: 14)),
-              child: Text(isAr ? 'لاحقاً' : 'Later'),
+              child: Text(l10n.later),
             )),
           ]),
         ]));
@@ -427,7 +424,7 @@ mixin HomeDialogs<T extends StatefulWidget> on State<T> {
     if (!mounted) {
       return;
     }
-    final isAr = AppLocalizations.of(context).localeName == 'ar';
+    final l10n = AppLocalizations.of(context);
     final isBusy = TransferProgressService().isTransferring;
     ApexBottomSheet.show(context,
         child: Column(mainAxisSize: MainAxisSize.min, children: [
@@ -439,18 +436,14 @@ mixin HomeDialogs<T extends StatefulWidget> on State<T> {
               child: const Icon(Icons.download_done_rounded,
                   size: 36, color: Colors.green)),
           const SizedBox(height: 14),
-          Text(isAr ? 'التحديث جاهز' : 'Update Ready',
+          Text(l10n.updateReadyTitle,
               style:
                   const TextStyle(fontSize: 18, fontWeight: FontWeight.bold)),
           const SizedBox(height: 6),
           Text(
               isBusy
-                  ? (isAr
-                      ? 'سيُثبَّت التحديث تلقائياً بعد انتهاء الإرسال'
-                      : 'Update will install after transfer finishes')
-                  : (isAr
-                      ? 'التحديث محمّل وجاهز للتثبيت'
-                      : 'The update is downloaded and ready to install'),
+                  ? l10n.updateInstallsAfterTransfer
+                  : l10n.updateDownloadedReady,
               textAlign: TextAlign.center,
               style: TextStyle(fontSize: 13, color: Colors.grey[600])),
           const SizedBox(height: 22),
@@ -463,7 +456,7 @@ mixin HomeDialogs<T extends StatefulWidget> on State<T> {
                     UpdateService.instance.completeUpdate();
                   },
                   icon: const Icon(Icons.install_mobile_rounded, size: 18),
-                  label: Text(isAr ? 'تثبيت الآن' : 'Install Now'),
+                  label: Text(l10n.installNow),
                   style: FilledButton.styleFrom(
                       backgroundColor: Colors.green,
                       padding: const EdgeInsets.symmetric(vertical: 14)),
@@ -476,9 +469,7 @@ mixin HomeDialogs<T extends StatefulWidget> on State<T> {
                 onPressed: () => Navigator.pop(context),
                 style: OutlinedButton.styleFrom(
                     padding: const EdgeInsets.symmetric(vertical: 14)),
-                child: Text(isBusy
-                    ? (isAr ? 'حسناً' : 'OK')
-                    : (isAr ? 'لاحقاً' : 'Later')),
+                child: Text(isBusy ? l10n.ok : l10n.later),
               )),
         ]));
   }

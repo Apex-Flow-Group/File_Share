@@ -342,5 +342,81 @@
   "whenYesterday": "أمس {time}",
   "@whenYesterday": {
     "placeholders": { "time": { "type": "String" } }
-  }
+  },
+  "permBluetoothAdvertise": "بلوتوث (إعلان)",
+  "permBluetoothConnect": "بلوتوث (اتصال)",
+  "permBluetoothScan": "بلوتوث (مسح)",
+  "permNearbyWifi": "الأجهزة القريبة (WiFi)",
+  "timeSecondsShort": "{seconds} ث",
+  "@timeSecondsShort": {
+    "placeholders": { "seconds": { "type": "int" } }
+  },
+  "timeMinutesShort": "{minutes} د",
+  "@timeMinutesShort": {
+    "placeholders": { "minutes": { "type": "int" } }
+  },
+  "timeHoursShort": "{hours} س",
+  "@timeHoursShort": {
+    "placeholders": { "hours": { "type": "int" } }
+  },
+  "aboutOfficialWebsite": "الموقع الرسمي",
+  "aboutGetOnAndroid": "حمّل على أندرويد",
+  "aboutScanWithPhone": "امسح الباركود بهاتفك",
+  "aboutOrTapButton": "أو اضغط على الزر",
+  "updateCheck": "التحقق من التحديثات",
+  "updateChecking": "جاري التحقق...",
+  "updateUpToDate": "التطبيق محدّث ✓",
+  "updateUpToDateHint": "لديك أحدث إصدار",
+  "updateAvailableBang": "تحديث جديد متاح!",
+  "updateTapToDownload": "اضغط لتحميل التحديث",
+  "updateDownloadingEllipsis": "جاري التحميل...",
+  "updateReadyToInstall": "جاهز للتثبيت",
+  "updateTapToRestart": "اضغط لإعادة التشغيل وتثبيت التحديث",
+  "notifFileReceivedTitle": "تم استلام ملف ✅",
+  "notifFromDevice": "{fileName} — من {fromDevice}",
+  "@notifFromDevice": {
+    "placeholders": { "fileName": { "type": "String" }, "fromDevice": { "type": "String" } }
+  },
+  "notifSentTitle": "تم الإرسال ✅",
+  "notifSendFailedTitle": "فشل الإرسال ❌",
+  "notifShareUploadTitle": "ملف رُفع إلى Share 📂",
+  "tourAgreeMobile": "قرأت المميزات وأوافق على منح الصلاحيات اللازمة للتطبيق",
+  "tourNearbyWifiDesc": "اكتشاف تلقائي سريع عبر Nearby للهاتف أو WiFi للحاسوب",
+  "tourApkShareDesc": "شارك تطبيقاتك المثبتة مع الأجهزة الأخرى",
+  "tourMultiPlatformDesc": "يعمل على الهاتف والتابلت وسطح المكتب",
+  "appsNoUserApps": "لا توجد تطبيقات مستخدم",
+  "updateSheetTitle": "تحديث جديد متاح",
+  "updateSheetBody": "يوجد إصدار جديد من Apex File Share",
+  "updateNow": "تحديث الآن",
+  "later": "لاحقاً",
+  "updateReadyTitle": "التحديث جاهز",
+  "updateInstallsAfterTransfer": "سيُثبَّت التحديث تلقائياً بعد انتهاء الإرسال",
+  "updateDownloadedReady": "التحديث محمّل وجاهز للتثبيت",
+  "installNow": "تثبيت الآن",
+  "permGranted": "✓ ممنوح",
+  "permBlocked": "✗ محظور",
+  "permTapToGrant": "← اضغط للمنح",
+  "deleteFilesConfirm": "هل تريد حذف {count} ملفات؟",
+  "@deleteFilesConfirm": {
+    "placeholders": { "count": { "type": "int" } }
+  },
+  "deleteAlsoFromDevice": "حذف من ذاكرة الجهاز أيضاً",
+  "fromSender": "من: {name}",
+  "@fromSender": {
+    "placeholders": { "name": { "type": "String" } }
+  },
+  "pcVersionGet": "حمّل نسخة الكمبيوتر",
+  "pcVersionPlatforms": "Windows و Linux • apexflow.now",
+  "fileOfTotal": "ملف {current} من {total}",
+  "@fileOfTotal": {
+    "placeholders": { "current": { "type": "int" }, "total": { "type": "int" } }
+  },
+  "sendingInProgress": "جاري الإرسال...",
+  "tvTourBeforeStart": "قبل البدء",
+  "tvTourBeforeStartHint": "مرر المميزات للأعلى والأسفل\nثم وافق على الشروط للمتابعة",
+  "tvTourAgree": "أوافق على الشروط",
+  "tvTourFastDiscovery": "اكتشاف تلقائي سريع",
+  "tvTourShareApps": "شارك تطبيقاتك المثبتة",
+  "tvTourDevices": "هاتف، تابلت، كمبيوتر",
+  "emptyFolder": "مجلد فارغ"
 }

@@ -1,12 +1,21 @@
 import 'dart:io';
 import 'package:flutter/foundation.dart';
+import 'package:flutter/widgets.dart' show Locale;
 import 'package:local_notifier/local_notifier.dart';
+
+import '../l10n/generated/app_localizations.dart';
 
 class DesktopNotificationService {
   static final DesktopNotificationService _instance =
       DesktopNotificationService._();
   static DesktopNotificationService get instance => _instance;
   DesktopNotificationService._();
+
+  /// The language the app shows now; the app sets it (main.dart). Until then
+  /// it is the app's own default, Arabic.
+  Locale locale = const Locale('ar');
+
+  AppLocalizations get _l10n => lookupAppLocalizations(locale);
 
   static bool get _isDesktop {
     if (kIsWeb) {
@@ -27,8 +36,8 @@ class DesktopNotificationService {
       return;
     }
     final n = LocalNotification(
-      title: 'تم استلام ملف ✅',
-      body: '$fileName — من $fromDevice',
+      title: _l10n.notifFileReceivedTitle,
+      body: _l10n.notifFromDevice(fileName, fromDevice),
     );
     await n.show();
   }
@@ -38,7 +47,7 @@ class DesktopNotificationService {
       return;
     }
     final n = LocalNotification(
-      title: 'تم الإرسال ✅',
+      title: _l10n.notifSentTitle,
       body: fileName,
     );
     await n.show();
@@ -49,7 +58,7 @@ class DesktopNotificationService {
       return;
     }
     final n = LocalNotification(
-      title: 'فشل الإرسال ❌',
+      title: _l10n.notifSendFailedTitle,
       body: fileName,
     );
     await n.show();
@@ -60,8 +69,8 @@ class DesktopNotificationService {
       return;
     }
     final n = LocalNotification(
-      title: 'ملف رُفع إلى Share 📂',
-      body: '$fileName — من $fromDevice',
+      title: _l10n.notifShareUploadTitle,
+      body: _l10n.notifFromDevice(fileName, fromDevice),
     );
     await n.show();
   }

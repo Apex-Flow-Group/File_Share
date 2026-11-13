@@ -247,7 +247,7 @@ class _TVFileBrowserState extends State<_TVFileBrowser> {
                 : displayItems.isEmpty
                     ? Center(
                         child: Text(
-                          'مجلد فارغ',
+                          AppLocalizations.of(context).emptyFolder,
                           style: TextStyle(color: Theme.of(context).colorScheme.onSurfaceVariant),
                         ),
                       )

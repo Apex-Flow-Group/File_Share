@@ -990,4 +990,188 @@ class AppLocalizationsEn extends AppLocalizations {
   String whenYesterday(String time) {
     return 'Yesterday $time';
   }
+
+  @override
+  String get permBluetoothAdvertise => 'Bluetooth Advertise';
+
+  @override
+  String get permBluetoothConnect => 'Bluetooth Connect';
+
+  @override
+  String get permBluetoothScan => 'Bluetooth Scan';
+
+  @override
+  String get permNearbyWifi => 'Nearby WiFi Devices';
+
+  @override
+  String timeSecondsShort(int seconds) {
+    return '$seconds s';
+  }
+
+  @override
+  String timeMinutesShort(int minutes) {
+    return '$minutes m';
+  }
+
+  @override
+  String timeHoursShort(int hours) {
+    return '$hours h';
+  }
+
+  @override
+  String get aboutOfficialWebsite => 'Official Website';
+
+  @override
+  String get aboutGetOnAndroid => 'Get on Android';
+
+  @override
+  String get aboutScanWithPhone => 'Scan with your phone';
+
+  @override
+  String get aboutOrTapButton => 'Or tap the button';
+
+  @override
+  String get updateCheck => 'Check for Updates';
+
+  @override
+  String get updateChecking => 'Checking...';
+
+  @override
+  String get updateUpToDate => 'Up to date ✓';
+
+  @override
+  String get updateUpToDateHint => 'You have the latest version';
+
+  @override
+  String get updateAvailableBang => 'New update available!';
+
+  @override
+  String get updateTapToDownload => 'Tap to download';
+
+  @override
+  String get updateDownloadingEllipsis => 'Downloading...';
+
+  @override
+  String get updateReadyToInstall => 'Ready to install';
+
+  @override
+  String get updateTapToRestart => 'Tap to restart & install';
+
+  @override
+  String get notifFileReceivedTitle => 'File received ✅';
+
+  @override
+  String notifFromDevice(String fileName, String fromDevice) {
+    return '$fileName — from $fromDevice';
+  }
+
+  @override
+  String get notifSentTitle => 'Sent ✅';
+
+  @override
+  String get notifSendFailedTitle => 'Send failed ❌';
+
+  @override
+  String get notifShareUploadTitle => 'File uploaded to Share 📂';
+
+  @override
+  String get tourAgreeMobile =>
+      'I have read the features and agree to grant the required permissions';
+
+  @override
+  String get tourNearbyWifiDesc =>
+      'Auto-discovery via Nearby for phones or WiFi for PC';
+
+  @override
+  String get tourApkShareDesc => 'Share your installed apps with other devices';
+
+  @override
+  String get tourMultiPlatformDesc => 'Works on phone, tablet & desktop';
+
+  @override
+  String get appsNoUserApps => 'No user apps found';
+
+  @override
+  String get updateSheetTitle => 'New Update Available';
+
+  @override
+  String get updateSheetBody => 'A new version of Apex File Share is ready';
+
+  @override
+  String get updateNow => 'Update Now';
+
+  @override
+  String get later => 'Later';
+
+  @override
+  String get updateReadyTitle => 'Update Ready';
+
+  @override
+  String get updateInstallsAfterTransfer =>
+      'Update will install after transfer finishes';
+
+  @override
+  String get updateDownloadedReady =>
+      'The update is downloaded and ready to install';
+
+  @override
+  String get installNow => 'Install Now';
+
+  @override
+  String get permGranted => '✓ Granted';
+
+  @override
+  String get permBlocked => '✗ Blocked';
+
+  @override
+  String get permTapToGrant => '← Tap to grant';
+
+  @override
+  String deleteFilesConfirm(int count) {
+    return 'Delete $count files?';
+  }
+
+  @override
+  String get deleteAlsoFromDevice => 'Also delete from device storage';
+
+  @override
+  String fromSender(String name) {
+    return 'From: $name';
+  }
+
+  @override
+  String get pcVersionGet => 'Get PC Version';
+
+  @override
+  String get pcVersionPlatforms => 'Windows & Linux • apexflow.now';
+
+  @override
+  String fileOfTotal(int current, int total) {
+    return 'File $current of $total';
+  }
+
+  @override
+  String get sendingInProgress => 'Sending...';
+
+  @override
+  String get tvTourBeforeStart => 'Before You Start';
+
+  @override
+  String get tvTourBeforeStartHint =>
+      'Scroll through the features\nthen agree to continue';
+
+  @override
+  String get tvTourAgree => 'I agree to terms';
+
+  @override
+  String get tvTourFastDiscovery => 'Fast auto-discovery';
+
+  @override
+  String get tvTourShareApps => 'Share your installed apps';
+
+  @override
+  String get tvTourDevices => 'Phone, tablet & desktop';
+
+  @override
+  String get emptyFolder => 'Empty folder';
 }
