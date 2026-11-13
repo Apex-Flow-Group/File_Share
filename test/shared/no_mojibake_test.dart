@@ -27,4 +27,14 @@ void main() {
     }
     expect(found, isEmpty);
   });
+
+  // Left by an editor on Windows: invisible, and the other files have none.
+  test('no source file starts with a byte-order mark', () {
+    final found = [
+      for (final f in Directory('lib').listSync(recursive: true).whereType<File>())
+        if (f.path.endsWith('.dart') && f.readAsBytesSync().take(3).join(',') == '239,187,191')
+          f.path,
+    ];
+    expect(found, isEmpty);
+  });
 }
