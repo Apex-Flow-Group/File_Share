@@ -11,7 +11,7 @@ import 'package:flutter_test/flutter_test.dart';
 const _legacyOsCode = <String, int>{
   'lib/core/apex_core.dart': 6,
   'lib/managers/device_manager.dart': 20,
-  'lib/managers/permission_manager.dart': 2,
+  'lib/managers/permission_manager.dart': 1,
   'lib/mobile/controllers/home_controller.dart': 3,
   'lib/mobile/screens/settings_screen.dart': 2,
   'lib/mobile/screens/settings_sheets.dart': 3,

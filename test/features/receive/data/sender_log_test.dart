@@ -169,7 +169,7 @@ void main() {
     await upload(client, tokens[0], [1, 2, 3, 4]);
     expect(log.of(savedPath('a.txt')), isNotNull);
 
-    final deleted = await FileOperationsService(senders: log).deleteFiles({savedPath('a.txt')}, deleteFromFolder: true);
+    final deleted = await FileOperationsService(senders: log).deleteFiles({savedPath('a.txt')});
 
     expect(deleted, 1);
     await log.saved;

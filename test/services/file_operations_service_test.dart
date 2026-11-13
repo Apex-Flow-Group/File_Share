@@ -25,7 +25,6 @@ void main() {
 
       final count = await service.deleteFiles(
         {file1.path, file2.path},
-        deleteFromFolder: true,
       );
 
       expect(count, 2);
@@ -36,22 +35,9 @@ void main() {
     test('deleteFiles handles non-existent files', () async {
       final count = await service.deleteFiles(
         {'${testDir.path}/nonexistent.txt'},
-        deleteFromFolder: true,
       );
 
       expect(count, 0);
-    });
-
-    test('deleteFiles with deleteFromFolder=false counts without deleting', () async {
-      final file = File('${testDir.path}/test.txt')..writeAsStringSync('test');
-
-      final count = await service.deleteFiles(
-        {file.path},
-        deleteFromFolder: false,
-      );
-
-      expect(count, 1);
-      expect(file.existsSync(), true);
     });
   });
 }

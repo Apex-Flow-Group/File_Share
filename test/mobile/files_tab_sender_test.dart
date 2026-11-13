@@ -46,7 +46,7 @@ void main() {
         sortBy: 'name',
         sortAscending: true,
         onExitSelection: () {},
-        onDeleteSelected: (_) async => 0,
+        onDeleteSelected: () async => 0,
         onSelectAll: () {},
         onSaveSortPreference: () {},
         onSortByChanged: (_) {},
