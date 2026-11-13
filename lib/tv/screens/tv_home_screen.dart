@@ -4,6 +4,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 
 import '../../core/apex_core.dart';
+import '../../core/start_guard.dart';
 import '../../l10n/generated/app_localizations.dart';
 import '../../models/device.dart';
 import '../../services/desktop_notification_service.dart';
@@ -138,15 +139,15 @@ class _TVHomeScreenState extends State<TVHomeScreen> {
     await _start();
   }
 
-  /// Searching needs the system; after a failure it starts it.
   Future<void> _findDevices() async {
-    if (!_isRunning) {
-      if (_startFailed) {
-        await _start();
-      }
-      return;
+    switch (findDevicesAction(isRunning: _isRunning, startFailed: _startFailed)) {
+      case FindDevices.wait:
+        return;
+      case FindDevices.start:
+        return _start();
+      case FindDevices.search:
+        await ApexCore.instance.refreshDiscovery();
     }
-    await ApexCore.instance.refreshDiscovery();
   }
 
   /// Also the retry: start() closes what it opened when it fails.

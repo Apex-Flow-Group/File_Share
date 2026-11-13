@@ -5,6 +5,7 @@ import 'package:flutter/foundation.dart';
 import 'package:flutter/services.dart';
 
 import '../../core/apex_core.dart';
+import '../../core/start_guard.dart';
 import '../../models/device.dart';
 import '../../services/clipboard_monitor_service.dart';
 import '../../services/file_operations_service.dart';
@@ -148,13 +149,14 @@ class HomeController extends ChangeNotifier {
 
   /// Pings favorites after the socket is reopened, so the ping is not lost.
   Future<void> refreshDiscovery() async {
-    if (!_isRunning) {
-      if (_startFailed) {
-        await retryStart();
-      }
-      return;
+    switch (findDevicesAction(isRunning: _isRunning, startFailed: _startFailed)) {
+      case FindDevices.wait:
+        return;
+      case FindDevices.start:
+        return retryStart();
+      case FindDevices.search:
+        await ApexCore.instance.refreshDiscovery();
     }
-    await ApexCore.instance.refreshDiscovery();
     _pingPinnedDevices();
   }
 

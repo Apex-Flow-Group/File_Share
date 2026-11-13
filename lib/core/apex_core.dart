@@ -34,6 +34,7 @@ import 'nearby_transfer.dart';
 import 'one_question.dart';
 import 'server_port.dart';
 import 'share_folder_http.dart';
+import 'start_guard.dart';
 
 export 'core_models.dart';
 
@@ -240,30 +241,21 @@ class ApexCore {
     );
   }
 
-  Future<void>? _starting;
+  final _startOnce = OneAtATime();
 
-  /// A second call while one runs waits for it instead of binding again.
-  Future<void> start() {
-    if (_isRunning) {
-      return Future.value();
-    }
-    return _starting ??= _start().whenComplete(() => _starting = null);
-  }
+  Future<void> start() =>
+      _isRunning ? Future.value() : _startOnce.run(_start);
 
   Future<void> _start() async {
     if (_localDevice == null) {
       await initialize();
     }
-    try {
-      await _startParts();
-    } catch (_) {
-      // What opened before the failure is closed, so a retry binds afresh.
+    await openOrUndo(_startParts, () async {
       await _httpServer?.close(force: true);
       _httpServer = null;
       await _discoveryService?.stop();
       _discoveryService = null;
-      rethrow;
-    }
+    });
     _startCleanup();
     _isRunning = true;
     ApexLogger.instance.log('CORE', '🚀 النظام يعمل', LogLevel.success);
